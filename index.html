@@ -601,12 +601,12 @@ nav {
         <div class="fl">İSS</div>
         <select class="fs" id="issSelect">
           <option value="">Seçin...</option>
-          <option>TurkNet</option>
-          <option>Superonline (Turkcell)</option>
           <option>TTNet (Türk Telekom)</option>
+          <option>Superonline (Turkcell)</option>
+          <option>TurkNet</option>
+          <option>Vodafone</option>
           <option>Millenicom</option>
           <option>Netspeed</option>
-          <option>Vodafone Net</option>
           <option>Diğer</option>
         </select>
       </div>
@@ -771,12 +771,12 @@ nav {
       <div class="fg">
         <div class="fl">İSS</div>
         <select class="fs" id="editIss">
-          <option>TurkNet</option>
-          <option>Superonline (Turkcell)</option>
           <option>TTNet (Türk Telekom)</option>
+          <option>Superonline (Turkcell)</option>
+          <option>TurkNet</option>
+          <option>Vodafone</option>
           <option>Millenicom</option>
           <option>Netspeed</option>
-          <option>Vodafone Net</option>
           <option>Diğer</option>
         </select>
       </div>
@@ -871,12 +871,12 @@ const patchRapor = (id,d) => sbRest(`raporlar?id=eq.${id}`, { method:'PATCH', pr
 function fuzzy(lat, lng) { const o = 0.0013; return { lat: lat+(Math.random()-.5)*o, lng: lng+(Math.random()-.5)*o }; }
 
 const IC = {
-  'TurkNet':'#9f7aea',
-  'Superonline (Turkcell)':'#00b4d8',
   'TTNet (Türk Telekom)':'#ef4444',
+  'Superonline (Turkcell)':'#00b4d8',
+  'TurkNet':'#9f7aea',
+  'Vodafone':'#e60000',
   'Millenicom':'#10b981',
   'Netspeed':'#f59e0b',
-  'Vodafone Net':'#e60000',
   'Diğer':'#6b7280'
 };
 const ic = iss => IC[iss] || '#6b7280';
