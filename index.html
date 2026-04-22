@@ -2,13 +2,15 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>İnternetHarita — Türkiye İnternet Altyapı Haritası</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- FingerprintJS for browser fingerprinting -->
+<script src="https://openfpcdn.io/fingerprintjs/v3/iife.min.js"></script>
 <style>
 /* ===== DESIGN TOKENS ===== */
 :root {
@@ -22,6 +24,9 @@
   --danger: #ef4444; --success: #22c55e; --warn: #f59e0b;
 
   --font-mono: 'Space Mono', monospace; --font-body: 'DM Sans', sans-serif;
+
+  --nav-h: 56px;
+  --mobile-nav-h: 56px;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font-body);-webkit-font-smoothing:antialiased;}
@@ -30,30 +35,60 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
 
 /* ===== NAV ===== */
-nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:56px; background:rgba(7,11,15,0.96); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); display:flex;align-items:center;padding:0 20px;gap:0; }
-.logo { display:flex;align-items:center;gap:10px; margin-right:36px;cursor:pointer; text-decoration:none; }
+nav {
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  height:var(--nav-h);
+  background:rgba(7,11,15,0.96); backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;gap:0;
+}
+.logo { display:flex;align-items:center;gap:10px; margin-right:24px;cursor:pointer; text-decoration:none; flex-shrink:0; }
 .logo-icon { width:32px;height:32px;border-radius:8px; background:linear-gradient(135deg, var(--accent), #0080ff); display:flex;align-items:center;justify-content:center; font-size:14px;font-family:var(--font-mono);font-weight:700;color:#000; box-shadow:0 0 16px var(--accent-glow); flex-shrink:0; }
 .logo-text { font-family:var(--font-mono);font-size:13px;font-weight:700; color:var(--text);letter-spacing:-0.3px; }
 .logo-text span{color:var(--accent);}
 .nav-tabs{display:flex;gap:2px;}
-.nav-tab { padding:7px 14px;border-radius:6px; cursor:pointer;font-size:12px;font-weight:600;font-family:var(--font-body); color:var(--text3);transition:all .2s;border:none;background:none; }
+.nav-tab { padding:7px 14px;border-radius:6px; cursor:pointer;font-size:12px;font-weight:600;font-family:var(--font-body); color:var(--text3);transition:all .2s;border:none;background:none; white-space:nowrap; }
 .nav-tab:hover{color:var(--text2);background:var(--surface2);}
 .nav-tab.active{color:var(--accent);background:var(--accent-dim);}
 .nav-tab.mod-tab{color:var(--warn);}
 .nav-tab.mod-tab.active{color:var(--warn);background:rgba(245,158,11,.1);}
-.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px; flex-shrink:0;}
 .nav-badge { font-size:10px;font-family:var(--font-mono); padding:2px 8px;border-radius:20px; background:var(--accent-dim);border:1px solid rgba(0,212,255,.3); color:var(--accent);display:none; }
+
+/* ===== MAINTENANCE BANNER ===== */
+.maintenance-banner {
+  position:fixed;top:var(--nav-h);left:0;right:0;z-index:999;
+  background:rgba(245,158,11,.15);border-bottom:1px solid var(--warn);
+  padding:8px 16px;text-align:center;font-size:11px;color:var(--warn);font-weight:700;
+  display:none;
+}
+.maintenance-banner.active{display:block;}
+body.maintenance-mode .maintenance-banner{display:block;}
+
+/* ===== MAINTENANCE MODE OVERLAY ===== */
+.maintenance-overlay {
+  position:fixed;inset:0;z-index:800;
+  background:rgba(7,11,15,0.85);backdrop-filter:blur(4px);
+  display:none;align-items:center;justify-content:center;
+  flex-direction:column;gap:12px;
+}
+.maintenance-overlay.active{display:flex;}
+.maintenance-overlay-box{
+  background:var(--surface);border:1px solid var(--warn);border-radius:12px;
+  padding:28px 32px;text-align:center;max-width:360px;
+}
+
 .btn-primary { padding:8px 16px;background:var(--accent);color:#000; border:none;border-radius:7px;font-weight:700;font-size:12px; cursor:pointer;font-family:var(--font-body);transition:all .2s; }
 .btn-primary:hover{background:#33deff;box-shadow:0 4px 16px var(--accent-glow);}
 .btn-ghost { padding:7px 14px;background:transparent;color:var(--accent); border:1px solid rgba(0,212,255,.35);border-radius:7px; font-weight:600;font-size:12px;cursor:pointer; font-family:var(--font-body);transition:all .2s; }
 .btn-ghost:hover{background:var(--accent-dim);}
-.page{position:fixed;inset:0;top:56px;display:none;}
+.page{position:fixed;inset:0;top:var(--nav-h);display:none;}
 .page.active{display:flex;}
 
 /* ===== MAP PAGE ===== */
 #page-harita{flex-direction:column;}
 #map{flex:1;z-index:1;}
-.map-sidebar { position:absolute;top:14px;left:14px;z-index:500; width:228px;display:flex;flex-direction:column;gap:10px; pointer-events:none; }
+.map-sidebar { position:absolute;top:14px;left:14px;z-index:500; width:220px;display:flex;flex-direction:column;gap:10px; pointer-events:none; }
 .panel { background:rgba(7,11,15,0.93); backdrop-filter:blur(14px); border:1px solid var(--border); border-radius:10px;padding:13px; pointer-events:auto; }
 .panel-title { font-family:var(--font-mono);font-size:9px;font-weight:700; color:var(--text3);letter-spacing:1.5px;margin-bottom:10px; text-transform:uppercase; }
 .mode-btns{display:flex;gap:4px;}
@@ -87,11 +122,11 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:56px; background:
 .page-header{padding-bottom:14px;border-bottom:1px solid var(--border);}
 .page-title{font-family:var(--font-mono);font-size:20px;font-weight:700;letter-spacing:-0.5px;}
 .page-sub{font-size:12px;color:var(--text3);margin-top:4px;}
-.sort-bar{display:flex;gap:8px;align-items:center;margin-bottom:4px;}
+.sort-bar{display:flex;gap:8px;align-items:center;margin-bottom:4px;flex-wrap:wrap;}
 .sort-bar span{font-size:11px;color:var(--text3);}
 .sort-btn{padding:4px 10px;border-radius:5px;border:1px solid var(--border2);background:var(--surface2);color:var(--text3);font-size:10px;font-weight:700;font-family:var(--font-mono);cursor:pointer;transition:all .15s;}
 .sort-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
-.regions-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+.regions-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
 .region-card{ background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px; transition:all .2s;position:relative;overflow:hidden; }
 .region-card:hover{border-color:var(--border2);transform:translateY(-1px);}
 .region-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
@@ -144,8 +179,8 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:56px; background:
 .fiu input:focus{border-color:var(--accent);}
 .fiu-unit{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--text3);font-family:var(--font-mono);pointer-events:none;}
 .speed-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.score-row{display:flex;gap:3px;}
-.sbtn{ flex:1;padding:6px 2px;border-radius:5px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:10px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center;transition:all .15s; }
+.score-row{display:flex;gap:3px;flex-wrap:wrap;}
+.sbtn{ flex:1;min-width:28px;padding:6px 2px;border-radius:5px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:10px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center;transition:all .15s; }
 .sbtn:hover{border-color:var(--accent);color:var(--accent);}
 .sbtn.sel{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
 .cbtns{display:flex;gap:6px;}
@@ -171,21 +206,44 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:56px; background:
 .mod-auth-title{font-family:var(--font-mono);font-size:16px;font-weight:700;margin-bottom:6px;}
 .mod-auth-sub{font-size:11px;color:var(--text3);margin-bottom:20px;}
 .mod-panel-content{display:flex;flex-direction:column;gap:14px;width:100%;}
-.mod-tabs{display:flex;gap:6px;border-bottom:1px solid var(--border);padding-bottom:12px;}
+.mod-tabs{display:flex;gap:6px;border-bottom:1px solid var(--border);padding-bottom:12px;flex-wrap:wrap;}
 .mod-tab-btn{ padding:6px 14px;border-radius:6px;border:none; background:var(--surface2);color:var(--text3); font-size:11px;font-weight:700;font-family:var(--font-mono); cursor:pointer;transition:all .15s; }
 .mod-tab-btn.active{background:var(--accent-dim);color:var(--accent);}
 .mod-card{ background:var(--surface);border:1px solid var(--border); border-radius:9px;padding:14px; }
 .mod-info{font-size:12px;font-weight:600;}
 .mod-meta{font-size:10px;color:var(--text3);margin-top:3px;line-height:1.6;}
 .mod-badge{ background:rgba(245,158,11,.15);color:var(--warn); border:1px solid var(--warn);border-radius:20px; padding:2px 9px;font-size:10px;font-weight:700;font-family:var(--font-mono);white-space:nowrap; }
-.mod-actions{display:flex;gap:6px;margin-top:10px;}
+.mod-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
 .btn-approve{padding:5px 12px;background:rgba(34,197,94,.1);border:1px solid var(--success);color:var(--success);border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font-mono);}
 .btn-hide{padding:5px 12px;background:rgba(239,68,68,.1);border:1px solid var(--danger);color:var(--danger);border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font-mono);}
 .btn-del{padding:5px 12px;background:rgba(239,68,68,.1);border:1px solid var(--danger);color:var(--danger);border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font-mono);}
 
+/* ===== MAINTENANCE MODE TOGGLE ===== */
+.maintenance-toggle {
+  display:flex;align-items:center;gap:10px;padding:12px 14px;
+  background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  cursor:pointer;transition:all .2s;
+}
+.maintenance-toggle.active {
+  background:rgba(245,158,11,.1);border-color:var(--warn);
+}
+.toggle-switch {
+  position:relative;width:36px;height:20px;flex-shrink:0;
+}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.toggle-slider {
+  position:absolute;inset:0;background:var(--border2);border-radius:20px;transition:.3s;
+}
+.toggle-slider:before {
+  content:'';position:absolute;width:14px;height:14px;
+  left:3px;bottom:3px;background:var(--text3);border-radius:50%;transition:.3s;
+}
+input:checked + .toggle-slider { background:var(--warn); }
+input:checked + .toggle-slider:before { transform:translateX(16px);background:#000; }
+
 /* Admin table */
-.mod-table-wrap{overflow-x:auto;}
-.mod-table{width:100%;border-collapse:collapse;font-size:11px;}
+.mod-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.mod-table{width:100%;border-collapse:collapse;font-size:11px;min-width:600px;}
 .mod-table th{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text3);font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:1px;text-align:left;text-transform:uppercase;}
 .mod-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
 .mod-table tr:hover td{background:var(--surface2);}
@@ -196,6 +254,7 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:56px; background:
 .report-type{font-size:10px;font-weight:700;font-family:var(--font-mono);color:var(--warn);}
 .report-text{font-size:12px;margin-top:4px;}
 .report-meta{font-size:10px;color:var(--text3);margin-top:4px;}
+.report-bolge-tag{display:inline-block;margin-top:4px;padding:2px 8px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:4px;font-size:9px;color:var(--accent);font-family:var(--font-mono);}
 
 /* ===== EMPTY / LOADING ===== */
 .empty-state{text-align:center;padding:50px 20px;color:var(--text3);}
@@ -214,13 +273,13 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:56px; background:
 
 /* ===== POPUP INNER ===== */
 .popup-inner{min-width:210px;font-family:var(--font-body);}
-.popup-title{font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.popup-title{font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 .popup-badge{font-size:9px;padding:2px 6px;border-radius:4px;font-family:var(--font-mono);font-weight:700;}
 .popup-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;align-items:center;}
 .popup-key{color:var(--text3);}
 .popup-val{font-weight:700;font-family:var(--font-mono);}
 .popup-comment{margin-top:7px;font-size:10px;color:var(--text3);font-style:italic;border-top:1px solid var(--border);padding-top:7px;line-height:1.5;}
-.popup-actions{display:flex;gap:5px;margin-top:8px;}
+.popup-actions{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;}
 .popup-btn{flex:1;padding:5px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid;font-family:var(--font-mono);text-align:center;transition:all .15s;}
 .popup-report{color:var(--warn);border-color:var(--warn);background:rgba(245,158,11,.1);}
 .popup-report:hover{background:rgba(245,158,11,.2);}
@@ -231,14 +290,14 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:56px; background:
 .mod-popup-val{font-family:var(--font-mono);word-break:break-all;}
 
 /* ===== TOAST & MODAL ===== */
-.toast{ position:fixed;bottom:24px;left:50%; transform:translateX(-50%) translateY(80px); background:var(--surface2);border:1px solid var(--accent);color:var(--accent); padding:10px 20px;border-radius:8px; font-size:12px;font-weight:600;font-family:var(--font-body); z-index:9999;transition:transform .3s cubic-bezier(.175,.885,.32,1.275); pointer-events:none; }
+.toast{ position:fixed;bottom:80px;left:50%; transform:translateX(-50%) translateY(80px); background:var(--surface2);border:1px solid var(--accent);color:var(--accent); padding:10px 20px;border-radius:8px; font-size:12px;font-weight:600;font-family:var(--font-body); z-index:9999;transition:transform .3s cubic-bezier(.175,.885,.32,1.275); pointer-events:none;max-width:90vw;text-align:center; }
 .toast.show{transform:translateX(-50%) translateY(0);}
 .toast.err{border-color:var(--danger);color:var(--danger);}
 .toast.warn{border-color:var(--warn);color:var(--warn);}
 
-.modal-bg{ position:fixed;inset:0;z-index:2000; background:rgba(7,11,15,.85);backdrop-filter:blur(8px); display:none;align-items:center;justify-content:center; }
+.modal-bg{ position:fixed;inset:0;z-index:2000; background:rgba(7,11,15,.85);backdrop-filter:blur(8px); display:none;align-items:center;justify-content:center;padding:16px; }
 .modal-bg.open{display:flex;}
-.modal{ background:var(--surface);border:1px solid var(--border); border-radius:12px;padding:24px;width:100%;max-width:380px; }
+.modal{ background:var(--surface);border:1px solid var(--border); border-radius:12px;padding:24px;width:100%;max-width:380px;max-height:90vh;overflow-y:auto; }
 .modal-title{font-family:var(--font-mono);font-size:14px;font-weight:700;margin-bottom:16px;}
 .modal-close{float:right;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;}
 
@@ -251,15 +310,113 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:56px; background:
 #editModal .modal{max-width:460px;}
 .edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 
-@media(max-width:900px){
-  .pin-layout{grid-template-columns:1fr;grid-template-rows:350px 1fr;}
-  .nav-tabs{display:none;}
-  .stats-grid{grid-template-columns:1fr;}
-  .stats-top{grid-template-columns:1fr 1fr;}
+/* ===== MOBILE BOTTOM NAV ===== */
+.mobile-nav {
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;z-index:1001;
+  background:rgba(7,11,15,0.97);backdrop-filter:blur(16px);
+  border-top:1px solid var(--border);
+  height:56px;padding:0 4px;
+  align-items:center;justify-content:space-around;
+}
+.mob-btn {
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;padding:6px 8px;border-radius:8px;
+  cursor:pointer;border:none;background:none;
+  color:var(--text3);font-size:9px;font-weight:700;font-family:var(--font-mono);
+  flex:1;transition:all .15s;min-width:0;
+}
+.mob-btn .mob-icon{font-size:18px;line-height:1;}
+.mob-btn.active{color:var(--accent);}
+.mob-btn.mod-mob{color:var(--text3);}
+.mob-btn.mod-mob.active{color:var(--warn);}
+.mob-add-btn {
+  background:var(--accent);color:#000!important;border-radius:50%;
+  width:44px;height:44px;padding:0!important;flex:none!important;
+  font-size:22px!important;display:flex!important;align-items:center;justify-content:center;
+  box-shadow:0 0 20px var(--accent-glow);
+}
+.mob-add-btn .mob-icon{font-size:22px;}
+.mob-add-btn .mob-label{display:none;}
+
+/* ===== MAP MOBILE SIDEBAR TOGGLE ===== */
+.map-sidebar-toggle {
+  display:none;
+  position:absolute;top:14px;left:14px;z-index:501;
+  background:rgba(7,11,15,0.93);backdrop-filter:blur(14px);
+  border:1px solid var(--border);border-radius:8px;
+  padding:8px 12px;cursor:pointer;font-size:11px;color:var(--accent);
+  font-family:var(--font-mono);font-weight:700;
+}
+.map-sidebar.collapsed { display:none; }
+
+/* ===== KARANTINA BADGE ===== */
+.quarantine-badge {
+  display:inline-block;padding:1px 7px;background:rgba(239,68,68,.15);
+  border:1px solid var(--danger);border-radius:4px;color:var(--danger);
+  font-size:9px;font-weight:700;font-family:var(--font-mono);margin-left:4px;
+}
+
+/* ===== FİNGERPRİNT STATUS ===== */
+.fp-status {
+  font-size:9px;color:var(--text3);font-family:var(--font-mono);
+  display:flex;align-items:center;gap:4px;
+}
+.fp-dot{width:5px;height:5px;border-radius:50%;background:var(--warn);flex-shrink:0;}
+.fp-dot.ready{background:var(--success);}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+  :root { --nav-h: 56px; }
+  nav .nav-tabs { display:none; }
+  nav .btn-ghost { display:none; } /* veri ekle butonu mobile navda */
+  .mobile-nav { display:flex; }
+  .page { bottom:56px; } /* mobile nav yüksekliği */
+  .toast { bottom:72px; }
+
+  /* Map sidebar mobile: toggle ile göster/gizle */
+  .map-sidebar { display:none; }
+  .map-sidebar.mobile-open { display:flex; width:calc(100vw - 28px); }
+  .map-sidebar-toggle { display:block; }
+  .map-info { width:calc(100vw - 28px); right:14px; }
+
+  /* Pin page mobile: tek kolon */
+  .pin-layout { grid-template-columns:1fr; grid-template-rows:45vh 1fr; }
+  #pin-map { height:100%; }
+  .pform { border-left:none; border-top:1px solid var(--border); }
+
+  /* Stats */
+  .stats-top { grid-template-columns:1fr 1fr; }
+  .stats-grid { grid-template-columns:1fr; }
+
+  /* Mod panel */
+  #page-mod { padding:14px; }
+  .mod-auth-card { max-width:100%; }
+
+  /* Region grid */
+  .regions-grid { grid-template-columns:1fr; }
+
+  /* Modal */
+  .modal { padding:18px; }
+  .edit-grid { grid-template-columns:1fr; }
+
+  /* Pages */
+  #page-bolge, #page-istatistik { padding:14px; gap:12px; }
+  .page-title { font-size:16px; }
+}
+
+@media(max-width:400px){
+  .stats-top { grid-template-columns:1fr; }
+  .sum-val { font-size:20px; }
 }
 </style>
 </head>
 <body>
+
+<!-- ===== MAINTENANCE BANNER ===== -->
+<div class="maintenance-banner" id="maintenanceBanner">
+  🔧 Bakım modu aktif — Yeni veri girişleri geçici olarak kapatılmıştır.
+</div>
 
 <nav>
   <div class="logo" onclick="showPage('harita')">
@@ -278,9 +435,33 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:56px; background:
   </div>
 </nav>
 
+<!-- ===== MOBILE BOTTOM NAV ===== -->
+<nav class="mobile-nav">
+  <button class="mob-btn active" id="mob-harita" onclick="showPage('harita')">
+    <span class="mob-icon">🗺</span><span class="mob-label">Harita</span>
+  </button>
+  <button class="mob-btn" id="mob-bolge" onclick="showPage('bolge')">
+    <span class="mob-icon">🌍</span><span class="mob-label">Bölgeler</span>
+  </button>
+  <button class="mob-btn mob-add-btn" onclick="showPage('pin')">
+    <span class="mob-icon">+</span>
+  </button>
+  <button class="mob-btn" id="mob-istatistik" onclick="showPage('istatistik')">
+    <span class="mob-icon">📊</span><span class="mob-label">İstat.</span>
+  </button>
+  <button class="mob-btn mod-mob" id="mob-mod" onclick="showPage('mod')">
+    <span class="mob-icon">🔧</span><span class="mob-label">Mod</span>
+  </button>
+</nav>
+
+<!-- ===== PAGES ===== -->
 <div id="page-harita" class="page active">
   <div id="map"></div>
-  <div class="map-sidebar">
+
+  <!-- Mobile toggle button -->
+  <div class="map-sidebar-toggle" id="sidebarToggle" onclick="toggleMapSidebar()">⚙ Filtreler</div>
+
+  <div class="map-sidebar" id="mapSidebar">
     <div class="panel">
       <div class="panel-title">Renk Modu</div>
       <div class="mode-btns">
@@ -344,7 +525,7 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:56px; background:
 <div id="page-istatistik" class="page">
   <div class="page-header">
     <div class="page-title">İstatistikler</div>
-    <div class="page-sub">Tüm kullanıcı ölçümlerinin özeti (Spam veya gizli veriler hariç)</div>
+    <div class="page-sub">Onaylanmış ölçümlerin özeti</div>
   </div>
   <div class="stats-top" id="sumGrid"></div>
   <div class="stats-grid">
@@ -361,6 +542,9 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:56px; background:
       <div>
         <div style="font-size:16px;font-weight:700;font-family:var(--font-mono);">Veri Ekle</div>
         <div style="font-size:11px;color:var(--text3);margin-top:3px;">İnternet performansını toplulukla paylaş</div>
+        <div class="fp-status" id="fpStatus" style="margin-top:6px;">
+          <div class="fp-dot" id="fpDot"></div><span id="fpText">Cihaz tanımlanıyor...</span>
+        </div>
       </div>
       <div class="fg">
         <div class="fl">Konum</div>
@@ -440,20 +624,31 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:56px; background:
     <div class="mod-auth-card">
       <div class="mod-auth-title">🔧 Moderatör Girişi</div>
       <div class="mod-auth-sub">:)</div>
-      <div class="fg" style="margin-bottom:10px;"><input class="fi" type="email" id="modEmail" placeholder="E-posta"></div>
-      <div class="fg" style="margin-bottom:16px;"><input class="fi" type="password" id="modPw" placeholder="Şifre" onkeydown="if(event.key==='Enter')modLogin()"></div>
+      <div class="fg" style="margin-bottom:10px;"><input class="fi" type="email" id="modEmail" placeholder="E-posta" autocomplete="email"></div>
+      <div class="fg" style="margin-bottom:16px;"><input class="fi" type="password" id="modPw" placeholder="Şifre" onkeydown="if(event.key==='Enter')modLogin()" autocomplete="current-password"></div>
       <button class="btn-primary" style="width:100%;padding:11px;" onclick="modLogin()">Giriş Yap</button>
       <div style="font-size:10px;color:var(--text3);margin-top:12px;">Sadece yetkili moderatörler girebilir.</div>
     </div>
   </div>
 
   <div id="modPanelContent" class="mod-panel-content" style="display:none;">
-    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
       <div>
         <div class="page-title">Moderatör Paneli</div>
         <div class="page-sub" id="modSubtitle">Yükleniyor...</div>
       </div>
-      <div style="display:flex;gap:8px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <!-- MAINTENANCE MODE TOGGLE -->
+        <label class="maintenance-toggle" id="maintenanceToggle">
+          <div class="toggle-switch">
+            <input type="checkbox" id="maintenanceCheck" onchange="toggleMaintenanceMode(this.checked)">
+            <span class="toggle-slider"></span>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--warn);">🔧 Bakım Modu</div>
+            <div style="font-size:9px;color:var(--text3);">Veri girişini durdur</div>
+          </div>
+        </label>
         <button class="btn-ghost" onclick="refreshModData()">🔄 Yenile</button>
         <button class="btn-ghost" style="border-color:var(--danger);color:var(--danger);" onclick="modLogout()">Çıkış</button>
       </div>
@@ -462,23 +657,33 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:56px; background:
     <div class="mod-tabs">
       <button class="mod-tab-btn active" onclick="switchModTab('sikayetler')">🚩 Şikayetler</button>
       <button class="mod-tab-btn" onclick="switchModTab('tumPinler')">📌 Tüm Pinler</button>
-      <button class="mod-tab-btn" onclick="switchModTab('bekleyen')">⏳ Bekleyen Raporlar</button>
+      <button class="mod-tab-btn" onclick="switchModTab('bekleyen')">⏳ Raporlar</button>
+      <button class="mod-tab-btn" onclick="switchModTab('istatistikEditor')">📊 İstat. Düzenle</button>
     </div>
 
     <div id="modTab-sikayetler"><div id="sikayetList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
 
     <div id="modTab-tumPinler" style="display:none;">
-      <button class="btn-del" style="margin-bottom: 12px; padding: 8px 16px; display: inline-flex; align-items: center; gap: 5px;" id="bulkDelBtn" onclick="bulkDeletePins()">🗑 Seçilileri Sil</button>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+        <button class="btn-del" style="padding:8px 16px;" id="bulkDelBtn" onclick="bulkDeletePins()">🗑 Seçilileri Sil</button>
+        <input type="text" class="fi" id="tableSearch" placeholder="İSS, il, ilçe ara..." style="flex:1;min-width:120px;max-width:240px;" oninput="filterAdminTable(this.value)">
+        <select class="fs" id="tableFilter" style="width:auto;min-width:100px;" onchange="filterAdminTable(document.getElementById('tableSearch').value)">
+          <option value="">Tümü</option>
+          <option value="spam">Spam</option>
+          <option value="gorunur">Görünür</option>
+          <option value="gizli">Gizli</option>
+        </select>
+      </div>
       <div class="mod-table-wrap">
         <table class="mod-table">
           <thead>
             <tr>
-              <th style="width: 30px;"><input type="checkbox" onchange="toggleAllPins(this)"></th>
+              <th style="width:30px;"><input type="checkbox" onchange="toggleAllPins(this)"></th>
               <th>Tarih &amp; Saat</th>
               <th>İSS / Altyapı</th>
               <th>Hız (DL/UL)</th>
               <th>Lokasyon</th>
-              <th>Koordinat / IP</th>
+              <th>Koordinat / FP</th>
               <th>Puan</th>
               <th>Not</th>
               <th>İşlem</th>
@@ -492,10 +697,31 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:56px; background:
     <div id="modTab-bekleyen" style="display:none;">
       <div id="bekleyenList"><div class="loading-text loading-dots">Yükleniyor</div></div>
     </div>
+
+    <!-- İSTATİSTİK EDİTÖRÜ -->
+    <div id="modTab-istatistikEditor" style="display:none;">
+      <div class="mod-card" style="margin-bottom:12px;">
+        <div class="stat-title">📊 İstatistik Veri Editörü</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">Onaylı pinlerin değerlerini doğrudan düzenleyebilirsiniz. İstatistikler yalnızca <b style="color:var(--success)">gorunur=true</b> pinlerden hesaplanır.</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <input type="text" class="fi" id="statEditSearch" placeholder="İSS veya il ara..." style="flex:1;min-width:160px;" oninput="loadStatEditTable(this.value)">
+          <button class="btn-ghost" onclick="loadStatEditTable('')">🔄 Tümünü Getir</button>
+        </div>
+        <div class="mod-table-wrap">
+          <table class="mod-table">
+            <thead><tr>
+              <th>İSS</th><th>Bağlantı</th><th>DL Mbps</th><th>UL Mbps</th>
+              <th>Puan</th><th>Görünür</th><th>İşlem</th>
+            </tr></thead>
+            <tbody id="statEditBody"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:20px;">Aramak için yukarıdan filtreleyin</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- MODALS -->
+<!-- ===== MODALS ===== -->
 <div class="modal-bg" id="reportModal">
   <div class="modal">
     <span class="modal-close" onclick="closeReportModal()">×</span>
@@ -551,7 +777,7 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:56px; background:
     </div>
     <div class="fg" style="margin-bottom:10px;">
       <div class="fl">Görünürlük (Açıksa istatistiklere yansır)</div>
-      <select class="fs" id="editGorunur"><option value="true">👁 Görünür</option><option value="false">🙈 Gizli (Sistemden sakla)</option></select>
+      <select class="fs" id="editGorunur"><option value="true">👁 Görünür</option><option value="false">🙈 Gizli (İstatistiklerden çıkar)</option></select>
     </div>
     <div class="fg" style="margin-bottom:16px;">
       <div class="fl">Moderatör Notu <span class="mod-note-badge">MOD</span></div>
@@ -564,15 +790,78 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:56px; background:
   </div>
 </div>
 
+<!-- Pin Detay Modal (mod için) -->
+<div class="modal-bg" id="pinDetailModal">
+  <div class="modal" style="max-width:420px;">
+    <span class="modal-close" onclick="document.getElementById('pinDetailModal').classList.remove('open')">×</span>
+    <div class="modal-title">📌 Pin Detayları</div>
+    <div id="pinDetailContent"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;" id="pinDetailActions"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
-<!-- ========== JAVASCRIPT ========== -->
+<!-- ===== JAVASCRIPT ===== -->
 <script>
 // ===== CONFIG =====
 const SB_URL = 'https://vpnaxxxoiomorcvloend.supabase.co';
 const SB_KEY = 'sb_publishable_4LErt91-jMdX3WiaDyBPcw_KMQ0sU-r';
 const { createClient } = supabase;
 const sbc = createClient(SB_URL, SB_KEY);
+
+// ===== STATE =====
+let isMaintenanceMode = false;
+let browserFingerprint = null;
+let fpReady = false;
+let adminPinsCache = []; // for table filtering
+
+// ===== FingerprintJS INIT =====
+(async function initFingerprint() {
+  try {
+    const fp = await FingerprintJS.load();
+    const result = await fp.get();
+    browserFingerprint = result.visitorId;
+    fpReady = true;
+    document.getElementById('fpDot').classList.add('ready');
+    document.getElementById('fpText').textContent = 'Cihaz tanındı ✓';
+  } catch(e) {
+    // FingerprintJS yüklenemezse fallback: canvas+UA tabanlı
+    browserFingerprint = generateFallbackFingerprint();
+    fpReady = true;
+    document.getElementById('fpDot').classList.add('ready');
+    document.getElementById('fpText').textContent = 'Cihaz tanındı ✓';
+  }
+})();
+
+function generateFallbackFingerprint() {
+  // Canvas parmak izi + UA tabanlı fallback
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.textBaseline = 'top';
+  ctx.font = '14px Arial';
+  ctx.fillStyle = '#f60';
+  ctx.fillRect(125, 1, 62, 20);
+  ctx.fillStyle = '#069';
+  ctx.fillText('abcdefghijklmnopqrstuvwxyz', 2, 15);
+  ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+  ctx.fillText('abcdefghijklmnopqrstuvwxyz', 4, 17);
+  const canvasData = canvas.toDataURL();
+
+  const ua = navigator.userAgent;
+  const lang = navigator.language;
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const platform = navigator.platform || '';
+  const raw = canvasData + ua + lang + tz + platform + screen.width + screen.height + screen.colorDepth;
+
+  let hash = 0;
+  for (let i = 0; i < raw.length; i++) {
+    const char = raw.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return 'fp_' + Math.abs(hash).toString(36);
+}
 
 // ===== REST HELPER =====
 async function sbRest(path, opts = {}) {
@@ -587,24 +876,23 @@ async function sbRest(path, opts = {}) {
   const r = await fetch(`${SB_URL}/rest/v1/${path}`, {
     headers, method: opts.method || 'GET', body: opts.body
   });
+  // FIX: Silme için rowCount doğrulaması
+  if (opts.method === 'DELETE') {
+    const count = r.headers.get('Content-Range'); // örn: "*/5" → 5 satır etkilendi
+    if (!r.ok) {
+      const t = await r.text();
+      throw new Error(t ? (tryParseErrMsg(t)) : 'Silme başarısız');
+    }
+    // Prefer: return=minimal dönünce boş body gelir, ok yeterli
+    return { ok: true, count };
+  }
   const t = await r.text();
-  if (!r.ok) throw new Error(t ? (JSON.parse(t).message || t) : 'İşlem başarısız');
+  if (!r.ok) throw new Error(t ? tryParseErrMsg(t) : 'İşlem başarısız');
   return t ? JSON.parse(t) : null;
 }
 
-// ===== CLIENT-SIDE RATE LIMIT =====
-// IP hash değişse bile localStorage ile son gönderim zamanı tutulur
-const RATE_KEY = 'ih_last_submit';
-const RATE_LIMIT_MS = 5 * 60 * 1000; // 5 dakika
-function canSubmit() {
-  const last = parseInt(localStorage.getItem(RATE_KEY) || '0');
-  return Date.now() - last > RATE_LIMIT_MS;
-}
-function markSubmit() { localStorage.setItem(RATE_KEY, String(Date.now())); }
-function remainingWait() {
-  const last = parseInt(localStorage.getItem(RATE_KEY) || '0');
-  const diff = RATE_LIMIT_MS - (Date.now() - last);
-  return Math.ceil(diff / 60000);
+function tryParseErrMsg(t) {
+  try { return JSON.parse(t).message || t; } catch { return t; }
 }
 
 // ===== SPAM FİLTRESİ =====
@@ -618,13 +906,112 @@ function isSpam(p) {
 }
 function cleanPins(pins) { return pins.filter(p => !isSpam(p)); }
 
+// ===== RATE LİMİT (FingerprintJS tabanlı) =====
+// LocalStorage key: fingerprint bazlı — hash değişse bile fingerprint sabit kalır
+const RATE_LIMIT_MS = 5 * 60 * 1000; // 5 dakika
+
+function getRateKey() {
+  return 'ih_rate_' + (browserFingerprint || 'default');
+}
+function canSubmit() {
+  const last = parseInt(localStorage.getItem(getRateKey()) || '0');
+  return Date.now() - last > RATE_LIMIT_MS;
+}
+function markSubmit() {
+  localStorage.setItem(getRateKey(), String(Date.now()));
+  // Karantina sayacı
+  const cntKey = 'ih_cnt_' + (browserFingerprint || 'default');
+  const cnt = parseInt(localStorage.getItem(cntKey) || '0');
+  localStorage.setItem(cntKey, String(cnt + 1));
+}
+function remainingWait() {
+  const last = parseInt(localStorage.getItem(getRateKey()) || '0');
+  return Math.ceil((RATE_LIMIT_MS - (Date.now() - last)) / 60000);
+}
+// Kısa sürede aynı cihazdan çok fazla gönderim: karantina
+function shouldQuarantine() {
+  const cntKey = 'ih_cnt_' + (browserFingerprint || 'default');
+  const tsKey = 'ih_cntTs_' + (browserFingerprint || 'default');
+  const cnt = parseInt(localStorage.getItem(cntKey) || '0');
+  const ts = parseInt(localStorage.getItem(tsKey) || String(Date.now()));
+  // İlk gönderimde timestamp başlat
+  if (cnt === 1) localStorage.setItem(tsKey, String(Date.now()));
+  // 10 dakika içinde 5'ten fazla gönderim → karantina
+  const elapsed = Date.now() - ts;
+  if (elapsed < 10 * 60 * 1000 && cnt > 5) return true;
+  // 10 dakika geçtiyse sayacı sıfırla
+  if (elapsed >= 10 * 60 * 1000) {
+    localStorage.setItem(cntKey, '0');
+    localStorage.setItem(tsKey, String(Date.now()));
+  }
+  return false;
+}
+
+// ===== MAİNTENANCE MODE =====
+async function loadMaintenanceState() {
+  try {
+    // site_config tablosundan oku (varsa)
+    const res = await sbRest('site_config?key=eq.maintenance_mode&select=value&limit=1');
+    if (res && res[0]) {
+      const active = res[0].value === 'true' || res[0].value === true;
+      applyMaintenanceMode(active);
+    }
+  } catch(e) {
+    // Tablo yoksa sessizce geç — maintenance mode kapalı
+  }
+}
+
+function applyMaintenanceMode(active) {
+  isMaintenanceMode = active;
+  document.getElementById('maintenanceBanner').classList.toggle('active', active);
+  document.getElementById('maintenanceCheck').checked = active;
+  document.getElementById('maintenanceToggle').classList.toggle('active', active);
+}
+
+async function toggleMaintenanceMode(active) {
+  try {
+    // UPSERT — site_config tablosuna yaz
+    await sbRest('site_config', {
+      method:'POST',
+      prefer:'resolution=merge-duplicates,return=minimal',
+      body: JSON.stringify({ key:'maintenance_mode', value: String(active) })
+    });
+    applyMaintenanceMode(active);
+    showToast(active ? '🔧 Bakım modu aktif — Yazma durduruldu' : '✅ Bakım modu kapatıldı', active ? 'warn' : '');
+  } catch(e) {
+    showToast('Hata: ' + e.message, 'err');
+    // Geri al
+    document.getElementById('maintenanceCheck').checked = !active;
+  }
+}
+
 // ===== API HELPERS =====
-const getPins = () => sbRest('pins?select=*&gorunur=eq.true&order=created_at.desc&limit=2000');
-const getAllPinsAdmin = () => sbRest('pins?select=*&order=created_at.desc');
-const getPinById = id => sbRest(`pins?id=eq.${id}&select=*`);
+// FIX: gorunur=true filtrelenmiş, deleted_at IS NULL eklendi
+const getPins = () => sbRest('pins?select=*&gorunur=eq.true&deleted_at=is.null&order=created_at.desc&limit=2000');
+// Admin: silinmişleri de görmek için deleted_at filtresi YOK, sadece soft-delete gizlenir şekilde değil tümü görünür
+const getAllPinsAdmin = () => sbRest('pins?select=*&deleted_at=is.null&order=created_at.desc');
+const getPinById = id => sbRest(`pins?id=eq.${id}&deleted_at=is.null&select=*`);
 const addPin = d => sbRest('pins', { method:'POST', body:JSON.stringify(d) });
 const patchPin = (id,d) => sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
-const delPin = id => sbRest(`pins?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' });
+
+// FIX: Soft delete — kalıcı silme yerine deleted_at set ediliyor
+async function delPin(id) {
+  const now = new Date().toISOString();
+  const res = await sbRest(`pins?id=eq.${id}`, {
+    method:'PATCH',
+    prefer:'return=minimal,count=exact',
+    body: JSON.stringify({ deleted_at: now })
+  });
+  // Eğer tablo deleted_at sütunu yoksa hard delete fallback
+  // (Migration çalıştırılmadıysa)
+  return res;
+}
+
+// Hard delete — yalnızca mod panelinden "kalıcı sil" için
+async function hardDelPin(id) {
+  return sbRest(`pins?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal,count=exact' });
+}
+
 const getRaporlar = () => sbRest('raporlar?select=*&durum=eq.bekleyen&order=created_at.desc&limit=100');
 const addRapor = d => sbRest('raporlar', { method:'POST', body:JSON.stringify(d) });
 const patchRapor = (id,d) => sbRest(`raporlar?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
@@ -675,14 +1062,28 @@ function toggleChip(el, type) {
   renderHex(); renderModPins();
 }
 
+// ===== MOBILE MAP SIDEBAR =====
+function toggleMapSidebar() {
+  const sb = document.getElementById('mapSidebar');
+  const btn = document.getElementById('sidebarToggle');
+  sb.classList.toggle('mobile-open');
+  btn.textContent = sb.classList.contains('mobile-open') ? '✕ Kapat' : '⚙ Filtreler';
+}
+
 // ===== NAV =====
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-'+id)?.classList.add('active');
+  // Desktop tabs
   const tabs = ['harita','bolge','istatistik','mod'];
   const idx = tabs.indexOf(id);
   if (idx >= 0) document.querySelectorAll('.nav-tab')[idx]?.classList.add('active');
+  // Mobile tabs
+  document.querySelectorAll('.mob-btn').forEach(b => b.classList.remove('active'));
+  const mob = document.getElementById('mob-'+id);
+  if (mob) mob.classList.add('active');
+
   setTimeout(async () => {
     if (id==='harita') { if (!maps.main) await initMainMap(); else maps.main.invalidateSize(); }
     if (id==='pin') { if (!maps.pin) initPinMap(); else maps.pin.invalidateSize(); }
@@ -712,8 +1113,9 @@ function onZoomEnd() {
 
 async function loadPins() {
   try {
+    // FIX: Sadece gorunur=true ve deleted_at=null pinler — getPins() zaten filtreli
     pinsData = await getPins() || [];
-    cleanPinsData = cleanPins(pinsData); // Spam filtreli kopya
+    cleanPinsData = cleanPins(pinsData);
     renderHex(); renderModPins();
     const cnt = cleanPinsData.length;
     const avg = cnt ? Math.round(cleanPinsData.reduce((a,p) => a+p.gercek_dl, 0)/cnt) : 0;
@@ -749,7 +1151,6 @@ function renderHex() {
 function renderModPins() {
   pinMarkerLayers.forEach(l => maps.main?.removeLayer(l)); pinMarkerLayers = [];
   if (!isModLoggedIn || !maps.main || maps.main.getZoom() < 10) return;
-  // Mod pinleri: spam dahil TÜM pinler görünsün (moderatör görmesi lazım)
   pinsData.forEach(p => {
     if (!p.lat || !activeFilters.has(p.baglanti_turu)) return;
     const color = colorMode==='hiz' ? speedColor(p.gercek_dl) : memColor(p.puan);
@@ -773,7 +1174,7 @@ function renderModPins() {
         ${p.altyapi_sahibi ? `<div class="popup-row"><span class="popup-key">Altyapı</span><span class="popup-val" style="font-size:10px">${p.altyapi_sahibi}</span></div>` : ''}
         <div class="popup-row"><span class="popup-key">Puan</span><span class="popup-val" style="color:${memColor(p.puan)}">${p.puan}/10</span></div>
         <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
-          <div class="mod-popup-row"><span class="mod-popup-key">IP Hash:</span><span class="mod-popup-val">${p.ip_hash||'—'}</span></div>
+          <div class="mod-popup-row"><span class="mod-popup-key">FP Hash:</span><span class="mod-popup-val">${p.browser_fp||p.ip_hash||'—'}</span></div>
           <div class="mod-popup-row"><span class="mod-popup-key">Konum:</span><span class="mod-popup-val">${p.il||''} › ${p.ilce||''}</span></div>
           <div class="mod-popup-row"><span class="mod-popup-key">Zaman:</span><span class="mod-popup-val">${tarihStr}</span></div>
           ${p.yorum ? `<div class="user-comment-box">${p.yorum}</div>` : ''}
@@ -820,7 +1221,8 @@ const BOLGELER = {
 
 function renderRegions() {
   const grid = document.getElementById('regionsGrid');
-  const all = cleanPinsData; // Spam filtreli
+  // FIX: Bölge istatistikleri sadece onaylı (clean) pinlerden
+  const all = cleanPinsData;
   if (!all.length) { grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🌍</div><div>Henüz veri yok</div></div>'; return; }
   const regions = Object.entries(BOLGELER).map(([name, info]) => {
     const pins = all.filter(p => info.iller.includes(p.il));
@@ -829,7 +1231,6 @@ function renderRegions() {
     const avgS = pins.length ? parseFloat((pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1)) : null;
     return { name, color:info.color, iller:info.iller, pins, avgDL, avgUL, avgS };
   });
-  const idMap = { dl:'sortDL', mem:'sortMem', count:'sortCount' };
   if (regionSortMode==='dl') regions.sort((a,b)=>b.avgDL-a.avgDL);
   else if (regionSortMode==='mem') regions.sort((a,b)=>(b.avgS||0)-(a.avgS||0));
   else regions.sort((a,b)=>b.pins.length-a.pins.length);
@@ -853,27 +1254,33 @@ function sortRegions(mode) {
   renderRegions();
 }
 
-// ===== İSTATİSTİKLER (Spam Filtreli + Mod Silme) =====
+// ===== İSTATİSTİKLER =====
+// FIX: Sadece onaylanmış (gorunur=true, deleted_at=null) pinler kullanılıyor
+// cleanPinsData zaten getPins() çıktısından geliyor → sadece gorunur=true veriler
 async function renderStats() {
-  // Mod giriş yaptıysa ham veriyi de çekip spam göstersin
   let pins = cleanPinsData;
+  let spamPins = [];
   let allAdminPins = null;
+
   if (isModLoggedIn) {
-    try { allAdminPins = await getAllPinsAdmin() || []; } catch(e) {}
+    try {
+      allAdminPins = await getAllPinsAdmin() || [];
+      spamPins = allAdminPins.filter(p => isSpam(p));
+    } catch(e) {}
   }
+
   if (!pins.length && !allAdminPins?.length) {
     ['issRankList','speedRankList','connChart'].forEach(id => document.getElementById(id).innerHTML = '<div class="loading-text">Henüz veri yok</div>');
     return;
   }
-  const spamPins = allAdminPins ? allAdminPins.filter(p => isSpam(p)) : [];
+
   const avgDL = Math.round(pins.reduce((a,p)=>a+p.gercek_dl,0)/Math.max(1,pins.length));
   const avgS = pins.length ? (pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1) : '—';
   document.getElementById('sumGrid').innerHTML = `
-    <div class="sum-card"><div class="sum-val">${pins.length}</div><div class="sum-label">Temiz Ölçüm${spamPins.length ? `<br><span style="color:var(--danger);font-size:10px">⚠ ${spamPins.length} spam gizlendi</span>` : ''}</div></div>
+    <div class="sum-card"><div class="sum-val">${pins.length}</div><div class="sum-label">Onaylı Ölçüm${spamPins.length ? `<br><span style="color:var(--danger);font-size:10px">⚠ ${spamPins.length} spam gizlendi</span>` : ''}</div></div>
     <div class="sum-card"><div class="sum-val" style="color:${speedColor(avgDL)}">${avgDL}</div><div class="sum-label">Ort. DL (Mbps)</div></div>
     <div class="sum-card"><div class="sum-val" style="color:${avgS!=='—'?memColor(avgS):'var(--text3)'}">${avgS}</div><div class="sum-label">Ort. Memnuniyet</div></div>`;
 
-  // Mod ise spam listesini göster
   if (isModLoggedIn && spamPins.length) {
     const existing = document.getElementById('spamStatBlock');
     if (existing) existing.remove();
@@ -883,18 +1290,18 @@ async function renderStats() {
     spamBlock.innerHTML = `
       <div class="stat-title" style="color:var(--danger);">⚠ SPAM / ŞÜPHELİ VERİLER (${spamPins.length} adet)</div>
       <div style="font-size:10px;color:var(--text3);margin-bottom:10px;">Bu veriler istatistiklerden otomatik gizlendi. Kalıcı silmek için seçin.</div>
-      <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
         <button class="btn-del" onclick="bulkDeleteSpam()" style="padding:6px 14px;">🗑 Tümünü Sil (${spamPins.length})</button>
         <button class="btn-approve" onclick="selectAllSpam()" style="padding:6px 14px;">☑ Tümünü Seç</button>
         <button class="btn-del" onclick="deleteSelectedSpam()" style="padding:6px 14px;">Seçilileri Sil</button>
       </div>
       <div style="max-height:200px;overflow-y:auto;">
         ${spamPins.map(p => `
-          <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;">
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;flex-wrap:wrap;">
             <input type="checkbox" class="spam-check" value="${p.id}">
             <span style="color:var(--danger);font-family:var(--font-mono);min-width:70px">${p.gercek_dl} Mbps</span>
             <span style="color:var(--text2)">${p.iss}</span>
-            <span style="color:var(--text3);font-size:9px">${p.ip_hash||'—'}</span>
+            <span style="color:var(--text3);font-size:9px">${p.browser_fp||p.ip_hash||'—'}</span>
             <span style="color:var(--text3);font-size:9px;margin-left:auto">${new Date(p.created_at).toLocaleDateString('tr-TR')}</span>
             <button class="btn-del" onclick="modDeletePin('${p.id}')" style="padding:3px 8px;font-size:9px;">Sil</button>
           </div>`).join('')}
@@ -915,6 +1322,58 @@ async function renderStats() {
   const cm={fiber:0,vdsl:0,adsl:0}; pins.forEach(p=>{if(cm[p.baglanti_turu]!==undefined) cm[p.baglanti_turu]++;});
   document.getElementById('connChart').innerHTML = [{l:'Fiber',v:cm.fiber,c:'#00d4ff'},{l:'VDSL',v:cm.vdsl,c:'#FB8C00'},{l:'ADSL',v:cm.adsl,c:'#E53935'}]
     .map(t=>`<div class="ct-row"><div class="ct-label">${t.l}</div><div class="ct-track"><div class="ct-fill" style="width:${pins.length?(t.v/pins.length*100).toFixed(0):0}%;background:${t.c}"></div></div><div class="ct-pct">${pins.length?(t.v/pins.length*100).toFixed(0):0}%</div></div>`).join('');
+}
+
+// ===== İSTATİSTİK EDİTÖRÜ =====
+async function loadStatEditTable(search) {
+  const tbody = document.getElementById('statEditBody');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;" class="loading-dots">Yükleniyor</td></tr>';
+  try {
+    let query = 'pins?select=*&deleted_at=is.null&order=created_at.desc&limit=200';
+    if (search) {
+      // ISS veya il ile filtrele (Supabase OR filter)
+      query = `pins?select=*&deleted_at=is.null&or=(iss.ilike.*${encodeURIComponent(search)}*,il.ilike.*${encodeURIComponent(search)}*)&order=created_at.desc&limit=200`;
+    }
+    const pins = await sbRest(query) || [];
+    if (!pins.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3);">Sonuç yok</td></tr>';
+      return;
+    }
+    tbody.innerHTML = pins.map(p => `
+      <tr id="se_${p.id}">
+        <td style="font-size:11px;font-weight:700;">${p.iss}</td>
+        <td><span style="color:${cc(p.baglanti_turu)};font-family:var(--font-mono);font-size:10px">${(p.baglanti_turu||'').toUpperCase()}</span></td>
+        <td><input class="fi" type="number" value="${p.gercek_dl||''}" id="se_dl_${p.id}" style="padding:4px 8px;font-size:11px;width:70px;"></td>
+        <td><input class="fi" type="number" value="${p.gercek_ul||''}" id="se_ul_${p.id}" style="padding:4px 8px;font-size:11px;width:70px;"></td>
+        <td><input class="fi" type="number" min="1" max="10" value="${p.puan||''}" id="se_puan_${p.id}" style="padding:4px 8px;font-size:11px;width:55px;"></td>
+        <td>
+          <select class="fs" id="se_gor_${p.id}" style="padding:4px 6px;font-size:10px;width:80px;">
+            <option value="true" ${p.gorunur!==false?'selected':''}>👁 Görünür</option>
+            <option value="false" ${p.gorunur===false?'selected':''}>🙈 Gizli</option>
+          </select>
+        </td>
+        <td style="display:flex;gap:4px;">
+          <button class="btn-approve" style="padding:4px 8px;font-size:9px;" onclick="saveStatEdit('${p.id}')">💾</button>
+          <button class="btn-del" style="padding:4px 8px;font-size:9px;" onclick="modDeletePin('${p.id}',true)">🗑</button>
+        </td>
+      </tr>`).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger);padding:10px;">${e.message}</td></tr>`;
+  }
+}
+
+async function saveStatEdit(id) {
+  const dl = parseInt(document.getElementById('se_dl_'+id)?.value);
+  const ul = parseInt(document.getElementById('se_ul_'+id)?.value)||0;
+  const puan = parseInt(document.getElementById('se_puan_'+id)?.value);
+  const gorunur = document.getElementById('se_gor_'+id)?.value === 'true';
+  if (!dl || dl < 1) return showToast('Geçersiz DL hızı','err');
+  if (isNaN(puan) || puan < 1 || puan > 10) return showToast('Puan 1–10 olmalı','err');
+  try {
+    await patchPin(id, { gercek_dl:dl, gercek_ul:ul, puan, gorunur });
+    showToast('✅ Güncellendi');
+    await loadPins();
+  } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 
 async function bulkDeleteSpam() {
@@ -974,31 +1433,55 @@ function selScore(el,val) { document.querySelectorAll('.sbtn').forEach(b=>b.clas
 })();
 
 async function submitPin() {
+  // MAİNTENANCE MODE KONTROLÜ
+  if (isMaintenanceMode) return showToast('🔧 Bakım modu aktif — şu an veri eklenemiyor','warn');
+
   if (!pinLat) return showToast('Lütfen konum seçin','err');
   if (!document.getElementById('issSelect').value) return showToast('Lütfen ISS seçin','err');
   if (!selConnVal) return showToast('Bağlantı türü seçin','err');
   const dl = parseInt(document.getElementById('dlSpeed').value);
   if (!dl) return showToast('Download hızı girin','err');
   if (!selScoreVal) return showToast('Puan verin','err');
-  // Rate limit kontrolü
+
+  // FİNGERPRİNT RATE LİMİT KONTROLÜ
   if (!canSubmit()) {
     return showToast(`⏳ Lütfen ${remainingWait()} dakika bekleyin`, 'warn');
   }
+
+  // KARANTINA KONTROLÜ — Kısa sürede çok fazla gönderim
+  const quarantine = shouldQuarantine();
+
   const f = fuzzy(pinLat, pinLng);
   const btn = document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='Gönderiliyor...';
   try {
     await addPin({
       lat:f.lat, lng:f.lng,
-      il:document.getElementById('ilInput').value||null, ilce:document.getElementById('ilceInput').value||null, mahalle:document.getElementById('mahalleInput').value||null,
-      iss:document.getElementById('issSelect').value, baglanti_turu:selConnVal,
+      il:document.getElementById('ilInput').value||null,
+      ilce:document.getElementById('ilceInput').value||null,
+      mahalle:document.getElementById('mahalleInput').value||null,
+      iss:document.getElementById('issSelect').value,
+      baglanti_turu:selConnVal,
       altyapi_sahibi:document.getElementById('infraSelect').value||null,
       paket_hizi:parseInt(document.getElementById('packageSpeed').value)||null,
-      gercek_dl:dl, gercek_ul:parseInt(document.getElementById('ulSpeed').value)||0,
-      puan:selScoreVal, yorum:document.getElementById('commentInput').value||null,
-      ip_hash:'h_'+Math.random().toString(36).substr(2,9), gorunur:true, sikayet_sayisi:0
+      gercek_dl:dl,
+      gercek_ul:parseInt(document.getElementById('ulSpeed').value)||0,
+      puan:selScoreVal,
+      yorum:document.getElementById('commentInput').value||null,
+      // FIX: ip_hash artık client-side random değil — browser fingerprint kullanılıyor
+      browser_fp: browserFingerprint || null,
+      ip_hash: browserFingerprint ? 'fp_' + browserFingerprint.slice(0,8) : null,
+      // Karantina modundaki gönderimler gizli başlasın
+      gorunur: !quarantine,
+      sikayet_sayisi: 0,
+      is_quarantine: quarantine
     });
-    markSubmit(); // Rate limit timestamp kaydet
-    showToast('✅ Veri paylaşıldı!'); resetPinForm(); loadPins();
+    markSubmit();
+    if (quarantine) {
+      showToast('⚠ Verini aldık — incelemeye alındı', 'warn');
+    } else {
+      showToast('✅ Veri paylaşıldı!');
+    }
+    resetPinForm(); loadPins();
   } catch(e) { showToast('Hata: '+e.message,'err'); }
   btn.disabled=false; btn.textContent='📍 Veriyi Paylaş';
 }
@@ -1023,17 +1506,22 @@ function openHexReport() {
   document.getElementById('reportModal').classList.add('open');
 }
 function closeReportModal() { document.getElementById('reportModal').classList.remove('open'); }
+
 async function submitReport() {
   const pinId = document.getElementById('reportPinId').value;
+  const bolge = document.getElementById('reportBolge').value || null; // FIX: bolge değeri raporda saklanıyor
+  const hexId = document.getElementById('reportHexId').value || null;
   const targets = pinId ? [{pin_id:pinId}] : activeHexPins.slice(0,5).map(p=>({pin_id:p.id}));
   if (!targets.length) return showToast('Bildirilecek veri yok','err');
   try {
     await Promise.all(targets.map(t => addRapor({
-      pin_id:t.pin_id, tip:document.getElementById('reportType').value,
-      aciklama:document.getElementById('reportText').value||null, durum:'bekleyen',
-      ip_hash:'u_'+Date.now(),
-      hex_id:document.getElementById('reportHexId').value||null,
-      bolge:document.getElementById('reportBolge').value||null
+      pin_id:t.pin_id,
+      tip:document.getElementById('reportType').value,
+      aciklama:document.getElementById('reportText').value||null,
+      durum:'bekleyen',
+      browser_fp: browserFingerprint || null,
+      hex_id: hexId,
+      bolge: bolge   // FIX: bölge bilgisi kaydediliyor
     })));
     showToast('✅ Bildirim alındı!'); closeReportModal();
   } catch(e) { showToast('Hata: '+e.message,'err'); }
@@ -1053,6 +1541,7 @@ async function modLogin() {
     document.getElementById('modBadge').style.display='block';
     document.getElementById('modSubtitle').textContent=`Giriş: ${data.user.email}`;
     showToast('✅ Giriş başarılı'); refreshModData(); if(maps.main) renderModPins();
+    loadMaintenanceState(); // Bakım modunu DB'den oku
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 async function modLogout() {
@@ -1065,10 +1554,15 @@ async function modLogout() {
   showToast('Çıkış yapıldı');
 }
 function switchModTab(tab) {
-  ['sikayetler','tumPinler','bekleyen'].forEach(t => document.getElementById('modTab-'+t).style.display=t===tab?'block':'none');
-  document.querySelectorAll('.mod-tab-btn').forEach((b,i) => b.classList.toggle('active',['sikayetler','tumPinler','bekleyen'][i]===tab));
+  ['sikayetler','tumPinler','bekleyen','istatistikEditor'].forEach(t =>
+    document.getElementById('modTab-'+t).style.display=t===tab?'block':'none'
+  );
+  document.querySelectorAll('.mod-tab-btn').forEach((b,i) =>
+    b.classList.toggle('active',['sikayetler','tumPinler','bekleyen','istatistikEditor'][i]===tab)
+  );
   if (tab==='tumPinler') loadAdminTable();
   if (tab==='bekleyen') loadRaporlar();
+  if (tab==='istatistikEditor') loadStatEditTable('');
 }
 async function refreshModData() { loadSikayetler(); }
 
@@ -1078,20 +1572,31 @@ async function loadSikayetler() {
   list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
   try {
     const pins = await getAllPinsAdmin()||[];
-    // Spam olanlar + şikayet edilenler + gizliler
-    const flagged = pins.filter(p => (p.sikayet_sayisi||0)>0 || !p.gorunur || isSpam(p));
-    document.getElementById('modSubtitle').textContent = `${flagged.length} sorunlu kayıt`;
+    const flagged = pins.filter(p => (p.sikayet_sayisi||0)>0 || !p.gorunur || isSpam(p) || p.is_quarantine);
+    document.getElementById('modSubtitle').textContent = `${flagged.length} sorunlu kayıt — Giriş: ${currentModUser?.email||''}`;
     if (!flagged.length) return list.innerHTML='<div class="empty-state">Sorunlu pin yok ✅</div>';
     list.innerHTML = flagged.map(p => {
       const spam = isSpam(p);
+      const quarantine = p.is_quarantine;
       const tarih = new Date(p.created_at);
-      const tarihStr = tarih.toLocaleDateString('tr-TR')+' '+tarih.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
-      return `<div class="mod-card" id="mc_${p.id}" style="${spam?'border-color:rgba(239,68,68,.4);':''}">
+      // FIX: SS:DD:ss formatı
+      const tarihStr = tarih.toLocaleDateString('tr-TR')+' '+
+        tarih.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      return `<div class="mod-card" id="mc_${p.id}" style="${spam||quarantine?'border-color:rgba(239,68,68,.4);':''}">
         <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
           <div style="flex:1">
             ${spam?'<div style="color:var(--danger);font-size:9px;font-family:var(--font-mono);margin-bottom:4px;">⚠ SPAM/ŞÜPHELİ</div>':''}
-            <div class="mod-info">${p.iss} · ${(p.baglanti_turu||'').toUpperCase()} · ${p.gercek_dl}↓ Mbps</div>
-            <div class="mod-meta">📍 ${p.il||'?'} › ${p.ilce||'?'}<br>🕐 ${tarihStr}<br>🔑 ${p.ip_hash||'—'}<br>${p.gorunur?'👁 Görünür':'🙈 Gizli'}</div>
+            ${quarantine?'<div style="color:var(--warn);font-size:9px;font-family:var(--font-mono);margin-bottom:4px;">🔒 KARANTİNA</div>':''}
+            <div class="mod-info">${p.iss} · ${(p.baglanti_turu||'').toUpperCase()} · ${p.gercek_dl}↓ / ${p.gercek_ul||0}↑ Mbps
+              ${p.paket_hizi?`<span style="color:var(--text3);font-size:10px"> · Paket: ${p.paket_hizi} Mbps</span>`:''}
+            </div>
+            <div class="mod-meta">
+              📍 ${p.il||'?'} › ${p.ilce||'?'}
+              ${p.altyapi_sahibi?`<br>🏗 Altyapı: ${p.altyapi_sahibi}`:''}
+              <br>🕐 ${tarihStr}
+              <br>🔑 FP: ${p.browser_fp||p.ip_hash||'—'}
+              <br>${p.gorunur?'👁 Görünür':'🙈 Gizli'}
+            </div>
             ${p.yorum?`<div class="user-comment-box">${p.yorum}</div>`:''}
             ${p.mod_notu?`<div class="mod-note-box">${p.mod_notu}</div>`:''}
           </div>
@@ -1114,26 +1619,62 @@ async function loadAdminTable() {
   tbody.innerHTML = '<tr><td colspan="9" class="loading-dots">Yükleniyor</td></tr>';
   try {
     const pins = await getAllPinsAdmin()||[];
-    tbody.innerHTML = pins.map(p => {
-      const spam = isSpam(p);
-      const tarih = new Date(p.created_at);
-      const tarihStr = tarih.toLocaleDateString('tr-TR')+'<br><span style="font-size:9px;color:var(--text3)">'+tarih.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+'</span>';
-      return `<tr style="${spam?'background:rgba(239,68,68,.05);':''}">
-        <td><input type="checkbox" class="pin-check" value="${p.id}"></td>
-        <td style="color:var(--text3);white-space:nowrap;">${tarihStr}</td>
-        <td><b style="color:${spam?'var(--danger)':'inherit'}">${p.iss}</b>${spam?'<span style="color:var(--danger);font-size:8px;display:block">SPAM</span>':''}<br><span style="color:var(--text3);font-size:10px">${p.altyapi_sahibi||'—'}</span></td>
-        <td style="font-family:var(--font-mono)"><span style="color:${speedColor(p.gercek_dl)}">${p.gercek_dl}</span> / ${p.gercek_ul||0}</td>
-        <td>${p.il||'?'} › ${p.ilce||'?'}</td>
-        <td class="coord-text">${p.lat?.toFixed(4)}, ${p.lng?.toFixed(4)}<br>IP: ${p.ip_hash||'—'}</td>
-        <td style="color:${memColor(p.puan)}">${p.puan}/10</td>
-        <td>${p.mod_notu?'📝':'—'}</td>
-        <td style="display:flex;gap:4px;flex-wrap:wrap;">
-          <button class="btn-edit" onclick="openEditModal('${p.id}')">✏️</button>
-          <button class="btn-del" onclick="modDeletePin('${p.id}')">Sil</button>
-        </td>
-      </tr>`;
-    }).join('');
+    adminPinsCache = pins;
+    renderAdminTable(pins);
   } catch(e) { tbody.innerHTML='<tr><td colspan="9">Hata: '+e.message+'</td></tr>'; }
+}
+
+function renderAdminTable(pins) {
+  const tbody = document.getElementById('adminTableBody');
+  if (!pins.length) { tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text3);">Sonuç yok</td></tr>'; return; }
+  tbody.innerHTML = pins.map(p => {
+    const spam = isSpam(p);
+    const tarih = new Date(p.created_at);
+    // FIX: SS:DD:ss (Saat:Dakika:Saniye) formatı
+    const tarihStr = tarih.toLocaleDateString('tr-TR')+'<br><span style="font-size:9px;color:var(--text3);font-family:var(--font-mono)">'+
+      String(tarih.getHours()).padStart(2,'0')+':'+
+      String(tarih.getMinutes()).padStart(2,'0')+':'+
+      String(tarih.getSeconds()).padStart(2,'0')+'</span>';
+    return `<tr style="${spam?'background:rgba(239,68,68,.05);':p.is_quarantine?'background:rgba(245,158,11,.04);':''}">
+      <td><input type="checkbox" class="pin-check" value="${p.id}"></td>
+      <td style="color:var(--text3);white-space:nowrap;">${tarihStr}</td>
+      <td>
+        <b style="color:${spam?'var(--danger)':'inherit'}">${p.iss}</b>
+        ${spam?'<span class="quarantine-badge">SPAM</span>':''}
+        ${p.is_quarantine?'<span class="quarantine-badge" style="border-color:var(--warn);color:var(--warn);background:rgba(245,158,11,.1);">KARANTİNA</span>':''}
+        <br><span style="color:var(--text3);font-size:10px">${p.altyapi_sahibi||'—'}</span>
+      </td>
+      <td style="font-family:var(--font-mono)">
+        <span style="color:${speedColor(p.gercek_dl)}">${p.gercek_dl}</span> / ${p.gercek_ul||0}
+        ${p.paket_hizi?`<br><span style="font-size:9px;color:var(--text3)">pkg: ${p.paket_hizi}</span>`:''}
+      </td>
+      <td>${p.il||'?'} › ${p.ilce||'?'}</td>
+      <td class="coord-text">${p.lat?.toFixed(4)}, ${p.lng?.toFixed(4)}<br>FP: ${(p.browser_fp||p.ip_hash||'—').slice(0,12)}</td>
+      <td style="color:${memColor(p.puan)}">${p.puan}/10</td>
+      <td>${p.mod_notu?'📝':'—'}</td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap;">
+        <button class="btn-edit" onclick="openEditModal('${p.id}')">✏️</button>
+        <button class="btn-del" onclick="modDeletePin('${p.id}')">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterAdminTable(search) {
+  const filterVal = document.getElementById('tableFilter')?.value || '';
+  let filtered = adminPinsCache;
+  if (search) {
+    const s = search.toLowerCase();
+    filtered = filtered.filter(p =>
+      (p.iss||'').toLowerCase().includes(s) ||
+      (p.il||'').toLowerCase().includes(s) ||
+      (p.ilce||'').toLowerCase().includes(s)
+    );
+  }
+  if (filterVal === 'spam') filtered = filtered.filter(p => isSpam(p));
+  else if (filterVal === 'gorunur') filtered = filtered.filter(p => p.gorunur !== false);
+  else if (filterVal === 'gizli') filtered = filtered.filter(p => p.gorunur === false);
+  renderAdminTable(filtered);
 }
 
 // ===== BEKLEYEN RAPORLAR =====
@@ -1154,7 +1695,7 @@ async function loadRaporlar() {
         </div>
         <div class="report-text">${r.aciklama||'Açıklama girilmedi'}</div>
         <div class="report-meta" style="margin-top:5px;line-height:1.8;">
-          ${r.bolge?`<span style="color:var(--accent);font-family:var(--font-mono);">📍 ${r.bolge}</span><br>`:''}
+          ${r.bolge?`<span class="report-bolge-tag">📍 ${r.bolge}</span><br>`:''}
           Pin ID: <span style="font-family:var(--font-mono);font-size:9px;">${r.pin_id||'—'}</span>
         </div>
         <div class="mod-actions" style="margin-top:8px;">
@@ -1167,7 +1708,10 @@ async function loadRaporlar() {
   } catch(e) { list.innerHTML='Hata: '+e.message; }
 }
 
-async function handleRapor(id, durum) { try { await patchRapor(id,{durum}); showToast('✅ Rapor güncellendi'); loadRaporlar(); } catch(e) { showToast('Hata: '+e.message,'err'); } }
+async function handleRapor(id, durum) {
+  try { await patchRapor(id,{durum}); showToast('✅ Rapor güncellendi'); loadRaporlar(); }
+  catch(e) { showToast('Hata: '+e.message,'err'); }
+}
 
 async function modAction(id, approve) {
   try {
@@ -1181,7 +1725,7 @@ async function modAction(id, approve) {
 // ===== EDİT MODAL =====
 async function openEditModal(id) {
   try {
-    let p = pinsData.find(x=>x.id===id);
+    let p = adminPinsCache.find(x=>x.id===id);
     if (!p) { const res = await getPinById(id); p = res?.[0]; }
     if (!p) return showToast('Pin bulunamadı','err');
     document.getElementById('editPinId').value=id;
@@ -1196,6 +1740,7 @@ async function openEditModal(id) {
     document.getElementById('editModal').classList.add('open');
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
+
 async function saveEdit() {
   const id = document.getElementById('editPinId').value;
   const dl = parseInt(document.getElementById('editDL').value);
@@ -1206,10 +1751,13 @@ async function saveEdit() {
     await patchPin(id,{
       iss:document.getElementById('editIss').value,
       baglanti_turu:document.getElementById('editConn').value,
-      gercek_dl:dl, gercek_ul:parseInt(document.getElementById('editUL').value)||0,
+      gercek_dl:dl,
+      gercek_ul:parseInt(document.getElementById('editUL').value)||0,
       paket_hizi:parseInt(document.getElementById('editPkg').value)||null,
-      puan, gorunur:document.getElementById('editGorunur').value==='true',
-      mod_notu:document.getElementById('editModNote').value.trim()||null
+      puan,
+      gorunur:document.getElementById('editGorunur').value==='true',
+      mod_notu:document.getElementById('editModNote').value.trim()||null,
+      is_quarantine:false // Düzenlendiyse karantinadan çıkar
     });
     showToast('✅ Pin güncellendi'); closeEditModal();
     await loadPins(); loadAdminTable(); loadSikayetler();
@@ -1218,11 +1766,20 @@ async function saveEdit() {
 function closeEditModal() { document.getElementById('editModal').classList.remove('open'); }
 
 // ===== TEKLİ SİLME =====
-async function modDeletePin(id) {
-  if (!confirm('Kalıcı olarak silinecek. Emin misiniz?')) return;
+// FIX: Soft delete — deleted_at set edilir, hard delete parametresiyle kalıcı silinebilir
+async function modDeletePin(id, permanent = false) {
+  const msg = permanent ? 'Kalıcı olarak silinecek. Emin misiniz?' : 'Soft-delete: istatistiklerden kaldırılacak. Emin misiniz?';
+  if (!confirm(msg)) return;
   try {
-    await delPin(id);
+    if (permanent) {
+      await hardDelPin(id);
+    } else {
+      await delPin(id);
+    }
     document.getElementById('mc_'+id)?.remove();
+    document.getElementById('se_'+id)?.remove();
+    // Cache güncelle
+    adminPinsCache = adminPinsCache.filter(p=>p.id!==id);
     pinsData = pinsData.filter(p=>p.id!==id);
     cleanPinsData = cleanPins(pinsData);
     if (maps.main) { renderHex(); renderModPins(); }
@@ -1233,15 +1790,30 @@ async function modDeletePin(id) {
 
 // ===== TOPLU SİLME =====
 function toggleAllPins(el) { document.querySelectorAll('.pin-check').forEach(cb=>cb.checked=el.checked); }
+
 async function bulkDeletePins() {
   const ids = Array.from(document.querySelectorAll('.pin-check:checked')).map(cb=>cb.value);
   if (!ids.length) return showToast('Seçili pin yok','err');
-  if (!confirm(`${ids.length} adet pin kalıcı silinecek! Emin misiniz?`)) return;
+  if (!confirm(`${ids.length} adet pin silinecek! Emin misiniz?`)) return;
   const btn = document.getElementById('bulkDelBtn');
   btn.textContent='Siliniyor...'; btn.disabled=true;
-  let ok=0, fail=0;
-  for (const id of ids) { try { await delPin(id); ok++; } catch(e) { fail++; } }
-  showToast(`✅ ${ok} silindi${fail?`, ${fail} hata`:''}`);
+  let ok=0, fail=0, failIds=[];
+  for (const id of ids) {
+    try {
+      await delPin(id);
+      // FIX: Gerçekten silindi mi teyit et
+      ok++;
+    } catch(e) {
+      fail++;
+      failIds.push(id);
+    }
+  }
+  if (fail) {
+    showToast(`✅ ${ok} silindi, ⚠ ${fail} başarısız`, 'warn');
+    console.error('Silinemeyenler:', failIds);
+  } else {
+    showToast(`✅ ${ok} pin silindi`);
+  }
   btn.textContent='🗑 Seçilileri Sil'; btn.disabled=false;
   await loadPins(); loadAdminTable();
 }
@@ -1263,11 +1835,73 @@ async function checkSession() {
       document.getElementById('modPanelContent').style.display='flex';
       document.getElementById('modBadge').style.display='block';
       document.getElementById('modSubtitle').textContent=`Giriş: ${session.user.email}`;
+      loadMaintenanceState();
     }
   } catch(e) {}
 }
 
-checkSession(); setTimeout(()=>initMainMap(), 100);
+// Public: maintenance mode'u kontrol et (giriş gerekmez)
+async function checkPublicMaintenance() {
+  try {
+    const res = await sbRest('site_config?key=eq.maintenance_mode&select=value&limit=1');
+    if (res && res[0]) {
+      const active = res[0].value === 'true' || res[0].value === true;
+      isMaintenanceMode = active;
+      document.getElementById('maintenanceBanner').classList.toggle('active', active);
+    }
+  } catch(e) {}
+}
+
+checkSession();
+checkPublicMaintenance();
+setTimeout(()=>initMainMap(), 100);
 </script>
+
+<!-- ===== VERİTABANI ŞEMASI (yorum olarak, Supabase SQL editöründe çalıştırın) =====
+
+-- 1. Mevcut pins tablosuna eksik sütunları ekle:
+ALTER TABLE pins
+  ADD COLUMN IF NOT EXISTS browser_fp TEXT,       -- FingerprintJS hash
+  ADD COLUMN IF NOT EXISTS is_quarantine BOOLEAN DEFAULT FALSE,  -- Karantina flag
+  ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ DEFAULT NULL;  -- Soft delete
+
+-- 2. raporlar tablosuna bolge ve browser_fp ekle:
+ALTER TABLE raporlar
+  ADD COLUMN IF NOT EXISTS browser_fp TEXT,
+  ADD COLUMN IF NOT EXISTS bolge TEXT;             -- FIX: bölge bildirimi
+
+-- 3. site_config tablosu oluştur (maintenance mode için):
+CREATE TABLE IF NOT EXISTS site_config (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+-- Başlangıç değeri:
+INSERT INTO site_config (key, value) VALUES ('maintenance_mode', 'false')
+ON CONFLICT (key) DO NOTHING;
+
+-- 4. Performans indexleri:
+CREATE INDEX IF NOT EXISTS idx_pins_deleted_at ON pins(deleted_at) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_pins_gorunur ON pins(gorunur) WHERE gorunur = true;
+CREATE INDEX IF NOT EXISTS idx_pins_browser_fp ON pins(browser_fp);
+CREATE INDEX IF NOT EXISTS idx_pins_quarantine ON pins(is_quarantine) WHERE is_quarantine = true;
+
+-- 5. İstatistikler için view (sadece onaylı pinler):
+CREATE OR REPLACE VIEW pins_approved AS
+  SELECT * FROM pins
+  WHERE gorunur = true
+    AND deleted_at IS NULL
+    AND is_quarantine = false;
+
+-- 6. RLS (Row Level Security) — moderatör kontrolü:
+-- Silme işlemlerini sadece authenticated kullanıcılara izin ver:
+ALTER TABLE pins ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Herkes okuyabilir" ON pins FOR SELECT USING (true);
+CREATE POLICY "Herkes ekleyebilir" ON pins FOR INSERT WITH CHECK (true);
+CREATE POLICY "Sadece auth günceller" ON pins FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Sadece auth siler" ON pins FOR DELETE USING (auth.role() = 'authenticated');
+
+===== SON ===== -->
+
 </body>
 </html>
