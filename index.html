@@ -711,10 +711,14 @@ nav {
 
     <!-- Tüm pinler tablosu -->
     <div id="modTab-tumPinler" style="display:none;">
+      <!-- TOPLU SİLME BUTONU -->
+      <button class="btn-del" style="margin-bottom: 12px; padding: 8px 16px; display: inline-flex; align-items: center; gap: 5px;" onclick="bulkDeletePins()">🗑️ Seçilileri Sil</button>
+      
       <div class="mod-table-wrap">
         <table class="mod-table">
           <thead>
             <tr>
+              <th style="width: 30px;"><input type="checkbox" onchange="toggleAllPins(this)"></th>
               <th>Tarih &amp; Saat</th>
               <th>İSS / Altyapı</th>
               <th>Hız (DL/UL)</th>
@@ -837,10 +841,6 @@ nav {
 // ===== CONFIG =====
 const SB_URL = 'https://vpnaxxxoiomorcvloend.supabase.co';
 const SB_KEY = 'sb_publishable_4LErt91-jMdX3WiaDyBPcw_KMQ0sU-r';
-/* 
-  Supabase'de çalıştırılması gereken migration SQL:
-  ALTER TABLE pins ADD COLUMN IF NOT EXISTS mod_notu TEXT;
-*/
 
 // Supabase JS v2 (UMD)
 const { createClient } = supabase;
@@ -875,7 +875,7 @@ const addRapor = d => sbRest('raporlar', { method:'POST', body:JSON.stringify(d)
 const patchRapor = (id,d) => sbRest(`raporlar?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
 
 // hex bazlı rapor için aktif pin listesi
-let activeHexPins = [];
+let activeHexPins =[];
 
 // ===== HELPERS =====
 function fuzzy(lat, lng) { const o = 0.0013; return { lat: lat+(Math.random()-.5)*o, lng: lng+(Math.random()-.5)*o }; }
@@ -912,7 +912,7 @@ function memColor(s) {
 let maps = {}, pinsData = [];
 let activeFilters = new Set(['fiber','vdsl','adsl']);
 let colorMode = 'hiz';
-let hexLayers = [], pinMarkerLayers = [];
+let hexLayers =[], pinMarkerLayers =[];
 let isModLoggedIn = false;
 let currentModUser = null;
 let regionSortMode = 'dl';
@@ -1007,7 +1007,7 @@ function onZoomEnd() {
 
 async function loadPins() {
   try {
-    pinsData = await getPins() || [];
+    pinsData = await getPins() ||[];
     renderHex();
     renderModPins();
     const cnt = pinsData.length;
@@ -1022,7 +1022,7 @@ async function loadPins() {
 function renderHex() {
   if (!maps.main || !h3) return;
   hexLayers.forEach(l => maps.main.removeLayer(l));
-  hexLayers = [];
+  hexLayers =[];
 
   const z = maps.main.getZoom();
   const res = z <= 6 ? 3 : z <= 8 ? 4 : z <= 10 ? 5 : z <= 12 ? 6 : 7;
@@ -1067,7 +1067,7 @@ function renderHex() {
 // Moderatör pinleri (sadece giriş yapılınca)
 function renderModPins() {
   pinMarkerLayers.forEach(l => maps.main?.removeLayer(l));
-  pinMarkerLayers = [];
+  pinMarkerLayers =[];
   if (!isModLoggedIn || !maps.main) return;
 
   const z = maps.main.getZoom();
@@ -1102,6 +1102,8 @@ function renderModPins() {
           <div class="mod-popup-row"><span class="mod-popup-key">IP Hash:</span><span class="mod-popup-val">${p.ip_hash||'—'}</span></div>
           <div class="mod-popup-row"><span class="mod-popup-key">Konum:</span><span class="mod-popup-val">${(p.il||'')} › ${(p.ilce||'')} › ${(p.mahalle||'')}</span></div>
           <div class="mod-popup-row"><span class="mod-popup-key">Koordinat:</span><span class="mod-popup-val">${p.lat?.toFixed(5)}, ${p.lng?.toFixed(5)}</span></div>
+          <div class="mod-popup-row"><span class="mod-popup-key">Paket Hızı:</span><span class="mod-popup-val">${p.paket_hizi ? p.paket_hizi + ' Mbps' : 'Belirtilmedi'}</span></div>
+          <div class="mod-popup-row"><span class="mod-popup-key">Altyapı:</span><span class="mod-popup-val">${p.altyapi_sahibi || 'Belirtilmedi'}</span></div>
           <div class="mod-popup-row"><span class="mod-popup-key">Tarih/Saat:</span><span class="mod-popup-val">${tarihStr}</span></div>
           ${userYorumHtml}${modNotHtml}
         </div>
@@ -1268,7 +1270,7 @@ async function renderStats() {
   // En hızlı lokasyonlar (İl › İlçe › Mahalle)
   const lm = {};
   pins.forEach(p => {
-    const k = [p.il||'?', p.ilce||'?', p.mahalle||''].filter(Boolean).join('_');
+    const k =[p.il||'?', p.ilce||'?', p.mahalle||''].filter(Boolean).join('_');
     if (!lm[k]) lm[k] = { t:0, c:0, il:p.il, ilce:p.ilce, mahalle:p.mahalle, type:p.baglanti_turu };
     lm[k].t += p.gercek_dl; lm[k].c++;
   });
@@ -1276,7 +1278,7 @@ async function renderStats() {
     .map(([k,d]) => ({ ...d, dl:Math.round(d.t/d.c) }))
     .sort((a,b) => b.dl-a.dl).slice(0,8)
     .map((x,i) => {
-      const loc = [x.il, x.ilce, x.mahalle].filter(Boolean).join(' › ');
+      const loc =[x.il, x.ilce, x.mahalle].filter(Boolean).join(' › ');
       return `<div class="speed-item">
         <div><div class="speed-name">${i+1}. ${x.ilce||x.il||'?'}</div><div class="speed-loc">${loc} · ${(x.type||'').toUpperCase()}</div></div>
         <div class="speed-val" style="color:${speedColor(x.dl)}">${x.dl} Mbps</div>
@@ -1286,7 +1288,7 @@ async function renderStats() {
   // Bağlantı dağılımı
   const cm = { fiber:0, vdsl:0, adsl:0 };
   pins.forEach(p => { if(cm[p.baglanti_turu]!==undefined) cm[p.baglanti_turu]++; });
-  document.getElementById('connChart').innerHTML = [
+  document.getElementById('connChart').innerHTML =[
     {l:'Fiber', v:cm.fiber, c:'#00d4ff'},
     {l:'VDSL',  v:cm.vdsl,  c:'#FB8C00'},
     {l:'ADSL',  v:cm.adsl,  c:'#E53935'}
@@ -1399,9 +1401,7 @@ function resetPinForm() {
   pinLat=null; pinLng=null;
   if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;}
   document.getElementById('locDot').classList.remove('set');
-  document.getElementById('locText').textContent='Henüz seçilmedi';
-  ['issSelect','infraSelect'].forEach(id=>document.getElementById(id).value='');
-  ['ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeed','commentInput'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect'].forEach(id=>document.getElementById(id).value='');['ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeed','commentInput'].forEach(id=>document.getElementById(id).value='');
   document.querySelectorAll('.cbtn').forEach(b=>b.className=b.className.replace(/ sel/g,''));
   document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('sel'));
   selConnVal=''; selScoreVal=0;
@@ -1497,12 +1497,11 @@ async function modLogout() {
   document.getElementById('modBadge').style.display = 'none';
   // Haritadaki mod pinleri kaldır
   pinMarkerLayers.forEach(l => maps.main?.removeLayer(l));
-  pinMarkerLayers = [];
+  pinMarkerLayers =[];
   showToast('Çıkış yapıldı');
 }
 
-function switchModTab(tab) {
-  ['sikayetler','tumPinler','bekleyen'].forEach(t => {
+function switchModTab(tab) {['sikayetler','tumPinler','bekleyen'].forEach(t => {
     document.getElementById('modTab-'+t).style.display = t===tab ? 'block' : 'none';
   });
   document.querySelectorAll('.mod-tab-btn').forEach((b,i) => {
@@ -1520,7 +1519,7 @@ async function loadSikayetler() {
   const list = document.getElementById('sikayetList');
   list.innerHTML = '<div class="loading-text loading-dots">Yükleniyor</div>';
   try {
-    const pins = await getAllPinsAdmin() || [];
+    const pins = await getAllPinsAdmin() ||[];
     const flagged = pins.filter(p => (p.sikayet_sayisi||0) > 0 || !p.gorunur);
     document.getElementById('modSubtitle').textContent = `${flagged.length} şikayet / gizli kayıt`;
     if (!flagged.length) {
@@ -1561,9 +1560,9 @@ async function loadSikayetler() {
 
 async function loadAdminTable() {
   const tbody = document.getElementById('adminTableBody');
-  tbody.innerHTML = '<tr><td colspan="9" class="loading-text loading-dots">Yükleniyor</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="10" class="loading-text loading-dots">Yükleniyor</td></tr>';
   try {
-    const pins = await getAllPinsAdmin() || [];
+    const pins = await getAllPinsAdmin() ||[];
     tbody.innerHTML = pins.map(p => {
       const tarih = new Date(p.created_at);
       const tarihStr = tarih.toLocaleDateString('tr-TR');
@@ -1574,6 +1573,7 @@ async function loadAdminTable() {
       const yorumHtml = p.yorum
         ? `<div style="font-size:9px;color:var(--text3);font-style:italic;margin-top:2px;" title="${p.yorum}">💬 yorum var</div>`:'';
       return `<tr>
+        <td><input type="checkbox" class="pin-check" value="${p.id}"></td>
         <td style="color:var(--text3);white-space:nowrap;">
           <div>${tarihStr}</div>
           <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);">${saatStr}</div>
@@ -1591,14 +1591,14 @@ async function loadAdminTable() {
         </td>
       </tr>`;
     }).join('');
-  } catch(e) { tbody.innerHTML = '<tr><td colspan="9">Hata: '+e.message+'</td></tr>'; }
+  } catch(e) { tbody.innerHTML = '<tr><td colspan="10">Hata: '+e.message+'</td></tr>'; }
 }
 
 async function loadRaporlar() {
   const list = document.getElementById('bekleyenList');
   list.innerHTML = '<div class="loading-text loading-dots">Yükleniyor</div>';
   try {
-    const raporlar = await getRaporlar() || [];
+    const raporlar = await getRaporlar() ||[];
     if (!raporlar.length) {
       list.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><div>Bekleyen rapor yok</div></div>';
       return;
@@ -1723,6 +1723,42 @@ async function modDeletePin(id) {
     // Aktif tab'ı yenile
     loadAdminTable();
   } catch(e) { showToast('Hata: '+e.message,'err'); }
+}
+
+// ===== TOPLU SİLME İŞLEMLERİ =====
+function toggleAllPins(el) {
+  document.querySelectorAll('.pin-check').forEach(cb => cb.checked = el.checked);
+}
+
+async function bulkDeletePins() {
+  const checkboxes = document.querySelectorAll('.pin-check:checked');
+  const ids = Array.from(checkboxes).map(cb => cb.value);
+  
+  if (ids.length === 0) { showToast('Hiç pin seçmediniz.', 'err'); return; }
+  if (!confirm(`${ids.length} adet pini kalıcı olarak silmek istediğinize emin misiniz?`)) return;
+
+  // Butonu yükleniyor durumuna al
+  const btn = document.querySelector('#modTab-tumPinler .btn-del');
+  const originalText = btn.innerHTML;
+  btn.textContent = 'Siliniyor...';
+  btn.disabled = true;
+
+  try {
+    for (const id of ids) {
+      await delPin(id);
+    }
+    // Local state'i güncelle
+    pinsData = pinsData.filter(p => !ids.includes(p.id));
+    if (maps.main) { renderHex(); renderModPins(); }
+    
+    showToast(`✅ ${ids.length} adet pin başarıyla silindi.`);
+    loadAdminTable();
+  } catch(e) {
+    showToast('Silme işlemi sırasında hata: ' + e.message, 'err');
+  }
+  
+  btn.innerHTML = originalText;
+  btn.disabled = false;
 }
 
 // ===== TOAST =====
