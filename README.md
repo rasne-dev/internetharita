@@ -1,78 +1,130 @@
 # 🗺 İnternetHarita
 
-**Türkiye'nin kullanıcı kaynaklı internet altyapı ve memnuniyet haritası.**
-
-> Hangi bölgede hangi ISS daha hızlı? Nerede fiber var, nerede VDSL? Gerçek kullanıcılar ne düşünüyor?
+**Türkiye'nin kullanıcı kaynaklı internet hız ve memnuniyet haritası.**
 
 🔗 **Canlı Site:** [rasne-dev.github.io/internetharita](https://rasne-dev.github.io/internetharita)
 
 ---
 
-## ✨ Özellikler
+## Ne işe yarar?
 
-- 🗺 **H3 Hexagon Harita** — Bölge bazlı hız ve memnuniyet görselleştirmesi (bireysel pinler GÖRÜNMEZ)
-- ⚡ **5 Kademeli Hız Renk Skalası** — <25, 25–100, 100–200, 200–500, 500+ Mbps (hexagonlar her zaman hıza göre renklendirilir)
-- 😊 **Memnuniyet Modu** — Renk modunu hız / memnuniyet arasında geçiş yaparak haritayı görüntüle
-- 📍 **Veri Ekleme** — Otomatik GPS konum, Nominatim reverse geocoding ile il/ilçe/mahalle otomatik doldurma
-- 🔒 **Gizlilik** — Kullanıcı konumu ~150m alan içinde rastgele kaydırılır; bireysel veriler haritada görünmez
-- 🚩 **Topluluk Moderasyonu** — Şüpheli veriler bildirilebilir; 3 şikayette otomatik gizleme
-- 📊 **İstatistikler** — ISS sıralaması, en hızlı ilçeler, bağlantı türü dağılımı, bölgesel analiz
-
-### 🔧 Moderatör Özellikleri (Yeni)
-
-- **Pin Düzenleme** — Moderatörler pinlere tıklayarak tüm alanları (ISS, hız, puan, görünürlük) düzenleyebilir
-- **Moderatör Notu** — Her pine özel not eklenebilir; bu notlar genel kullanıcılar tarafından da görülür
-- **Kullanıcı Yorumları** — Kullanıcının girdiği yorumlar moderatör panelinde ve harita popup'larında ayrıca gösterilir
-- **Detaylı Zaman** — Tüm pinlerin giriliş tarihi ve saati moderatör görünümünde gösterilir
-- **Haritadan Düzenleme** — Zoom ≥10'da haritadaki mod pinlerine tıklayınca da düzenleme yapılabilir
+İnternetHarita, Türkiye genelinde gerçek kullanıcıların kendi internet bağlantılarını ölçüp paylaştığı bir topluluk haritasıdır. Taşınmadan önce yeni semtinizdeki internet kalitesini öğrenebilir, ISS'leri karşılaştırabilir ya da bulunduğunuz bölgedeki hızları görebilirsiniz.
 
 ---
 
-## 🛠 Teknoloji
+## Nasıl kullanılır?
 
-| Katman | Teknoloji |
-|--------|-----------|
-| Frontend | Vanilla HTML/CSS/JS |
-| Harita | Leaflet.js + OpenStreetMap |
-| Hexagon | Uber H3 (Resolution 3–7, zoom bazlı) |
-| Geocoding | Nominatim (OpenStreetMap) |
-| Veritabanı | Supabase (PostgreSQL) |
-| Auth | Supabase Authentication |
-| Hosting | GitHub Pages |
+### 🗺 Harita
+Hexagon bölgelere tıklayarak o bölgenin ortalama hız ve memnuniyet bilgisine, ISS dağılımına ulaşabilirsiniz. Renk skalası:
+
+| Renk | Hız |
+|------|-----|
+| 🟣 Mor | 500+ Mbps |
+| 🔵 Mavi | 200 – 500 Mbps |
+| 🟢 Yeşil | 100 – 200 Mbps |
+| 🟠 Turuncu | 25 – 100 Mbps |
+| 🔴 Kırmızı | 25 Mbps altı |
+
+**Hız / Memnuniyet** modunu sol panelden değiştirebilirsiniz.
+
+### 📍 Veri Ekle
+Kendi internet ölçümünüzü paylaşmak için sağ üstteki **+ Veri Ekle** butonuna tıklayın:
+1. Konumunuzu haritadan seçin veya GPS ile otomatik bulun
+2. ISS, bağlantı türü ve speedtest sonucunuzu girin
+3. 1–10 arası memnuniyet puanı verin, gönderin
+
+> ⚠️ Konumunuz ~150 metre içinde gizlenir, tam adresiniz hiçbir zaman görünmez.
+
+### 🚩 Yanlış Veri Bildirme
+Bir bölgede hatalı veya sahte veri olduğunu düşünüyorsanız hexagona tıklayıp **"Bu Bölgeyi Bildir"** butonunu kullanabilirsiniz. Moderatörler bildirimi inceleyip gerekli düzeltmeyi yapar.
+
+### 🌍 Bölgeler
+Türkiye'nin 7 coğrafi bölgesinin ortalama hız ve memnuniyet karşılaştırması.
+
+### 📊 İstatistikler
+ISS memnuniyet sıralaması, en hızlı ilçeler ve bağlantı türü dağılımı.
+
+---
+
+## Gizlilik
+
+- Konum bilginiz ~150m içinde rastgele kaydırılır
+- Bireysel pinler haritada görünmez, sadece bölge ortalaması gösterilir
+- Hiçbir kişisel bilgi toplanmaz
+
+---
+
+## Katkı
+
+Veri ekleyerek katkıda bulunabilirsiniz. Ne kadar çok kullanıcı veri eklerse harita o kadar doğru olur.
+
+---
 
 ---
 
 # 🗺 İnternetHarita — English
 
-**A community-sourced internet infrastructure and satisfaction map of Turkey.**
-
-> Which ISP is fastest in your area? Where is fiber available, where is VDSL? What do real users say?
+**A community-sourced internet speed and satisfaction map of Turkey.**
 
 🔗 **Live Site:** [rasne-dev.github.io/internetharita](https://rasne-dev.github.io/internetharita)
 
 ---
 
-## ✨ Features
+## What is it?
 
-- 🗺 **H3 Hexagon Map** — Area-based speed and satisfaction visualization (individual pins are INVISIBLE to public)
-- ⚡ **5-Tier Speed Color Scale** — <25, 25–100, 100–200, 200–500, 500+ Mbps (hexagons always colored by speed)
-- 😊 **Satisfaction Mode** — Toggle between speed and satisfaction color modes on the map
-- 📍 **Data Submission** — Auto GPS location with Nominatim reverse geocoding for province/district/neighborhood
-- 🔒 **Privacy** — User location is randomly offset within ~150m; individual records never appear on the map
-- 🚩 **Community Moderation** — Suspicious data can be reported; auto-hidden after 3 complaints
-- 📊 **Statistics** — ISP satisfaction ranking, fastest districts, connection type breakdown, regional analysis
-
-### 🔧 Moderator Features (New)
-
-- **Pin Editing** — Moderators can click any pin to edit all fields (ISP, speed, score, visibility)
-- **Moderator Notes** — Custom notes can be added to any pin; notes are visible to all users
-- **User Comments** — User-submitted comments are displayed separately in the moderator panel and map popups
-- **Detailed Timestamps** — Full date + time shown for all pins in moderator view
-- **Map-based Editing** — At zoom ≥10, mod pins on the map also show an Edit button in the popup
+İnternetHarita is a community map where real users across Turkey measure and share their internet connection data. You can check internet quality before moving to a new neighborhood, compare ISPs, or view average speeds in your area.
 
 ---
 
-## 🛠 Tech Stack
+## How to use
+
+### 🗺 Map
+Click on hexagon regions to see average speed, satisfaction score, and ISP breakdown for that area. Color scale:
+
+| Color | Speed |
+|-------|-------|
+| 🟣 Purple | 500+ Mbps |
+| 🔵 Blue | 200 – 500 Mbps |
+| 🟢 Green | 100 – 200 Mbps |
+| 🟠 Orange | 25 – 100 Mbps |
+| 🔴 Red | Below 25 Mbps |
+
+Toggle between **Speed / Satisfaction** modes in the left panel.
+
+### 📍 Add Data
+Click the **+ Veri Ekle** button in the top right to share your measurement:
+1. Select your location on the map or use GPS
+2. Enter your ISP, connection type and speedtest result
+3. Give a satisfaction score from 1–10 and submit
+
+> ⚠️ Your location is offset within ~150m. Your exact address is never shown.
+
+### 🚩 Report Incorrect Data
+If you think a region contains inaccurate or fake data, click the hexagon and use the **"Bu Bölgeyi Bildir"** (Report this region) button. Moderators will review and fix it.
+
+### 🌍 Regions
+Compare average speed and satisfaction across Turkey's 7 geographical regions.
+
+### 📊 Statistics
+ISP satisfaction ranking, fastest districts, and connection type breakdown.
+
+---
+
+## Privacy
+
+- Your location is randomly offset within ~150m
+- Individual pins are never shown on the map — only regional averages
+- No personal data is collected
+
+---
+
+## Contributing
+
+You can contribute simply by adding your own data. The more users share, the more accurate the map becomes.
+
+---
+
+## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|

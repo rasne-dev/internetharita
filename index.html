@@ -535,6 +535,7 @@ nav {
     <div class="info-row"><span class="info-label">Memnuniyet</span><span class="info-val" id="infoScore">—</span></div>
     <div class="info-row"><span class="info-label">Ölçüm</span><span class="info-val" id="infoCount">—</span></div>
     <div class="info-iss-list" id="infoISS"></div>
+    <button class="popup-btn popup-report" id="infoBildirBtn" onclick="openHexReport()" style="width:100%;margin-top:10px;padding:7px;">🚩 Bu Bölgeyi Bildir</button>
   </div>
 
   <div class="zoom-hint" id="zoomHint">Yakınlaştırın: Daha küçük bölgeler</div>
@@ -741,8 +742,14 @@ nav {
 <div class="modal-bg" id="reportModal">
   <div class="modal">
     <span class="modal-close" onclick="closeReportModal()">×</span>
-    <div class="modal-title">🚩 Veri Bildir</div>
+    <div class="modal-title">🚩 Bölge Bildir</div>
+    <div id="reportLocationInfo" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;margin-bottom:12px;font-size:11px;color:var(--text2);display:none;">
+      <span style="color:var(--text3);font-size:9px;font-weight:700;display:block;margin-bottom:3px;font-family:var(--font-mono);">BİLDİRİLEN BÖLGE</span>
+      <span id="reportLocationText">—</span>
+    </div>
     <input type="hidden" id="reportPinId">
+    <input type="hidden" id="reportHexId">
+    <input type="hidden" id="reportBolge">
     <div class="fg" style="margin-bottom:10px;">
       <div class="fl">Bildirim Türü</div>
       <select class="fs" id="reportType">
@@ -866,6 +873,9 @@ const addSikayet = d => sbRest('sikayetler', { method:'POST', body:JSON.stringif
 const getRaporlar = () => sbRest('raporlar?select=*&durum=eq.bekleyen&order=created_at.desc');
 const addRapor = d => sbRest('raporlar', { method:'POST', body:JSON.stringify(d) });
 const patchRapor = (id,d) => sbRest(`raporlar?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
+
+// hex bazlı rapor için aktif pin listesi
+let activeHexPins = [];
 
 // ===== HELPERS =====
 function fuzzy(lat, lng) { const o = 0.0013; return { lat: lat+(Math.random()-.5)*o, lng: lng+(Math.random()-.5)*o }; }
@@ -1048,7 +1058,7 @@ function renderHex() {
         weight: 1.2, opacity: hasData ? 0.7 : 0.3
       }).addTo(maps.main);
 
-      layer.on('click', () => showHexInfo(pins));
+      layer.on('click', () => showHexInfo(pins, hex));
       hexLayers.push(layer);
     } catch(e) {}
   });
@@ -1114,7 +1124,8 @@ async function modDelPinMap(id) {
   } catch(e) { showToast('Hata: '+e.message, 'err'); }
 }
 
-function showHexInfo(pins) {
+function showHexInfo(pins, hexId) {
+  activeHexPins = pins;
   const panel = document.getElementById('mapInfo');
   const ilce = pins[0].ilce || '—';
   const il = pins[0].il || '';
@@ -1123,6 +1134,9 @@ function showHexInfo(pins) {
   if (il) locationStr = il + ' › ' + locationStr;
   if (mahalle) locationStr += ' › ' + mahalle;
   document.getElementById('infoTitle').textContent = locationStr;
+  // Store for report
+  document.getElementById('reportHexId').value = hexId || '';
+  document.getElementById('reportBolge').value = locationStr;
   const avgDL = Math.round(pins.reduce((a,p)=>a+p.gercek_dl,0)/pins.length);
   const avgUL = Math.round(pins.reduce((a,p)=>a+(p.gercek_ul||0),0)/pins.length);
   const avgS = (pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1);
@@ -1395,28 +1409,58 @@ function resetPinForm() {
 
 // ===== REPORT (Kullanıcı Bildirimi) =====
 let reportPinId = null;
+
 function openReportModal(pinId) {
   reportPinId = pinId;
+  document.getElementById('reportPinId').value = pinId;
+  document.getElementById('reportLocationInfo').style.display = 'none';
   document.getElementById('reportModal').classList.add('open');
 }
+
+function openHexReport() {
+  // Bölge bazlı bildirim — tüm hex'teki pinler
+  reportPinId = null;
+  document.getElementById('reportPinId').value = '';
+  const bolge = document.getElementById('reportBolge').value;
+  const locEl = document.getElementById('reportLocationInfo');
+  document.getElementById('reportLocationText').textContent = bolge || '—';
+  locEl.style.display = 'block';
+  document.getElementById('reportText').value = '';
+  document.getElementById('reportModal').classList.add('open');
+}
+
 function closeReportModal() {
   document.getElementById('reportModal').classList.remove('open');
   reportPinId = null;
 }
+
 async function submitReport() {
-  if (!reportPinId) return;
+  const hexId = document.getElementById('reportHexId').value;
+  const bolge = document.getElementById('reportBolge').value;
+  const pinId = document.getElementById('reportPinId').value;
+  const tip = document.getElementById('reportType').value;
+  const aciklama = document.getElementById('reportText').value || null;
+
+  // Hex bazlı rapor: o bölgedeki her pin için ayrı rapor gönder (max 5)
+  const targets = pinId
+    ? [{ pin_id: pinId }]
+    : activeHexPins.slice(0, 5).map(p => ({ pin_id: p.id }));
+
+  if (!targets.length) { showToast('Bildirilecek veri bulunamadı', 'err'); return; }
+
   try {
-    await addRapor({
-      pin_id: reportPinId,
-      tip: document.getElementById('reportType').value,
-      aciklama: document.getElementById('reportText').value || null,
+    await Promise.all(targets.map(t => addRapor({
+      pin_id: t.pin_id,
+      tip,
+      aciklama,
       durum: 'bekleyen',
-      ip_hash: 'u_'+Date.now()
-    });
-    showToast('✅ Bildiriminiz alındı');
+      ip_hash: 'u_' + Date.now(),
+      hex_id: hexId || null,
+      bolge: bolge || null
+    })));
+    showToast('✅ Bildiriminiz alındı, teşekkürler!');
     closeReportModal();
   } catch(e) {
-    // raporlar tablosu olmasa bile devam et
     showToast('Bildirim gönderildi');
     closeReportModal();
   }
@@ -1563,16 +1607,28 @@ async function loadRaporlar() {
       yanlis_hiz:'Yanlış hız',yanlis_konum:'Yanlış konum',
       yanlis_iss:'Yanlış ISS',spam:'Spam',diger:'Diğer'
     };
-    list.innerHTML = raporlar.map(r => `
+    list.innerHTML = raporlar.map(r => {
+      const tarih = new Date(r.created_at);
+      const tarihStr = tarih.toLocaleDateString('tr-TR') + ' ' + tarih.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+      const bolgeHtml = r.bolge ? `<span style="color:var(--accent);font-family:var(--font-mono);">📍 ${r.bolge}</span><br>` : '';
+      return `
       <div class="report-card">
-        <div class="report-type">${tipLabels[r.tip]||r.tip}</div>
-        <div class="report-text">${r.aciklama||'Açıklama yok'}</div>
-        <div class="report-meta">Pin ID: ${r.pin_id} · ${new Date(r.created_at).toLocaleString('tr-TR')}</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+          <div class="report-type">${tipLabels[r.tip]||r.tip}</div>
+          <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);">${tarihStr}</div>
+        </div>
+        <div class="report-text">${r.aciklama||'Açıklama girilmedi'}</div>
+        <div class="report-meta" style="margin-top:5px;line-height:1.8;">
+          ${bolgeHtml}
+          Pin ID: <span style="font-family:var(--font-mono);font-size:9px;">${r.pin_id||'—'}</span>
+        </div>
         <div class="mod-actions" style="margin-top:8px;">
           <button class="btn-approve" onclick="handleRapor('${r.id}','islendi')">✅ İşlendi</button>
           <button class="btn-hide" onclick="handleRapor('${r.id}','reddedildi')">❌ Reddet</button>
+          ${r.pin_id ? `<button class="btn-edit" onclick="openEditModal('${r.pin_id}')">✏️ Pini Düzenle</button>` : ''}
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   } catch(e) { list.innerHTML = '<div class="loading-text">Hata: '+e.message+'</div>'; }
 }
 
