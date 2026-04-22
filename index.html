@@ -468,7 +468,7 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:56px; background:
     <div id="modTab-sikayetler"><div id="sikayetList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
 
     <div id="modTab-tumPinler" style="display:none;">
-      <button class="btn-del" style="margin-bottom: 12px; padding: 8px 16px; display: inline-flex; align-items: center; gap: 5px;" onclick="bulkDeletePins()">🗑️ Seçilileri Sil</button>
+      <button class="btn-del" style="margin-bottom: 12px; padding: 8px 16px; display: inline-flex; align-items: center; gap: 5px;" id="bulkDelBtn" onclick="bulkDeletePins()">🗑 Seçilileri Sil</button>
       <div class="mod-table-wrap">
         <table class="mod-table">
           <thead>
@@ -571,72 +571,79 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:56px; background:
 // ===== CONFIG =====
 const SB_URL = 'https://vpnaxxxoiomorcvloend.supabase.co';
 const SB_KEY = 'sb_publishable_4LErt91-jMdX3WiaDyBPcw_KMQ0sU-r';
-
 const { createClient } = supabase;
 const sbc = createClient(SB_URL, SB_KEY);
 
-// ===== REST HELPER YAMASI (SİLME İŞLEMİNİN ÇALIŞMASI İÇİN) =====
+// ===== REST HELPER =====
 async function sbRest(path, opts = {}) {
+  const { data: sess } = await sbc.auth.getSession();
+  const token = sess?.session?.access_token || SB_KEY;
   const headers = {
     'apikey': SB_KEY,
+    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
     'Prefer': opts.prefer || 'return=representation'
   };
-  
-  // ÖNEMLİ: Eğer moderatör giriş yaptıysa token'ı otomatik ekle ki "Silme/Düzenleme" izni doğrulansın.
-  const { data } = await sbc.auth.getSession();
-  if (data?.session?.access_token) {
-    headers['Authorization'] = `Bearer ${data.session.access_token}`;
-  } else {
-    headers['Authorization'] = `Bearer ${SB_KEY}`; // Anonim
-  }
-
   const r = await fetch(`${SB_URL}/rest/v1/${path}`, {
     headers, method: opts.method || 'GET', body: opts.body
   });
-  
   const t = await r.text();
-  // Supabase RLS veya tablo hatalarını yakala
-  if (!r.ok) throw new Error(t ? (JSON.parse(t).message || t) : 'İşlem Başarısız');
+  if (!r.ok) throw new Error(t ? (JSON.parse(t).message || t) : 'İşlem başarısız');
   return t ? JSON.parse(t) : null;
 }
 
+// ===== CLIENT-SIDE RATE LIMIT =====
+// IP hash değişse bile localStorage ile son gönderim zamanı tutulur
+const RATE_KEY = 'ih_last_submit';
+const RATE_LIMIT_MS = 5 * 60 * 1000; // 5 dakika
+function canSubmit() {
+  const last = parseInt(localStorage.getItem(RATE_KEY) || '0');
+  return Date.now() - last > RATE_LIMIT_MS;
+}
+function markSubmit() { localStorage.setItem(RATE_KEY, String(Date.now())); }
+function remainingWait() {
+  const last = parseInt(localStorage.getItem(RATE_KEY) || '0');
+  const diff = RATE_LIMIT_MS - (Date.now() - last);
+  return Math.ceil(diff / 60000);
+}
+
+// ===== SPAM FİLTRESİ =====
+const SPAM_DL_MAX = 1500;
+const SPAM_DL_MIN = 0.5;
+const KNOWN_ISS = ['TTNet (Türk Telekom)','Superonline (Turkcell)','TurkNet','Vodafone','Millenicom','Netspeed','Diğer'];
+function isSpam(p) {
+  if (!p.gercek_dl || p.gercek_dl > SPAM_DL_MAX || p.gercek_dl < SPAM_DL_MIN) return true;
+  if (!KNOWN_ISS.includes(p.iss)) return true;
+  return false;
+}
+function cleanPins(pins) { return pins.filter(p => !isSpam(p)); }
+
+// ===== API HELPERS =====
 const getPins = () => sbRest('pins?select=*&gorunur=eq.true&order=created_at.desc&limit=2000');
 const getAllPinsAdmin = () => sbRest('pins?select=*&order=created_at.desc');
 const getPinById = id => sbRest(`pins?id=eq.${id}&select=*`);
 const addPin = d => sbRest('pins', { method:'POST', body:JSON.stringify(d) });
 const patchPin = (id,d) => sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
 const delPin = id => sbRest(`pins?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' });
-const getSikayetler = () => sbRest('sikayetler?select=*,pins(iss,il,ilce,gercek_dl)&order=created_at.desc');
-const addSikayet = d => sbRest('sikayetler', { method:'POST', body:JSON.stringify(d) });
-// Backend'den limit ile raporları çek (Eski raporlar paneli kitlemesin)
 const getRaporlar = () => sbRest('raporlar?select=*&durum=eq.bekleyen&order=created_at.desc&limit=100');
 const addRapor = d => sbRest('raporlar', { method:'POST', body:JSON.stringify(d) });
 const patchRapor = (id,d) => sbRest(`raporlar?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
 
-let activeHexPins =[];
-
+let activeHexPins = [];
 function fuzzy(lat, lng) { const o = 0.0013; return { lat: lat+(Math.random()-.5)*o, lng: lng+(Math.random()-.5)*o }; }
 
 const IC = { 'TTNet (Türk Telekom)':'#ef4444', 'Superonline (Turkcell)':'#00b4d8', 'TurkNet':'#9f7aea', 'Vodafone':'#e60000', 'Millenicom':'#10b981', 'Netspeed':'#f59e0b', 'Diğer':'#6b7280' };
 const ic = iss => IC[iss] || '#6b7280';
 const cc = t => t==='fiber'?'#00d4ff':t==='vdsl'?'#FB8C00':'#E53935';
+function speedColor(dl) { if(dl>=500)return'#800080';if(dl>=200)return'#1E88E5';if(dl>=100)return'#43A047';if(dl>=25)return'#FB8C00';return'#E53935'; }
+function memColor(s) { if(s>=8)return'#22c55e';if(s>=6)return'#84cc16';if(s>=4)return'#eab308';return'#ef4444'; }
 
-function speedColor(dl) {
-  if (dl >= 500) return '#800080'; if (dl >= 200) return '#1E88E5'; if (dl >= 100) return '#43A047'; if (dl >= 25) return '#FB8C00'; return '#E53935';
-}
-function memColor(s) {
-  if (s >= 8) return '#22c55e'; if (s >= 6) return '#84cc16'; if (s >= 4) return '#eab308'; return '#ef4444';
-}
-
-let maps = {}, pinsData = [];
+let maps = {}, pinsData = [], cleanPinsData = [];
 let activeFilters = new Set(['fiber','vdsl','adsl']);
-let colorMode = 'hiz';
-let hexLayers = [], pinMarkerLayers =[];
-let isModLoggedIn = false;
-let currentModUser = null;
-let regionSortMode = 'dl';
+let colorMode = 'hiz', hexLayers = [], pinMarkerLayers = [];
+let isModLoggedIn = false, currentModUser = null, regionSortMode = 'dl';
 
+// ===== COLOR MODE =====
 function setColorMode(m) {
   colorMode = m;
   document.getElementById('ctHiz').classList.toggle('active', m==='hiz');
@@ -647,10 +654,10 @@ function setColorMode(m) {
     title.textContent = 'Hız Göstergesi';
     items.innerHTML = `
       <div class="legend-item"><div class="legend-dot" style="background:#800080"></div>500+ Mbps</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#1E88E5"></div>200 – 500 Mbps</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#43A047"></div>100 – 200 Mbps</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#FB8C00"></div>25 – 100 Mbps</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#E53935"></div>&lt; 25 Mbps</div>`;
+      <div class="legend-item"><div class="legend-dot" style="background:#1E88E5"></div>200–500 Mbps</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#43A047"></div>100–200 Mbps</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#FB8C00"></div>25–100 Mbps</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#E53935"></div>&lt;25 Mbps</div>`;
   } else {
     title.textContent = 'Memnuniyet Göstergesi';
     items.innerHTML = `
@@ -668,22 +675,24 @@ function toggleChip(el, type) {
   renderHex(); renderModPins();
 }
 
+// ===== NAV =====
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-'+id)?.classList.add('active');
-  const tabs =['harita','bolge','istatistik','mod'];
+  const tabs = ['harita','bolge','istatistik','mod'];
   const idx = tabs.indexOf(id);
   if (idx >= 0) document.querySelectorAll('.nav-tab')[idx]?.classList.add('active');
   setTimeout(async () => {
     if (id==='harita') { if (!maps.main) await initMainMap(); else maps.main.invalidateSize(); }
     if (id==='pin') { if (!maps.pin) initPinMap(); else maps.pin.invalidateSize(); }
     if (id==='bolge') renderRegions();
-    if (id==='istatistik') renderStats(); // İstatistikler spam silindiğinde otomatik güncellenir
+    if (id==='istatistik') renderStats();
     if (id==='mod' && isModLoggedIn) refreshModData();
   }, 50);
 }
 
+// ===== MAIN MAP =====
 async function initMainMap() {
   const m = L.map('map', { zoomControl:false }).setView([39.2, 35.5], 6);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution:'©OSM ©CARTO', maxZoom:19 }).addTo(m);
@@ -703,34 +712,34 @@ function onZoomEnd() {
 
 async function loadPins() {
   try {
-    pinsData = await getPins() ||[];
+    pinsData = await getPins() || [];
+    cleanPinsData = cleanPins(pinsData); // Spam filtreli kopya
     renderHex(); renderModPins();
-    const cnt = pinsData.length;
-    const avg = cnt ? Math.round(pinsData.reduce((a,p) => a+p.gercek_dl, 0)/cnt) : 0;
+    const cnt = cleanPinsData.length;
+    const avg = cnt ? Math.round(cleanPinsData.reduce((a,p) => a+p.gercek_dl, 0)/cnt) : 0;
     document.getElementById('mapStats').innerHTML = `<span>${cnt}</span> ölçüm &nbsp;·&nbsp; Ort. <span>${avg} Mbps</span>`;
   } catch(e) { document.getElementById('mapStats').textContent = 'Bağlanamadı'; }
 }
 
 function renderHex() {
   if (!maps.main || !h3) return;
-  hexLayers.forEach(l => maps.main.removeLayer(l)); hexLayers =[];
+  hexLayers.forEach(l => maps.main.removeLayer(l)); hexLayers = [];
   const z = maps.main.getZoom();
-  const res = z <= 6 ? 3 : z <= 8 ? 4 : z <= 10 ? 5 : z <= 12 ? 6 : 7;
+  const res = z<=6?3:z<=8?4:z<=10?5:z<=12?6:7;
   const hexMap = {};
-  pinsData.forEach(p => {
+  cleanPinsData.forEach(p => {
     if (!p.lat || !activeFilters.has(p.baglanti_turu)) return;
-    try { const h = h3.latLngToCell(p.lat, p.lng, res); if (!hexMap[h]) hexMap[h] = []; hexMap[h].push(p); } catch(e) {}
+    try { const h = h3.latLngToCell(p.lat, p.lng, res); if (!hexMap[h]) hexMap[h]=[]; hexMap[h].push(p); } catch(e) {}
   });
-
   Object.entries(hexMap).forEach(([hex, pins]) => {
     try {
-      const coords = h3.cellToBoundary(hex).map(([lat, lng]) => [lat, lng]);
-      const avgDL = pins.reduce((a,p) => a+p.gercek_dl, 0) / pins.length;
-      const avgScore = pins.reduce((a,p) => a+p.puan, 0) / pins.length;
+      const coords = h3.cellToBoundary(hex).map(([lat,lng]) => [lat,lng]);
+      const avgDL = pins.reduce((a,p)=>a+p.gercek_dl,0)/pins.length;
+      const avgScore = pins.reduce((a,p)=>a+p.puan,0)/pins.length;
       let color, hasData = true;
-      if (colorMode === 'hiz') color = speedColor(avgDL);
-      else { if (!pins.some(p => p.puan)) { color = '#374151'; hasData = false; } else color = memColor(avgScore); }
-      const layer = L.polygon(coords, { color, fillColor: color, fillOpacity: hasData ? 0.3 : 0.1, weight: 1.2, opacity: hasData ? 0.7 : 0.3 }).addTo(maps.main);
+      if (colorMode==='hiz') color = speedColor(avgDL);
+      else { if (!pins.some(p=>p.puan)) { color='#374151'; hasData=false; } else color=memColor(avgScore); }
+      const layer = L.polygon(coords, { color, fillColor:color, fillOpacity:hasData?0.3:0.1, weight:1.2, opacity:hasData?0.7:0.3 }).addTo(maps.main);
       layer.on('click', () => showHexInfo(pins, hex));
       hexLayers.push(layer);
     } catch(e) {}
@@ -738,27 +747,34 @@ function renderHex() {
 }
 
 function renderModPins() {
-  pinMarkerLayers.forEach(l => maps.main?.removeLayer(l)); pinMarkerLayers =[];
+  pinMarkerLayers.forEach(l => maps.main?.removeLayer(l)); pinMarkerLayers = [];
   if (!isModLoggedIn || !maps.main || maps.main.getZoom() < 10) return;
-
+  // Mod pinleri: spam dahil TÜM pinler görünsün (moderatör görmesi lazım)
   pinsData.forEach(p => {
     if (!p.lat || !activeFilters.has(p.baglanti_turu)) return;
     const color = colorMode==='hiz' ? speedColor(p.gercek_dl) : memColor(p.puan);
-    const m = L.circleMarker([p.lat, p.lng], { radius:5, color:'#fff', fillColor:color, fillOpacity:0.9, weight:1.5 }).addTo(maps.main);
+    const isSpamPin = isSpam(p);
+    const m = L.circleMarker([p.lat, p.lng], {
+      radius: isSpamPin ? 7 : 5,
+      color: isSpamPin ? '#ff0000' : '#fff',
+      fillColor: isSpamPin ? '#ff4444' : color,
+      fillOpacity: 0.9, weight: isSpamPin ? 2.5 : 1.5
+    }).addTo(maps.main);
     const tarihStr = new Date(p.created_at).toLocaleString('tr-TR');
-    
-    // YENİ EKLENEN KISIM: Paket Hızı ve Altyapı bilgisi popup'ta görünür.
     m.bindPopup(`
       <div class="popup-inner">
-        <div class="popup-title">${p.iss} <span class="popup-badge" style="background:${cc(p.baglanti_turu)}22;color:${cc(p.baglanti_turu)};border:1px solid ${cc(p.baglanti_turu)}">${(p.baglanti_turu||'').toUpperCase()}</span></div>
+        <div class="popup-title">
+          ${isSpamPin ? '<span style="color:#ef4444;font-size:9px;font-family:var(--font-mono);">⚠ SPAM/ŞÜPHELI</span><br>' : ''}
+          ${p.iss} <span class="popup-badge" style="background:${cc(p.baglanti_turu)}22;color:${cc(p.baglanti_turu)};border:1px solid ${cc(p.baglanti_turu)}">${(p.baglanti_turu||'').toUpperCase()}</span>
+        </div>
         <div class="popup-row"><span class="popup-key">Download</span><span class="popup-val" style="color:${speedColor(p.gercek_dl)}">${p.gercek_dl} Mbps</span></div>
         <div class="popup-row"><span class="popup-key">Upload</span><span class="popup-val">${p.gercek_ul||0} Mbps</span></div>
+        ${p.paket_hizi ? `<div class="popup-row"><span class="popup-key">Paket</span><span class="popup-val">${p.paket_hizi} Mbps</span></div>` : ''}
+        ${p.altyapi_sahibi ? `<div class="popup-row"><span class="popup-key">Altyapı</span><span class="popup-val" style="font-size:10px">${p.altyapi_sahibi}</span></div>` : ''}
         <div class="popup-row"><span class="popup-key">Puan</span><span class="popup-val" style="color:${memColor(p.puan)}">${p.puan}/10</span></div>
         <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
-          <div class="mod-popup-row"><span class="mod-popup-key">Altyapı:</span><span class="mod-popup-val">${p.altyapi_sahibi||'Belirtilmemiş'}</span></div>
-          <div class="mod-popup-row"><span class="mod-popup-key">Paket:</span><span class="mod-popup-val">${p.paket_hizi ? p.paket_hizi+' Mbps' : 'Belirtilmemiş'}</span></div>
           <div class="mod-popup-row"><span class="mod-popup-key">IP Hash:</span><span class="mod-popup-val">${p.ip_hash||'—'}</span></div>
-          <div class="mod-popup-row"><span class="mod-popup-key">Konum:</span><span class="mod-popup-val">${(p.il||'')} › ${(p.ilce||'')}</span></div>
+          <div class="mod-popup-row"><span class="mod-popup-key">Konum:</span><span class="mod-popup-val">${p.il||''} › ${p.ilce||''}</span></div>
           <div class="mod-popup-row"><span class="mod-popup-key">Zaman:</span><span class="mod-popup-val">${tarihStr}</span></div>
           ${p.yorum ? `<div class="user-comment-box">${p.yorum}</div>` : ''}
           ${p.mod_notu ? `<div class="mod-note-box">${p.mod_notu}</div>` : ''}
@@ -774,10 +790,10 @@ function renderModPins() {
 
 function showHexInfo(pins, hexId) {
   activeHexPins = pins;
-  const ilce = pins[0].ilce || '—', il = pins[0].il || '', mahalle = pins[0].mahalle || '';
-  let locStr = ilce; if (il) locStr = il + ' › ' + locStr; if (mahalle) locStr += ' › ' + mahalle;
+  const ilce=pins[0].ilce||'—', il=pins[0].il||'', mahalle=pins[0].mahalle||'';
+  let locStr=ilce; if(il) locStr=il+' › '+locStr; if(mahalle) locStr+=' › '+mahalle;
   document.getElementById('infoTitle').textContent = locStr;
-  document.getElementById('reportHexId').value = hexId || '';
+  document.getElementById('reportHexId').value = hexId||'';
   document.getElementById('reportBolge').value = locStr;
   const avgDL = Math.round(pins.reduce((a,p)=>a+p.gercek_dl,0)/pins.length);
   const avgS = (pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1);
@@ -785,13 +801,13 @@ function showHexInfo(pins, hexId) {
   document.getElementById('infoUL').textContent = Math.round(pins.reduce((a,p)=>a+(p.gercek_ul||0),0)/pins.length)+' Mbps';
   document.getElementById('infoScore').textContent = avgS+'/10'; document.getElementById('infoScore').style.color = memColor(parseFloat(avgS));
   document.getElementById('infoCount').textContent = pins.length+' ölçüm';
-  const im = {}; pins.forEach(p => { if(!im[p.iss]) im[p.iss]={c:0,t:0}; im[p.iss].c++; im[p.iss].t+=p.puan; });
-  document.getElementById('infoISS').innerHTML = `<div class="panel-title" style="margin-bottom:6px;">ISS Dağılımı</div>` +
+  const im={}; pins.forEach(p=>{ if(!im[p.iss]) im[p.iss]={c:0,t:0}; im[p.iss].c++; im[p.iss].t+=p.puan; });
+  document.getElementById('infoISS').innerHTML = `<div class="panel-title" style="margin-bottom:6px;">ISS Dağılımı</div>`+
     Object.entries(im).sort((a,b)=>b[1].c-a[1].c).slice(0,4).map(([iss,d])=>`<div class="info-iss-item"><span><span class="iss-dot" style="background:${ic(iss)}"></span>${iss}</span><span style="color:${ic(iss)};font-weight:700;font-family:var(--font-mono)">${(d.t/d.c).toFixed(1)}</span></div>`).join('');
   document.getElementById('mapInfo').classList.add('visible');
 }
 
-/* ===== BÖLGELER & İSTATİSTİKLER (SPAM TEMİZLİĞİ SONRASI OTOMATİK ÇALIŞIR) ===== */
+// ===== BÖLGELER =====
 const BOLGELER = {
   "Marmara":{ iller:["İstanbul","Bursa","Kocaeli","Balıkesir","Tekirdağ","Sakarya","Çanakkale","Edirne","Kırklareli","Yalova","Bilecik"], color:'#00d4ff' },
   "İç Anadolu":{ iller:["Ankara","Konya","Kayseri","Eskişehir","Sivas","Kırıkkale","Aksaray","Karaman","Kırşehir","Niğde","Nevşehir","Yozgat","Çankırı"], color:'#a78bfa' },
@@ -804,99 +820,281 @@ const BOLGELER = {
 
 function renderRegions() {
   const grid = document.getElementById('regionsGrid');
-  if (!pinsData.length) { grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🌍</div><div>Henüz veri yok</div></div>'; return; }
+  const all = cleanPinsData; // Spam filtreli
+  if (!all.length) { grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🌍</div><div>Henüz veri yok</div></div>'; return; }
   const regions = Object.entries(BOLGELER).map(([name, info]) => {
-    const pins = pinsData.filter(p => info.iller.includes(p.il));
+    const pins = all.filter(p => info.iller.includes(p.il));
     const avgDL = pins.length ? Math.round(pins.reduce((a,p)=>a+p.gercek_dl,0)/pins.length) : 0;
     const avgUL = pins.length ? Math.round(pins.reduce((a,p)=>a+(p.gercek_ul||0),0)/pins.length) : 0;
     const avgS = pins.length ? parseFloat((pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1)) : null;
     return { name, color:info.color, iller:info.iller, pins, avgDL, avgUL, avgS };
   });
-  if (regionSortMode === 'dl') regions.sort((a,b) => b.avgDL - a.avgDL); else if (regionSortMode === 'mem') regions.sort((a,b) => (b.avgS||0) - (a.avgS||0)); else regions.sort((a,b) => b.pins.length - a.pins.length);
+  const idMap = { dl:'sortDL', mem:'sortMem', count:'sortCount' };
+  if (regionSortMode==='dl') regions.sort((a,b)=>b.avgDL-a.avgDL);
+  else if (regionSortMode==='mem') regions.sort((a,b)=>(b.avgS||0)-(a.avgS||0));
+  else regions.sort((a,b)=>b.pins.length-a.pins.length);
   grid.innerHTML = regions.map(r => `
-    <div class="region-card"><div style="position:absolute;top:0;left:0;right:0;height:2px;background:${r.color}"></div>
-    <div class="region-name" style="color:${r.color}">${r.name} Bölgesi</div><div class="region-cities">${r.iller.slice(0,4).join(', ')} +${Math.max(0,r.iller.length-4)} il</div>
-    <div class="region-stats"><div class="rstat"><div class="rstat-val" style="color:${speedColor(r.avgDL)}">${r.avgDL||'—'}</div><div class="rstat-label">Mbps ↓ Ort.</div></div>
-    <div class="rstat"><div class="rstat-val" style="color:${r.avgS!==null?memColor(r.avgS):'var(--text3)'}">${r.avgS!==null?r.avgS.toFixed(1):'—'}</div><div class="rstat-label">/ 10 Memnuniyet</div></div></div>
-    <div class="region-count">${r.pins.length} ölçüm</div></div>`).join('');
+    <div class="region-card">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${r.color}"></div>
+      <div class="region-name" style="color:${r.color}">${r.name} Bölgesi</div>
+      <div class="region-cities">${r.iller.slice(0,4).join(', ')} +${Math.max(0,r.iller.length-4)} il</div>
+      <div class="region-stats">
+        <div class="rstat"><div class="rstat-val" style="color:${speedColor(r.avgDL)}">${r.avgDL||'—'}</div><div class="rstat-label">Mbps ↓ Ort.</div></div>
+        <div class="rstat"><div class="rstat-val" style="color:${r.avgS!==null?memColor(r.avgS):'var(--text3)'}">${r.avgS!==null?r.avgS.toFixed(1):'—'}</div><div class="rstat-label">/ 10 Memnuniyet</div></div>
+      </div>
+      <div class="region-count">${r.pins.length} ölçüm</div>
+    </div>`).join('');
 }
-function sortRegions(mode) { regionSortMode = mode; ['sortDL','sortMem','sortCount'].forEach(id => document.getElementById(id)?.classList.remove('active')); document.getElementById(mode==='dl'?'sortDL':mode==='mem'?'sortMem':'sortCount')?.classList.add('active'); renderRegions(); }
 
+function sortRegions(mode) {
+  regionSortMode = mode;
+  ['sortDL','sortMem','sortCount'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+  document.getElementById(mode==='dl'?'sortDL':mode==='mem'?'sortMem':'sortCount')?.classList.add('active');
+  renderRegions();
+}
+
+// ===== İSTATİSTİKLER (Spam Filtreli + Mod Silme) =====
 async function renderStats() {
-  const pins = pinsData.length ? pinsData : (await getPins().catch(()=>[]));
-  if (!pins.length) return ['issRankList','speedRankList','connChart'].forEach(id => document.getElementById(id).innerHTML = '<div class="loading-text">Henüz veri yok</div>');
-  const avgDL = Math.round(pins.reduce((a,p)=>a+p.gercek_dl,0)/pins.length), avgS = (pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1);
-  document.getElementById('sumGrid').innerHTML = `<div class="sum-card"><div class="sum-val">${pins.length}</div><div class="sum-label">Toplam Ölçüm</div></div><div class="sum-card"><div class="sum-val" style="color:${speedColor(avgDL)}">${avgDL}</div><div class="sum-label">Ort. DL (Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${memColor(avgS)}">${avgS}</div><div class="sum-label">Ort. Memnuniyet</div></div>`;
+  // Mod giriş yaptıysa ham veriyi de çekip spam göstersin
+  let pins = cleanPinsData;
+  let allAdminPins = null;
+  if (isModLoggedIn) {
+    try { allAdminPins = await getAllPinsAdmin() || []; } catch(e) {}
+  }
+  if (!pins.length && !allAdminPins?.length) {
+    ['issRankList','speedRankList','connChart'].forEach(id => document.getElementById(id).innerHTML = '<div class="loading-text">Henüz veri yok</div>');
+    return;
+  }
+  const spamPins = allAdminPins ? allAdminPins.filter(p => isSpam(p)) : [];
+  const avgDL = Math.round(pins.reduce((a,p)=>a+p.gercek_dl,0)/Math.max(1,pins.length));
+  const avgS = pins.length ? (pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1) : '—';
+  document.getElementById('sumGrid').innerHTML = `
+    <div class="sum-card"><div class="sum-val">${pins.length}</div><div class="sum-label">Temiz Ölçüm${spamPins.length ? `<br><span style="color:var(--danger);font-size:10px">⚠ ${spamPins.length} spam gizlendi</span>` : ''}</div></div>
+    <div class="sum-card"><div class="sum-val" style="color:${speedColor(avgDL)}">${avgDL}</div><div class="sum-label">Ort. DL (Mbps)</div></div>
+    <div class="sum-card"><div class="sum-val" style="color:${avgS!=='—'?memColor(avgS):'var(--text3)'}">${avgS}</div><div class="sum-label">Ort. Memnuniyet</div></div>`;
+
+  // Mod ise spam listesini göster
+  if (isModLoggedIn && spamPins.length) {
+    const existing = document.getElementById('spamStatBlock');
+    if (existing) existing.remove();
+    const spamBlock = document.createElement('div');
+    spamBlock.id = 'spamStatBlock';
+    spamBlock.style.cssText = 'background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:14px;margin-top:8px;';
+    spamBlock.innerHTML = `
+      <div class="stat-title" style="color:var(--danger);">⚠ SPAM / ŞÜPHELİ VERİLER (${spamPins.length} adet)</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:10px;">Bu veriler istatistiklerden otomatik gizlendi. Kalıcı silmek için seçin.</div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <button class="btn-del" onclick="bulkDeleteSpam()" style="padding:6px 14px;">🗑 Tümünü Sil (${spamPins.length})</button>
+        <button class="btn-approve" onclick="selectAllSpam()" style="padding:6px 14px;">☑ Tümünü Seç</button>
+        <button class="btn-del" onclick="deleteSelectedSpam()" style="padding:6px 14px;">Seçilileri Sil</button>
+      </div>
+      <div style="max-height:200px;overflow-y:auto;">
+        ${spamPins.map(p => `
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;">
+            <input type="checkbox" class="spam-check" value="${p.id}">
+            <span style="color:var(--danger);font-family:var(--font-mono);min-width:70px">${p.gercek_dl} Mbps</span>
+            <span style="color:var(--text2)">${p.iss}</span>
+            <span style="color:var(--text3);font-size:9px">${p.ip_hash||'—'}</span>
+            <span style="color:var(--text3);font-size:9px;margin-left:auto">${new Date(p.created_at).toLocaleDateString('tr-TR')}</span>
+            <button class="btn-del" onclick="modDeletePin('${p.id}')" style="padding:3px 8px;font-size:9px;">Sil</button>
+          </div>`).join('')}
+      </div>`;
+    document.getElementById('page-istatistik').appendChild(spamBlock);
+  } else {
+    document.getElementById('spamStatBlock')?.remove();
+  }
+
   const im = {}; pins.forEach(p => { if(!im[p.iss]) im[p.iss]={t:0,c:0}; im[p.iss].t+=p.puan; im[p.iss].c++; });
-  document.getElementById('issRankList').innerHTML = Object.entries(im).map(([iss,d])=>({iss, s:(d.t/d.c).toFixed(1), c:d.c})).sort((a,b)=>b.s-a.s).map((x,i) => `<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${x.iss}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.s)}">${x.s}</div></div>`).join('');
-  const lm = {}; pins.forEach(p => { const k = [p.il||'?', p.ilce||'?', p.mahalle||''].filter(Boolean).join('_'); if (!lm[k]) lm[k] = { t:0, c:0, il:p.il, ilce:p.ilce, mahalle:p.mahalle, type:p.baglanti_turu }; lm[k].t += p.gercek_dl; lm[k].c++; });
-  document.getElementById('speedRankList').innerHTML = Object.entries(lm).map(([k,d]) => ({ ...d, dl:Math.round(d.t/d.c) })).sort((a,b) => b.dl-a.dl).slice(0,8).map((x,i) => `<div class="speed-item"><div><div class="speed-name">${i+1}. ${x.ilce||x.il||'?'}</div><div class="speed-loc">${[x.il, x.ilce, x.mahalle].filter(Boolean).join(' › ')}</div></div><div class="speed-val" style="color:${speedColor(x.dl)}">${x.dl} Mbps</div></div>`).join('');
-  const cm = { fiber:0, vdsl:0, adsl:0 }; pins.forEach(p => { if(cm[p.baglanti_turu]!==undefined) cm[p.baglanti_turu]++; });
-  document.getElementById('connChart').innerHTML =[{l:'Fiber', v:cm.fiber, c:'#00d4ff'},{l:'VDSL', v:cm.vdsl, c:'#FB8C00'},{l:'ADSL', v:cm.adsl, c:'#E53935'}].map(t => `<div class="ct-row"><div class="ct-label">${t.l}</div><div class="ct-track"><div class="ct-fill" style="width:${pins.length?(t.v/pins.length*100).toFixed(0):0}%;background:${t.c}"></div></div><div class="ct-pct">${pins.length?(t.v/pins.length*100).toFixed(0):0}%</div></div>`).join('');
+  document.getElementById('issRankList').innerHTML = Object.entries(im)
+    .map(([iss,d])=>({iss, s:(d.t/d.c).toFixed(1), c:d.c})).sort((a,b)=>b.s-a.s)
+    .map((x,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${x.iss}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.s)}">${x.s}</div></div>`).join('');
+  const lm = {}; pins.forEach(p=>{ const k=[p.il||'?',p.ilce||'?',p.mahalle||''].filter(Boolean).join('_'); if(!lm[k]) lm[k]={t:0,c:0,il:p.il,ilce:p.ilce,mahalle:p.mahalle,type:p.baglanti_turu}; lm[k].t+=p.gercek_dl; lm[k].c++; });
+  document.getElementById('speedRankList').innerHTML = Object.entries(lm)
+    .map(([k,d])=>({...d,dl:Math.round(d.t/d.c)})).sort((a,b)=>b.dl-a.dl).slice(0,8)
+    .map((x,i)=>`<div class="speed-item"><div><div class="speed-name">${i+1}. ${x.ilce||x.il||'?'}</div><div class="speed-loc">${[x.il,x.ilce,x.mahalle].filter(Boolean).join(' › ')}</div></div><div class="speed-val" style="color:${speedColor(x.dl)}">${x.dl} Mbps</div></div>`).join('');
+  const cm={fiber:0,vdsl:0,adsl:0}; pins.forEach(p=>{if(cm[p.baglanti_turu]!==undefined) cm[p.baglanti_turu]++;});
+  document.getElementById('connChart').innerHTML = [{l:'Fiber',v:cm.fiber,c:'#00d4ff'},{l:'VDSL',v:cm.vdsl,c:'#FB8C00'},{l:'ADSL',v:cm.adsl,c:'#E53935'}]
+    .map(t=>`<div class="ct-row"><div class="ct-label">${t.l}</div><div class="ct-track"><div class="ct-fill" style="width:${pins.length?(t.v/pins.length*100).toFixed(0):0}%;background:${t.c}"></div></div><div class="ct-pct">${pins.length?(t.v/pins.length*100).toFixed(0):0}%</div></div>`).join('');
 }
 
-// ===== VERİ EKLE (MAP) =====
-let pinLat=null, pinLng=null, pinMarker=null, selConnVal='', selScoreVal=0;
-function initPinMap() { const m = L.map('pin-map', { zoomControl:false }).setView([39.2,35.5], 6); L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom:19 }).addTo(m); L.control.zoom({ position:'bottomright' }).addTo(m); maps.pin = m; m.on('click', e => setLocation(e.latlng.lat, e.latlng.lng)); }
-async function setLocation(lat, lng) {
-  pinLat = lat; pinLng = lng; if (pinMarker) maps.pin.removeLayer(pinMarker);
-  pinMarker = L.circle([lat,lng], { radius:150, color:'#00d4ff', fillColor:'#00d4ff', fillOpacity:.12, weight:2 }).addTo(maps.pin);
-  document.getElementById('locDot').classList.add('set'); document.getElementById('locText').textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-  try { const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=tr`); const d = await r.json(); const a = d.address || {}; document.getElementById('ilInput').value = a.province||a.state||a.city||''; document.getElementById('ilceInput').value = a.county||a.district||a.town||''; document.getElementById('mahalleInput').value = a.suburb||a.neighbourhood||a.village||''; } catch(e) {}
+async function bulkDeleteSpam() {
+  const spamPins = (await getAllPinsAdmin()||[]).filter(p=>isSpam(p));
+  if (!spamPins.length) return showToast('Spam yok','warn');
+  if (!confirm(`${spamPins.length} spam pin silinecek! Emin misiniz?`)) return;
+  showToast('Siliniyor...','warn');
+  let ok=0, fail=0;
+  for (const p of spamPins) { try { await delPin(p.id); ok++; } catch(e) { fail++; } }
+  showToast(`✅ ${ok} silindi${fail?`, ${fail} hata`:''}`);
+  await loadPins(); renderStats();
 }
-function autoLocate() { if (!navigator.geolocation) { showToast('Konum desteklenmiyor','err'); return; } showToast('Konum alınıyor...','warn'); navigator.geolocation.getCurrentPosition(pos => { const { latitude:lat, longitude:lng } = pos.coords; maps.pin.setView([lat,lng], 15); setLocation(lat, lng); }, err => showToast('Konum alınamadı: '+err.message, 'err'), { enableHighAccuracy:true, timeout:10000 }); }
-function selConn(el, type) { document.querySelectorAll('.cbtn').forEach(b => b.className = b.className.replace(/ sel/g,'')); el.classList.add('sel'); selConnVal = type; }
-function selScore(el, val) { document.querySelectorAll('.sbtn').forEach(b => b.classList.remove('sel')); el.classList.add('sel'); selScoreVal = val; }
-(function buildScoreRow() { const row = document.getElementById('scoreRow'); if (!row) return; for (let i=1;i<=10;i++) { const b = document.createElement('div'); b.className='sbtn';b.textContent=i; b.onclick=()=>selScore(b,i); row.appendChild(b); } })();
+function selectAllSpam() { document.querySelectorAll('.spam-check').forEach(cb=>cb.checked=true); }
+async function deleteSelectedSpam() {
+  const ids = Array.from(document.querySelectorAll('.spam-check:checked')).map(cb=>cb.value);
+  if (!ids.length) return showToast('Seçili yok','err');
+  if (!confirm(`${ids.length} pin silinecek?`)) return;
+  let ok=0;
+  for (const id of ids) { try { await delPin(id); ok++; } catch(e) {} }
+  showToast(`✅ ${ok} silindi`); await loadPins(); renderStats();
+}
+
+// ===== VERİ EKLE =====
+let pinLat=null, pinLng=null, pinMarker=null, selConnVal='', selScoreVal=0;
+function initPinMap() {
+  const m = L.map('pin-map', { zoomControl:false }).setView([39.2,35.5], 6);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom:19 }).addTo(m);
+  L.control.zoom({ position:'bottomright' }).addTo(m);
+  maps.pin = m; m.on('click', e => setLocation(e.latlng.lat, e.latlng.lng));
+}
+async function setLocation(lat, lng) {
+  pinLat=lat; pinLng=lng; if(pinMarker) maps.pin.removeLayer(pinMarker);
+  pinMarker = L.circle([lat,lng],{radius:150,color:'#00d4ff',fillColor:'#00d4ff',fillOpacity:.12,weight:2}).addTo(maps.pin);
+  document.getElementById('locDot').classList.add('set');
+  document.getElementById('locText').textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=tr`);
+    const d = await r.json(); const a = d.address||{};
+    document.getElementById('ilInput').value = a.province||a.state||a.city||'';
+    document.getElementById('ilceInput').value = a.county||a.district||a.town||'';
+    document.getElementById('mahalleInput').value = a.suburb||a.neighbourhood||a.village||'';
+  } catch(e) {}
+}
+function autoLocate() {
+  if (!navigator.geolocation) return showToast('Konum desteklenmiyor','err');
+  showToast('Konum alınıyor...','warn');
+  navigator.geolocation.getCurrentPosition(
+    pos => { maps.pin.setView([pos.coords.latitude,pos.coords.longitude],15); setLocation(pos.coords.latitude,pos.coords.longitude); },
+    err => showToast('Konum alınamadı: '+err.message,'err'), { enableHighAccuracy:true, timeout:10000 }
+  );
+}
+function selConn(el,type) { document.querySelectorAll('.cbtn').forEach(b=>b.className=b.className.replace(/ sel/g,'')); el.classList.add('sel'); selConnVal=type; }
+function selScore(el,val) { document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); selScoreVal=val; }
+(function buildScoreRow() {
+  const row = document.getElementById('scoreRow'); if(!row) return;
+  for(let i=1;i<=10;i++){const b=document.createElement('div');b.className='sbtn';b.textContent=i;b.onclick=()=>selScore(b,i);row.appendChild(b);}
+})();
 
 async function submitPin() {
-  if(!pinLat) return showToast('Lütfen konum seçin','err'); if(!document.getElementById('issSelect').value) return showToast('Lütfen ISS seçin','err'); if(!selConnVal) return showToast('Bağlantı türü seçin','err'); if(!document.getElementById('dlSpeed').value) return showToast('Download hızı girin','err'); if(!selScoreVal) return showToast('Puan verin','err');
-  const f = fuzzy(pinLat, pinLng); const btn = document.getElementById('submitBtn'); btn.disabled = true; btn.textContent = 'Gönderiliyor...';
+  if (!pinLat) return showToast('Lütfen konum seçin','err');
+  if (!document.getElementById('issSelect').value) return showToast('Lütfen ISS seçin','err');
+  if (!selConnVal) return showToast('Bağlantı türü seçin','err');
+  const dl = parseInt(document.getElementById('dlSpeed').value);
+  if (!dl) return showToast('Download hızı girin','err');
+  if (!selScoreVal) return showToast('Puan verin','err');
+  // Rate limit kontrolü
+  if (!canSubmit()) {
+    return showToast(`⏳ Lütfen ${remainingWait()} dakika bekleyin`, 'warn');
+  }
+  const f = fuzzy(pinLat, pinLng);
+  const btn = document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='Gönderiliyor...';
   try {
-    await addPin({ lat:f.lat, lng:f.lng, il:document.getElementById('ilInput').value||null, ilce:document.getElementById('ilceInput').value||null, mahalle:document.getElementById('mahalleInput').value||null, iss:document.getElementById('issSelect').value, baglanti_turu:selConnVal, altyapi_sahibi:document.getElementById('infraSelect').value||null, paket_hizi:parseInt(document.getElementById('packageSpeed').value)||null, gercek_dl:parseInt(document.getElementById('dlSpeed').value), gercek_ul:parseInt(document.getElementById('ulSpeed').value)||0, puan:selScoreVal, yorum:document.getElementById('commentInput').value||null, ip_hash:'h_'+Math.random().toString(36).substr(2,9), gorunur:true, sikayet_sayisi:0 });
-    showToast('✅ Veri paylaşıldı!'); resetPinForm(); loadPins(); // Haritayı anında güncelle
-  } catch(e) { showToast('Hata: '+e.message, 'err'); }
+    await addPin({
+      lat:f.lat, lng:f.lng,
+      il:document.getElementById('ilInput').value||null, ilce:document.getElementById('ilceInput').value||null, mahalle:document.getElementById('mahalleInput').value||null,
+      iss:document.getElementById('issSelect').value, baglanti_turu:selConnVal,
+      altyapi_sahibi:document.getElementById('infraSelect').value||null,
+      paket_hizi:parseInt(document.getElementById('packageSpeed').value)||null,
+      gercek_dl:dl, gercek_ul:parseInt(document.getElementById('ulSpeed').value)||0,
+      puan:selScoreVal, yorum:document.getElementById('commentInput').value||null,
+      ip_hash:'h_'+Math.random().toString(36).substr(2,9), gorunur:true, sikayet_sayisi:0
+    });
+    markSubmit(); // Rate limit timestamp kaydet
+    showToast('✅ Veri paylaşıldı!'); resetPinForm(); loadPins();
+  } catch(e) { showToast('Hata: '+e.message,'err'); }
   btn.disabled=false; btn.textContent='📍 Veriyi Paylaş';
 }
-function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker) maps.pin.removeLayer(pinMarker); document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeed','commentInput'].forEach(id=>document.getElementById(id).value=''); document.querySelectorAll('.cbtn, .sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; }
+function resetPinForm() {
+  pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;}
+  document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';
+  ['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeed','commentInput'].forEach(id=>document.getElementById(id).value='');
+  document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0;
+}
 
-// ===== BÖLGE/PİN BİLDİRİMİ =====
-function openReportModal(pinId) { document.getElementById('reportPinId').value = pinId; document.getElementById('reportLocationInfo').style.display = 'none'; document.getElementById('reportModal').classList.add('open'); }
-function openHexReport() { document.getElementById('reportPinId').value = ''; document.getElementById('reportLocationText').textContent = document.getElementById('reportBolge').value || '—'; document.getElementById('reportLocationInfo').style.display = 'block'; document.getElementById('reportModal').classList.add('open'); }
+// ===== BİLDİRİM =====
+function openReportModal(pinId) {
+  document.getElementById('reportPinId').value = pinId;
+  document.getElementById('reportLocationInfo').style.display = 'none';
+  document.getElementById('reportModal').classList.add('open');
+}
+function openHexReport() {
+  document.getElementById('reportPinId').value = '';
+  document.getElementById('reportLocationText').textContent = document.getElementById('reportBolge').value||'—';
+  document.getElementById('reportLocationInfo').style.display = 'block';
+  document.getElementById('reportText').value = '';
+  document.getElementById('reportModal').classList.add('open');
+}
 function closeReportModal() { document.getElementById('reportModal').classList.remove('open'); }
 async function submitReport() {
   const pinId = document.getElementById('reportPinId').value;
-  const targets = pinId ?[{ pin_id: pinId }] : activeHexPins.slice(0, 5).map(p => ({ pin_id: p.id }));
-  if (!targets.length) return showToast('Bildirilecek veri yok', 'err');
+  const targets = pinId ? [{pin_id:pinId}] : activeHexPins.slice(0,5).map(p=>({pin_id:p.id}));
+  if (!targets.length) return showToast('Bildirilecek veri yok','err');
   try {
-    await Promise.all(targets.map(t => addRapor({ pin_id: t.pin_id, tip: document.getElementById('reportType').value, aciklama: document.getElementById('reportText').value, durum: 'bekleyen', ip_hash: 'u_' + Date.now(), hex_id: document.getElementById('reportHexId').value||null, bolge: document.getElementById('reportBolge').value||null })));
+    await Promise.all(targets.map(t => addRapor({
+      pin_id:t.pin_id, tip:document.getElementById('reportType').value,
+      aciklama:document.getElementById('reportText').value||null, durum:'bekleyen',
+      ip_hash:'u_'+Date.now(),
+      hex_id:document.getElementById('reportHexId').value||null,
+      bolge:document.getElementById('reportBolge').value||null
+    })));
     showToast('✅ Bildirim alındı!'); closeReportModal();
-  } catch(e) { showToast('Hata: '+e.message, 'err'); }
+  } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 
-// ===== MOD PANEL =====
+// ===== MOD AUTH =====
 async function modLogin() {
   try {
-    const { data, error } = await sbc.auth.signInWithPassword({ email: document.getElementById('modEmail').value, password: document.getElementById('modPw').value });
-    if (error) throw error; isModLoggedIn = true; currentModUser = data.user;
-    document.getElementById('modAuthScreen').style.display = 'none'; document.getElementById('modPanelContent').style.display = 'flex'; document.getElementById('modBadge').style.display = 'block'; document.getElementById('modSubtitle').textContent = `Giriş: ${data.user.email}`;
-    showToast('✅ Giriş başarılı'); refreshModData(); if (maps.main) renderModPins();
-  } catch(e) { showToast('Hata: '+e.message, 'err'); }
+    const { data, error } = await sbc.auth.signInWithPassword({
+      email: document.getElementById('modEmail').value,
+      password: document.getElementById('modPw').value
+    });
+    if (error) throw error;
+    isModLoggedIn=true; currentModUser=data.user;
+    document.getElementById('modAuthScreen').style.display='none';
+    document.getElementById('modPanelContent').style.display='flex';
+    document.getElementById('modBadge').style.display='block';
+    document.getElementById('modSubtitle').textContent=`Giriş: ${data.user.email}`;
+    showToast('✅ Giriş başarılı'); refreshModData(); if(maps.main) renderModPins();
+  } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
-async function modLogout() { await sbc.auth.signOut(); isModLoggedIn = false; currentModUser = null; document.getElementById('modAuthScreen').style.display = 'flex'; document.getElementById('modPanelContent').style.display = 'none'; document.getElementById('modBadge').style.display = 'none'; pinMarkerLayers.forEach(l => maps.main?.removeLayer(l)); pinMarkerLayers =[]; showToast('Çıkış yapıldı'); }
-function switchModTab(tab) { ['sikayetler','tumPinler','bekleyen'].forEach(t => document.getElementById('modTab-'+t).style.display = t===tab ? 'block' : 'none'); document.querySelectorAll('.mod-tab-btn').forEach((b,i) => b.classList.toggle('active',['sikayetler','tumPinler','bekleyen'][i] === tab)); if (tab === 'tumPinler') loadAdminTable(); if (tab === 'bekleyen') loadRaporlar(); }
+async function modLogout() {
+  await sbc.auth.signOut(); isModLoggedIn=false; currentModUser=null;
+  document.getElementById('modAuthScreen').style.display='flex';
+  document.getElementById('modPanelContent').style.display='none';
+  document.getElementById('modBadge').style.display='none';
+  pinMarkerLayers.forEach(l=>maps.main?.removeLayer(l)); pinMarkerLayers=[];
+  document.getElementById('spamStatBlock')?.remove();
+  showToast('Çıkış yapıldı');
+}
+function switchModTab(tab) {
+  ['sikayetler','tumPinler','bekleyen'].forEach(t => document.getElementById('modTab-'+t).style.display=t===tab?'block':'none');
+  document.querySelectorAll('.mod-tab-btn').forEach((b,i) => b.classList.toggle('active',['sikayetler','tumPinler','bekleyen'][i]===tab));
+  if (tab==='tumPinler') loadAdminTable();
+  if (tab==='bekleyen') loadRaporlar();
+}
 async function refreshModData() { loadSikayetler(); }
 
+// ===== ŞIKAYETLER =====
 async function loadSikayetler() {
-  const list = document.getElementById('sikayetList'); list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
+  const list = document.getElementById('sikayetList');
+  list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
   try {
-    const pins = await getAllPinsAdmin() ||[]; const flagged = pins.filter(p => (p.sikayet_sayisi||0) > 0 || !p.gorunur);
-    if (!flagged.length) return list.innerHTML = '<div class="empty-state">Şikayet edilen pin yok</div>';
-    list.innerHTML = flagged.map(p => `
-      <div class="mod-card" id="mc_${p.id}">
+    const pins = await getAllPinsAdmin()||[];
+    // Spam olanlar + şikayet edilenler + gizliler
+    const flagged = pins.filter(p => (p.sikayet_sayisi||0)>0 || !p.gorunur || isSpam(p));
+    document.getElementById('modSubtitle').textContent = `${flagged.length} sorunlu kayıt`;
+    if (!flagged.length) return list.innerHTML='<div class="empty-state">Sorunlu pin yok ✅</div>';
+    list.innerHTML = flagged.map(p => {
+      const spam = isSpam(p);
+      const tarih = new Date(p.created_at);
+      const tarihStr = tarih.toLocaleDateString('tr-TR')+' '+tarih.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+      return `<div class="mod-card" id="mc_${p.id}" style="${spam?'border-color:rgba(239,68,68,.4);':''}">
         <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-          <div style="flex:1"><div class="mod-info">${p.iss} · ${(p.baglanti_turu||'').toUpperCase()} · ${p.gercek_dl}↓ Mbps</div>
-          <div class="mod-meta">📍 ${p.il||'?'} › ${p.ilce||'?'}<br>🔑 IP: ${p.ip_hash||'—'}<br>${p.gorunur?'👁 Görünür':'🙈 Gizli'}</div></div>
+          <div style="flex:1">
+            ${spam?'<div style="color:var(--danger);font-size:9px;font-family:var(--font-mono);margin-bottom:4px;">⚠ SPAM/ŞÜPHELİ</div>':''}
+            <div class="mod-info">${p.iss} · ${(p.baglanti_turu||'').toUpperCase()} · ${p.gercek_dl}↓ Mbps</div>
+            <div class="mod-meta">📍 ${p.il||'?'} › ${p.ilce||'?'}<br>🕐 ${tarihStr}<br>🔑 ${p.ip_hash||'—'}<br>${p.gorunur?'👁 Görünür':'🙈 Gizli'}</div>
+            ${p.yorum?`<div class="user-comment-box">${p.yorum}</div>`:''}
+            ${p.mod_notu?`<div class="mod-note-box">${p.mod_notu}</div>`:''}
+          </div>
           <div class="mod-badge">🚩 ${p.sikayet_sayisi||0}</div>
         </div>
         <div class="mod-actions">
@@ -905,94 +1103,171 @@ async function loadSikayetler() {
           <button class="btn-hide" onclick="modAction('${p.id}',false)">👁 Gizle</button>
           <button class="btn-del" onclick="modDeletePin('${p.id}')">🗑 Sil</button>
         </div>
-      </div>`).join('');
-  } catch(e) { list.innerHTML = 'Hata: '+e.message; }
+      </div>`;
+    }).join('');
+  } catch(e) { list.innerHTML='Hata: '+e.message; }
 }
 
+// ===== TÜM PİNLER TABLOSU =====
 async function loadAdminTable() {
-  const tbody = document.getElementById('adminTableBody'); tbody.innerHTML = '<tr><td colspan="9" class="loading-dots">Yükleniyor</td></tr>';
+  const tbody = document.getElementById('adminTableBody');
+  tbody.innerHTML = '<tr><td colspan="9" class="loading-dots">Yükleniyor</td></tr>';
   try {
-    const pins = await getAllPinsAdmin() ||[];
-    tbody.innerHTML = pins.map(p => `<tr>
+    const pins = await getAllPinsAdmin()||[];
+    tbody.innerHTML = pins.map(p => {
+      const spam = isSpam(p);
+      const tarih = new Date(p.created_at);
+      const tarihStr = tarih.toLocaleDateString('tr-TR')+'<br><span style="font-size:9px;color:var(--text3)">'+tarih.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+'</span>';
+      return `<tr style="${spam?'background:rgba(239,68,68,.05);':''}">
         <td><input type="checkbox" class="pin-check" value="${p.id}"></td>
-        <td style="color:var(--text3);white-space:nowrap;">${new Date(p.created_at).toLocaleDateString('tr-TR')}</td>
-        <td><b>${p.iss}</b><br><span style="color:var(--text3);font-size:10px">${p.altyapi_sahibi||'—'}</span></td>
+        <td style="color:var(--text3);white-space:nowrap;">${tarihStr}</td>
+        <td><b style="color:${spam?'var(--danger)':'inherit'}">${p.iss}</b>${spam?'<span style="color:var(--danger);font-size:8px;display:block">SPAM</span>':''}<br><span style="color:var(--text3);font-size:10px">${p.altyapi_sahibi||'—'}</span></td>
         <td style="font-family:var(--font-mono)"><span style="color:${speedColor(p.gercek_dl)}">${p.gercek_dl}</span> / ${p.gercek_ul||0}</td>
         <td>${p.il||'?'} › ${p.ilce||'?'}</td>
-        <td class="coord-text">${p.lat?.toFixed(5)}, ${p.lng?.toFixed(5)}<br>IP: ${p.ip_hash||'—'}</td>
+        <td class="coord-text">${p.lat?.toFixed(4)}, ${p.lng?.toFixed(4)}<br>IP: ${p.ip_hash||'—'}</td>
         <td style="color:${memColor(p.puan)}">${p.puan}/10</td>
-        <td>${p.mod_notu ? '📝' : '—'}</td>
-        <td style="display:flex;gap:4px;"><button class="btn-edit" onclick="openEditModal('${p.id}')">✏️</button><button class="btn-del" onclick="modDeletePin('${p.id}')">Sil</button></td>
-      </tr>`).join('');
-  } catch(e) { tbody.innerHTML = '<tr><td colspan="9">Hata: '+e.message+'</td></tr>'; }
+        <td>${p.mod_notu?'📝':'—'}</td>
+        <td style="display:flex;gap:4px;flex-wrap:wrap;">
+          <button class="btn-edit" onclick="openEditModal('${p.id}')">✏️</button>
+          <button class="btn-del" onclick="modDeletePin('${p.id}')">Sil</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) { tbody.innerHTML='<tr><td colspan="9">Hata: '+e.message+'</td></tr>'; }
 }
 
+// ===== BEKLEYEN RAPORLAR =====
 async function loadRaporlar() {
-  const list = document.getElementById('bekleyenList'); list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
+  const list = document.getElementById('bekleyenList');
+  list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
   try {
-    const raporlar = await getRaporlar() ||[];
-    if (!raporlar.length) return list.innerHTML = '<div class="empty-state">Bekleyen rapor yok</div>';
-    list.innerHTML = raporlar.map(r => `
-      <div class="report-card">
-        <div style="display:flex;justify-content:space-between;"><div class="report-type">${r.tip}</div><div style="font-size:9px;color:var(--text3);">${new Date(r.created_at).toLocaleString('tr-TR')}</div></div>
-        <div class="report-text">${r.aciklama||'Açıklama girilmedi'}</div>
-        <div class="report-meta">${r.bolge ? `📍 ${r.bolge}<br>` : ''}Pin ID: ${r.pin_id||'—'}</div>
-        <div class="mod-actions" style="margin-top:8px;">
-          <button class="btn-approve" onclick="handleRapor('${r.id}','islendi')">✅ İşlendi Yap</button>
-          <button class="btn-hide" onclick="handleRapor('${r.id}','reddedildi')">❌ Reddet</button>
-          ${r.pin_id ? `<button class="btn-edit" onclick="openEditModal('${r.pin_id}')">Pini Düzenle</button>` : ''}
+    const raporlar = await getRaporlar()||[];
+    if (!raporlar.length) return list.innerHTML='<div class="empty-state">Bekleyen rapor yok ✅</div>';
+    const tipLabels = { yanlis_hiz:'Yanlış hız', yanlis_konum:'Yanlış konum', yanlis_iss:'Yanlış ISS', spam:'Spam', diger:'Diğer' };
+    list.innerHTML = raporlar.map(r => {
+      const tarih = new Date(r.created_at);
+      const tarihStr = tarih.toLocaleDateString('tr-TR')+' '+tarih.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+      return `<div class="report-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+          <div class="report-type">${tipLabels[r.tip]||r.tip}</div>
+          <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);">${tarihStr}</div>
         </div>
-      </div>`).join('');
-  } catch(e) { list.innerHTML = 'Hata: '+e.message; }
+        <div class="report-text">${r.aciklama||'Açıklama girilmedi'}</div>
+        <div class="report-meta" style="margin-top:5px;line-height:1.8;">
+          ${r.bolge?`<span style="color:var(--accent);font-family:var(--font-mono);">📍 ${r.bolge}</span><br>`:''}
+          Pin ID: <span style="font-family:var(--font-mono);font-size:9px;">${r.pin_id||'—'}</span>
+        </div>
+        <div class="mod-actions" style="margin-top:8px;">
+          <button class="btn-approve" onclick="handleRapor('${r.id}','islendi')">✅ İşlendi</button>
+          <button class="btn-hide" onclick="handleRapor('${r.id}','reddedildi')">❌ Reddet</button>
+          ${r.pin_id?`<button class="btn-edit" onclick="openEditModal('${r.pin_id}')">✏️ Pini Düzenle</button>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { list.innerHTML='Hata: '+e.message; }
 }
 
-async function handleRapor(id, durum) { try { await patchRapor(id, { durum }); showToast('✅ Rapor güncellendi'); loadRaporlar(); } catch(e) { showToast('Hata: '+e.message,'err'); } }
-async function modAction(id, approve) { try { await patchPin(id, { gorunur:approve, sikayet_sayisi:approve?0:99 }); document.getElementById('mc_'+id)?.remove(); pinsData = pinsData.filter(p => p.id !== id || approve); showToast(approve ? '✅ Pin onaylandı' : '👁 Pin gizlendi (İstatistikten düştü)'); loadPins(); } catch(e) { showToast('Hata: '+e.message,'err'); } }
+async function handleRapor(id, durum) { try { await patchRapor(id,{durum}); showToast('✅ Rapor güncellendi'); loadRaporlar(); } catch(e) { showToast('Hata: '+e.message,'err'); } }
 
-/* ===== EDİT VE SİLME (MOD) ===== */
-async function openEditModal(id) {
+async function modAction(id, approve) {
   try {
-    let p = pinsData.find(x => x.id === id) || (await getPinById(id))?.[0];
-    if (!p) return showToast('Pin bulunamadı','err');
-    document.getElementById('editPinId').value = id; document.getElementById('editIss').value = p.iss || ''; document.getElementById('editConn').value = p.baglanti_turu || 'fiber'; document.getElementById('editDL').value = p.gercek_dl || ''; document.getElementById('editUL').value = p.gercek_ul || ''; document.getElementById('editPkg').value = p.paket_hizi || ''; document.getElementById('editPuan').value = p.puan || ''; document.getElementById('editGorunur').value = String(p.gorunur !== false); document.getElementById('editModNote').value = p.mod_notu || '';
-    document.getElementById('editModal').classList.add('open');
+    await patchPin(id,{gorunur:approve, sikayet_sayisi:approve?0:99});
+    document.getElementById('mc_'+id)?.remove();
+    showToast(approve?'✅ Pin onaylandı':'👁 Pin gizlendi');
+    await loadPins(); loadSikayetler();
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 
+// ===== EDİT MODAL =====
+async function openEditModal(id) {
+  try {
+    let p = pinsData.find(x=>x.id===id);
+    if (!p) { const res = await getPinById(id); p = res?.[0]; }
+    if (!p) return showToast('Pin bulunamadı','err');
+    document.getElementById('editPinId').value=id;
+    document.getElementById('editIss').value=p.iss||'';
+    document.getElementById('editConn').value=p.baglanti_turu||'fiber';
+    document.getElementById('editDL').value=p.gercek_dl||'';
+    document.getElementById('editUL').value=p.gercek_ul||'';
+    document.getElementById('editPkg').value=p.paket_hizi||'';
+    document.getElementById('editPuan').value=p.puan||'';
+    document.getElementById('editGorunur').value=String(p.gorunur!==false);
+    document.getElementById('editModNote').value=p.mod_notu||'';
+    document.getElementById('editModal').classList.add('open');
+  } catch(e) { showToast('Hata: '+e.message,'err'); }
+}
 async function saveEdit() {
   const id = document.getElementById('editPinId').value;
+  const dl = parseInt(document.getElementById('editDL').value);
+  const puan = parseInt(document.getElementById('editPuan').value);
+  if (!dl) return showToast('DL hızı girin','err');
+  if (puan<1||puan>10||isNaN(puan)) return showToast('Puan 1-10 arasında olmalı','err');
   try {
-    await patchPin(id, { iss: document.getElementById('editIss').value, baglanti_turu: document.getElementById('editConn').value, gercek_dl: parseInt(document.getElementById('editDL').value), gercek_ul: parseInt(document.getElementById('editUL').value)||0, paket_hizi: parseInt(document.getElementById('editPkg').value)||null, puan: parseInt(document.getElementById('editPuan').value), gorunur: document.getElementById('editGorunur').value === 'true', mod_notu: document.getElementById('editModNote').value.trim() || null });
-    showToast('✅ Pin güncellendi'); closeEditModal(); loadAdminTable(); loadSikayetler(); loadPins(); // Harita ve istatistik yenile
+    await patchPin(id,{
+      iss:document.getElementById('editIss').value,
+      baglanti_turu:document.getElementById('editConn').value,
+      gercek_dl:dl, gercek_ul:parseInt(document.getElementById('editUL').value)||0,
+      paket_hizi:parseInt(document.getElementById('editPkg').value)||null,
+      puan, gorunur:document.getElementById('editGorunur').value==='true',
+      mod_notu:document.getElementById('editModNote').value.trim()||null
+    });
+    showToast('✅ Pin güncellendi'); closeEditModal();
+    await loadPins(); loadAdminTable(); loadSikayetler();
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 function closeEditModal() { document.getElementById('editModal').classList.remove('open'); }
 
-/* Tekli Silme */
+// ===== TEKLİ SİLME =====
 async function modDeletePin(id) {
-  if (!confirm('Kalıcı olarak silinecek, emin misiniz?')) return;
-  try { await delPin(id); document.getElementById('mc_'+id)?.remove(); showToast('🗑 Pin silindi'); loadAdminTable(); loadPins(); } catch(e) { showToast('Hata: '+e.message,'err'); }
-}
-
-/* Toplu Silme */
-function toggleAllPins(el) { document.querySelectorAll('.pin-check').forEach(cb => cb.checked = el.checked); }
-async function bulkDeletePins() {
-  const ids = Array.from(document.querySelectorAll('.pin-check:checked')).map(cb => cb.value);
-  if (!ids.length) return showToast('Seçili pin yok', 'err');
-  if (!confirm(`${ids.length} adet pin silinecek! Emin misiniz?`)) return;
-  const btn = document.querySelector('#modTab-tumPinler .btn-del');
-  btn.textContent = 'Siliniyor...'; btn.disabled = true;
+  if (!confirm('Kalıcı olarak silinecek. Emin misiniz?')) return;
   try {
-    for (const id of ids) { await delPin(id); } // Mod token'ı ile teker teker sil
-    showToast(`✅ ${ids.length} pin silindi.`); loadAdminTable(); loadPins(); // İstatistikleri de yeniler
-  } catch(e) { showToast('Hata: ' + e.message, 'err'); }
-  btn.innerHTML = '🗑️ Seçilileri Sil'; btn.disabled = false;
+    await delPin(id);
+    document.getElementById('mc_'+id)?.remove();
+    pinsData = pinsData.filter(p=>p.id!==id);
+    cleanPinsData = cleanPins(pinsData);
+    if (maps.main) { renderHex(); renderModPins(); }
+    showToast('🗑 Pin silindi');
+    loadAdminTable();
+  } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 
-function showToast(msg, type='') { const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast' + (type ? ' '+type : ''); t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3200); }
-async function checkSession() { try { const { data: { session } } = await sbc.auth.getSession(); if (session) { isModLoggedIn = true; currentModUser = session.user; document.getElementById('modAuthScreen').style.display = 'none'; document.getElementById('modPanelContent').style.display = 'flex'; document.getElementById('modBadge').style.display = 'block'; document.getElementById('modSubtitle').textContent = `Giriş: ${session.user.email}`; } } catch(e) {} }
+// ===== TOPLU SİLME =====
+function toggleAllPins(el) { document.querySelectorAll('.pin-check').forEach(cb=>cb.checked=el.checked); }
+async function bulkDeletePins() {
+  const ids = Array.from(document.querySelectorAll('.pin-check:checked')).map(cb=>cb.value);
+  if (!ids.length) return showToast('Seçili pin yok','err');
+  if (!confirm(`${ids.length} adet pin kalıcı silinecek! Emin misiniz?`)) return;
+  const btn = document.getElementById('bulkDelBtn');
+  btn.textContent='Siliniyor...'; btn.disabled=true;
+  let ok=0, fail=0;
+  for (const id of ids) { try { await delPin(id); ok++; } catch(e) { fail++; } }
+  showToast(`✅ ${ok} silindi${fail?`, ${fail} hata`:''}`);
+  btn.textContent='🗑 Seçilileri Sil'; btn.disabled=false;
+  await loadPins(); loadAdminTable();
+}
 
-checkSession(); setTimeout(() => initMainMap(), 100);
+// ===== TOAST =====
+function showToast(msg, type='') {
+  const t=document.getElementById('toast'); t.textContent=msg;
+  t.className='toast'+(type?' '+type:''); t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+// ===== SESSION CHECK =====
+async function checkSession() {
+  try {
+    const { data: { session } } = await sbc.auth.getSession();
+    if (session) {
+      isModLoggedIn=true; currentModUser=session.user;
+      document.getElementById('modAuthScreen').style.display='none';
+      document.getElementById('modPanelContent').style.display='flex';
+      document.getElementById('modBadge').style.display='block';
+      document.getElementById('modSubtitle').textContent=`Giriş: ${session.user.email}`;
+    }
+  } catch(e) {}
+}
+
+checkSession(); setTimeout(()=>initMainMap(), 100);
 </script>
 </body>
 </html>
