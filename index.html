@@ -104,9 +104,9 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
 .region-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
 .region-name{font-family:var(--font-mono);font-size:14px;font-weight:700;margin-bottom:3px;}
 .region-cities{font-size:10px;color:var(--text3);margin-bottom:12px;}
-.region-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.region-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
 .rstat{background:var(--surface2);border-radius:7px;padding:9px;} .rstat-val{font-family:var(--font-mono);font-size:16px;font-weight:700;} .rstat-label{font-size:9px;color:var(--text3);margin-top:2px;}
-.stats-top{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.stats-top{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;}
 .sum-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;} .sum-val{font-family:var(--font-mono);font-size:26px;font-weight:700;color:var(--accent);} .sum-label{font-size:10px;color:var(--text3);margin-top:4px;}
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;} .stat-title{font-family:var(--font-mono);font-size:9px;font-weight:700;color:var(--text3);letter-spacing:1.5px;margin-bottom:14px;text-transform:uppercase;}
@@ -522,18 +522,49 @@ const patchRapor = (id,d) => sbRest(`raporlar?id=eq.${id}`, { method:'PATCH', pr
 
 const SPAM_DL_MAX = 1500;
 const SPAM_DL_MIN = 0.5;
+const SPAM_UL_MAX = 1000;
 const KNOWN_ISS =['TTNet (Türk Telekom)','Superonline (Turkcell)','TurkNet','Vodafone','Millenicom','Netspeed','Diğer'];
-function isSpam(p) { return (!p.gercek_dl || p.gercek_dl > SPAM_DL_MAX || p.gercek_dl < SPAM_DL_MIN || !KNOWN_ISS.includes(p.iss)); }
+function isSpam(p) {
+  if (!p.gercek_dl || p.gercek_dl > SPAM_DL_MAX || p.gercek_dl < SPAM_DL_MIN) return true;
+  if (!KNOWN_ISS.includes(p.iss)) return true;
+  if (p.gercek_ul !== null && p.gercek_ul !== undefined && p.gercek_ul > SPAM_UL_MAX) return true;
+  if (p.gercek_ul > p.gercek_dl * 2) return true; // UL > 2x DL fiziksel olarak anlamsız
+  return false;
+}
 function cleanPins(pins) { return pins.filter(p => !isSpam(p)); }
 
 const RATE_LIMIT_MS = 5 * 60 * 1000;
 function getRateKey() { return 'ih_rate_' + (browserFingerprint || 'default'); }
-function canSubmit() { return Date.now() - parseInt(localStorage.getItem(getRateKey()) || '0') > RATE_LIMIT_MS; }
-function markSubmit() { localStorage.setItem(getRateKey(), String(Date.now())); const cntKey = 'ih_cnt_' + (browserFingerprint || 'default'); localStorage.setItem(cntKey, String(parseInt(localStorage.getItem(cntKey) || '0') + 1)); }
-function remainingWait() { return Math.ceil((RATE_LIMIT_MS - (Date.now() - parseInt(localStorage.getItem(getRateKey()) || '0'))) / 60000); }
+function canSubmit() {
+  const ls = parseInt(localStorage.getItem(getRateKey()) || '0');
+  const ss = parseInt(sessionStorage.getItem(getRateKey()) || '0');
+  const last = Math.max(ls, ss);
+  return Date.now() - last > RATE_LIMIT_MS;
+}
+function markSubmit() {
+  const now = String(Date.now());
+  localStorage.setItem(getRateKey(), now);
+  sessionStorage.setItem(getRateKey(), now);
+  const cntKey = 'ih_cnt_' + (browserFingerprint || 'default');
+  const ssCntKey = 'ih_sscnt_' + (browserFingerprint || 'default');
+  localStorage.setItem(cntKey, String(parseInt(localStorage.getItem(cntKey) || '0') + 1));
+  sessionStorage.setItem(ssCntKey, String(parseInt(sessionStorage.getItem(ssCntKey) || '0') + 1));
+}
+function remainingWait() {
+  const ls = parseInt(localStorage.getItem(getRateKey()) || '0');
+  const ss = parseInt(sessionStorage.getItem(getRateKey()) || '0');
+  const last = Math.max(ls, ss);
+  return Math.ceil((RATE_LIMIT_MS - (Date.now() - last)) / 60000);
+}
 function shouldQuarantine() {
-  const cntKey = 'ih_cnt_' + (browserFingerprint || 'default'); const tsKey = 'ih_cntTs_' + (browserFingerprint || 'default');
-  const cnt = parseInt(localStorage.getItem(cntKey) || '0'); const ts = parseInt(localStorage.getItem(tsKey) || String(Date.now()));
+  const cntKey = 'ih_cnt_' + (browserFingerprint || 'default');
+  const ssCntKey = 'ih_sscnt_' + (browserFingerprint || 'default');
+  const tsKey = 'ih_cntTs_' + (browserFingerprint || 'default');
+  // sessionStorage sayacı — localStorage temizlense bile session içinde geçerli
+  const ssCnt = parseInt(sessionStorage.getItem(ssCntKey) || '0');
+  if (ssCnt >= 3) return true; // Aynı oturumda 3+ gönderim → karantina
+  const cnt = parseInt(localStorage.getItem(cntKey) || '0');
+  const ts = parseInt(localStorage.getItem(tsKey) || String(Date.now()));
   if (cnt === 1) localStorage.setItem(tsKey, String(Date.now()));
   const elapsed = Date.now() - ts;
   if (elapsed < 10 * 60 * 1000 && cnt > 5) return true;
@@ -684,19 +715,22 @@ function renderRegions() {
   const regions = Object.entries(BOLGELER).map(([name, info]) => {
     const pins = all.filter(p => info.iller.includes(p.il));
     const avgDL = pins.length ? Math.round(pins.reduce((a,p)=>a+p.gercek_dl,0)/pins.length) : 0;
+    const avgUL = pins.length ? Math.round(pins.filter(p=>p.gercek_ul>0).reduce((a,p)=>a+(p.gercek_ul||0),0)/Math.max(1,pins.filter(p=>p.gercek_ul>0).length)) : 0;
     const avgS = pins.length ? parseFloat((pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1)) : null;
-    return { name, color:info.color, iller:info.iller, pins, avgDL, avgS };
+    return { name, color:info.color, iller:info.iller, pins, avgDL, avgUL, avgS };
   });
   if (regionSortMode==='dl') regions.sort((a,b)=>b.avgDL-a.avgDL); else if (regionSortMode==='mem') regions.sort((a,b)=>(b.avgS||0)-(a.avgS||0)); else regions.sort((a,b)=>b.pins.length-a.pins.length);
-  grid.innerHTML = regions.map(r => `<div class="region-card"><div style="position:absolute;top:0;left:0;right:0;height:2px;background:${r.color}"></div><div class="region-name" style="color:${r.color}">${r.name} Bölgesi</div><div class="region-cities">${r.iller.slice(0,4).join(', ')} +${Math.max(0,r.iller.length-4)} il</div><div class="region-stats"><div class="rstat"><div class="rstat-val" style="color:${speedColor(r.avgDL)}">${r.avgDL||'—'}</div><div class="rstat-label">Mbps ↓ Ort.</div></div><div class="rstat"><div class="rstat-val" style="color:${r.avgS!==null?memColor(r.avgS):'var(--text3)'}">${r.avgS!==null?r.avgS.toFixed(1):'—'}</div><div class="rstat-label">/ 10 Memnuniyet</div></div></div><div class="region-count">${r.pins.length} ölçüm</div></div>`).join('');
+  grid.innerHTML = regions.map(r => `<div class="region-card"><div style="position:absolute;top:0;left:0;right:0;height:2px;background:${r.color}"></div><div class="region-name" style="color:${r.color}">${r.name} Bölgesi</div><div class="region-cities">${r.iller.slice(0,4).join(', ')} +${Math.max(0,r.iller.length-4)} il</div><div class="region-stats"><div class="rstat"><div class="rstat-val" style="color:${speedColor(r.avgDL)}">${r.avgDL||'—'}</div><div class="rstat-label">Mbps ↓ İndirme</div></div><div class="rstat"><div class="rstat-val" style="color:${r.avgUL?speedColor(r.avgUL):'var(--text3)'}">${r.avgUL||'—'}</div><div class="rstat-label">Mbps ↑ Yükleme</div></div><div class="rstat"><div class="rstat-val" style="color:${r.avgS!==null?memColor(r.avgS):'var(--text3)'}">${r.avgS!==null?r.avgS.toFixed(1):'—'}</div><div class="rstat-label">/ 10 Memnuniyet</div></div></div><div class="region-count">${r.pins.length} ölçüm</div></div>`).join('');
 }
 function sortRegions(mode) { regionSortMode = mode;['sortDL','sortMem','sortCount'].forEach(id => document.getElementById(id)?.classList.remove('active')); document.getElementById(mode==='dl'?'sortDL':mode==='mem'?'sortMem':'sortCount')?.classList.add('active'); renderRegions(); }
 
 async function renderStats() {
   let pins = cleanPinsData;
   if (!pins.length) {['issRankList','speedRankList','connChart'].forEach(id => document.getElementById(id).innerHTML = '<div class="loading-text">Henüz veri yok</div>'); return; }
-  const avgDL = Math.round(pins.reduce((a,p)=>a+p.gercek_dl,0)/Math.max(1,pins.length)); const avgS = pins.length ? (pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1) : '—';
-  document.getElementById('sumGrid').innerHTML = `<div class="sum-card"><div class="sum-val">${pins.length}</div><div class="sum-label">Onaylı Ölçüm</div></div><div class="sum-card"><div class="sum-val" style="color:${speedColor(avgDL)}">${avgDL}</div><div class="sum-label">Ort. DL (Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgS!=='—'?memColor(avgS):'var(--text3)'}">${avgS}</div><div class="sum-label">Ort. Memnuniyet</div></div>`;
+  const avgDL = Math.round(pins.reduce((a,p)=>a+p.gercek_dl,0)/Math.max(1,pins.length));
+  const ulPins = pins.filter(p=>p.gercek_ul>0); const avgUL = ulPins.length ? Math.round(ulPins.reduce((a,p)=>a+p.gercek_ul,0)/ulPins.length) : 0;
+  const avgS = pins.length ? (pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1) : '—';
+  document.getElementById('sumGrid').innerHTML = `<div class="sum-card"><div class="sum-val">${pins.length}</div><div class="sum-label">Onaylı Ölçüm</div></div><div class="sum-card"><div class="sum-val" style="color:${speedColor(avgDL)}">${avgDL}</div><div class="sum-label">Ort. İndirme (↓ Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgUL?speedColor(avgUL):'var(--text3)'}">${avgUL||'—'}</div><div class="sum-label">Ort. Yükleme (↑ Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgS!=='—'?memColor(avgS):'var(--text3)'}">${avgS}</div><div class="sum-label">Ort. Memnuniyet</div></div>`;
 
   const im = {}; pins.forEach(p => { if(!im[p.iss]) im[p.iss]={t:0,c:0}; im[p.iss].t+=p.puan; im[p.iss].c++; });
   document.getElementById('issRankList').innerHTML = Object.entries(im).map(([iss,d])=>({iss, s:(d.t/d.c).toFixed(1), c:d.c})).sort((a,b)=>b.s-a.s).map((x,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${x.iss}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.s)}">${x.s}</div></div>`).join('');
@@ -734,12 +768,21 @@ function selScore(el,val) { document.querySelectorAll('.sbtn').forEach(b=>b.clas
 
 async function submitPin() {
   if (isMaintenanceMode) return showToast('🔧 Bakım modu aktif — şu an veri eklenemiyor','warn');
-  if (!pinLat) return showToast('Lütfen konum seçin','err'); if (!document.getElementById('issSelect').value) return showToast('Lütfen ISS seçin','err'); if (!selConnVal) return showToast('Bağlantı türü seçin','err'); const dl = parseInt(document.getElementById('dlSpeed').value); if (!dl) return showToast('Download hızı girin','err'); if (!selScoreVal) return showToast('Puan verin','err');
+  if (!pinLat) return showToast('Lütfen konum seçin','err');
+  if (!document.getElementById('issSelect').value) return showToast('Lütfen ISS seçin','err');
+  if (!selConnVal) return showToast('Bağlantı türü seçin','err');
+  const dl = parseInt(document.getElementById('dlSpeed').value);
+  const ul = parseInt(document.getElementById('ulSpeed').value) || 0;
+  if (!dl) return showToast('Download hızı girin','err');
+  if (dl < 0.5 || dl > 1500) return showToast('Geçersiz download hızı (0.5–1500 Mbps)','err');
+  if (ul > 1000) return showToast('Geçersiz upload hızı (max 1000 Mbps)','err');
+  if (ul > dl * 2) return showToast('Upload hızı download hızının 2 katından fazla olamaz','err');
+  if (!selScoreVal) return showToast('Puan verin','err');
   if (!canSubmit()) return showToast(`⏳ Lütfen ${remainingWait()} dakika bekleyin`, 'warn');
   const quarantine = shouldQuarantine(); const f = fuzzy(pinLat, pinLng);
   const btn = document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='Gönderiliyor...';
   try {
-    await addPin({ lat:f.lat, lng:f.lng, il:document.getElementById('ilInput').value||null, ilce:document.getElementById('ilceInput').value||null, mahalle:document.getElementById('mahalleInput').value||null, iss:document.getElementById('issSelect').value, baglanti_turu:selConnVal, altyapi_sahibi:document.getElementById('infraSelect').value||null, paket_hizi:parseInt(document.getElementById('packageSpeed').value)||null, gercek_dl:dl, gercek_ul:parseInt(document.getElementById('ulSpeed').value)||0, puan:selScoreVal, yorum:document.getElementById('commentInput').value||null, browser_fp: browserFingerprint || null, ip_hash: browserFingerprint ? 'fp_' + browserFingerprint.slice(0,8) : null, gorunur: !quarantine, sikayet_sayisi: 0, is_quarantine: quarantine });
+    await addPin({ lat:f.lat, lng:f.lng, il:document.getElementById('ilInput').value||null, ilce:document.getElementById('ilceInput').value||null, mahalle:document.getElementById('mahalleInput').value||null, iss:document.getElementById('issSelect').value, baglanti_turu:selConnVal, altyapi_sahibi:document.getElementById('infraSelect').value||null, paket_hizi:parseInt(document.getElementById('packageSpeed').value)||null, gercek_dl:dl, gercek_ul:ul, puan:selScoreVal, yorum:document.getElementById('commentInput').value||null, browser_fp: browserFingerprint || null, ip_hash: browserFingerprint ? 'fp_' + browserFingerprint.slice(0,8) : null, gorunur: !quarantine, sikayet_sayisi: 0, is_quarantine: quarantine });
     markSubmit(); if (quarantine) showToast('⚠ Verini aldık — incelemeye alındı', 'warn'); else showToast('✅ Veri paylaşıldı!'); resetPinForm(); loadPins();
   } catch(e) {
     if(e.message.includes("does not exist") || e.message.includes("schema cache")) showToast("Supabase Schema Cache yenileniyor. Lütfen 1-2 dk bekleyin.", "warn");
