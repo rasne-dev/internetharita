@@ -2,62 +2,57 @@
 
 **Türkiye'nin kullanıcı kaynaklı internet hız ve memnuniyet haritası.**
 
-🔗 **Canlı Site:**[rasne-dev.github.io/internetharita](https://rasne-dev.github.io/internetharita)
+🔗 **Canlı Site:** [rasne-dev.github.io/internetharita](https://rasne-dev.github.io/internetharita)
 
 ---
 
 ## Ne işe yarar?
 
-İnternetHarita, Türkiye genelinde gerçek kullanıcıların kendi internet bağlantılarını ölçüp paylaştığı açık kaynaklı bir topluluk haritasıdır. Taşınmadan önce yeni semtinizdeki internet kalitesini öğrenebilir, İSS'leri (İnternet Servis Sağlayıcıları) karşılaştırabilir ya da bulunduğunuz bölgedeki altyapı hızlarını şeffaf bir şekilde görebilirsiniz.
+İnternetHarita, Türkiye genelinde gerçek kullanıcıların kendi internet bağlantılarını ölçüp paylaştığı açık kaynaklı bir topluluk haritasıdır. Taşınmadan önce yeni semtinizdeki internet kalitesini öğrenebilir, servis sağlayıcıları karşılaştırabilir ya da bulunduğunuz bölgedeki altyapı hızlarını şeffaf bir şekilde görebilirsiniz.
 
 ---
 
 ## Öne Çıkan Özellikler
 
-*   🛡️ **Güvenilir Veri & Spam Koruması:** Veritabanı seviyesinde çalışan akıllı algoritmalar sayesinde spam saldırıları ve gerçek dışı hız testleri (örn. 10.000 Mbps) anında engellenir.
-*   🔧 **Aktif Moderasyon Sistemi:** Hatalı girilen veriler topluluk tarafından bildirilebilir; yetkili moderatörler gelişmiş mod paneli üzerinden bu verileri düzenleyebilir, gizleyebilir veya toplu olarak silebilir.
-*   📊 **Detaylı İstatistikler:** Türkiye'nin coğrafi bölgeleri arası karşılaştırmalar, İSS sıralamaları ve en hızlı ilçeler gibi veriler gerçek zamanlı derlenir.
+*   🛡️ **Güvenilir Topluluk Verisi:** Arka planda çalışan akıllı algoritmalarımız sayesinde sahte veriler, spam denemeleri ve mantık dışı hız ölçümleri otomatik olarak engellenir.
+*   🔧 **Aktif Moderasyon:** Haritanın kalitesini korumak için topluluk üyeleri şüpheli bölgeleri bildirebilir. Gönüllü moderatör ekibimiz bu bildirimleri inceleyerek haritayı her zaman güncel ve doğru tutar.
+*   📊 **Detaylı İstatistikler:** Türkiye geneli, bölgeler arası karşılaştırmalar, İSS (İnternet Servis Sağlayıcı) sıralamaları ve en hızlı ilçeler gibi veriler gerçek zamanlı olarak derlenir.
+*   🔍 **Dinamik Harita Görünümü:** Haritaya yaklaştıkça bölgeler (altıgenler) sokak ve mahalle seviyesine kadar detaylanır, böylece çok daha lokal ve kesin verilere ulaşırsınız.
 
 ---
 
 ## Nasıl kullanılır?
 
 ### 🗺 Harita
-Hexagon (altıgen) bölgelere tıklayarak o bölgenin ortalama hız ve memnuniyet bilgisine, İSS dağılımına ulaşabilirsiniz. Renk skalası:
+Haritadaki bölgelere tıklayarak o konumun ortalama hızını, memnuniyet puanını ve İSS dağılımını görebilirsiniz. Renk skalası:
 
-| Renk | Hız |
+| Renk | Hız Aralığı |
 |------|-----|
 | 🟣 Mor | 500+ Mbps |
 | 🔵 Mavi | 200 – 500 Mbps |
 | 🟢 Yeşil | 100 – 200 Mbps |
 | 🟠 Turuncu | 25 – 100 Mbps |
-| 🔴 Kırmızı | 25 Mbps altı |
+| 🔴 Kırmızı | 25 Mbps ve altı |
 
-**Hız / Memnuniyet** modunu sol panelden değiştirebilirsiniz.
+Sol panelden harita modunu **Hız** veya **Memnuniyet** olarak değiştirebilirsiniz.
 
 ### 📍 Veri Ekle
-Kendi internet ölçümünüzü paylaşmak için sağ üstteki **+ Veri Ekle** butonuna tıklayın:
+Kendi internet performansınızı paylaşmak için sağ üstteki **+ Veri Ekle** butonuna tıklayın:
 1. Konumunuzu haritadan seçin veya GPS ile otomatik bulun.
-2. İSS, altyapı türü ve speedtest sonucunuzu girin.
-3. 1–10 arası memnuniyet puanı verin ve gönderin. *(Spam koruması gereği kısa süre içinde çok fazla veri eklenmesi engellenmiştir.)*
+2. Servis sağlayıcınızı, hız testinden aldığınız sonucu ve altyapı türünü girin.
+3. 1–10 arası bir memnuniyet puanı verip gönderin. *(Sistemi korumak amacıyla arka arkaya aşırı veri girişi engellenmiştir).*
 
-### 🚩 Yanlış Veri Bildirme
-Bir bölgede hatalı veya sahte veri olduğunu düşünüyorsanız hexagona tıklayıp **"Bu Bölgeyi Bildir"** butonunu kullanabilirsiniz. Moderatörler bildirimi inceleyip gerekli düzeltmeyi yapar.
+### 🚩 Bildirim Yapma
+Bir bölgede hatalı veri olduğunu düşünüyorsanız haritada o bölgeye tıklayıp **"Bu Bölgeyi Bildir"** butonunu kullanabilirsiniz.
 
 ---
 
 ## Gizlilik & Güvenlik
 
-Sistem, kullanıcı gizliliğini en üst düzeyde tutacak şekilde tasarlanmıştır:
-- 📍 **Konum Gizliliği:** Haritada işaretlediğiniz konum ~150 metre içinde rastgele kaydırılır. Bireysel ölçümler haritada doğrudan gösterilmez, sadece bölge ortalaması alınır.
-- 🔒 **IP Koruması:** IP adresiniz hiçbir zaman veritabanına açık (raw) olarak kaydedilmez. Güvenlik ve rate-limit kontrolleri için anında geri döndürülemez kriptolojik bir değere (Hash) dönüştürülür.
-- 👤 **Kişisel Veri:** İsim, e-posta veya tam ev adresi gibi kişisel veriler toplanmaz.
-
----
-
-## Katkıda Bulunma
-
-Kendi ölçümünüzü ekleyerek haritaya katkıda bulunabilirsiniz. Ne kadar çok kullanıcı veri eklerse, harita o kadar doğru ve kapsayıcı olur!
+Kullanıcı gizliliği platformumuzun temel önceliğidir:
+- 📍 **Konum Gizliliği:** Haritada işaretlediğiniz konum, sistem tarafından rastgele bir miktar kaydırılarak (obfuscation) kaydedilir. Gerçek ev adresiniz haritada hiçbir zaman doğrudan gösterilmez, sadece genel bölge ortalaması alınır.
+- 👤 **Kişisel Veri İstenmez:** Adınız, e-posta adresiniz veya telefon numaranız gibi hiçbir kişisel veri talep edilmez ve toplanmaz.
+- 🔒 **Güvenli Altyapı:** Kötü niyetli kullanımları engellemek için cihaz eşleştirme teknolojileri kullanılır, ancak bireysel bağlantı kayıtları takip edilmez.
 
 ---
 
@@ -73,24 +68,25 @@ Kendi ölçümünüzü ekleyerek haritaya katkıda bulunabilirsiniz. Ne kadar ç
 
 ## What is it?
 
-İnternetHarita is a community-driven map where real users across Turkey measure and share their internet connection capabilities. You can check internet quality before moving to a new neighborhood, compare ISPs, or view average speeds based on real user experiences.
+İnternetHarita is a community-driven platform where real users across Turkey share their internet connection speeds and experiences. It allows you to check internet quality in different neighborhoods, compare ISPs, and see real-world infrastructure performance.
 
 ---
 
 ## Key Features
 
-*   🛡️ **Reliable Data & Anti-Spam:** Database-level security and smart algorithms prevent spam attacks and unrealistic speed entries (e.g., 10,000+ Mbps).
-*   🔧 **Active Moderation System:** Community members can report inaccurate data. Authorized moderators use an advanced panel to verify, edit, hide, or bulk-delete malicious entries.
-*   📊 **Comprehensive Statistics:** Real-time generation of ISP rankings, fastest districts, and connection type breakdowns.
+*   🛡️ **Reliable Data:** Our automated smart algorithms filter out unrealistic speed tests, duplicate entries, and spam attempts to keep the data clean.
+*   🔧 **Active Moderation:** Users can flag suspicious regions. Our moderation team reviews these reports to ensure the map remains accurate.
+*   📊 **Real-time Statistics:** View dynamic rankings of ISPs, the fastest districts, and regional speed comparisons.
+*   🔍 **Dynamic Map Detail:** As you zoom in, the map breaks down into smaller, highly detailed geographic areas (down to the neighborhood/street level).
 
 ---
 
 ## How to use
 
 ### 🗺 Map
-Click on hexagon regions to see average speed, satisfaction score, and ISP breakdown for that area. Color scale:
+Click on any region on the map to see its average download/upload speeds, user satisfaction scores, and ISP breakdowns. Color scale:
 
-| Color | Speed |
+| Color | Speed Range |
 |-------|-------|
 | 🟣 Purple | 500+ Mbps |
 | 🔵 Blue | 200 – 500 Mbps |
@@ -98,36 +94,21 @@ Click on hexagon regions to see average speed, satisfaction score, and ISP break
 | 🟠 Orange | 25 – 100 Mbps |
 | 🔴 Red | Below 25 Mbps |
 
-Toggle between **Speed / Satisfaction** modes in the left sidebar.
+You can toggle the map view between **Speed** and **Satisfaction** using the side panel.
 
 ### 📍 Add Data
-Click the **+ Veri Ekle (Add Data)** button in the top right to share your measurement:
-1. Select your location on the map or use GPS.
-2. Enter your ISP, connection type, and speedtest result.
-3. Give a satisfaction score from 1–10 and submit. *(Rate limits apply to prevent spamming).*
+Click the **+ Veri Ekle (Add Data)** button in the top right:
+1. Pinpoint your location on the map.
+2. Provide your speed test results and select your ISP.
+3. Give a satisfaction score (1–10) and submit. *(Rate limiting applies to protect the platform).*
 
-### 🚩 Report Incorrect Data
-If you think a region contains inaccurate or fake data, click the hexagon and use the **"Bu Bölgeyi Bildir" (Report)** button. Moderators will review the reported area and fix anomalies.
+### 🚩 Report Data
+If you spot an anomaly in a specific region, simply click the region on the map and use the **Report** button to notify our moderators.
 
 ---
 
 ## Privacy & Security
 
-The system is designed with a privacy-first approach:
-- 📍 **Location Obfuscation:** Your chosen location is randomly offset by ~150 meters. Individual pins are never shown directly to users—only regional hexagon averages.
-- 🔒 **IP Protection:** Your IP address is never stored in plain text. It is instantly transformed into an irreversible cryptographic hash used solely for rate-limiting and anti-spam measures.
-- 👤 **No PII:** No Personal Identifiable Information (name, email, exact address) is collected.
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Vanilla HTML / CSS / JS |
-| Map Engine | Leaflet.js + OpenStreetMap |
-| Clustering | Uber H3 (Resolution 3–7, dynamic zoom-based) |
-| Geocoding | Nominatim (OpenStreetMap) |
-| Database | Supabase (PostgreSQL, RLS Policies, Triggers) |
-| Auth | Supabase Authentication (For Moderators) |
-| Hosting | GitHub Pages |
+- 📍 **Location Obfuscation:** The exact location you select is always slightly shifted at random. Your precise home address is never displayed; pins are grouped to show regional averages.
+- 👤 **No PII Collected:** We do not ask for or collect Personally Identifiable Information (name, email, phone number).
+- 🔒 **Secure Infrastructure:** We use background security measures to prevent spam attacks while ensuring individual user anonymity.
