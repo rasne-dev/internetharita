@@ -462,7 +462,13 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
     <div class="modal-title">✏️ Pin Düzenle</div>
     <input type="hidden" id="editPinId">
     <div class="edit-grid" style="margin-bottom:10px;">
-      <div class="fg"><div class="fl">İSS</div><select class="fs" id="editIss"><option>TTNet (Türk Telekom)</option><option>Superonline (Turkcell)</option><option>TurkNet</option><option>Vodafone</option><option>Millenicom</option><option>Netspeed</option><option>Diğer</option></select></div>
+      <div class="fg">
+        <div class="fl" style="display:flex;justify-content:space-between;align-items:center;">
+          İSS
+          <button onclick="showAddIssModal()" style="font-size:9px;padding:2px 8px;background:var(--accent-dim);border:1px solid rgba(0,212,255,.3);color:var(--accent);border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-weight:700;">+ Yeni İSS</button>
+        </div>
+        <select class="fs" id="editIss"></select>
+      </div>
       <div class="fg"><div class="fl">Bağlantı Türü</div><select class="fs" id="editConn"><option value="fiber">Fiber</option><option value="vdsl">VDSL</option><option value="adsl">ADSL</option></select></div>
       <div class="fg"><div class="fl">DL Hızı (Mbps)</div><input class="fi" type="number" id="editDL" placeholder="100"></div>
       <div class="fg"><div class="fl">UL Hızı (Mbps)</div><input class="fi" type="number" id="editUL" placeholder="50"></div>
@@ -472,6 +478,22 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
     <div class="fg" style="margin-bottom:10px;"><div class="fl">Görünürlük</div><select class="fs" id="editGorunur"><option value="true">👁 Görünür</option><option value="false">🙈 Gizli (İstatistiklerden çıkar)</option></select></div>
     <div class="fg" style="margin-bottom:16px;"><div class="fl">Moderatör Notu <span class="mod-note-badge">MOD</span></div><textarea class="fta" id="editModNote" placeholder="Bu pin ile ilgili bir not ekleyin..." style="min-height:70px;"></textarea></div>
     <div style="display:flex;gap:8px;"><button class="btn-primary" style="flex:1;padding:11px;" onclick="saveEdit()">💾 Kaydet</button><button class="btn-ghost" style="padding:11px 16px;" onclick="closeEditModal()">İptal</button></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="addIssModal">
+  <div class="modal" style="max-width:340px;">
+    <span class="modal-close" onclick="closeAddIssModal()">×</span>
+    <div class="modal-title">🏷 Yeni İSS Ekle</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">Listeye yeni bir İSS ekleyin. Hem bu oturumda hem sonraki kullanımlarda görünür. Kalıcı eklemek için kodu güncelleyin.</div>
+    <div class="fg" style="margin-bottom:16px;">
+      <div class="fl">İSS Adı</div>
+      <input class="fi" type="text" id="newIssName" placeholder="Örn: Fibernet, Bimcell..." maxlength="60" onkeydown="if(event.key==='Enter')confirmAddIss()">
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-primary" style="flex:1;padding:10px;" onclick="confirmAddIss()">✅ Ekle</button>
+      <button class="btn-ghost" style="padding:10px 14px;" onclick="closeAddIssModal()">İptal</button>
+    </div>
   </div>
 </div>
 
@@ -539,7 +561,38 @@ const patchRapor = (id,d) => sbRest(`raporlar?id=eq.${id}`, { method:'PATCH', pr
 const SPAM_DL_MAX = 1500;
 const SPAM_DL_MIN = 0.5;
 const SPAM_UL_MAX = 1000;
-const KNOWN_ISS =['TTNet (Türk Telekom)','Superonline (Turkcell)','TurkNet','Vodafone','Millenicom','Netspeed'];
+const BASE_ISS = ['TTNet (Türk Telekom)','Superonline (Turkcell)','TurkNet','Vodafone','Millenicom','Netspeed'];
+
+// Moderatörün oturumda eklediği ISS'ler localStorage'da saklanır
+function getExtraIss() { try { return JSON.parse(localStorage.getItem('ih_extra_iss') || '[]'); } catch(e) { return []; } }
+function saveExtraIss(list) { localStorage.setItem('ih_extra_iss', JSON.stringify(list)); }
+function getAllIss() { return [...BASE_ISS, ...getExtraIss()]; }
+
+function buildIssOptions(selectEl, currentVal) {
+  const all = getAllIss();
+  selectEl.innerHTML = all.map(iss => `<option value="${iss}" ${iss===currentVal?'selected':''}>${iss}</option>`).join('');
+}
+
+function showAddIssModal() { document.getElementById('newIssName').value=''; document.getElementById('addIssModal').classList.add('open'); setTimeout(()=>document.getElementById('newIssName').focus(),100); }
+function closeAddIssModal() { document.getElementById('addIssModal').classList.remove('open'); }
+function confirmAddIss() {
+  const name = document.getElementById('newIssName').value.trim();
+  if (!name) return showToast('İSS adı boş olamaz','err');
+  if (getAllIss().includes(name)) return showToast('Bu İSS zaten listede','warn');
+  const extras = getExtraIss(); extras.push(name); saveExtraIss(extras);
+  // Edit modal'ı yenile
+  const editSel = document.getElementById('editIss');
+  if (editSel) buildIssOptions(editSel, name);
+  // Pin form dropdown'unu da güncelle
+  const pinSel = document.getElementById('issSelect');
+  if (pinSel) {
+    const newOpt = document.createElement('option'); newOpt.value=name; newOpt.textContent=name;
+    pinSel.insertBefore(newOpt, pinSel.querySelector('option[value="Diğer"]'));
+  }
+  closeAddIssModal(); showToast(`✅ "${name}" listeye eklendi`);
+}
+
+const KNOWN_ISS = BASE_ISS; // geriye dönük uyumluluk için
 function isSpam(p) {
   if (!p.gercek_dl || p.gercek_dl > SPAM_DL_MAX || p.gercek_dl < SPAM_DL_MIN) return true;
   // Bilinmeyen ISS artık karantinaya düşüyor (spam değil), sadece boş/null ISS spam
@@ -778,7 +831,7 @@ async function renderStats() {
   const avgS = pins.length ? (pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1) : '—';
   document.getElementById('sumGrid').innerHTML = `<div class="sum-card"><div class="sum-val">${pins.length}</div><div class="sum-label">Onaylı Ölçüm</div></div><div class="sum-card"><div class="sum-val" style="color:${speedColor(avgDL)}">${avgDL}</div><div class="sum-label">Ort. İndirme (↓ Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgUL?speedColor(avgUL):'var(--text3)'}">${avgUL||'—'}</div><div class="sum-label">Ort. Yükleme (↑ Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgS!=='—'?memColor(avgS):'var(--text3)'}">${avgS}</div><div class="sum-label">Ort. Memnuniyet</div></div>`;
 
-  const KNOWN_ISS_LIST = ['TTNet (Türk Telekom)','Superonline (Turkcell)','TurkNet','Vodafone','Millenicom','Netspeed'];
+  const KNOWN_ISS_LIST = getAllIss();
   const im = {}; pins.forEach(p => { if(!p.iss || !KNOWN_ISS_LIST.includes(p.iss)) return; if(!im[p.iss]) im[p.iss]={t:0,c:0}; im[p.iss].t+=p.puan; im[p.iss].c++; });
   document.getElementById('issRankList').innerHTML = Object.entries(im).map(([iss,d])=>({iss, s:(d.t/d.c).toFixed(1), c:d.c})).sort((a,b)=>b.s-a.s).map((x,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${x.iss}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.s)}">${x.s}</div></div>`).join('');
   
@@ -1035,12 +1088,26 @@ async function loadRaporlar() {
 }
 
 async function handleRapor(id, durum) { try { await patchRapor(id,{durum}); showToast('✅ Rapor güncellendi'); loadRaporlar(); } catch(e) { showToast('Hata: '+e.message,'err'); } }
-async function modAction(id, approve) { try { await patchPin(id,{gorunur:approve, sikayet_sayisi:approve?0:99}); document.getElementById('mc_'+id)?.remove(); showToast(approve?'✅ Pin onaylandı':'👁 Pin gizlendi'); await loadPins(); loadSikayetler(); } catch(e) { showToast('Hata: '+e.message,'err'); } }
+async function modAction(id, approve) { 
+  try { 
+    await patchPin(id, { gorunur: approve, sikayet_sayisi: approve ? 0 : 99, is_quarantine: approve ? false : true }); 
+    document.getElementById('mc_'+id)?.remove(); 
+    showToast(approve ? '✅ Pin onaylandı' : '👁 Pin gizlendi'); 
+    await loadPins(); 
+    loadSikayetler(); 
+  } catch(e) { showToast('Hata: '+e.message,'err'); } 
+}
 
 async function openEditModal(id) {
   try {
     let p = adminPinsCache.find(x=>x.id===id); if (!p) { const res = await getPinById(id); p = res?.[0]; } if (!p) return showToast('Pin bulunamadı','err');
-    document.getElementById('editPinId').value=id; document.getElementById('editIss').value=p.iss||''; document.getElementById('editConn').value=p.baglanti_turu||'fiber'; document.getElementById('editDL').value=p.gercek_dl||''; document.getElementById('editUL').value=p.gercek_ul||''; document.getElementById('editPkg').value=p.paket_hizi||''; document.getElementById('editPuan').value=p.puan||''; document.getElementById('editGorunur').value=String(p.gorunur!==false); document.getElementById('editModNote').value=p.mod_notu||''; document.getElementById('editModal').classList.add('open');
+    document.getElementById('editPinId').value=id; 
+    const editIssSel = document.getElementById('editIss');
+    // Pinde kayıtlı ISS, listede yoksa otomatik ekle (örn: özel ISS onaylandıysa)
+    const currentIss = p.iss || '';
+    if (currentIss && !getAllIss().includes(currentIss)) { const extras = getExtraIss(); extras.push(currentIss); saveExtraIss(extras); }
+    buildIssOptions(editIssSel, currentIss);
+    document.getElementById('editConn').value=p.baglanti_turu||'fiber'; document.getElementById('editDL').value=p.gercek_dl||''; document.getElementById('editUL').value=p.gercek_ul||''; document.getElementById('editPkg').value=p.paket_hizi||''; document.getElementById('editPuan').value=p.puan||''; document.getElementById('editGorunur').value=String(p.gorunur!==false); document.getElementById('editModNote').value=p.mod_notu||''; document.getElementById('editModal').classList.add('open');
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 
