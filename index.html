@@ -157,6 +157,12 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
 .btn-approve{padding:5px 12px;background:rgba(34,197,94,.1);border:1px solid var(--success);color:var(--success);border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font-mono);}
 .btn-hide{padding:5px 12px;background:rgba(239,68,68,.1);border:1px solid var(--danger);color:var(--danger);border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font-mono);}
 .btn-del{padding:5px 12px;background:rgba(239,68,68,.1);border:1px solid var(--danger);color:var(--danger);border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font-mono);}
+.btn-edit{padding:5px 12px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.4);color:var(--accent);border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font-mono);}
+.btn-edit:hover{background:rgba(0,212,255,.15);}
+.mod-section-title{font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.2px;text-transform:uppercase;padding:10px 0 8px;border-bottom:1px solid var(--border);margin-bottom:12px;}
+.mod-tab-count{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:16px;padding:0 5px;border-radius:10px;background:var(--danger);color:#fff;font-size:9px;font-weight:700;font-family:var(--font-mono);margin-left:5px;vertical-align:middle;}
+.mod-tab-count:empty{display:none;}
+.mod-section{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:14px;margin-bottom:12px;}
 
 .mod-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .mod-table{width:100%;border-collapse:collapse;font-size:11px;min-width:700px;}
@@ -375,21 +381,33 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
       </div>
     </div>
 
+    <!-- 3 ANA SEKME -->
     <div class="mod-tabs">
-      <button class="mod-tab-btn active" onclick="switchModTab('sikayetler')">🚩 Şikayetler</button>
-      <button class="mod-tab-btn" onclick="switchModTab('tumPinler')">📌 Tüm Pinler</button>
-      <button class="mod-tab-btn" onclick="switchModTab('bekleyen')">⏳ Raporlar</button>
-      <button class="mod-tab-btn" onclick="switchModTab('customIss')">🏷 Özel İSS</button>
-      <button class="mod-tab-btn" onclick="switchModTab('istatistikEditor')">📊 İstat. Düzenle</button>
+      <button class="mod-tab-btn" id="modTabBtn-sikayetler" onclick="switchModTab('sikayetler')">🚩 Şikayetler <span class="mod-tab-count" id="raporCount"></span></button>
+      <button class="mod-tab-btn active" id="modTabBtn-tumPinler" onclick="switchModTab('tumPinler')">📌 Tüm Pinler</button>
+      <button class="mod-tab-btn" id="modTabBtn-onay" onclick="switchModTab('onay')">✅ Onay &amp; Yönetim <span class="mod-tab-count" id="onayCount" style="background:var(--warn);color:#000;"></span></button>
     </div>
 
-    <div id="modTab-sikayetler"><div id="sikayetList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
+    <!-- SEKME 1: ŞİKAYETLER — kullanıcı raporları -->
+    <div id="modTab-sikayetler" style="display:none;">
+      <div class="mod-section-title">🚩 Kullanıcı Bildirimleri</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">Kullanıcıların "Bildir" butonu ile gönderdiği raporlar. Bekleyen durumdakiler listelenir.</div>
+      <div id="bekleyenList"><div class="loading-text loading-dots">Yükleniyor</div></div>
+    </div>
 
-    <div id="modTab-tumPinler" style="display:none;">
+    <!-- SEKME 2: TÜM PİNLER — silinmemiş her pin, her zaman tam liste -->
+    <div id="modTab-tumPinler">
+      <div class="mod-section-title" style="margin-bottom:10px;">📌 Tüm Pinler <span style="font-size:9px;color:var(--text3);font-weight:400;font-family:var(--font-body);">(onaylı, gizli, karantina — silinmemiş her kayıt)</span></div>
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
         <button class="btn-del" style="padding:8px 16px;" id="bulkDelBtn" onclick="bulkDeletePins()">🗑 Seçilileri Sil</button>
         <input type="text" class="fi" id="tableSearch" placeholder="İSS, il, ilçe ara..." style="flex:1;min-width:120px;max-width:240px;" oninput="filterAdminTable(this.value)">
-        <select class="fs" id="tableFilter" style="width:auto;min-width:100px;" onchange="filterAdminTable(document.getElementById('tableSearch').value)"><option value="">Tümü</option><option value="spam">Spam</option><option value="gorunur">Görünür</option><option value="gizli">Gizli</option></select>
+        <select class="fs" id="tableFilter" style="width:auto;min-width:130px;" onchange="filterAdminTable(document.getElementById('tableSearch').value)">
+          <option value="">Tümü</option>
+          <option value="gorunur">✅ Görünür</option>
+          <option value="gizli">🙈 Gizli</option>
+          <option value="karantina">🔒 Karantina</option>
+          <option value="spam">⚠ Spam</option>
+        </select>
       </div>
       <div class="mod-table-wrap">
         <table class="mod-table">
@@ -401,7 +419,7 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
               <th>Hız (DL/UL)</th>
               <th>Lokasyon / Cihaz</th>
               <th>Puan</th>
-              <th>Not</th>
+              <th>Durum</th>
               <th>İşlem</th>
             </tr>
           </thead>
@@ -410,20 +428,27 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
       </div>
     </div>
 
-    <div id="modTab-bekleyen" style="display:none;"><div id="bekleyenList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
+    <!-- SEKME 3: ONAY & YÖNETİM — karantina pinler + özel ISS + istatistik editörü -->
+    <div id="modTab-onay" style="display:none;">
 
-    <div id="modTab-customIss" style="display:none;">
-      <div class="mod-card" style="margin-bottom:12px;">
-        <div class="stat-title">🏷 Özel İSS Teklifleri</div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">Kullanıcıların "Diğer" seçerek girdiği İSS isimleri. Onaylarsanız resmi listeye eklenebilir (kod güncellemesi gerektirir). Onaylamak pini görünür yapar; reddetmek gizler.</div>
+      <!-- 3a: Bekleyen / Karantina Pinler -->
+      <div class="mod-section">
+        <div class="mod-section-title">🔒 Bekleyen / İnceleme Gerektiren Pinler</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">Karantinaya alınan, spam şüpheli veya gizlenen pinler. Onayla / Gizle / Sil işlemlerini buradan yapın.</div>
+        <div id="sikayetList"><div class="loading-text loading-dots">Yükleniyor</div></div>
+      </div>
+
+      <!-- 3b: Özel İSS Teklifleri -->
+      <div class="mod-section">
+        <div class="mod-section-title">🏷 Özel İSS Teklifleri</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">Kullanıcıların "Diğer" seçerek girdiği İSS isimleri. Onaylarsanız resmi listeye eklenebilir (kod güncellemesi gerektirir). Onaylamak pini görünür yapar; reddetmek gizler.</div>
         <div id="customIssList"><div class="loading-text loading-dots">Yükleniyor</div></div>
       </div>
-    </div>
 
-    <div id="modTab-istatistikEditor" style="display:none;">
-      <div class="mod-card" style="margin-bottom:12px;">
-        <div class="stat-title">📊 İstatistik Veri Editörü</div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">Onaylı pinlerin değerlerini doğrudan düzenleyebilirsiniz. İstatistikler yalnızca <b style="color:var(--success)">gorunur=true</b> pinlerden hesaplanır.</div>
+      <!-- 3c: İstatistik Veri Editörü -->
+      <div class="mod-section">
+        <div class="mod-section-title">📊 İstatistik Veri Editörü</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">Onaylı pinlerin değerlerini doğrudan düzenleyebilirsiniz. İstatistikler yalnızca <b style="color:var(--success)">gorunur=true</b> pinlerden hesaplanır.</div>
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
           <input type="text" class="fi" id="statEditSearch" placeholder="İSS veya il ara..." style="flex:1;min-width:160px;" oninput="loadStatEditTable(this.value)">
           <button class="btn-ghost" onclick="loadStatEditTable('')">🔄 Tümünü Getir</button>
@@ -435,6 +460,7 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
           </table>
         </div>
       </div>
+
     </div>
   </div>
 </div>
@@ -739,8 +765,11 @@ function onZoomEnd() {
 async function loadPins() {
   try {
     pinsData = await getPins() ||[]; cleanPinsData = cleanPins(pinsData); renderHex(); renderModPins();
-    const cnt = cleanPinsData.length; const avg = cnt ? Math.round(cleanPinsData.reduce((a,p) => a+p.gercek_dl, 0)/cnt) : 0;
-    document.getElementById('mapStats').innerHTML = `<span>${cnt}</span> ölçüm &nbsp;·&nbsp; Ort. <span>${avg} Mbps</span>`;
+    const cnt = cleanPinsData.length;
+    const avg = cnt ? Math.round(cleanPinsData.reduce((a,p) => a+p.gercek_dl, 0)/cnt) : 0;
+    const ulPins = cleanPinsData.filter(p => p.gercek_ul > 0);
+    const avgUL = ulPins.length ? Math.round(ulPins.reduce((a,p) => a+p.gercek_ul, 0)/ulPins.length) : 0;
+    document.getElementById('mapStats').innerHTML = `<span>${cnt}</span> ölçüm<br>↓ Ort. <span style="color:var(--accent)">${avg} Mbps</span><br>↑ Ort. <span style="color:var(--text2)">${avgUL || '—'} Mbps</span>`;
   } catch(e) { document.getElementById('mapStats').textContent = 'Bağlanamadı'; }
 }
 
@@ -951,15 +980,23 @@ async function modLogin() {
     const { data, error } = await sbc.auth.signInWithPassword({ email: document.getElementById('modEmail').value, password: document.getElementById('modPw').value }); if (error) throw error;
     isModLoggedIn=true; currentModUser=data.user;
     document.getElementById('modAuthScreen').style.display='none'; document.getElementById('modPanelContent').style.display='flex'; document.getElementById('modBadge').style.display='block'; document.getElementById('headerMaintenanceToggle').style.display='flex'; document.getElementById('modSubtitle').textContent=`Giriş: ${data.user.email}`;
-    showToast('✅ Giriş başarılı'); refreshModData(); if(maps.main) renderModPins(); loadMaintenanceState();
+    showToast('✅ Giriş başarılı'); switchModTab('tumPinler'); refreshModData(); if(maps.main) renderModPins(); loadMaintenanceState();
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 async function modLogout() {
   await sbc.auth.signOut(); isModLoggedIn=false; currentModUser=null; document.getElementById('modAuthScreen').style.display='flex'; document.getElementById('modPanelContent').style.display='none'; document.getElementById('modBadge').style.display='none'; document.getElementById('headerMaintenanceToggle').style.display='none'; pinMarkerLayers.forEach(l=>maps.main?.removeLayer(l)); pinMarkerLayers=[]; showToast('Çıkış yapıldı');
 }
-function switchModTab(tab) {['sikayetler','tumPinler','bekleyen','customIss','istatistikEditor'].forEach(t => document.getElementById('modTab-'+t).style.display=t===tab?'block':'none');
-  document.querySelectorAll('.mod-tab-btn').forEach((b,i) => b.classList.toggle('active',['sikayetler','tumPinler','bekleyen','customIss','istatistikEditor'][i]===tab));
-  if (tab==='tumPinler') loadAdminTable(); if (tab==='bekleyen') loadRaporlar(); if (tab==='customIss') loadCustomIss(); if (tab==='istatistikEditor') loadStatEditTable('');
+function switchModTab(tab) {
+  const TABS = ['sikayetler','tumPinler','onay'];
+  TABS.forEach(t => {
+    const el = document.getElementById('modTab-' + t);
+    const btn = document.getElementById('modTabBtn-' + t);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+    if (btn) btn.classList.toggle('active', t === tab);
+  });
+  if (tab === 'tumPinler') loadAdminTable();
+  if (tab === 'sikayetler') loadRaporlar();
+  if (tab === 'onay') { loadSikayetler(); loadCustomIss(); }
 }
 
 async function loadCustomIss() {
@@ -1008,7 +1045,23 @@ async function rejectCustomIss(iss) {
     showToast(`👁 "${iss}" için ${targets.length} pin gizlendi`); loadCustomIss();
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
-async function refreshModData() { loadSikayetler(); }
+async function refreshModData() {
+  // Aktif sekmeyi tespit et ve yenile
+  const TABS = ['sikayetler','tumPinler','onay'];
+  const activeTab = TABS.find(t => { const el = document.getElementById('modTab-'+t); return el && el.style.display !== 'none'; }) || 'tumPinler';
+  switchModTab(activeTab);
+  // Badge sayaçlarını güncelle (arka planda)
+  try {
+    const pins = await getAllPinsAdmin() || [];
+    const pendingOnay = pins.filter(p => !p.gorunur || p.is_quarantine || isSpam(p)).length;
+    const el = document.getElementById('onayCount');
+    if (el) el.textContent = pendingOnay > 0 ? pendingOnay : '';
+    const raporlar = await getRaporlar() || [];
+    const raporEl = document.getElementById('raporCount');
+    if (raporEl) raporEl.textContent = raporlar.length > 0 ? raporlar.length : '';
+    document.getElementById('modSubtitle').textContent = `${pendingOnay} bekleyen — Giriş: ${currentModUser?.email||''}`;
+  } catch(e) { /* badge update failed silently */ }
+}
 
 async function loadSikayetler() {
   const list = document.getElementById('sikayetList'); list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
@@ -1047,17 +1100,23 @@ function renderAdminTable(pins) {
     const spam = isSpam(p); const tarih = new Date(p.created_at);
     const tarihStr = tarih.toLocaleDateString('tr-TR'); const saatStr = tarih.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const cihazInfo = p.browser_fp || p.ip_hash || 'Bilinmiyor';
+    let durumBadges = '';
+    if (spam) durumBadges += '<span class="quarantine-badge" style="display:block;margin-bottom:2px;">⚠ SPAM</span>';
+    if (p.is_quarantine) durumBadges += '<span class="quarantine-badge" style="display:block;margin-bottom:2px;border-color:var(--warn);color:var(--warn);background:rgba(245,158,11,.1);">🔒 KARANTİNA</span>';
+    if (!spam && !p.is_quarantine && p.gorunur !== false) durumBadges += '<span style="color:var(--success);font-size:9px;font-family:var(--font-mono);">✅ ONAYLI</span>';
+    if (p.gorunur === false && !spam && !p.is_quarantine) durumBadges += '<span style="color:var(--text3);font-size:9px;font-family:var(--font-mono);">🙈 GİZLİ</span>';
+    if (p.mod_notu) durumBadges += '<span style="color:var(--accent);font-size:9px;font-family:var(--font-mono);display:block;margin-top:2px;" title="'+p.mod_notu+'">📝 NOT</span>';
     return `<tr style="${spam?'background:rgba(239,68,68,.05);':p.is_quarantine?'background:rgba(245,158,11,.04);':''}">
       <td><input type="checkbox" class="pin-check" value="${p.id}"></td>
       <td style="color:var(--text3);white-space:nowrap;">${tarihStr}<br><span style="font-size:10px;color:var(--accent);font-family:var(--font-mono)">${saatStr}</span></td>
       <td>
-        <b style="color:${spam?'var(--danger)':'inherit'}">${p.iss}</b> ${spam?'<span class="quarantine-badge">SPAM</span>':''} ${p.is_quarantine?'<span class="quarantine-badge" style="border-color:var(--warn);color:var(--warn);background:rgba(245,158,11,.1);">KARANTİNA</span>':''}
+        <b style="color:${spam?'var(--danger)':'inherit'}">${p.iss}</b>
         <br><span style="color:var(--text2);font-size:9px">Altyapı: ${p.altyapi_sahibi||'Belirtilmemiş'}</span>
       </td>
-      <td style="font-family:var(--font-mono)"><span style="color:${speedColor(p.gercek_dl)}">${p.gercek_dl}↓</span> / ${p.gercek_ul||0}↑<br><span style="font-size:9px;color:var(--text3)">Paket: ${p.paket_hizi?p.paket_hizi+' Mbps':'Bilinmiyor'}</span></td>
+      <td style="font-family:var(--font-mono)"><span style="color:${speedColor(p.gercek_dl)}">${p.gercek_dl}↓</span> / ${p.gercek_ul||0}↑<br><span style="font-size:9px;color:var(--text3)">Paket: ${p.paket_hizi?p.paket_hizi+' Mbps':'—'}</span></td>
       <td class="coord-text">${p.il||'?'} › ${p.ilce||'?'}<br><span style="color:var(--warn);font-size:9px;">Cihaz: ${cihazInfo.slice(0,10)}...</span></td>
       <td style="color:${memColor(p.puan)}">${p.puan}/10</td>
-      <td>${p.mod_notu?'📝':'—'}</td>
+      <td>${durumBadges||'—'}</td>
       <td style="display:flex;gap:4px;flex-wrap:wrap;"><button class="btn-edit" onclick="openEditModal('${p.id}')">✏️</button><button class="btn-del" onclick="modDeletePin('${p.id}')">🗑</button></td>
     </tr>`;
   }).join('');
@@ -1066,7 +1125,10 @@ function renderAdminTable(pins) {
 function filterAdminTable(search) {
   const filterVal = document.getElementById('tableFilter')?.value || ''; let filtered = adminPinsCache;
   if (search) { const s = search.toLowerCase(); filtered = filtered.filter(p => (p.iss||'').toLowerCase().includes(s) || (p.il||'').toLowerCase().includes(s) || (p.ilce||'').toLowerCase().includes(s)); }
-  if (filterVal === 'spam') filtered = filtered.filter(p => isSpam(p)); else if (filterVal === 'gorunur') filtered = filtered.filter(p => p.gorunur !== false); else if (filterVal === 'gizli') filtered = filtered.filter(p => p.gorunur === false);
+  if (filterVal === 'spam') filtered = filtered.filter(p => isSpam(p));
+  else if (filterVal === 'gorunur') filtered = filtered.filter(p => p.gorunur !== false && !p.is_quarantine);
+  else if (filterVal === 'gizli') filtered = filtered.filter(p => p.gorunur === false);
+  else if (filterVal === 'karantina') filtered = filtered.filter(p => p.is_quarantine);
   renderAdminTable(filtered);
 }
 
@@ -1139,7 +1201,7 @@ async function bulkDeletePins() {
   const ids = Array.from(document.querySelectorAll('.pin-check:checked')).map(cb=>cb.value); if (!ids.length) return showToast('Seçili pin yok','err'); if (!confirm(`${ids.length} adet pin silinecek! Emin misiniz?`)) return;
   const btn = document.getElementById('bulkDelBtn'); btn.textContent='Siliniyor...'; btn.disabled=true; let ok=0, fail=0;
   for (const id of ids) { try { await delPin(id); ok++; } catch(e) { fail++; } }
-  if (fail) showToast(`✅ ${ok} silindi, ⚠ ${fail} başarısız`, 'warn'); else showToast(`✅ ${ok} pin silindi`); btn.textContent='🗑 Seçilileri Sil'; btn.disabled=false; await loadPins(); loadAdminTable();
+  if (fail) showToast(`✅ ${ok} silindi, ⚠ ${fail} başarısız`, 'warn'); else showToast(`✅ ${ok} pin silindi`); btn.textContent='🗑 Seçilileri Sil'; btn.disabled=false; await loadPins(); loadAdminTable(); refreshModData();
 }
 
 async function loadStatEditTable(search) {
