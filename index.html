@@ -78,6 +78,7 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
   position: absolute; top: 14px; left: 14px; z-index: 500;
   width: 210px; display: flex; flex-direction: column; gap: 0;
   pointer-events: none;
+  max-height: calc(100vh - var(--nav-h) - 28px);
 }
 .sidebar-panel {
   background: rgba(7,11,15,0.92);
@@ -88,6 +89,9 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
   overflow: hidden;
   pointer-events: auto;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
 }
 .sidebar-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -113,7 +117,11 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
   transition: all .2s; flex-shrink: 0;
 }
 .sidebar-collapse-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
-.sidebar-body { display: flex; flex-direction: column; }
+.sidebar-body { display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; flex: 1; }
+.sidebar-body::-webkit-scrollbar { width: 3px; }
+.sidebar-body::-webkit-scrollbar-track { background: transparent; }
+.sidebar-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+.sidebar-body::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 .sidebar-body.collapsed { display: none; }
 .sidebar-section {
   padding: 11px 13px;
@@ -1187,9 +1195,9 @@ async function submitPin() {
   if (!selScoreVal) return showToast('Puan verin','err');
   if (!canSubmit()) return showToast(rateLimitMessage(), 'warn');
   
-  const isCustomIss = issVal === 'Diğer' && customIss;
+  const isCustomIss = issVal === 'Diğer' && !!customIss;
   const outlier = isOutlier(dl, pinLat, pinLng);
-  const quarantine = outlier || isCustomIss; // Rate limit sadece bloklar, karantinaya almaz
+  const quarantine = !!(outlier || isCustomIss); // Rate limit sadece bloklar, karantinaya almaz
   const f = fuzzy(pinLat, pinLng);
   const btn = document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='Gönderiliyor...';
   try {
