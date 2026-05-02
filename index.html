@@ -11,6 +11,13 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <!-- FingerprintJS for browser fingerprinting -->
 <script src="https://openfpcdn.io/fingerprintjs/v3/iife.min.js"></script>
+<!-- PWA -->
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22internetHarita%22%2C%22short_name%22%3A%22iHarita%22%2C%22description%22%3A%22T%C3%BCrkiye%20%C4%B0nternet%20Altyap%C4%B1%20Haritas%C4%B1%22%2C%22start_url%22%3A%22%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23070b0f%22%2C%22theme_color%22%3A%22%2300d4ff%22%2C%22orientation%22%3A%22any%22%2C%22lang%22%3A%22tr%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%2520viewBox%3D'0%25200%2520100%2520100'%253E%253Crect%2520width%3D'100'%2520height%3D'100'%2520rx%3D'22'%2520fill%3D'%2523070b0f'%2F%253E%253Ctext%2520y%3D'.9em'%2520font-size%3D'72'%2520x%3D'50%2525'%2520text-anchor%3D'middle'%2520fill%3D'%252300d4ff'%2520font-family%3D'monospace'%2520font-weight%3D'700'%253EiH%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
+<meta name="theme-color" id="themeColorMeta" content="#070b0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="internetHarita">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23070b0f'/%3E%3Ctext y='.9em' font-size='72' x='50%25' text-anchor='middle' fill='%2300d4ff' font-family='monospace' font-weight='700'%3EiH%3C/text%3E%3C/svg%3E">
 <style>
 /* ===== DESIGN TOKENS ===== */
 :root {
@@ -203,6 +210,51 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
 .map-sidebar-toggle { display:none; position:absolute;top:14px;left:14px;z-index:501; background:rgba(7,11,15,0.93);backdrop-filter:blur(14px); border:1px solid var(--border);border-radius:8px; padding:8px 12px;cursor:pointer;font-size:11px;color:var(--accent); font-family:var(--font-mono);font-weight:700; } .map-sidebar.collapsed { display:none; }
 .fp-status { font-size:9px;color:var(--text3);font-family:var(--font-mono); display:flex;align-items:center;gap:4px; } .fp-dot{width:5px;height:5px;border-radius:50%;background:var(--warn);flex-shrink:0;} .fp-dot.ready{background:var(--success);}
 
+/* ===== LIGHT THEME ===== */
+html.light {
+  --bg:#eef2f6;--surface:#ffffff;--surface2:#e4eaf0;--surface3:#d8e0e8;
+  --border:#c8d3dc;--border2:#b5c2cc;
+  --accent:#0077cc;--accent-dim:rgba(0,119,204,.10);--accent-glow:rgba(0,119,204,.20);
+  --text:#1a2332;--text2:#3d5368;--text3:#6a8096;
+  --danger:#dc2626;--success:#16a34a;--warn:#d97706;
+}
+html.light body{background:var(--bg);color:var(--text);}
+html.light .leaflet-container{background:#d5e5f0!important;}
+html.light nav{background:rgba(238,242,246,0.97);}
+html.light .mobile-nav{background:rgba(238,242,246,0.98);}
+html.light .leaflet-popup-content-wrapper{box-shadow:0 8px 32px rgba(0,0,0,.2)!important;}
+html.light .panel{background:rgba(238,242,246,0.97);}
+html.light .map-info{background:rgba(238,242,246,0.98);}
+
+/* THEME TOGGLE */
+.theme-toggle{width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
+.theme-toggle:hover{border-color:var(--accent);color:var(--accent);}
+
+/* MAP SEARCH */
+.search-wrap{position:relative;}
+.search-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:7px 30px 7px 9px;font-size:11px;font-family:var(--font-body);outline:none;}
+.search-input:focus{border-color:var(--accent);}
+.search-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0;line-height:1;}
+.search-results{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:600;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:none;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.search-results.open{display:block;}
+.search-result-item{padding:8px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s;}
+.search-result-item:last-child{border-bottom:none;}
+.search-result-item:hover{background:var(--surface2);}
+.search-result-name{font-weight:600;color:var(--text);}
+.search-result-sub{font-size:9px;color:var(--text3);margin-top:1px;}
+
+/* ISS FILTER CHIPS */
+.chip-iss{background:none;}
+.chip-iss.on{background:rgba(255,255,255,0.07);}
+html.light .chip-iss.on{background:rgba(0,0,0,0.05);}
+
+/* SPEED TEST / VERIFIED */
+.speed-verified{display:none;align-items:center;gap:5px;margin-top:5px;font-size:10px;color:var(--success);font-family:var(--font-mono);font-weight:700;}
+.speed-verified.show{display:flex;}
+.verified-tick{width:14px;height:14px;border-radius:50%;background:var(--success);color:#fff;display:flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0;}
+.btn-verify{padding:8px 10px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.35);color:var(--accent);border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;}
+.btn-verify:hover{background:rgba(0,212,255,.15);}
+
 @media(max-width:768px){
   nav .nav-tabs { display:none; } nav .btn-ghost { display:none; } .mobile-nav { display:flex; } .page { bottom:56px; } .toast { bottom:72px; } .map-sidebar { display:none; } .map-sidebar.mobile-open { display:flex; width:calc(100vw - 28px); } .map-sidebar-toggle { display:block; } .map-info { width:calc(100vw - 28px); right:14px; } .pin-layout { grid-template-columns:1fr; grid-template-rows:45vh 1fr; } #pin-map { height:100%; } .pform { border-left:none; border-top:1px solid var(--border); } .stats-top { grid-template-columns:1fr 1fr; } .stats-grid { grid-template-columns:1fr; } #page-mod { padding:14px; } .regions-grid { grid-template-columns:1fr; } .header-mtoggle-text { display: none; }
 }
@@ -224,6 +276,7 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
     <button class="nav-tab mod-tab" id="navModBtn" onclick="showPage('mod')">🔧 Moderatör</button>
   </div>
   <div class="nav-right">
+    <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="Tema Değiştir">☀️</button>
     <label class="maintenance-toggle" id="headerMaintenanceToggle" style="display:none; margin-right: 15px; padding: 4px 10px; height: 32px;">
       <div class="toggle-switch">
         <input type="checkbox" id="headerMaintenanceCheck" onchange="toggleMaintenanceMode(this.checked)">
@@ -249,6 +302,14 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
   <div class="map-sidebar-toggle" id="sidebarToggle" onclick="toggleMapSidebar()">⚙ Filtreler</div>
   <div class="map-sidebar" id="mapSidebar">
     <div class="panel">
+      <div class="panel-title">Şehir / İlçe Ara</div>
+      <div class="search-wrap">
+        <input class="search-input" type="text" id="mapSearchInput" placeholder="Beykoz, Konya, İzmir..." onkeydown="if(event.key==='Enter')searchLocation()">
+        <button class="search-btn" onclick="searchLocation()">🔍</button>
+        <div class="search-results" id="searchResults"></div>
+      </div>
+    </div>
+    <div class="panel">
       <div class="panel-title">Renk Modu</div>
       <div class="mode-btns">
         <div class="mode-btn active" id="ctHiz" onclick="setColorMode('hiz')">⚡ Hız</div>
@@ -261,6 +322,18 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
         <div class="chip chip-fiber on" onclick="toggleChip(this,'fiber')">Fiber</div>
         <div class="chip chip-vdsl on" onclick="toggleChip(this,'vdsl')">VDSL</div>
         <div class="chip chip-adsl on" onclick="toggleChip(this,'adsl')">ADSL</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">İSS Filtresi</div>
+      <div class="chips" id="issChips">
+        <div class="chip chip-iss on" style="color:#ef4444;border-color:#ef4444;" onclick="toggleISSChip(this,'TTNet (Türk Telekom)')">TTNet</div>
+        <div class="chip chip-iss on" style="color:#00b4d8;border-color:#00b4d8;" onclick="toggleISSChip(this,'Superonline (Turkcell)')">Superonline</div>
+        <div class="chip chip-iss on" style="color:#9f7aea;border-color:#9f7aea;" onclick="toggleISSChip(this,'TurkNet')">TurkNet</div>
+        <div class="chip chip-iss on" style="color:#e60000;border-color:#e60000;" onclick="toggleISSChip(this,'Vodafone')">Vodafone</div>
+        <div class="chip chip-iss on" style="color:#10b981;border-color:#10b981;" onclick="toggleISSChip(this,'Millenicom')">Millenicom</div>
+        <div class="chip chip-iss on" style="color:#f59e0b;border-color:#f59e0b;" onclick="toggleISSChip(this,'Netspeed')">Netspeed</div>
+        <div class="chip chip-iss on" style="color:#6b7280;border-color:#6b7280;" onclick="toggleISSChip(this,'Diğer')">Diğer</div>
       </div>
     </div>
     <div class="panel" id="legendPanel">
@@ -343,6 +416,7 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
           <div class="fiu"><input type="number" placeholder="87" id="dlSpeed"><span class="fiu-unit">↓ DL</span></div>
           <div class="fiu"><input type="number" placeholder="45" id="ulSpeed"><span class="fiu-unit">↑ UL</span></div>
         </div>
+        <div style="font-size:9px;color:var(--text3);margin-top:4px;font-family:var(--font-body);">💡 Önce <a href="https://speed.cloudflare.com" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">Cloudflare Speed Test</a> veya <a href="https://www.speedtest.net" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">Speedtest.net</a> ile ölç, sonuçları buraya gir.</div>
       </div>
       <div class="fg"><div class="fl">Memnuniyet Puanı (1–10)</div><div class="score-row" id="scoreRow"></div></div>
       <div class="fg"><div class="fl">Kısa Yorum (opsiyonel)</div><textarea class="fta" placeholder="Fiber'e geçişten sonra çok iyi oldu..." id="commentInput"></textarea></div>
@@ -710,6 +784,7 @@ function speedColor(dl) { if(dl>=500)return'#800080';if(dl>=200)return'#1E88E5';
 function memColor(s) { if(s>=8)return'#22c55e';if(s>=6)return'#84cc16';if(s>=4)return'#eab308';return'#ef4444'; }
 
 let maps = {}, pinsData =[], cleanPinsData =[], activeFilters = new Set(['fiber','vdsl','adsl']);
+let activeISSFilters = new Set(['TTNet (Türk Telekom)','Superonline (Turkcell)','TurkNet','Vodafone','Millenicom','Netspeed','Diğer']);
 let colorMode = 'hiz', hexLayers =[], pinMarkerLayers =[], isModLoggedIn = false, currentModUser = null, regionSortMode = 'dl';
 
 function setColorMode(m) {
@@ -779,7 +854,7 @@ function renderHex() {
   // ALTIGEN BOYUTLARI KÜÇÜLTÜLDÜ (Daha detaylı çözünürlük kullanılıyor)
   const res = z<=5 ? 4 : z<=7 ? 5 : z<=9 ? 6 : z<=11 ? 7 : z<=13 ? 8 : z<=15 ? 9 : 10; 
   const hexMap = {};
-  cleanPinsData.forEach(p => { if (!p.lat || !activeFilters.has(p.baglanti_turu)) return; try { const h = h3.latLngToCell(p.lat, p.lng, res); if (!hexMap[h]) hexMap[h]=[]; hexMap[h].push(p); } catch(e) {} });
+  cleanPinsData.forEach(p => { if (!p.lat || !activeFilters.has(p.baglanti_turu)) return; const issKey = Object.keys(IC).includes(p.iss) ? p.iss : 'Diğer'; if (!activeISSFilters.has(issKey)) return; try { const h = h3.latLngToCell(p.lat, p.lng, res); if (!hexMap[h]) hexMap[h]=[]; hexMap[h].push(p); } catch(e) {} });
   Object.entries(hexMap).forEach(([hex, pins]) => {
     try {
       const coords = h3.cellToBoundary(hex).map(([lat,lng]) =>[lat,lng]);
@@ -796,6 +871,7 @@ function renderModPins() {
   if (!isModLoggedIn || !maps.main || maps.main.getZoom() < 10) return;
   pinsData.forEach(p => {
     if (!p.lat || !activeFilters.has(p.baglanti_turu)) return;
+    const issKey = Object.keys(IC).includes(p.iss) ? p.iss : 'Diğer'; if (!activeISSFilters.has(issKey)) return;
     const color = colorMode==='hiz' ? speedColor(p.gercek_dl) : memColor(p.puan); const isSpamPin = isSpam(p);
     const m = L.circleMarker([p.lat, p.lng], { radius: isSpamPin?7:5, color: isSpamPin?'#ff0000':'#fff', fillColor: isSpamPin?'#ff4444':color, fillOpacity: 0.9, weight: isSpamPin?2.5:1.5 }).addTo(maps.main);
     const tarihStr = new Date(p.created_at).toLocaleString('tr-TR');
@@ -884,8 +960,10 @@ async function renderStats() {
 
 let pinLat=null, pinLng=null, pinMarker=null, selConnVal='', selScoreVal=0;
 function initPinMap() { 
+  const isLight = document.documentElement.classList.contains('light');
+  const tileUrl = isLight ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
   const m = L.map('pin-map', { zoomControl:false }).setView([39.2,35.5], 6); 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom:19 }).addTo(m); 
+  L.tileLayer(tileUrl, { maxZoom:19 }).addTo(m); 
   L.control.zoom({ position:'bottomright' }).addTo(m); 
   maps.pin = m; 
   m.on('click', e => setLocation(e.latlng.lat, e.latlng.lng)); 
@@ -925,11 +1003,11 @@ async function submitPin() {
   
   const isCustomIss = issVal === 'Diğer' && customIss;
   const outlier = isOutlier(dl, pinLat, pinLng);
-  const quarantine = shouldQuarantine() || outlier || isCustomIss;
+  const quarantine = outlier || isCustomIss; // Rate limit sadece bloklar, karantinaya almaz
   const f = fuzzy(pinLat, pinLng);
   const btn = document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='Gönderiliyor...';
   try {
-    await addPin({ lat:f.lat, lng:f.lng, il:document.getElementById('ilInput').value||null, ilce:document.getElementById('ilceInput').value||null, mahalle:document.getElementById('mahalleInput').value||null, iss: finalIss, baglanti_turu:selConnVal, altyapi_sahibi:document.getElementById('infraSelect').value||null, paket_hizi:parseInt(document.getElementById('packageSpeed').value)||null, gercek_dl:dl, gercek_ul:ul, puan:selScoreVal, yorum:document.getElementById('commentInput').value||null, browser_fp: browserFingerprint || null, ip_hash: browserFingerprint ? 'fp_' + browserFingerprint.slice(0,8) : null, gorunur: !quarantine, sikayet_sayisi: 0, is_quarantine: quarantine, custom_iss: isCustomIss || null });
+    await addPin({ lat:f.lat, lng:f.lng, il:document.getElementById('ilInput').value||null, ilce:document.getElementById('ilceInput').value||null, mahalle:document.getElementById('mahalleInput').value||null, iss: finalIss, baglanti_turu:selConnVal, altyapi_sahibi:document.getElementById('infraSelect').value||null, paket_hizi:parseInt(document.getElementById('packageSpeed').value)||null, gercek_dl:dl, gercek_ul:ul, puan:selScoreVal, yorum:document.getElementById('commentInput').value||null, browser_fp: browserFingerprint || null, ip_hash: browserFingerprint ? 'fp_' + browserFingerprint.slice(0,8) : null, gorunur: !quarantine, sikayet_sayisi: 0, is_quarantine: quarantine, custom_iss: isCustomIss ? true : null });
     markSubmit(); 
     if (quarantine) showToast(outlier ? '⚠ Bölge ortalamasından sapma — incelemeye alındı' : '⚠ Verini aldık — incelemeye alındı', 'warn'); 
     else showToast('✅ Veri paylaşıldı!'); 
@@ -1069,23 +1147,75 @@ async function loadSikayetler() {
     const pins = await getAllPinsAdmin()||[]; const flagged = pins.filter(p => (p.sikayet_sayisi||0)>0 || !p.gorunur || isSpam(p) || p.is_quarantine);
     document.getElementById('modSubtitle').textContent = `${flagged.length} sorunlu kayıt — Giriş: ${currentModUser?.email||''}`;
     if (!flagged.length) return list.innerHTML='<div class="empty-state">Sorunlu pin yok ✅</div>';
-    list.innerHTML = flagged.map(p => {
-      const spam = isSpam(p); const quarantine = p.is_quarantine; const tarih = new Date(p.created_at);
-      const tarihStr = tarih.toLocaleDateString('tr-TR')+' '+tarih.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-      return `<div class="mod-card" id="mc_${p.id}" style="${spam||quarantine?'border-color:rgba(239,68,68,.4);':''}">
-        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-          <div style="flex:1">
-            ${spam?'<div style="color:var(--danger);font-size:9px;font-family:var(--font-mono);margin-bottom:4px;">⚠ SPAM/ŞÜPHELİ</div>':''}${quarantine?'<div style="color:var(--warn);font-size:9px;font-family:var(--font-mono);margin-bottom:4px;">🔒 KARANTİNA</div>':''}
-            <div class="mod-info">${p.iss} · ${(p.baglanti_turu||'').toUpperCase()} · ${p.gercek_dl}↓ / ${p.gercek_ul||0}↑ Mbps ${p.paket_hizi?`<span style="color:var(--text3);font-size:10px"> · Paket: ${p.paket_hizi} Mbps</span>`:''}</div>
-            <div class="mod-meta">📍 ${p.il||'?'} › ${p.ilce||'?'} ${p.altyapi_sahibi?`<br>🏗 Altyapı: ${p.altyapi_sahibi}`:''}<br>🕐 ${tarihStr}<br>🔑 FP: ${p.browser_fp||p.ip_hash||'—'}<br>${p.gorunur?'👁 Görünür':'🙈 Gizli'}</div>
-            ${p.yorum?`<div class="user-comment-box">${p.yorum}</div>`:''} ${p.mod_notu?`<div class="mod-note-box">${p.mod_notu}</div>`:''}
+
+    // FP'ye göre grupla — aynı cihazdan gelen pinleri bir arada göster
+    const groups = {};
+    flagged.forEach(p => {
+      const fp = p.browser_fp || p.ip_hash || 'unknown_' + p.id;
+      if (!groups[fp]) groups[fp] = [];
+      groups[fp].push(p);
+    });
+
+    list.innerHTML = Object.entries(groups)
+      .sort((a,b) => b[1].length - a[1].length) // En çok pin göndereni üste
+      .map(([fp, gPins]) => {
+        const isMulti = gPins.length > 1;
+        const p = gPins[0]; // Temsili pin (en yeni)
+        const spam = isSpam(p); const quarantine = p.is_quarantine;
+        const ids = gPins.map(x => x.id);
+        const idsJson = JSON.stringify(ids).replace(/"/g,'&quot;');
+
+        const header = isMulti
+          ? `<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(245,158,11,.12);border:1px solid var(--warn);border-radius:5px;padding:2px 9px;margin-bottom:8px;font-size:9px;font-weight:700;font-family:var(--font-mono);color:var(--warn);">⚠ AYNI CİHAZ — ${gPins.length} PIN</div>`
+          : '';
+
+        const locStr = [p.il, p.ilce].filter(Boolean).join(' › ');
+        const allSame = gPins.every(x => x.iss === p.iss && x.baglanti_turu === p.baglanti_turu && x.gercek_dl === p.gercek_dl);
+
+        return `<div class="mod-card" id="mc_${p.id}" style="${spam||quarantine?'border-color:rgba(239,68,68,.4);':''}">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <div style="flex:1">
+              ${header}
+              ${spam?'<div style="color:var(--danger);font-size:9px;font-family:var(--font-mono);margin-bottom:4px;">⚠ SPAM/ŞÜPHELİ</div>':''}${quarantine?'<div style="color:var(--warn);font-size:9px;font-family:var(--font-mono);margin-bottom:4px;">🔒 KARANTİNA</div>':''}
+              <div class="mod-info">${p.iss} · ${(p.baglanti_turu||'').toUpperCase()} · ${p.gercek_dl}↓ / ${p.gercek_ul||0}↑ Mbps${allSame&&isMulti?' <span style="color:var(--text3);font-size:9px">(tümü aynı)</span>':''}</div>
+              <div class="mod-meta">📍 ${locStr||'?'}<br>🔑 FP: ${fp.slice(0,12)}...<br>${p.gorunur?'👁 Görünür':'🙈 Gizli'} · ${gPins.length} pin</div>
+              ${p.yorum?`<div class="user-comment-box">${p.yorum}</div>`:''}
+            </div>
+            <div class="mod-badge" style="${isMulti?'background:rgba(245,158,11,.2);color:var(--warn);border-color:var(--warn);':''}">🚩 ${gPins.length}</div>
           </div>
-          <div class="mod-badge">🚩 ${p.sikayet_sayisi||0}</div>
-        </div>
-        <div class="mod-actions"><button class="btn-edit" onclick="openEditModal('${p.id}')">✏️ Düzenle</button><button class="btn-approve" onclick="modAction('${p.id}',true)">✅ Onayla</button><button class="btn-hide" onclick="modAction('${p.id}',false)">👁 Gizle</button><button class="btn-del" onclick="modDeletePin('${p.id}')">🗑 Sil</button></div>
-      </div>`;
-    }).join('');
+          <div class="mod-actions">
+            ${!isMulti ? `<button class="btn-edit" onclick="openEditModal('${p.id}')">✏️ Düzenle</button>` : ''}
+            <button class="btn-approve" onclick="groupAction('${idsJson}',true)">${isMulti?`✅ ${gPins.length} Pini Onayla`:'✅ Onayla'}</button>
+            <button class="btn-hide" onclick="groupAction('${idsJson}',false)">${isMulti?`👁 ${gPins.length} Pini Gizle`:'👁 Gizle'}</button>
+            <button class="btn-del" onclick="groupDelete('${idsJson}')">${isMulti?`🗑 ${gPins.length} Pini Sil`:'🗑 Sil'}</button>
+          </div>
+        </div>`;
+      }).join('');
   } catch(e) { list.innerHTML='Hata: '+e.message; }
+}
+
+async function groupAction(idsJson, approve) {
+  let ids; try { ids = JSON.parse(idsJson.replace(/&quot;/g,'"')); } catch(e) { return; }
+  try {
+    await Promise.all(ids.map(id => patchPin(id, { gorunur: approve, sikayet_sayisi: approve ? 0 : 99, is_quarantine: approve ? false : true })));
+    ids.forEach(id => document.getElementById('mc_'+id)?.remove());
+    showToast(approve ? `✅ ${ids.length} pin onaylandı` : `👁 ${ids.length} pin gizlendi`);
+    await loadPins(); loadSikayetler();
+  } catch(e) { showToast('Hata: '+e.message,'err'); }
+}
+
+async function groupDelete(idsJson) {
+  let ids; try { ids = JSON.parse(idsJson.replace(/&quot;/g,'"')); } catch(e) { return; }
+  try {
+    await Promise.all(ids.map(id => delPin(id)));
+    ids.forEach(id => document.getElementById('mc_'+id)?.remove());
+    adminPinsCache = adminPinsCache.filter(p => !ids.includes(p.id));
+    pinsData = pinsData.filter(p => !ids.includes(p.id));
+    cleanPinsData = cleanPins(pinsData);
+    if (maps.main) { renderHex(); renderModPins(); }
+    showToast(`🗑 ${ids.length} pin silindi`);
+    loadAdminTable();
+  } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 
 async function loadAdminTable() {
@@ -1187,7 +1317,6 @@ async function saveEdit() {
 function closeEditModal() { document.getElementById('editModal').classList.remove('open'); }
 
 async function modDeletePin(id, permanent = false) {
-  const msg = permanent ? 'Kalıcı olarak silinecek. Emin misiniz?' : 'Soft-delete: istatistiklerden kaldırılacak. Emin misiniz?'; if (!confirm(msg)) return;
   try { 
     if (permanent) await hardDelPin(id); else await delPin(id); 
     document.getElementById('mc_'+id)?.remove(); document.getElementById('se_'+id)?.remove(); adminPinsCache = adminPinsCache.filter(p=>p.id!==id); pinsData = pinsData.filter(p=>p.id!==id); cleanPinsData = cleanPins(pinsData); if (maps.main) { renderHex(); renderModPins(); } showToast('🗑 Pin silindi'); loadAdminTable(); 
@@ -1198,7 +1327,7 @@ async function modDeletePin(id, permanent = false) {
 }
 function toggleAllPins(el) { document.querySelectorAll('.pin-check').forEach(cb=>cb.checked=el.checked); }
 async function bulkDeletePins() {
-  const ids = Array.from(document.querySelectorAll('.pin-check:checked')).map(cb=>cb.value); if (!ids.length) return showToast('Seçili pin yok','err'); if (!confirm(`${ids.length} adet pin silinecek! Emin misiniz?`)) return;
+  const ids = Array.from(document.querySelectorAll('.pin-check:checked')).map(cb=>cb.value); if (!ids.length) return showToast('Seçili pin yok','err');
   const btn = document.getElementById('bulkDelBtn'); btn.textContent='Siliniyor...'; btn.disabled=true; let ok=0, fail=0;
   for (const id of ids) { try { await delPin(id); ok++; } catch(e) { fail++; } }
   if (fail) showToast(`✅ ${ok} silindi, ⚠ ${fail} başarısız`, 'warn'); else showToast(`✅ ${ok} pin silindi`); btn.textContent='🗑 Seçilileri Sil'; btn.disabled=false; await loadPins(); loadAdminTable(); refreshModData();
@@ -1243,6 +1372,111 @@ async function checkPublicMaintenance() {
 }
 
 checkSession(); checkPublicMaintenance(); setTimeout(()=>initMainMap(), 100);
+
+// ===== TEMA =====
+function toggleTheme() {
+  const isLight = document.documentElement.classList.contains('light');
+  document.documentElement.classList.toggle('light', !isLight);
+  localStorage.setItem('ih_theme', isLight ? 'dark' : 'light');
+  document.getElementById('themeBtn').textContent = isLight ? '☀️' : '🌙';
+  document.getElementById('themeColorMeta').setAttribute('content', isLight ? '#070b0f' : '#eef2f6');
+  updateMapTiles();
+}
+function initTheme() {
+  const saved = localStorage.getItem('ih_theme') || 'dark';
+  const isLight = saved === 'light';
+  document.documentElement.classList.toggle('light', isLight);
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.textContent = isLight ? '🌙' : '☀️';
+  const meta = document.getElementById('themeColorMeta');
+  if (meta) meta.setAttribute('content', isLight ? '#eef2f6' : '#070b0f');
+}
+function updateMapTiles() {
+  const isLight = document.documentElement.classList.contains('light');
+  const url = isLight
+    ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+  [maps.main, maps.pin].forEach(m => {
+    if (!m) return;
+    m.eachLayer(l => { if (l._url && l._url.includes('cartocdn')) m.removeLayer(l); });
+    L.tileLayer(url, { maxZoom:19, noWrap:true }).addTo(m);
+  });
+}
+initTheme();
+
+// ===== ISS FİLTRESİ =====
+function toggleISSChip(el, issName) {
+  el.classList.toggle('on');
+  if (activeISSFilters.has(issName)) activeISSFilters.delete(issName);
+  else activeISSFilters.add(issName);
+  renderHex();
+  renderModPins();
+}
+
+// ===== HARİTA ARAMA (NOMİNATİM) =====
+async function searchLocation() {
+  const q = document.getElementById('mapSearchInput').value.trim();
+  if (!q) return;
+  const resultsEl = document.getElementById('searchResults');
+  resultsEl.innerHTML = '<div class="search-result-item"><div class="search-result-name">🔍 Aranıyor...</div></div>';
+  resultsEl.classList.add('open');
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=tr&format=json&limit=5&accept-language=tr`, { headers: { 'Accept-Language': 'tr' } });
+    const results = await r.json();
+    if (!results.length) {
+      resultsEl.innerHTML = '<div class="search-result-item"><div class="search-result-name" style="color:var(--text3)">Sonuç bulunamadı</div></div>';
+      return;
+    }
+    resultsEl.innerHTML = results.map(res => {
+      const parts = res.display_name.split(',');
+      return `<div class="search-result-item" onclick="flyToResult(${res.lat},${res.lon})">
+        <div class="search-result-name">${parts[0].trim()}</div>
+        <div class="search-result-sub">${parts.slice(1,3).join(',').trim()}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    resultsEl.innerHTML = '<div class="search-result-item" style="color:var(--danger)">Bağlantı hatası</div>';
+  }
+}
+function flyToResult(lat, lng) {
+  if (!maps.main) return;
+  maps.main.flyTo([parseFloat(lat), parseFloat(lng)], 13, { animate:true, duration:1.5 });
+  document.getElementById('searchResults').classList.remove('open');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) document.getElementById('searchResults')?.classList.remove('open');
+});
+
+// ===== PWA SERVİS ÇALIŞANI =====
+if ('serviceWorker' in navigator) {
+  const sw = `
+const CACHE='iharita-v1';
+const ASSETS=[
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+  'https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js'
+];
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).catch(()=>{})));
+self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k))))));
+self.addEventListener('fetch',e=>{
+  if(!e.request.url.startsWith('http')||e.request.url.includes('supabase.co')||e.request.url.includes('nominatim')||e.request.url.includes('openfpcdn'))return;
+  e.respondWith(caches.match(e.request).then(hit=>hit||fetch(e.request).then(res=>{
+    if(res&&res.status===200&&['unpkg.com','cdn.jsdelivr','basemaps.cartocdn','fonts.googleapis','fonts.gstatic'].some(d=>res.url.includes(d))){
+      const clone=res.clone();caches.open(CACHE).then(c=>c.put(e.request,clone));
+    }
+    return res;
+  }).catch(()=>caches.match(e.request))));
+});`;
+  try {
+    const blob = new Blob([sw], { type: 'application/javascript' });
+    const swUrl = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swUrl, { scope: '/' }).catch(() => {
+      // Blob URL SW desteklenmiyorsa /sw.js'e düş
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  } catch(e) {}
+}
 </script>
 </body>
 </html>
