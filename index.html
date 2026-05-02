@@ -73,18 +73,172 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
 #map{flex:1;z-index:1;min-height:0;min-width:0;width:100%;}
 .leaflet-container{background:#0d1318!important;}
 .leaflet-pane,.leaflet-map-pane{will-change:transform;}
-.map-sidebar { position:absolute;top:14px;left:14px;z-index:500; width:200px;display:flex;flex-direction:column;gap:10px; pointer-events:none; }
-.panel { background:rgba(7,11,15,0.93); backdrop-filter:blur(14px); border:1px solid var(--border); border-radius:10px;padding:13px; pointer-events:auto; }
-.panel-title { font-family:var(--font-mono);font-size:9px;font-weight:700; color:var(--text3);letter-spacing:1.5px;margin-bottom:10px; text-transform:uppercase; }
+/* ===== SIDEBAR YENİ TASARIM ===== */
+.map-sidebar {
+  position: absolute; top: 14px; left: 14px; z-index: 500;
+  width: 210px; display: flex; flex-direction: column; gap: 0;
+  pointer-events: none;
+}
+.sidebar-panel {
+  background: rgba(7,11,15,0.92);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  overflow: hidden;
+  pointer-events: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.sidebar-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 13px 10px 13px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  cursor: pointer; user-select: none;
+}
+.sidebar-header:hover { background: rgba(255,255,255,0.02); }
+.sidebar-logo {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  color: var(--accent); letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;
+}
+.sidebar-logo-icon {
+  width: 20px; height: 20px; background: var(--accent);
+  border-radius: 5px; display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #000; font-weight: 900;
+}
+.sidebar-collapse-btn {
+  width: 20px; height: 20px; border-radius: 5px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text3); font-size: 9px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s; flex-shrink: 0;
+}
+.sidebar-collapse-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+.sidebar-body { display: flex; flex-direction: column; }
+.sidebar-body.collapsed { display: none; }
+.sidebar-section {
+  padding: 11px 13px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.sidebar-section:last-child { border-bottom: none; }
+.sidebar-section-title {
+  font-family: var(--font-mono); font-size: 8px; font-weight: 700;
+  color: rgba(255,255,255,0.25); letter-spacing: 1.8px; text-transform: uppercase;
+  margin-bottom: 9px;
+}
+
+/* SEARCH */
+.search-wrap { position: relative; }
+.search-input {
+  width: 100%; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text); border-radius: 7px;
+  padding: 7px 32px 7px 10px;
+  font-size: 11px; font-family: var(--font-body);
+  outline: none; transition: border-color .2s;
+  box-sizing: border-box;
+}
+.search-input::placeholder { color: rgba(255,255,255,0.2); }
+.search-input:focus { border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.03); }
+.search-btn {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: rgba(255,255,255,0.25);
+  cursor: pointer; font-size: 12px; padding: 0; line-height: 1;
+  transition: color .2s;
+}
+.search-btn:hover { color: var(--accent); }
+.search-results {
+  position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 600;
+  background: rgba(7,11,15,0.98); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 9px; overflow: hidden; display: none;
+  max-height: 180px; overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.7);
+}
+.search-results.open { display: block; }
+.search-result-item {
+  padding: 9px 11px; font-size: 11px; cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.04); transition: background .15s;
+}
+.search-result-item:last-child { border-bottom: none; }
+.search-result-item:hover { background: rgba(0,212,255,0.07); }
+.search-result-name { font-weight: 600; color: var(--text); }
+.search-result-sub { font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+
+/* RENK MODU TABS */
+.mode-tabs { display: flex; gap: 5px; }
+.mode-tab {
+  flex: 1; padding: 7px 6px; border-radius: 7px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.35); font-size: 10px; font-weight: 700;
+  font-family: var(--font-mono); cursor: pointer; transition: all .2s;
+  text-align: center;
+}
+.mode-tab.active {
+  background: rgba(0,212,255,0.1); border-color: rgba(0,212,255,0.4);
+  color: var(--accent);
+}
+.mode-tab:hover:not(.active) { background: rgba(255,255,255,0.06); color: var(--text2); }
+
+/* CHIPS YENİ */
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip {
+  padding: 4px 9px; border-radius: 6px;
+  font-size: 10px; font-weight: 700; font-family: var(--font-mono);
+  border: 1px solid; cursor: pointer; transition: all .18s;
+  opacity: 0.35;
+}
+.chip.on { opacity: 1; }
+.chip-fiber { color: var(--accent); border-color: rgba(0,212,255,0.4); }
+.chip-fiber.on { background: rgba(0,212,255,0.1); border-color: var(--accent); }
+.chip-vdsl { color: var(--s4); border-color: rgba(251,140,0,0.4); }
+.chip-vdsl.on { background: rgba(251,140,0,0.1); border-color: var(--s4); }
+.chip-adsl { color: var(--s5); border-color: rgba(229,57,53,0.4); }
+.chip-adsl.on { background: rgba(229,57,53,0.1); border-color: var(--s5); }
+.chip-iss { background: none; }
+.chip-iss.on { background: rgba(255,255,255,0.05); }
+
+/* HARİTA BİLGİSİ (lejant) */
+.panel { display: none; } /* eski panel class'ını sakla ama kullanma */
+.panel-title { display: none; }
+.map-sidebar-toggle {
+  display: none; position: absolute; top: 14px; left: 14px; z-index: 501;
+  background: rgba(7,11,15,0.92); backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+  padding: 8px 13px; cursor: pointer; font-size: 11px; color: var(--accent);
+  font-family: var(--font-mono); font-weight: 700;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+.map-sidebar.collapsed .sidebar-body { display: none; }
+
+/* LIGHT THEME OVERRIDES */
+html.light .sidebar-panel {
+  background: rgba(255,255,255,0.92);
+  border-color: rgba(0,0,0,0.08);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+}
+html.light .sidebar-header { border-bottom-color: rgba(0,0,0,0.06); }
+html.light .sidebar-header:hover { background: rgba(0,0,0,0.02); }
+html.light .sidebar-section { border-bottom-color: rgba(0,0,0,0.05); }
+html.light .sidebar-section-title { color: rgba(0,0,0,0.25); }
+html.light .sidebar-collapse-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); }
+html.light .search-input { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); }
+html.light .search-input::placeholder { color: rgba(0,0,0,0.25); }
+html.light .search-input:focus { border-color: rgba(0,119,204,0.5); background: rgba(0,119,204,0.03); }
+html.light .search-btn { color: rgba(0,0,0,0.25); }
+html.light .search-results { background: rgba(255,255,255,0.98); border-color: rgba(0,0,0,0.1); }
+html.light .search-result-item { border-bottom-color: rgba(0,0,0,0.05); }
+html.light .search-result-item:hover { background: rgba(0,119,204,0.06); }
+html.light .search-result-sub { color: rgba(0,0,0,0.3); }
+html.light .mode-tab { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); color: rgba(0,0,0,0.35); }
+html.light .mode-tab.active { background: rgba(0,119,204,0.08); border-color: rgba(0,119,204,0.4); }
+html.light .mode-tab:hover:not(.active) { background: rgba(0,0,0,0.06); }
+html.light .chip-iss.on { background: rgba(0,0,0,0.05); }
+html.light .map-sidebar-toggle { background: rgba(255,255,255,0.92); border-color: rgba(0,0,0,0.1); }
+
 .mode-btns{display:flex;gap:4px;}
 .mode-btn { flex:1;padding:6px 4px;border-radius:6px; border:1px solid var(--border2); background:var(--surface2);color:var(--text3); font-size:10px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center;transition:all .15s; }
 .mode-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
-.chips{display:flex;flex-wrap:wrap;gap:5px;}
-.chip { padding:3px 10px;border-radius:20px; font-size:10px;font-weight:700;font-family:var(--font-mono); border:1px solid;cursor:pointer;transition:all .2s; opacity:0.45; }
-.chip.on{opacity:1;}
-.chip-fiber{color:var(--accent);border-color:var(--accent);} .chip-fiber.on{background:var(--accent-dim);}
-.chip-vdsl{color:var(--s4);border-color:var(--s4);} .chip-vdsl.on{background:rgba(251,140,0,.12);}
-.chip-adsl{color:var(--s5);border-color:var(--s5);} .chip-adsl.on{background:rgba(229,57,53,.12);}
+/* chips artık sidebar CSS içinde tanımlı */
 .legend-item{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11px;color:var(--text2);}
 .legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
 #mapStats{font-size:11px;color:var(--text3);line-height:1.7;} #mapStats span{color:var(--accent);font-family:var(--font-mono);font-weight:700;}
@@ -230,30 +384,7 @@ html.light .map-info{background:rgba(238,242,246,0.98);}
 .theme-toggle{width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
 .theme-toggle:hover{border-color:var(--accent);color:var(--accent);}
 
-/* MAP SEARCH */
-.search-wrap{position:relative;}
-.search-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:7px 30px 7px 9px;font-size:11px;font-family:var(--font-body);outline:none;}
-.search-input:focus{border-color:var(--accent);}
-.search-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0;line-height:1;}
-.search-results{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:600;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:none;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.4);}
-.search-results.open{display:block;}
-.search-result-item{padding:8px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s;}
-.search-result-item:last-child{border-bottom:none;}
-.search-result-item:hover{background:var(--surface2);}
-.search-result-name{font-weight:600;color:var(--text);}
-.search-result-sub{font-size:9px;color:var(--text3);margin-top:1px;}
-
-/* ISS FILTER CHIPS */
-.chip-iss{background:none;}
-.chip-iss.on{background:rgba(255,255,255,0.07);}
-html.light .chip-iss.on{background:rgba(0,0,0,0.05);}
-
-/* SPEED TEST / VERIFIED */
-.speed-verified{display:none;align-items:center;gap:5px;margin-top:5px;font-size:10px;color:var(--success);font-family:var(--font-mono);font-weight:700;}
-.speed-verified.show{display:flex;}
-.verified-tick{width:14px;height:14px;border-radius:50%;background:var(--success);color:#fff;display:flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0;}
-.btn-verify{padding:8px 10px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.35);color:var(--accent);border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;}
-.btn-verify:hover{background:rgba(0,212,255,.15);}
+/* ISS/speed verified CSS artık sidebar bloğu içinde */
 
 @media(max-width:768px){
   nav .nav-tabs { display:none; } nav .btn-ghost { display:none; } .mobile-nav { display:flex; } .page { bottom:56px; } .toast { bottom:72px; } .map-sidebar { display:none; } .map-sidebar.mobile-open { display:flex; width:calc(100vw - 28px); } .map-sidebar-toggle { display:block; } .map-info { width:calc(100vw - 28px); right:14px; } .pin-layout { grid-template-columns:1fr; grid-template-rows:45vh 1fr; } #pin-map { height:100%; } .pform { border-left:none; border-top:1px solid var(--border); } .stats-top { grid-template-columns:1fr 1fr; } .stats-grid { grid-template-columns:1fr; } #page-mod { padding:14px; } .regions-grid { grid-template-columns:1fr; } .header-mtoggle-text { display: none; }
@@ -301,52 +432,87 @@ html.light .chip-iss.on{background:rgba(0,0,0,0.05);}
   <div id="map"></div>
   <div class="map-sidebar-toggle" id="sidebarToggle" onclick="toggleMapSidebar()">⚙ Filtreler</div>
   <div class="map-sidebar" id="mapSidebar">
-    <div class="panel">
-      <div class="panel-title">Şehir / İlçe Ara</div>
-      <div class="search-wrap">
-        <input class="search-input" type="text" id="mapSearchInput" placeholder="Beykoz, Konya, İzmir..." onkeydown="if(event.key==='Enter')searchLocation()">
-        <button class="search-btn" onclick="searchLocation()">🔍</button>
-        <div class="search-results" id="searchResults"></div>
+    <div class="sidebar-panel">
+      <!-- HEADER / COLLAPSE -->
+      <div class="sidebar-header" onclick="toggleSidebarCollapse()">
+        <div class="sidebar-logo">
+          <div class="sidebar-logo-icon">iH</div>
+          Filtreler
+        </div>
+        <div class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Gizle / Göster">▲</div>
       </div>
-    </div>
-    <div class="panel">
-      <div class="panel-title">Renk Modu</div>
-      <div class="mode-btns">
+
+      <div class="sidebar-body" id="sidebarBody">
+
+        <!-- ARAMA -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Şehir / İlçe Ara</div>
+          <div class="search-wrap">
+            <input class="search-input" type="text" id="mapSearchInput" placeholder="Beykoz, Konya, İzmir..." onkeydown="if(event.key==='Enter')searchLocation()">
+            <button class="search-btn" onclick="searchLocation()">🔍</button>
+            <div class="search-results" id="searchResults"></div>
+          </div>
+        </div>
+
+        <!-- RENK MODU -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Renk Modu</div>
+          <div class="mode-tabs">
+            <div class="mode-tab active" id="colorModeHiz" onclick="setColorMode('hiz',this)">⚡ Hız</div>
+            <div class="mode-tab" id="colorModeMem" onclick="setColorMode('memnuniyet',this)">😊 Memnuniyet</div>
+          </div>
+        </div>
+
+        <!-- BAĞLANTI TÜRÜ -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Bağlantı Türü</div>
+          <div class="chips">
+            <div class="chip chip-fiber on" onclick="toggleChip(this,'fiber')">Fiber</div>
+            <div class="chip chip-vdsl on" onclick="toggleChip(this,'vdsl')">VDSL</div>
+            <div class="chip chip-adsl on" onclick="toggleChip(this,'adsl')">ADSL</div>
+          </div>
+        </div>
+
+        <!-- İSS FİLTRESİ -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">İSS Filtresi</div>
+          <div class="chips" id="issChips">
+            <div class="chip chip-iss on" style="color:#ef4444;border-color:#ef4444;" onclick="toggleISSChip(this,'TTNet (Türk Telekom)')">TTNet</div>
+            <div class="chip chip-iss on" style="color:#00b4d8;border-color:#00b4d8;" onclick="toggleISSChip(this,'Superonline (Turkcell)')">Superonline</div>
+            <div class="chip chip-iss on" style="color:#9f7aea;border-color:#9f7aea;" onclick="toggleISSChip(this,'TurkNet')">TurkNet</div>
+            <div class="chip chip-iss on" style="color:#e60000;border-color:#e60000;" onclick="toggleISSChip(this,'Vodafone')">Vodafone</div>
+            <div class="chip chip-iss on" style="color:#10b981;border-color:#10b981;" onclick="toggleISSChip(this,'Millenicom')">Millenicom</div>
+            <div class="chip chip-iss on" style="color:#f59e0b;border-color:#f59e0b;" onclick="toggleISSChip(this,'Netspeed')">Netspeed</div>
+            <div class="chip chip-iss on" style="color:#6b7280;border-color:#6b7280;" onclick="toggleISSChip(this,'Diğer')">Diğer</div>
+          </div>
+        </div>
+
+        <!-- LEJANT -->
+        <div class="sidebar-section" id="legendPanel">
+          <div class="sidebar-section-title" id="legendTitle">Hız Göstergesi</div>
+          <div id="legendItems" style="display:flex;flex-direction:column;gap:5px;">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--s1)"></div>500+ Mbps</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--s2)"></div>200 – 500 Mbps</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--s3)"></div>100 – 200 Mbps</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--s4)"></div>25 – 100 Mbps</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--s5)"></div>&lt; 25 Mbps</div>
+          </div>
+        </div>
+
+        <!-- VERİ SAYISI -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Veri</div>
+          <div id="mapStats" style="font-size:10px;color:var(--text2);font-family:var(--font-mono);"><span class="loading-dots">Yükleniyor</span></div>
+        </div>
+
+      </div><!-- /sidebar-body -->
+    </div><!-- /sidebar-panel -->
+  </div>
+      <div class="mode-btns" style="display:none;">
         <div class="mode-btn active" id="ctHiz" onclick="setColorMode('hiz')">⚡ Hız</div>
         <div class="mode-btn" id="ctMem" onclick="setColorMode('mem')">😊 Memnuniyet</div>
       </div>
-    </div>
-    <div class="panel">
-      <div class="panel-title">Bağlantı Türü</div>
-      <div class="chips">
-        <div class="chip chip-fiber on" onclick="toggleChip(this,'fiber')">Fiber</div>
-        <div class="chip chip-vdsl on" onclick="toggleChip(this,'vdsl')">VDSL</div>
-        <div class="chip chip-adsl on" onclick="toggleChip(this,'adsl')">ADSL</div>
-      </div>
-    </div>
-    <div class="panel">
-      <div class="panel-title">İSS Filtresi</div>
-      <div class="chips" id="issChips">
-        <div class="chip chip-iss on" style="color:#ef4444;border-color:#ef4444;" onclick="toggleISSChip(this,'TTNet (Türk Telekom)')">TTNet</div>
-        <div class="chip chip-iss on" style="color:#00b4d8;border-color:#00b4d8;" onclick="toggleISSChip(this,'Superonline (Turkcell)')">Superonline</div>
-        <div class="chip chip-iss on" style="color:#9f7aea;border-color:#9f7aea;" onclick="toggleISSChip(this,'TurkNet')">TurkNet</div>
-        <div class="chip chip-iss on" style="color:#e60000;border-color:#e60000;" onclick="toggleISSChip(this,'Vodafone')">Vodafone</div>
-        <div class="chip chip-iss on" style="color:#10b981;border-color:#10b981;" onclick="toggleISSChip(this,'Millenicom')">Millenicom</div>
-        <div class="chip chip-iss on" style="color:#f59e0b;border-color:#f59e0b;" onclick="toggleISSChip(this,'Netspeed')">Netspeed</div>
-        <div class="chip chip-iss on" style="color:#6b7280;border-color:#6b7280;" onclick="toggleISSChip(this,'Diğer')">Diğer</div>
-      </div>
-    </div>
-    <div class="panel" id="legendPanel">
-      <div class="panel-title" id="legendTitle">Hız Göstergesi</div>
-      <div id="legendItems">
-        <div class="legend-item"><div class="legend-dot" style="background:var(--s1)"></div>500+ Mbps</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--s2)"></div>200 – 500 Mbps</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--s3)"></div>100 – 200 Mbps</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--s4)"></div>25 – 100 Mbps</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--s5)"></div>&lt; 25 Mbps</div>
-      </div>
-    </div>
-    <div class="panel"><div class="panel-title">Veri</div><div id="mapStats"><span class="loading-dots">Yükleniyor</span></div></div>
+    </div><!-- /sidebar-panel -->
   </div>
 
   <div class="map-info" id="mapInfo">
@@ -788,7 +954,12 @@ let activeISSFilters = new Set(['TTNet (Türk Telekom)','Superonline (Turkcell)'
 let colorMode = 'hiz', hexLayers =[], pinMarkerLayers =[], isModLoggedIn = false, currentModUser = null, regionSortMode = 'dl';
 
 function setColorMode(m) {
-  colorMode = m; document.getElementById('ctHiz').classList.toggle('active', m==='hiz'); document.getElementById('ctMem').classList.toggle('active', m==='mem');
+  colorMode = m==='memnuniyet' ? 'mem' : m;
+  const isHiz = colorMode === 'hiz';
+  document.getElementById('ctHiz')?.classList.toggle('active', isHiz);
+  document.getElementById('ctMem')?.classList.toggle('active', !isHiz);
+  document.getElementById('colorModeHiz')?.classList.toggle('active', isHiz);
+  document.getElementById('colorModeMem')?.classList.toggle('active', !isHiz);
   const title = document.getElementById('legendTitle'), items = document.getElementById('legendItems');
   if (m === 'hiz') { title.textContent = 'Hız Göstergesi'; items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:#800080"></div>500+ Mbps</div><div class="legend-item"><div class="legend-dot" style="background:#1E88E5"></div>200–500 Mbps</div><div class="legend-item"><div class="legend-dot" style="background:#43A047"></div>100–200 Mbps</div><div class="legend-item"><div class="legend-dot" style="background:#FB8C00"></div>25–100 Mbps</div><div class="legend-item"><div class="legend-dot" style="background:#E53935"></div>&lt;25 Mbps</div>`; }
   else { title.textContent = 'Memnuniyet Göstergesi'; items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div>Mükemmel (8–10)</div><div class="legend-item"><div class="legend-dot" style="background:#84cc16"></div>İyi (6–7)</div><div class="legend-item"><div class="legend-dot" style="background:#eab308"></div>Orta (4–5)</div><div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>Düşük (1–3)</div>`; }
@@ -797,6 +968,21 @@ function setColorMode(m) {
 
 function toggleChip(el, type) { el.classList.toggle('on'); if (activeFilters.has(type)) activeFilters.delete(type); else activeFilters.add(type); renderHex(); renderModPins(); }
 function toggleMapSidebar() { const sb = document.getElementById('mapSidebar'), btn = document.getElementById('sidebarToggle'); sb.classList.toggle('mobile-open'); btn.textContent = sb.classList.contains('mobile-open') ? '✕ Kapat' : '⚙ Filtreler'; }
+function toggleSidebarCollapse() { 
+  const body = document.getElementById('sidebarBody');
+  const btn = document.getElementById('sidebarCollapseBtn');
+  const collapsed = body.classList.toggle('collapsed');
+  btn.textContent = collapsed ? '▼' : '▲';
+  localStorage.setItem('ih_sidebar_collapsed', collapsed ? '1' : '0');
+}
+function initSidebarState() {
+  if (localStorage.getItem('ih_sidebar_collapsed') === '1') {
+    document.getElementById('sidebarBody')?.classList.add('collapsed');
+    const btn = document.getElementById('sidebarCollapseBtn');
+    if (btn) btn.textContent = '▼';
+  }
+}
+initSidebarState();
 
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
