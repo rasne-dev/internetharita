@@ -76,9 +76,7 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
 /* ===== SIDEBAR YENİ TASARIM ===== */
 .map-sidebar {
   position: absolute; top: 14px; left: 14px; z-index: 500;
-  width: 210px; display: flex; flex-direction: column; gap: 0;
-  pointer-events: none;
-  max-height: calc(100vh - var(--nav-h) - 28px);
+  width: 210px; pointer-events: none;
 }
 .sidebar-panel {
   background: rgba(7,11,15,0.92);
@@ -86,18 +84,17 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
   -webkit-backdrop-filter: blur(18px);
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 12px;
-  overflow: hidden;
   pointer-events: auto;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  display: flex;
-  flex-direction: column;
-  max-height: inherit;
 }
 .sidebar-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 13px 10px 13px;
   border-bottom: 1px solid rgba(255,255,255,0.05);
   cursor: pointer; user-select: none;
+  border-radius: 12px 12px 0 0;
+  background: rgba(7,11,15,0.92);
+  position: relative; z-index: 1;
 }
 .sidebar-header:hover { background: rgba(255,255,255,0.02); }
 .sidebar-logo {
@@ -117,7 +114,13 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
   transition: all .2s; flex-shrink: 0;
 }
 .sidebar-collapse-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
-.sidebar-body { display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; flex: 1; }
+.sidebar-body {
+  display: flex; flex-direction: column;
+  overflow-y: auto; overflow-x: hidden;
+  /* nav(56) + sidebar top(14) + header(44) + bottom gap(14) = 128px */
+  max-height: calc(100vh - var(--nav-h) - 128px);
+  border-radius: 0 0 12px 12px;
+}
 .sidebar-body::-webkit-scrollbar { width: 3px; }
 .sidebar-body::-webkit-scrollbar-track { background: transparent; }
 .sidebar-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
@@ -224,7 +227,7 @@ html.light .sidebar-panel {
   border-color: rgba(0,0,0,0.08);
   box-shadow: 0 8px 32px rgba(0,0,0,0.15);
 }
-html.light .sidebar-header { border-bottom-color: rgba(0,0,0,0.06); }
+html.light .sidebar-header { border-bottom-color: rgba(0,0,0,0.06); background: rgba(255,255,255,0.92); }
 html.light .sidebar-header:hover { background: rgba(0,0,0,0.02); }
 html.light .sidebar-section { border-bottom-color: rgba(0,0,0,0.05); }
 html.light .sidebar-section-title { color: rgba(0,0,0,0.25); }
