@@ -75,7 +75,10 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
 .leaflet-pane,.leaflet-map-pane{will-change:transform;}
 /* ===== SIDEBAR YENİ TASARIM ===== */
 .map-sidebar {
-  position: absolute; top: 14px; left: 14px; z-index: 500;
+  position: fixed;
+  top: calc(var(--nav-h) + 14px);
+  left: 14px;
+  z-index: 500;
   width: 230px; pointer-events: none;
 }
 .sidebar-panel {
@@ -265,9 +268,9 @@ html.light #mapStats { color: rgba(0,0,0,0.6); }
 .legend-item{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11px;color:var(--text2);}
 .legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
 #mapStats{font-size:10px;color:var(--text3);font-family:var(--font-mono);font-weight:700;} #mapStats span{color:var(--accent);}
-.zoom-hint{ position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:500; background:rgba(7,11,15,0.88);backdrop-filter:blur(10px); border:1px solid var(--border);border-radius:8px; padding:7px 12px;font-size:10px;color:var(--text3); pointer-events:none;font-family:var(--font-mono); transition:opacity .3s;white-space:nowrap; }
+.zoom-hint{ position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:500; background:rgba(7,11,15,0.88);backdrop-filter:blur(10px); border:1px solid var(--border);border-radius:8px; padding:7px 12px;font-size:10px;color:var(--text3); pointer-events:none;font-family:var(--font-mono); transition:opacity .3s;white-space:nowrap; }
 .map-legend-box {
-  position:absolute; bottom:14px; right:50px; z-index:500;
+  position:fixed; bottom:14px; right:50px; z-index:500;
   background:rgba(7,11,15,0.88); backdrop-filter:blur(12px);
   border:1px solid rgba(255,255,255,0.07); border-radius:10px;
   padding:9px 12px; pointer-events:none; min-width:120px;
@@ -284,17 +287,28 @@ html.light .map-legend-box { background:rgba(255,255,255,0.93); border-color:rgb
 html.light .zoom-hint { background:rgba(255,255,255,0.92); border-color:rgba(0,0,0,0.08); color:rgba(0,0,0,0.5); }
 @media(max-width:768px){ .map-legend-box { bottom:66px; right:14px; } .zoom-hint { bottom:66px; } }
 .map-info { 
-  position:absolute; top:14px; right:14px; z-index:500; 
-  width:260px; 
-  background:rgba(7,11,15,0.95); backdrop-filter:blur(14px); 
+  position:fixed;
+  top:calc(var(--nav-h) + 14px);
+  right:14px;
+  z-index:600; 
+  width:268px; 
+  background:rgba(7,11,15,0.97); backdrop-filter:blur(14px); 
   border:1px solid var(--border); border-radius:12px; 
-  padding:14px; display:none;
   max-height:calc(100vh - var(--nav-h) - 28px);
-  overflow-y:auto;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  overflow:hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  display:none; flex-direction:column;
 }
-.map-info.visible{display:block;}
-.info-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+.map-info.visible{ display:flex; }
+.info-head{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  padding:14px 14px 10px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0; /* sticky başlık — hiç kaybolmaz */
+  background:rgba(7,11,15,0.97);
+}
+.map-info-body{ overflow-y:auto; padding:12px 14px 14px; flex:1; }
+html.light .map-info-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
 .info-title{font-size:13px;font-weight:700;line-height:1.3;}
 .info-close{cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:2px;}
 .info-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;}
@@ -303,7 +317,41 @@ html.light .zoom-hint { background:rgba(255,255,255,0.92); border-color:rgba(0,0
 .info-iss-item{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:11px;}
 .iss-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:6px;}
 
-/* ===== BÖLGELER & İSTATİSTİKLER ===== */
+/* ===== SAYFA İÇİ HIZ TESTİ ===== */
+.speedtest-modal { display:none; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center; }
+.speedtest-modal.open { display:flex; }
+.speedtest-box { background:var(--surface); border:1px solid var(--border2); border-radius:16px; padding:28px 24px; width:100%; max-width:380px; text-align:center; box-shadow:0 24px 64px rgba(0,0,0,0.7); position:relative; }
+.speedtest-close { position:absolute; top:14px; right:16px; cursor:pointer; color:var(--text3); font-size:20px; line-height:1; }
+.speedtest-title { font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--accent); margin-bottom:4px; }
+.speedtest-sub { font-size:11px; color:var(--text3); margin-bottom:24px; }
+.speedtest-gauge { position:relative; width:160px; height:160px; margin:0 auto 20px; }
+.speedtest-gauge svg { transform:rotate(-90deg); }
+.sg-track { fill:none; stroke:var(--surface2); stroke-width:12; }
+.sg-fill { fill:none; stroke:var(--accent); stroke-width:12; stroke-linecap:round; transition:stroke-dashoffset 0.4s ease; }
+.speedtest-number { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.sn-val { font-family:var(--font-mono); font-size:32px; font-weight:700; color:var(--text); line-height:1; }
+.sn-unit { font-size:10px; color:var(--text3); margin-top:2px; font-family:var(--font-mono); }
+.sn-phase { font-size:9px; color:var(--accent); margin-top:4px; font-family:var(--font-mono); letter-spacing:1px; }
+.speedtest-results { display:none; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+.speedtest-results.show { display:grid; }
+.sr-box { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px; }
+.sr-label { font-size:9px; color:var(--text3); font-family:var(--font-mono); letter-spacing:1px; margin-bottom:6px; }
+.sr-val { font-family:var(--font-mono); font-size:22px; font-weight:700; }
+.sr-unit { font-size:10px; color:var(--text3); margin-left:2px; }
+.sr-ping { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; font-size:11px; }
+.speedtest-btn { width:100%; padding:12px; border:none; border-radius:9px; font-size:13px; font-weight:700; cursor:pointer; font-family:var(--font-body); transition:all .2s; }
+.speedtest-btn.start { background:var(--accent); color:#000; }
+.speedtest-btn.start:hover { background:#33deff; box-shadow:0 4px 16px var(--accent-glow); }
+.speedtest-btn.use { background:rgba(34,197,94,.15); border:1px solid var(--success); color:var(--success); }
+.speedtest-btn.use:hover { background:rgba(34,197,94,.25); }
+.btn-run-speedtest { display:flex; align-items:center; justify-content:center; gap:6px; padding:9px 14px; background:rgba(0,212,255,.08); border:1px solid rgba(0,212,255,.3); color:var(--accent); border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; font-family:var(--font-body); transition:all .2s; width:100%; margin-bottom:6px; }
+.btn-run-speedtest:hover { background:rgba(0,212,255,.15); }
+.verified-badge { display:none; align-items:center; gap:5px; font-size:10px; color:var(--success); font-family:var(--font-mono); font-weight:700; margin-top:4px; }
+.verified-badge.show { display:flex; }
+.verified-tick { width:14px; height:14px; border-radius:50%; background:var(--success); color:#fff; display:flex; align-items:center; justify-content:center; font-size:8px; flex-shrink:0; }
+html.light .speedtest-box { background:#fff; }
+html.light .sr-box { background:#f5f7fa; }
+html.light .sr-ping { background:#f5f7fa; }
 #page-bolge, #page-istatistik{flex-direction:column;overflow-y:auto;padding:20px;gap:16px;}
 .page-header{padding-bottom:14px;border-bottom:1px solid var(--border);}
 .page-title{font-family:var(--font-mono);font-size:20px;font-weight:700;letter-spacing:-0.5px;}
@@ -315,6 +363,41 @@ html.light .zoom-hint { background:rgba(255,255,255,0.92); border-color:rgba(0,0
 .region-card{ background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px; transition:all .2s;position:relative;overflow:hidden; }
 .region-card:hover{border-color:var(--border2);transform:translateY(-1px);}
 .region-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+
+/* ===== TEŞEKKÜR MODALI ===== */
+.thankyou-modal { display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center; }
+.thankyou-modal.open { display:flex; }
+.thankyou-box { background:var(--surface); border:1px solid var(--border2); border-radius:18px; padding:32px 28px; width:100%; max-width:360px; text-align:center; box-shadow:0 24px 64px rgba(0,0,0,0.7); }
+.ty-icon { font-size:48px; margin-bottom:12px; display:block; }
+.ty-title { font-family:var(--font-mono); font-size:17px; font-weight:700; color:var(--accent); margin-bottom:6px; }
+.ty-sub { font-size:12px; color:var(--text2); line-height:1.6; margin-bottom:20px; }
+.ty-stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+.ty-stat { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px; }
+.ty-stat-val { font-family:var(--font-mono); font-size:18px; font-weight:700; color:var(--accent); }
+.ty-stat-label { font-size:9px; color:var(--text3); margin-top:2px; }
+.ty-share { display:flex; gap:8px; }
+.ty-btn { flex:1; padding:10px; border:none; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; font-family:var(--font-body); transition:all .2s; }
+.ty-btn.primary { background:var(--accent); color:#000; }
+.ty-btn.primary:hover { background:#33deff; }
+.ty-btn.secondary { background:var(--surface2); border:1px solid var(--border2); color:var(--text2); }
+.ty-btn.secondary:hover { border-color:var(--accent); color:var(--accent); }
+/* ===== HEX PİN LİSTESİ ===== */
+.hex-pins-list { display:flex; flex-direction:column; gap:5px; margin-top:8px; }
+.hex-pin-item { background:var(--surface2); border:1px solid var(--border); border-radius:7px; padding:7px 9px; }
+.hex-pin-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:2px; }
+.hex-pin-iss { font-weight:700; font-family:var(--font-mono); font-size:10px; }
+.hex-pin-date { font-size:9px; color:var(--text3); }
+.hex-pin-speeds { font-family:var(--font-mono); font-size:10px; color:var(--text2); }
+.hex-pins-toggle { width:100%; padding:6px; margin-top:6px; background:none; border:1px solid var(--border); border-radius:7px; color:var(--text3); font-size:10px; cursor:pointer; transition:all .2s; font-family:var(--font-body); }
+.hex-pins-toggle:hover { border-color:var(--accent); color:var(--accent); }
+/* ===== TREND CHART ===== */
+.trend-section { margin-top:14px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:16px 16px 12px; }
+.trend-title { font-family:var(--font-mono); font-size:9px; font-weight:700; color:var(--text3); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:14px; }
+.trend-chart { display:flex; align-items:flex-end; gap:6px; height:100px; padding-bottom:0; }
+.trend-bar-wrap { display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; min-width:0; }
+.trend-bar { width:100%; border-radius:4px 4px 0 0; min-height:4px; transition:height .4s ease; }
+.trend-label { font-size:8px; color:var(--text3); font-family:var(--font-body); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; text-align:center; margin-top:4px; }
+.trend-val { font-size:9px; color:var(--text); font-family:var(--font-mono); font-weight:700; }
 .region-name{font-family:var(--font-mono);font-size:14px;font-weight:700;margin-bottom:3px;}
 .region-cities{font-size:10px;color:var(--text3);margin-bottom:12px;}
 .region-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
@@ -415,19 +498,59 @@ html.light .zoom-hint { background:rgba(255,255,255,0.92); border-color:rgba(0,0
 
 /* ===== LIGHT THEME ===== */
 html.light {
-  --bg:#eef2f6;--surface:#ffffff;--surface2:#e4eaf0;--surface3:#d8e0e8;
-  --border:#c8d3dc;--border2:#b5c2cc;
-  --accent:#0077cc;--accent-dim:rgba(0,119,204,.10);--accent-glow:rgba(0,119,204,.20);
-  --text:#1a2332;--text2:#3d5368;--text3:#6a8096;
-  --danger:#dc2626;--success:#16a34a;--warn:#d97706;
+  --bg:#f0f4f8; --surface:#ffffff; --surface2:#e8edf3; --surface3:#dde4ed;
+  --border:#c8d3dc; --border2:#b5c2cc;
+  --accent:#0077cc; --accent-dim:rgba(0,119,204,.10); --accent-glow:rgba(0,119,204,.20);
+  --text:#1a2332; --text2:#3d5368; --text3:#6a8096;
+  --danger:#dc2626; --success:#16a34a; --warn:#d97706;
 }
-html.light body{background:var(--bg);color:var(--text);}
-html.light .leaflet-container{background:#d5e5f0!important;}
-html.light nav{background:rgba(238,242,246,0.97);}
-html.light .mobile-nav{background:rgba(238,242,246,0.98);}
-html.light .leaflet-popup-content-wrapper{box-shadow:0 8px 32px rgba(0,0,0,.2)!important;}
-html.light .panel{background:rgba(238,242,246,0.97);}
-html.light .map-info{background:rgba(238,242,246,0.98);}
+/* Body & global */
+html.light body { background:var(--bg); color:var(--text); }
+html.light ::-webkit-scrollbar-track { background:var(--bg); }
+html.light ::-webkit-scrollbar-thumb { background:var(--border2); }
+/* Nav & mobile nav */
+html.light nav { background:rgba(240,244,248,0.97); border-bottom-color:var(--border); }
+html.light .mobile-nav { background:rgba(240,244,248,0.98); border-top-color:var(--border); }
+html.light .nav-tab { color:var(--text3); }
+html.light .nav-tab.active { color:var(--accent); }
+html.light .mob-btn { color:var(--text3); }
+html.light .mob-btn.active { color:var(--accent); }
+/* Leaflet */
+html.light .leaflet-container { background:#d5e5f0!important; }
+html.light .leaflet-popup-content-wrapper { background:var(--surface)!important; color:var(--text)!important; box-shadow:0 8px 32px rgba(0,0,0,.2)!important; }
+html.light .leaflet-popup-tip { background:var(--surface)!important; }
+/* Pages */
+html.light .page { background:var(--bg); }
+html.light .pform { background:var(--surface); border-left-color:var(--border); }
+/* Forms */
+html.light .fi, html.light .fs { background:var(--surface2); border-color:var(--border); color:var(--text); }
+html.light .fi:focus, html.light .fs:focus { border-color:var(--accent); }
+html.light .sbtn, html.light .cbtn { background:var(--surface2); border-color:var(--border); color:var(--text2); }
+html.light .sbtn.sel, html.light .cbtn.sel { background:var(--accent-dim); border-color:var(--accent); color:var(--accent); }
+html.light .fiu input { background:var(--surface2); border-color:var(--border); color:var(--text); }
+/* Map panels */
+html.light .map-info { background:rgba(255,255,255,0.97); border-color:var(--border); }
+html.light .info-head { background:rgba(255,255,255,0.97); border-bottom-color:var(--border); }
+html.light .map-legend-box { background:rgba(255,255,255,0.93); border-color:var(--border); }
+html.light .legend-item { color:var(--text2); }
+html.light .zoom-hint { background:rgba(255,255,255,0.93); border-color:var(--border); color:var(--text3); }
+html.light #mapStats { color:var(--text2); }
+/* Stats & regions */
+html.light .stat-card { background:var(--surface); border-color:var(--border); }
+html.light .region-card { background:var(--surface); border-color:var(--border); }
+html.light .stats-section { background:var(--surface2); border-color:var(--border); }
+/* Mod panel */
+html.light .mod-card { background:var(--surface2); border-color:var(--border); }
+html.light .mod-section { background:var(--surface2); border-color:var(--border); }
+html.light .mod-tab-btn { color:var(--text3); }
+html.light .mod-tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+/* Modal */
+html.light .modal-bg { background:rgba(200,211,220,0.85); }
+html.light .modal { background:var(--surface); border-color:var(--border); }
+/* Toast */
+html.light .toast { background:var(--surface2); border-color:var(--accent); color:var(--accent); }
+/* Panel (eski) */
+html.light .panel { background:var(--surface2); border-color:var(--border); }
 
 /* THEME TOGGLE */
 .theme-toggle{width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
@@ -441,7 +564,8 @@ html.light .map-info{background:rgba(238,242,246,0.98);}
   .map-sidebar.mobile-open {
     display:flex; flex-direction:column;
     width:calc(100vw - 28px);
-    max-height:calc(100vh - var(--nav-h) - 56px - 28px); /* nav + bottom-nav + boşluk */
+    top: calc(var(--nav-h) + 14px);
+    max-height:calc(100vh - var(--nav-h) - 56px - 28px);
   }
   .map-sidebar.mobile-open .sidebar-panel {
     display:flex; flex-direction:column;
@@ -452,7 +576,7 @@ html.light .map-info{background:rgba(238,242,246,0.98);}
     overflow-y:auto; -webkit-overflow-scrolling:touch;
   }
   .map-sidebar-toggle { display:block; }
-  .map-info { width:calc(100vw - 28px); right:14px; }
+  .map-info { width:calc(100vw - 28px); right:14px; top:calc(var(--nav-h) + 8px); max-height:calc(100vh - var(--nav-h) - 80px); }
   .pin-layout { grid-template-columns:1fr; grid-template-rows:45vh 1fr; } #pin-map { height:100%; } .pform { border-left:none; border-top:1px solid var(--border); } .stats-top { grid-template-columns:1fr 1fr; } .stats-grid { grid-template-columns:1fr; } #page-mod { padding:14px; } .regions-grid { grid-template-columns:1fr; } .header-mtoggle-text { display: none; }
 }
 </style>
@@ -566,22 +690,20 @@ html.light .map-info{background:rgba(238,242,246,0.98);}
 
       </div><!-- /sidebar-body -->
     </div><!-- /sidebar-panel -->
-  </div>
-      <div class="mode-btns" style="display:none;">
-        <div class="mode-btn active" id="ctHiz" onclick="setColorMode('hiz')">⚡ Hız</div>
-        <div class="mode-btn" id="ctMem" onclick="setColorMode('mem')">😊 Memnuniyet</div>
-      </div>
-    </div><!-- /sidebar-panel -->
-  </div>
+  </div><!-- /map-sidebar -->
 
   <div class="map-info" id="mapInfo">
     <div class="info-head"><div class="info-title" id="infoTitle">—</div><div class="info-close" onclick="document.getElementById('mapInfo').classList.remove('visible')">×</div></div>
-    <div class="info-row"><span class="info-label">Ort. İndirme</span><span class="info-val" id="infoDL" style="color:var(--accent)">—</span></div>
-    <div class="info-row"><span class="info-label">Ort. Yükleme</span><span class="info-val" id="infoUL">—</span></div>
-    <div class="info-row"><span class="info-label">Memnuniyet</span><span class="info-val" id="infoScore">—</span></div>
-    <div class="info-row"><span class="info-label">Ölçüm</span><span class="info-val" id="infoCount">—</span></div>
-    <div class="info-iss-list" id="infoISS"></div>
-    <button class="popup-btn popup-report" id="infoBildirBtn" onclick="openHexReport()" style="width:100%;margin-top:10px;padding:7px;">🚩 Bu Bölgeyi Bildir</button>
+    <div class="map-info-body">
+      <div class="info-row"><span class="info-label">Ort. İndirme</span><span class="info-val" id="infoDL" style="color:var(--accent)">—</span></div>
+      <div class="info-row"><span class="info-label">Ort. Yükleme</span><span class="info-val" id="infoUL">—</span></div>
+      <div class="info-row"><span class="info-label">Memnuniyet</span><span class="info-val" id="infoScore">—</span></div>
+      <div class="info-row"><span class="info-label">Ölçüm</span><span class="info-val" id="infoCount">—</span></div>
+      <div class="info-iss-list" id="infoISS"></div>
+      <button class="hex-pins-toggle" id="hexPinsToggleBtn" onclick="toggleHexPinsList()">▼ Tüm ölçümleri gör</button>
+      <div class="hex-pins-list" id="hexPinsList" style="display:none;"></div>
+      <button class="popup-btn popup-report" id="infoBildirBtn" onclick="openHexReport()" style="width:100%;margin-top:10px;padding:7px;">🚩 Bu Bölgeyi Bildir</button>
+    </div>
   </div>
   <div class="map-legend-box" id="mapLegendBox">
     <div class="legend-stats-row" id="mapStats"></div>
@@ -609,6 +731,7 @@ html.light .map-info{background:rgba(238,242,246,0.98);}
     <div class="stat-card"><div class="stat-title">ISS Memnuniyet Sıralaması</div><div id="issRankList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
     <div class="stat-card"><div class="stat-title">En Hızlı Lokasyonlar</div><div id="speedRankList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
     <div class="stat-card" style="grid-column:1/-1"><div class="stat-title">Bağlantı Türü Dağılımı</div><div id="connChart"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
+    <div class="stat-card" style="grid-column:1/-1"><div id="issSpeedTrend" class="trend-section"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
   </div>
 </div>
 
@@ -646,12 +769,15 @@ html.light .map-info{background:rgba(238,242,246,0.98);}
       </div>
       <div class="fg"><div class="fl">Paket Hızı</div><div class="fiu"><input type="number" placeholder="100" id="packageSpeed"><span class="fiu-unit">Mbps</span></div></div>
       <div class="fg">
-        <div class="fl">Gerçek Hız (Speedtest Sonucu)</div>
+        <div class="fl">Gerçek Hız (Ölçülen)</div>
+        <button class="btn-run-speedtest" onclick="openSpeedTestModal()">⚡ Hız Testi Yap — Otomatik Doldur</button>
+        <div style="font-size:9px;color:var(--text3);text-align:center;margin-top:-2px;">📡 Kablolu veya 5 GHz Wi-Fi bağlantısı daha doğru sonuç verir</div>
         <div class="speed-row">
-          <div class="fiu"><input type="number" placeholder="87" id="dlSpeed"><span class="fiu-unit">↓ DL</span></div>
-          <div class="fiu"><input type="number" placeholder="45" id="ulSpeed"><span class="fiu-unit">↑ UL</span></div>
+          <div class="fiu"><input type="number" placeholder="—" id="dlSpeed" readonly><span class="fiu-unit">↓ DL</span></div>
+          <div class="fiu"><input type="number" placeholder="—" id="ulSpeed" readonly><span class="fiu-unit">↑ UL</span></div>
         </div>
-        <div style="font-size:9px;color:var(--text3);margin-top:4px;font-family:var(--font-body);">💡 Önce <a href="https://speed.cloudflare.com" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">Cloudflare Speed Test</a> veya <a href="https://www.speedtest.net" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">Speedtest.net</a> ile ölç, sonuçları buraya gir.</div>
+        <div class="verified-badge" id="speedVerifiedBadge"><div class="verified-tick">✓</div><span>Sayfa içi test ile ölçüldü — Doğrulanmış</span></div>
+        <div style="font-size:9px;color:var(--text3);margin-top:3px;font-family:var(--font-body);">Hız testi yapılmadan form gönderilemez. Verinin güvenilirliği için zorunludur.</div>
       </div>
       <div class="fg"><div class="fl">Memnuniyet Puanı (1–10)</div><div class="score-row" id="scoreRow"></div></div>
       <div class="fg"><div class="fl">Kısa Yorum (opsiyonel)</div><textarea class="fta" placeholder="Fiber'e geçişten sonra çok iyi oldu..." id="commentInput"></textarea></div>
@@ -709,6 +835,7 @@ html.light .map-info{background:rgba(238,242,246,0.98);}
     <div id="modTab-tumPinler">
       <div class="mod-section-title" style="margin-bottom:10px;">📌 Tüm Pinler <span style="font-size:9px;color:var(--text3);font-weight:400;font-family:var(--font-body);">(onaylı, gizli, karantina — silinmemiş her kayıt)</span></div>
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+        <button class="btn-approve" style="padding:8px 16px;" id="bulkApproveBtn" onclick="bulkApprovePins()">✅ Seçilileri Onayla</button>
         <button class="btn-del" style="padding:8px 16px;" id="bulkDelBtn" onclick="bulkDeletePins()">🗑 Seçilileri Sil</button>
         <input type="text" class="fi" id="tableSearch" placeholder="İSS, il, ilçe ara..." style="flex:1;min-width:120px;max-width:240px;" oninput="filterAdminTable(this.value)">
         <select class="fs" id="tableFilter" style="width:auto;min-width:130px;" onchange="filterAdminTable(document.getElementById('tableSearch').value)">
@@ -1056,7 +1183,7 @@ async function toggleMaintenanceMode(active) {
 let activeHexPins =[];
 function fuzzy(lat, lng) { const o = 0.0013; return { lat: lat+(Math.random()-.5)*o, lng: lng+(Math.random()-.5)*o }; }
 const IC = { 'TTNet (Türk Telekom)':'#ef4444', 'Superonline (Turkcell)':'#00b4d8', 'TurkNet':'#9f7aea', 'Vodafone':'#e60000', 'Millenicom':'#10b981', 'Netspeed':'#f59e0b', 'Diğer':'#6b7280' };
-const ic = iss => IC[iss] || '#6b7280'; const cc = t => t==='fiber'?'#00d4ff':t==='vdsl'?'#FB8C00':'#E53935';
+const ic = iss => { const item = issListCache.find(i=>i.name===iss); return (item && item.color) ? item.color : (IC[iss] || issHashColor(iss)); }; const cc = t => t==='fiber'?'#00d4ff':t==='vdsl'?'#FB8C00':'#E53935';
 function speedColor(dl) { if(dl>=500)return'#800080';if(dl>=200)return'#1E88E5';if(dl>=100)return'#43A047';if(dl>=25)return'#FB8C00';return'#E53935'; }
 function memColor(s) { if(s>=8)return'#22c55e';if(s>=6)return'#84cc16';if(s>=4)return'#eab308';return'#ef4444'; }
 
@@ -1171,7 +1298,7 @@ async function initMainMap() {
     worldCopyJump: false,
     minZoom: 5
   }).setView([38.8, 37.5], 6);  // merkez biraz sağa kaydı — sol panel hesaba katıldı
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { 
+  L.tileLayer(getMapTileUrl(), { 
     maxZoom: 19,
     noWrap: true
   }).addTo(m); 
@@ -1265,6 +1392,44 @@ function showHexInfo(pins, hexId) {
   const im={}; pins.forEach(p=>{ if(!im[p.iss]) im[p.iss]={c:0,t:0}; im[p.iss].c++; im[p.iss].t+=p.puan; });
   document.getElementById('infoISS').innerHTML = `<div class="panel-title" style="margin-bottom:6px;">ISS Dağılımı</div>`+Object.entries(im).sort((a,b)=>b[1].c-a[1].c).slice(0,4).map(([iss,d])=>`<div class="info-iss-item"><span><span class="iss-dot" style="background:${ic(iss)}"></span>${iss}</span><span style="color:${ic(iss)};font-weight:700;font-family:var(--font-mono)">${(d.t/d.c).toFixed(1)}</span></div>`).join('');
   document.getElementById('mapInfo').classList.add('visible');
+  const body = document.querySelector('.map-info-body'); if(body) body.scrollTop = 0;
+  // Ölçüm listesini sıfırla
+  const hexList = document.getElementById('hexPinsList');
+  const hexBtn = document.getElementById('hexPinsToggleBtn');
+  if (hexList) { hexList.style.display = 'none'; hexList.innerHTML = ''; }
+  if (hexBtn) hexBtn.textContent = `▼ Tüm ölçümleri gör (${pins.length})`;
+}
+
+function toggleHexPinsList() {
+  const list = document.getElementById('hexPinsList');
+  const btn = document.getElementById('hexPinsToggleBtn');
+  if (!list || !activeHexPins) return;
+  if (list.style.display === 'none') {
+    list.style.display = 'flex';
+    btn.textContent = '▲ Gizle';
+    if (!list.innerHTML) {
+      // GİZLİLİK: Sadece ISS + bağlantı türü + hız aralığı göster, kesin değer/tarih/konum YOK
+      list.innerHTML = [...activeHexPins]
+        .sort((a,b) => b.gercek_dl - a.gercek_dl)
+        .map(p => {
+          const c = ic(p.iss);
+          const dlBand = p.gercek_dl >= 500 ? '500+' : p.gercek_dl >= 200 ? '200–500' : p.gercek_dl >= 100 ? '100–200' : p.gercek_dl >= 25 ? '25–100' : '<25';
+          return `<div class="hex-pin-item">
+            <div class="hex-pin-header">
+              <span class="hex-pin-iss" style="color:${c}">● ${p.iss}</span>
+              <span style="font-size:9px;color:var(--text3)">${(p.baglanti_turu||'').toUpperCase()}</span>
+            </div>
+            <div class="hex-pin-speeds">
+              ↓ <span style="color:${speedColor(p.gercek_dl)}">${dlBand} Mbps</span>
+              · <span style="color:${memColor(p.puan)}">${p.puan}/10</span>
+            </div>
+          </div>`;
+        }).join('');
+    }
+  } else {
+    list.style.display = 'none';
+    btn.textContent = `▼ Ölçüm detayları (${activeHexPins.length})`;
+  }
 }
 
 const BOLGELER = { "Marmara":{iller:["İstanbul","Bursa","Kocaeli","Balıkesir","Tekirdağ","Sakarya","Çanakkale","Edirne","Kırklareli","Yalova","Bilecik"],color:'#00d4ff'}, "İç Anadolu":{iller:["Ankara","Konya","Kayseri","Eskişehir","Sivas","Kırıkkale","Aksaray","Karaman","Kırşehir","Niğde","Nevşehir","Yozgat","Çankırı"],color:'#a78bfa'}, "Ege":{iller:["İzmir","Manisa","Aydın","Denizli","Muğla","Afyonkarahisar","Kütahya","Uşak"],color:'#34d399'}, "Akdeniz":{iller:["Antalya","Adana","Mersin","Hatay","Isparta","Burdur","Osmaniye","Kahramanmaraş"],color:'#f59e0b'}, "Karadeniz":{iller:["Trabzon","Samsun","Zonguldak","Ordu","Rize","Giresun","Tokat","Bolu","Çorum","Sinop","Bartın","Kastamonu","Artvin","Gümüşhane","Bayburt","Amasya","Düzce","Karabük"],color:'#60a5fa'}, "Doğu Anadolu":{iller:["Erzurum","Malatya","Elazığ","Van","Erzincan","Kars","Ağrı","Iğdır","Ardahan","Bingöl","Muş","Bitlis","Hakkari","Tunceli"],color:'#fb923c'}, "Güneydoğu Anadolu":{iller:["Gaziantep","Diyarbakır","Şanlıurfa","Batman","Adıyaman","Siirt","Mardin","Kilis","Şırnak"],color:'#f472b6'} };
@@ -1311,14 +1476,46 @@ async function renderStats() {
   
   const cm={fiber:0,vdsl:0,adsl:0}; pins.forEach(p=>{if(cm[p.baglanti_turu]!==undefined) cm[p.baglanti_turu]++;});
   document.getElementById('connChart').innerHTML =[{l:'Fiber',v:cm.fiber,c:'#00d4ff'},{l:'VDSL',v:cm.vdsl,c:'#FB8C00'},{l:'ADSL',v:cm.adsl,c:'#E53935'}].map(t=>`<div class="ct-row"><div class="ct-label">${t.l}</div><div class="ct-track"><div class="ct-fill" style="width:${pins.length?(t.v/pins.length*100).toFixed(0):0}%;background:${t.c}"></div></div><div class="ct-pct">${pins.length?(t.v/pins.length*100).toFixed(0):0}%</div></div>`).join('');
+
+  // ISS BAŞINA ORTALAMA HIZ TREND CHART
+  const issSpeedMap = {};
+  pins.forEach(p => {
+    if (!p.iss) return;
+    if (!issSpeedMap[p.iss]) issSpeedMap[p.iss] = { total:0, count:0 };
+    issSpeedMap[p.iss].total += p.gercek_dl;
+    issSpeedMap[p.iss].count++;
+  });
+  const issSpeedList = Object.entries(issSpeedMap)
+    .map(([iss, d]) => ({ iss, avg: Math.round(d.total/d.count), count: d.count }))
+    .filter(x => x.count >= 1)
+    .sort((a,b) => b.avg - a.avg)
+    .slice(0, 8);
+  const maxAvg = Math.max(...issSpeedList.map(x=>x.avg), 1);
+  const trendEl = document.getElementById('issSpeedTrend');
+  if (trendEl && issSpeedList.length) {
+    const bars = issSpeedList.map(x => {
+      const h = Math.round((x.avg / maxAvg) * 90); // 90px max bar, 10px gap top
+      const col = ic(x.iss);
+      // Kısa etiket: parantez içini çıkar
+      const label = x.iss
+        .replace(' (Türk Telekom)','').replace(' (Turkcell)','')
+        .replace(' (Türksat)','').replace('Türk Telekom','TT')
+        .replace('Superonline','S.online');
+      return '<div class="trend-bar-wrap">'
+        + '<div class="trend-val" style="color:' + col + '">' + x.avg + '</div>'
+        + '<div class="trend-bar" style="height:' + h + 'px;background:' + col + ';opacity:0.85;"></div>'
+        + '<div class="trend-label" title="' + x.iss + ' (' + x.count + ' ölçüm)">' + label + '</div>'
+        + '</div>';
+    }).join('');
+    trendEl.innerHTML = '<div class="trend-title">İSS Başına Ort. İndirme Hızı (Mbps)</div>'
+      + '<div class="trend-chart">' + bars + '</div>';
+  }
 }
 
 let pinLat=null, pinLng=null, pinMarker=null, selConnVal='', selScoreVal=0;
 function initPinMap() { 
-  const isLight = document.documentElement.classList.contains('light');
-  const tileUrl = isLight ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
   const m = L.map('pin-map', { zoomControl:false }).setView([39.2,35.5], 6); 
-  L.tileLayer(tileUrl, { maxZoom:19 }).addTo(m); 
+  L.tileLayer(getMapTileUrl(), { maxZoom:19 }).addTo(m); 
   L.control.zoom({ position:'bottomright' }).addTo(m); 
   maps.pin = m; 
   m.on('click', e => setLocation(e.latlng.lat, e.latlng.lng)); 
@@ -1349,7 +1546,8 @@ async function submitPin() {
   if (!selConnVal) return showToast('Bağlantı türü seçin','err');
   const dl = parseInt(document.getElementById('dlSpeed').value);
   const ul = parseInt(document.getElementById('ulSpeed').value) || 0;
-  if (!dl) return showToast('Download hızı girin','err');
+  if (!dl) return showToast('Önce hız testi yapın — "⚡ Hız Testi Yap" butonuna basın','err');
+  if (!document.getElementById('speedVerifiedBadge').classList.contains('show')) return showToast('Hız testi tamamlanmadan veri gönderilemez','err');
   if (dl < 0.5 || dl > 1500) return showToast('Geçersiz download hızı (0.5–1500 Mbps)','err');
   if (ul > 1000) return showToast('Geçersiz upload hızı (max 1000 Mbps)','err');
   if (ul > dl * 2) return showToast('Upload hızı download hızının 2 katından fazla olamaz','err');
@@ -1358,14 +1556,33 @@ async function submitPin() {
   
   const isCustomIss = issVal === 'Diğer' && !!customIss;
   const outlier = isOutlier(dl, pinLat, pinLng);
-  const quarantine = !!(outlier || isCustomIss); // Rate limit sadece bloklar, karantinaya almaz
+  const quarantine = !!(outlier || isCustomIss);
+
+  // Konum bazlı tekrar giriş kontrolü — aynı FP, 500m, 24 saat
+  const nearbyRecent = cleanPinsData.find(p => {
+    if (!p.lat || !p.lng) return false;
+    const fp = p.browser_fp || p.ip_hash;
+    const myFp = browserFingerprint;
+    if (!fp || !myFp || fp !== myFp) return false;
+    const dist = Math.sqrt(Math.pow((p.lat - pinLat)*111000, 2) + Math.pow((p.lng - pinLng)*111000*Math.cos(pinLat*Math.PI/180), 2));
+    const age = (Date.now() - new Date(p.created_at).getTime()) / 3600000;
+    return dist < 500 && age < 24;
+  });
+  if (nearbyRecent) {
+    btn.disabled=false; btn.textContent='📍 Veriyi Paylaş';
+    return showToast(`⚠ Bu bölge için son 24 saat içinde veri girdiniz (↓${nearbyRecent.gercek_dl} Mbps). Lütfen farklı bir konumdan giriş yapın.`, 'warn');
+  }
   const f = fuzzy(pinLat, pinLng);
   const btn = document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='Gönderiliyor...';
   try {
     await addPin({ lat:f.lat, lng:f.lng, il:document.getElementById('ilInput').value||null, ilce:document.getElementById('ilceInput').value||null, mahalle:document.getElementById('mahalleInput').value||null, iss: finalIss, baglanti_turu:selConnVal, altyapi_sahibi:document.getElementById('infraSelect').value||null, paket_hizi:parseInt(document.getElementById('packageSpeed').value)||null, gercek_dl:dl, gercek_ul:ul, puan:selScoreVal, yorum:document.getElementById('commentInput').value||null, browser_fp: browserFingerprint || null, ip_hash: browserFingerprint ? 'fp_' + browserFingerprint.slice(0,8) : null, gorunur: !quarantine, sikayet_sayisi: 0, is_quarantine: quarantine, custom_iss: isCustomIss ? true : null });
     markSubmit(); 
-    if (quarantine) showToast(outlier ? '⚠ Bölge ortalamasından sapma — incelemeye alındı' : '⚠ Verini aldık — incelemeye alındı', 'warn'); 
-    else showToast('✅ Veri paylaşıldı!'); 
+    if (quarantine) {
+      showToast(outlier ? '⚠ Bölge ortalamasından sapma — incelemeye alındı' : '⚠ Verini aldık — incelemeye alındı', 'warn');
+      showThankyou({ dl, ul, iss: finalIss, il: document.getElementById('ilInput').value, quarantine: true });
+    } else {
+      showThankyou({ dl, ul, iss: finalIss, il: document.getElementById('ilInput').value, quarantine: false });
+    }
     resetPinForm(); loadPins();
   } catch(e) {
     if(e.message.includes("does not exist") || e.message.includes("schema cache")) showToast("Supabase Schema Cache yenileniyor. Lütfen 1-2 dk bekleyin.", "warn");
@@ -1382,7 +1599,7 @@ function toggleCustomIss(val) {
   if (val !== 'Diğer' && document.getElementById('customIssInput')) document.getElementById('customIssInput').value = '';
 }
 
-function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeed','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; }
+function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeed','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; document.getElementById('speedVerifiedBadge')?.classList.remove('show'); }
 
 function openReportModal(pinId) { document.getElementById('reportPinId').value = pinId; document.getElementById('reportLocationInfo').style.display = 'none'; document.getElementById('reportModal').classList.add('open'); }
 function openHexReport() { document.getElementById('reportPinId').value = ''; document.getElementById('reportLocationText').textContent = document.getElementById('reportBolge').value||'—'; document.getElementById('reportLocationInfo').style.display = 'block'; document.getElementById('reportText').value = ''; document.getElementById('reportModal').classList.add('open'); }
@@ -1773,6 +1990,23 @@ async function modDeletePin(id, permanent = false) {
   }
 }
 function toggleAllPins(el) { document.querySelectorAll('.pin-check').forEach(cb=>cb.checked=el.checked); }
+async function bulkApprovePins() {
+  const ids = Array.from(document.querySelectorAll('.pin-check:checked')).map(cb=>cb.value);
+  if (!ids.length) return showToast('Seçili pin yok','err');
+  const btn = document.getElementById('bulkApproveBtn'); btn.textContent='Onaylanıyor...'; btn.disabled=true;
+  let ok=0, fail=0;
+  for (const id of ids) {
+    try { await patchPin(id, { gorunur:true, is_quarantine:false, sikayet_sayisi:0 }); ok++; } catch(e) { fail++; }
+  }
+  btn.textContent='✅ Seçilileri Onayla'; btn.disabled=false;
+  showToast(`✅ ${ok} pin onaylandı${fail?', '+fail+' hata':''}`);
+  adminPinsCache = adminPinsCache.map(p => ids.includes(p.id) ? {...p, gorunur:true, is_quarantine:false} : p);
+  pinsData = pinsData.map(p => ids.includes(p.id) ? {...p, gorunur:true} : p);
+  cleanPinsData = cleanPins(pinsData);
+  if (maps.main) { renderHex(); renderModPins(); }
+  loadAdminTable();
+}
+
 async function bulkDeletePins() {
   const ids = Array.from(document.querySelectorAll('.pin-check:checked')).map(cb=>cb.value); if (!ids.length) return showToast('Seçili pin yok','err');
   const btn = document.getElementById('bulkDelBtn'); btn.textContent='Siliniyor...'; btn.disabled=true; let ok=0, fail=0;
@@ -1846,11 +2080,13 @@ document.addEventListener('DOMContentLoaded', function() {
   // Harita tile'larını da tema ile senkronize et
   if (saved === 'light') setTimeout(updateMapTiles, 200);
 });
-function updateMapTiles() {
-  const isLight = document.documentElement.classList.contains('light');
-  const url = isLight
+function getMapTileUrl() {
+  return document.documentElement.classList.contains('light')
     ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
     : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+}
+function updateMapTiles() {
+  const url = getMapTileUrl();
   [maps.main, maps.pin].forEach(m => {
     if (!m) return;
     m.eachLayer(l => { if (l._url && l._url.includes('cartocdn')) m.removeLayer(l); });
@@ -1930,6 +2166,224 @@ self.addEventListener('fetch',e=>{
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     });
   } catch(e) {}
+}
+</script>
+
+<!-- TEŞEKKÜR MODALI -->
+<div class="thankyou-modal" id="thankYouModal">
+  <div class="thankyou-box">
+    <span class="ty-icon">🎉</span>
+    <div class="ty-title">Teşekkürler!</div>
+    <div class="ty-sub" id="tySubText">Veriniz haritaya eklendi. Türkiye internet altyapısının belgelenmesine katkı sağladınız.</div>
+    <div class="ty-stats" id="tyStatsGrid"></div>
+    <div class="ty-share">
+      <button class="ty-btn secondary" onclick="closeThankyou()">Kapat</button>
+      <button class="ty-btn primary" onclick="closeThankyou(); showPage('harita')">🗺 Haritada Gör</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function showThankyou(data) {
+  const isQ = data.quarantine;
+  document.getElementById('tySubText').textContent = isQ
+    ? '⚠ Veriniz incelemeye alındı. Onaylandıktan sonra haritada görünecek.'
+    : 'Veriniz haritaya eklendi. Türkiye internet altyapısının belgelenmesine katkı sağladınız!';
+  document.getElementById('tyStatsGrid').innerHTML = `
+    <div class="ty-stat"><div class="ty-stat-val" style="color:${speedColor(data.dl)}">${data.dl}</div><div class="ty-stat-label">↓ Mbps İndirme</div></div>
+    <div class="ty-stat"><div class="ty-stat-val" style="color:${data.ul?speedColor(data.ul):'var(--text3)'}">${data.ul||'—'}</div><div class="ty-stat-label">↑ Mbps Yükleme</div></div>
+    <div class="ty-stat"><div class="ty-stat-val" style="color:var(--text2)">${data.iss||'—'}</div><div class="ty-stat-label">İSS</div></div>
+    <div class="ty-stat"><div class="ty-stat-val" style="color:var(--success)">${data.il||'—'}</div><div class="ty-stat-label">Şehir</div></div>
+  `;
+  document.getElementById('thankYouModal').classList.add('open');
+}
+function closeThankyou() {
+  document.getElementById('thankYouModal').classList.remove('open');
+}
+</script>
+<div class="speedtest-modal" id="speedTestModal">
+  <div class="speedtest-box">
+    <div class="speedtest-close" onclick="closeSpeedTestModal()">×</div>
+    <div class="speedtest-title">⚡ Hız Testi</div>
+    <div class="speedtest-sub" id="stSub">Tarayıcı tabanlı ölçüm — otomatik form doldurur</div>
+    <div class="speedtest-gauge">
+      <svg width="160" height="160" viewBox="0 0 160 160">
+        <circle class="sg-track" cx="80" cy="80" r="68"/>
+        <circle class="sg-fill" id="sgFill" cx="80" cy="80" r="68" stroke-dasharray="427" stroke-dashoffset="427"/>
+      </svg>
+      <div class="speedtest-number">
+        <div class="sn-val" id="stVal">—</div>
+        <div class="sn-unit">Mbps</div>
+        <div class="sn-phase" id="stPhase">HAZIR</div>
+      </div>
+    </div>
+    <div class="sr-ping" id="stPingRow" style="display:none;">
+      <span style="color:var(--text3);">Ping</span>
+      <span style="font-family:var(--font-mono);font-weight:700;" id="stPingVal">—</span>
+    </div>
+    <div class="speedtest-results" id="stResults">
+      <div class="sr-box"><div class="sr-label">↓ İNDİRME</div><div><span class="sr-val" id="stDLVal" style="color:var(--accent)">—</span><span class="sr-unit">Mbps</span></div></div>
+      <div class="sr-box"><div class="sr-label">↑ YÜKLEME</div><div><span class="sr-val" id="stULVal" style="color:var(--success)">—</span><span class="sr-unit">Mbps</span></div></div>
+    </div>
+    <button class="speedtest-btn start" id="stStartBtn" onclick="runSpeedTest()">Testi Başlat</button>
+    <button class="speedtest-btn use" id="stUseBtn" style="display:none;margin-top:8px;" onclick="applySpeedResults()">✓ Bu Sonuçları Kullan</button>
+    <button class="speedtest-btn" id="stRetryBtn" style="display:none;margin-top:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);" onclick="resetSpeedTestUI()">↺ Tekrar Dene</button>
+    <div style="margin-top:12px;font-size:9px;color:var(--text3);text-align:center;line-height:1.5;">📡 Kablolu veya 5 GHz Wi-Fi bağlantısı daha doğru sonuç verir<br>Mobil veride sonuçlar gerçek hızı yansıtmayabilir</div>
+  </div>
+</div>
+
+<script>
+// ===== HIZ TESTİ MOTORU =====
+let stResults = null, stRunning = false;
+
+function openSpeedTestModal() {
+  document.getElementById('speedTestModal').classList.add('open');
+  resetSpeedTestUI();
+}
+function closeSpeedTestModal() {
+  if (stRunning) return;
+  document.getElementById('speedTestModal').classList.remove('open');
+}
+function resetSpeedTestUI() {
+  stResults = null; stRunning = false;
+  document.getElementById('stVal').textContent = '—';
+  document.getElementById('stPhase').textContent = 'HAZIR';
+  document.getElementById('sgFill').style.strokeDashoffset = '427';
+  document.getElementById('sgFill').style.stroke = 'var(--accent)';
+  document.getElementById('stResults').classList.remove('show');
+  document.getElementById('stPingRow').style.display = 'none';
+  document.getElementById('stStartBtn').style.display = 'block';
+  document.getElementById('stStartBtn').textContent = 'Testi Başlat';
+  document.getElementById('stStartBtn').disabled = false;
+  document.getElementById('stUseBtn').style.display = 'none';
+  document.getElementById('stRetryBtn').style.display = 'none';
+  document.getElementById('stSub').textContent = 'Tarayıcı tabanlı ölçüm — otomatik form doldurur';
+}
+function setGauge(mbps, maxMbps, color) {
+  const pct = Math.min(mbps / maxMbps, 1);
+  document.getElementById('sgFill').style.strokeDashoffset = 427 * (1 - pct);
+  document.getElementById('sgFill').style.stroke = color || 'var(--accent)';
+  document.getElementById('stVal').textContent = mbps >= 1000 ? (mbps/1000).toFixed(1)+'G' : Math.round(mbps);
+}
+async function measurePing() {
+  try {
+    const t0 = performance.now();
+    await fetch('https://speed.cloudflare.com/__down?bytes=0&t='+Date.now(), { cache:'no-store', mode:'cors' });
+    return Math.round(performance.now() - t0);
+  } catch(e) { return null; }
+}
+async function measureDownload() {
+  try {
+    const t0 = performance.now();
+    const r = await fetch('https://speed.cloudflare.com/__down?bytes=10000000&t='+Date.now(), { cache:'no-store' });
+    const buf = await r.arrayBuffer();
+    const elapsed = (performance.now() - t0) / 1000;
+    return Math.round((buf.byteLength * 8) / elapsed / 1e6);
+  } catch(e) { return null; }
+}
+async function measureUpload() {
+  // text/plain = CORS simple request, preflight yok, file:// dahil her origin'den çalışır
+  const size = 8 * 1024 * 1024; // 8MB
+  const data = new Uint8Array(size);
+
+  // 2 ölçüm yap, ortalamasını al
+  const results = [];
+  for (let i = 0; i < 2; i++) {
+    try {
+      const t0 = performance.now();
+      await fetch('https://speed.cloudflare.com/__up?t=' + (Date.now() + i), {
+        method: 'POST',
+        body: new Blob([data], { type: 'text/plain' }), // text/plain = no preflight
+        cache: 'no-store',
+      });
+      const elapsed = (performance.now() - t0) / 1000;
+      if (elapsed > 0.2) results.push(Math.round((size * 8) / elapsed / 1e6));
+    } catch(e) {}
+  }
+
+  if (results.length) return Math.round(results.reduce((a,b)=>a+b,0) / results.length);
+
+  // Fallback: httpbin (Accept-Control-Allow-Origin: *)
+  try {
+    const t0 = performance.now();
+    await fetch('https://httpbin.org/post?t=' + Date.now(), {
+      method: 'POST',
+      body: new Blob([new Uint8Array(2*1024*1024)], { type: 'text/plain' }),
+      cache: 'no-store',
+    });
+    const elapsed = (performance.now() - t0) / 1000;
+    if (elapsed > 0.2) return Math.round((2*1024*1024 * 8) / elapsed / 1e6);
+  } catch(e) {}
+
+  return null;
+}
+async function runSpeedTest() {
+  if (stRunning) return;
+
+  // Bağlantı tipi bilgisi — sadece mobil veride uyarı, WiFi'de sessiz not
+  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  if (conn) {
+    const type = conn.type || '';
+    const effType = conn.effectiveType || '';
+    if (type === 'cellular' || effType === '2g' || effType === 'slow-2g') {
+      document.getElementById('stSub').textContent = '⚠ Mobil veri — sonuçlar gerçek hızı yansıtmayabilir';
+      document.getElementById('stSub').style.color = 'var(--warn)';
+    }
+  }
+  document.getElementById('stSub').style.color = '';
+  stRunning = true;
+  const btn = document.getElementById('stStartBtn');
+  btn.disabled = true; btn.textContent = 'Ölçülüyor...';
+
+  // Ping
+  document.getElementById('stPhase').textContent = 'PING';
+  document.getElementById('stSub').textContent = 'Gecikme ölçülüyor...';
+  const ping = await measurePing();
+  if (ping) { document.getElementById('stPingRow').style.display='flex'; document.getElementById('stPingVal').textContent=ping+' ms'; }
+
+  // Download
+  document.getElementById('stPhase').textContent = '↓ İNDİRME';
+  document.getElementById('stSub').textContent = 'İndirme hızı ölçülüyor (10 MB)...';
+  document.getElementById('sgFill').style.stroke = 'var(--accent)';
+  // Download — animasyon max'ın %60'ında durur, asla gerçek değeri aşmaz
+  document.getElementById('stPhase').textContent = '↓ İNDİRME';
+  document.getElementById('stSub').textContent = 'İndirme hızı ölçülüyor (10 MB)...';
+  document.getElementById('sgFill').style.stroke = 'var(--accent)';
+  let anim = 0;
+  const dlAnim = setInterval(()=>{ if(anim < 600) anim += 6; setGauge(anim, 1000, 'var(--accent)'); }, 80);
+  const dl = await measureDownload(); clearInterval(dlAnim);
+  const finalDL = dl || 0;
+  setGauge(finalDL, Math.max(finalDL * 1.1, 10), 'var(--accent)');
+  document.getElementById('stDLVal').textContent = finalDL;
+
+  // Upload — aynı mantık, max %60'ta bekler
+  document.getElementById('stPhase').textContent = '↑ YÜKLEME';
+  document.getElementById('stSub').textContent = 'Yükleme hızı ölçülüyor (2 × 8 MB)...';
+  document.getElementById('sgFill').style.stroke = 'var(--success)';
+  let uanim = 0; const dynULMax = Math.max(finalDL, 100);
+  const ulAnim = setInterval(()=>{ if(uanim < dynULMax * 0.6) uanim += 3; setGauge(uanim, dynULMax, 'var(--success)'); }, 80);
+  const ul = await measureUpload(); clearInterval(ulAnim);
+  const finalUL = ul || 0;
+  setGauge(finalUL, Math.max(finalUL * 1.1, 10), 'var(--success)');
+  document.getElementById('stULVal').textContent = finalUL;
+
+  // Sonuç
+  stResults = { dl:finalDL, ul:finalUL, ping };
+  document.getElementById('stPhase').textContent = 'TAMAMLANDI';
+  document.getElementById('stSub').textContent = `↓ ${finalDL} Mbps  ·  ↑ ${finalUL} Mbps${ping?' · '+ping+' ms':''}`;
+  document.getElementById('stResults').classList.add('show');
+  btn.style.display = 'none';
+  document.getElementById('stUseBtn').style.display = 'block';
+  document.getElementById('stRetryBtn').style.display = 'block';
+  stRunning = false;
+}
+function applySpeedResults() {
+  if (!stResults) return;
+  document.getElementById('dlSpeed').value = stResults.dl;
+  document.getElementById('ulSpeed').value = stResults.ul;
+  document.getElementById('speedVerifiedBadge').classList.add('show');
+  closeSpeedTestModal();
+  showToast(`✅ ↓${stResults.dl} Mbps · ↑${stResults.ul} Mbps — forma yazıldı`);
 }
 </script>
 </body>
