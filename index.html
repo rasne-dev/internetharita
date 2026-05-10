@@ -2267,55 +2267,90 @@ function setGauge(mbps, maxMbps, color) {
 }
 async function measurePing() {
   try {
-    const t0 = performance.now();
-    await fetch('https://speed.cloudflare.com/__down?bytes=0&t='+Date.now(), { cache:'no-store', mode:'cors' });
-    return Math.round(performance.now() - t0);
+    const times = [];
+    for (let i = 0; i < 3; i++) {
+      const t0 = performance.now();
+      await fetch('https://speed.cloudflare.com/__down?bytes=0&t='+(Date.now()+i), { cache:'no-store', mode:'cors' });
+      times.push(Math.round(performance.now() - t0));
+    }
+    times.sort((a,b)=>a-b);
+    return times[0]; // en iyi ping
   } catch(e) { return null; }
 }
-async function measureDownload() {
-  try {
-    const t0 = performance.now();
-    const r = await fetch('https://speed.cloudflare.com/__down?bytes=10000000&t='+Date.now(), { cache:'no-store' });
-    const buf = await r.arrayBuffer();
-    const elapsed = (performance.now() - t0) / 1000;
-    return Math.round((buf.byteLength * 8) / elapsed / 1e6);
-  } catch(e) { return null; }
-}
-async function measureUpload() {
-  // text/plain = CORS simple request, preflight yok, file:// dahil her origin'den çalışır
-  const size = 8 * 1024 * 1024; // 8MB
-  const data = new Uint8Array(size);
 
-  // 2 ölçüm yap, ortalamasını al
-  const results = [];
-  for (let i = 0; i < 2; i++) {
+async function measureDownload(onLive) {
+  const CHUNK_SIZE = 100 * 1024 * 1024; // 100MB — yüksek hızda yetsin
+  const MEASURE_SECS = 8;
+  try {
+    const r = await fetch('https://speed.cloudflare.com/__down?bytes=' + CHUNK_SIZE + '&t=' + Date.now(), { cache:'no-store' });
+    const reader = r.body.getReader();
+    let totalBytes = 0, windowBytes = 0;
+    let t0 = null; // ilk byte gelince başlat
+    let windowT = null, lastByteT = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const now = performance.now();
+      if (!t0) { t0 = now; windowT = now; } // ilk byte — kronometreyi başlat
+      totalBytes += value.length;
+      windowBytes += value.length;
+      lastByteT = now;
+
+      if (now - windowT >= 350) {
+        const instantMbps = Math.round((windowBytes * 8) / ((now - windowT) / 1000) / 1e6);
+        if (onLive && instantMbps > 0) onLive(instantMbps);
+        windowBytes = 0; windowT = now;
+      }
+      if (t0 && (now - t0) > MEASURE_SECS * 1000) { reader.cancel(); break; }
+    }
+
+    if (!t0 || !lastByteT || totalBytes < 100000) return null;
+    const elapsed = (lastByteT - t0) / 1000; // ilk byte → son byte arası
+    return Math.round((totalBytes * 8) / elapsed / 1e6);
+  } catch(e) {
     try {
       const t0 = performance.now();
-      await fetch('https://speed.cloudflare.com/__up?t=' + (Date.now() + i), {
-        method: 'POST',
-        body: new Blob([data], { type: 'text/plain' }), // text/plain = no preflight
-        cache: 'no-store',
-      });
+      const r = await fetch('https://speed.cloudflare.com/__down?bytes=10000000&t='+Date.now(), { cache:'no-store' });
+      const buf = await r.arrayBuffer();
       const elapsed = (performance.now() - t0) / 1000;
-      if (elapsed > 0.2) results.push(Math.round((size * 8) / elapsed / 1e6));
-    } catch(e) {}
+      return elapsed > 0.3 ? Math.round((buf.byteLength * 8) / elapsed / 1e6) : null;
+    } catch(e2) { return null; }
   }
+}
 
-  if (results.length) return Math.round(results.reduce((a,b)=>a+b,0) / results.length);
-
-  // Fallback: httpbin (Accept-Control-Allow-Origin: *)
-  try {
-    const t0 = performance.now();
-    await fetch('https://httpbin.org/post?t=' + Date.now(), {
-      method: 'POST',
-      body: new Blob([new Uint8Array(2*1024*1024)], { type: 'text/plain' }),
-      cache: 'no-store',
+async function measureUpload(onLive) {
+  const CHUNK = 16 * 1024 * 1024; // 16MB
+  const results = [];
+  for (let i = 0; i < 2; i++) {
+    const mbps = await new Promise(resolve => {
+      try {
+        const data = new Uint8Array(CHUNK);
+        const xhr = new XMLHttpRequest();
+        let t0 = null;
+        xhr.upload.addEventListener('loadstart', () => { t0 = performance.now(); });
+        xhr.upload.addEventListener('load', () => {
+          if (!t0) return resolve(null);
+          const elapsed = (performance.now() - t0) / 1000;
+          if (elapsed < 0.1) return resolve(null);
+          resolve(Math.round((CHUNK * 8) / elapsed / 1e6));
+        });
+        xhr.upload.addEventListener('error', () => resolve(null));
+        xhr.onerror = () => resolve(null);
+        xhr.ontimeout = () => resolve(null);
+        xhr.timeout = 30000;
+        xhr.open('POST', 'https://speed.cloudflare.com/__up?t='+(Date.now()+i));
+        xhr.setRequestHeader('Content-Type', 'text/plain');
+        xhr.send(new Blob([data]));
+      } catch(e) { resolve(null); }
     });
-    const elapsed = (performance.now() - t0) / 1000;
-    if (elapsed > 0.2) return Math.round((2*1024*1024 * 8) / elapsed / 1e6);
-  } catch(e) {}
-
-  return null;
+    if (mbps && mbps > 0) {
+      if (onLive) onLive(mbps);
+      results.push(mbps);
+    }
+  }
+  if (!results.length) return null;
+  return Math.round(results.reduce((a,b)=>a+b,0) / results.length);
 }
 async function runSpeedTest() {
   if (stRunning) return;
@@ -2345,26 +2380,34 @@ async function runSpeedTest() {
   document.getElementById('stPhase').textContent = '↓ İNDİRME';
   document.getElementById('stSub').textContent = 'İndirme hızı ölçülüyor (10 MB)...';
   document.getElementById('sgFill').style.stroke = 'var(--accent)';
-  // Download — animasyon max'ın %60'ında durur, asla gerçek değeri aşmaz
+  // Download — anlık hız gauge'a yazılır, max dinamik ayarlanır
   document.getElementById('stPhase').textContent = '↓ İNDİRME';
-  document.getElementById('stSub').textContent = 'İndirme hızı ölçülüyor (10 MB)...';
+  document.getElementById('stSub').textContent = 'İndirme hızı ölçülüyor (~8 sn)...';
   document.getElementById('sgFill').style.stroke = 'var(--accent)';
-  let anim = 0;
-  const dlAnim = setInterval(()=>{ if(anim < 600) anim += 6; setGauge(anim, 1000, 'var(--accent)'); }, 80);
-  const dl = await measureDownload(); clearInterval(dlAnim);
+  document.getElementById('stVal').textContent = '…';
+  let liveMax = 100; // başlangıç max, anlık değere göre büyür
+  const dl = await measureDownload((instantMbps) => {
+    if (instantMbps > liveMax) liveMax = Math.ceil(instantMbps * 1.3 / 50) * 50;
+    setGauge(instantMbps, liveMax, 'var(--accent)');
+  });
   const finalDL = dl || 0;
-  setGauge(finalDL, Math.max(finalDL * 1.1, 10), 'var(--accent)');
+  const dlMax = Math.max(Math.ceil(finalDL * 1.15 / 50) * 50, 50);
+  setGauge(finalDL, dlMax, 'var(--accent)');
   document.getElementById('stDLVal').textContent = finalDL;
 
-  // Upload — aynı mantık, max %60'ta bekler
+  // Upload — anlık hız gauge'a yazılır
   document.getElementById('stPhase').textContent = '↑ YÜKLEME';
-  document.getElementById('stSub').textContent = 'Yükleme hızı ölçülüyor (2 × 8 MB)...';
+  document.getElementById('stSub').textContent = 'Yükleme hızı ölçülüyor (2 × 10 MB)...';
   document.getElementById('sgFill').style.stroke = 'var(--success)';
-  let uanim = 0; const dynULMax = Math.max(finalDL, 100);
-  const ulAnim = setInterval(()=>{ if(uanim < dynULMax * 0.6) uanim += 3; setGauge(uanim, dynULMax, 'var(--success)'); }, 80);
-  const ul = await measureUpload(); clearInterval(ulAnim);
+  document.getElementById('stVal').textContent = '…';
+  let ulLiveMax = Math.max(finalDL, 50);
+  const ul = await measureUpload((instantMbps) => {
+    if (instantMbps > ulLiveMax) ulLiveMax = Math.ceil(instantMbps * 1.3 / 50) * 50;
+    setGauge(instantMbps, ulLiveMax, 'var(--success)');
+  });
   const finalUL = ul || 0;
-  setGauge(finalUL, Math.max(finalUL * 1.1, 10), 'var(--success)');
+  const ulMax = Math.max(Math.ceil(finalUL * 1.15 / 50) * 50, 50);
+  setGauge(finalUL, ulMax, 'var(--success)');
   document.getElementById('stULVal').textContent = finalUL;
 
   // Sonuç
