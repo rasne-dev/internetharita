@@ -1071,22 +1071,36 @@ let issListCache = [];
 const SPAM_DL_MAX = 1500;
 const SPAM_DL_MIN = 0.5;
 const SPAM_UL_MAX = 1000;
-const BASE_ISS = ['TTNet (Türk Telekom)','Superonline (Turkcell)','TurkNet','Vodafone','Millenicom','Netspeed'];
+const BASE_ISS = ['Türk Telekom','Superonline (Turkcell)','TurkNet','Vodafone','Millenicom','Netspeed'];
+const ISS_ALIASES = {
+  'TTNet': 'Türk Telekom',
+  'TTNet (Türk Telekom)': 'Türk Telekom',
+  'TT (TTNet)': 'Türk Telekom',
+  'Türk Telekom (TTNet)': 'Türk Telekom'
+};
+function canonicalIssName(name) {
+  const n = (name || '').trim();
+  return ISS_ALIASES[n] || n;
+}
+function displayIssName(name) {
+  return canonicalIssName(name);
+}
 
 // Moderatörün oturumda eklediği ISS'ler localStorage'da saklanır
 function getExtraIss() { try { return JSON.parse(localStorage.getItem('ih_extra_iss') || '[]'); } catch(e) { return []; } }
 function saveExtraIss(list) { localStorage.setItem('ih_extra_iss', JSON.stringify(list)); }
-function getAllIss() { return [...BASE_ISS, ...getExtraIss()]; }
+function getAllIss() { return [...new Set([...BASE_ISS, ...getExtraIss()].map(canonicalIssName))]; }
 
 function buildIssOptions(selectEl, currentVal) {
   const all = getAllIss();
-  selectEl.innerHTML = all.map(iss => `<option value="${iss}" ${iss===currentVal?'selected':''}>${iss}</option>`).join('');
+  const current = canonicalIssName(currentVal);
+  selectEl.innerHTML = all.map(iss => `<option value="${iss}" ${iss===current?'selected':''}>${iss}</option>`).join('');
 }
 
 function showAddIssModal() { document.getElementById('newIssName').value=''; document.getElementById('addIssModal').classList.add('open'); setTimeout(()=>document.getElementById('newIssName').focus(),100); }
 function closeAddIssModal() { document.getElementById('addIssModal').classList.remove('open'); }
 function confirmAddIss() {
-  const name = document.getElementById('newIssName').value.trim();
+  const name = canonicalIssName(document.getElementById('newIssName').value.trim());
   if (!name) return showToast('İSS adı boş olamaz','err');
   if (getAllIss().includes(name)) return showToast('Bu İSS zaten listede','warn');
   const extras = getExtraIss(); extras.push(name); saveExtraIss(extras);
@@ -1188,8 +1202,8 @@ async function toggleMaintenanceMode(active) {
 
 let activeHexPins =[];
 function fuzzy(lat, lng) { const o = 0.0013; return { lat: lat+(Math.random()-.5)*o, lng: lng+(Math.random()-.5)*o }; }
-const IC = { 'TTNet (Türk Telekom)':'#ef4444', 'Superonline (Turkcell)':'#00b4d8', 'TurkNet':'#9f7aea', 'Vodafone':'#e60000', 'Millenicom':'#10b981', 'Netspeed':'#f59e0b', 'Diğer':'#6b7280' };
-const ic = iss => { const item = issListCache.find(i=>i.name===iss); return (item && item.color) ? item.color : (IC[iss] || issHashColor(iss)); }; const cc = t => t==='fiber'?'#00d4ff':t==='vdsl'?'#FB8C00':'#E53935';
+const IC = { 'Türk Telekom':'#005ea6', 'Superonline (Turkcell)':'#00b4d8', 'TurkNet':'#9f7aea', 'Vodafone':'#e60000', 'Millenicom':'#10b981', 'Netspeed':'#f59e0b', 'Diğer':'#6b7280' };
+const ic = iss => { const canonical = canonicalIssName(iss); const item = issListCache.find(i=>canonicalIssName(i.name)===canonical); return (item && item.color) ? item.color : (IC[canonical] || issHashColor(canonical)); }; const cc = t => t==='fiber'?'#00d4ff':t==='vdsl'?'#FB8C00':'#E53935';
 function speedColor(dl) { if(dl>=500)return'#800080';if(dl>=200)return'#1E88E5';if(dl>=100)return'#43A047';if(dl>=25)return'#FB8C00';return'#E53935'; }
 function memColor(s) { if(s>=8)return'#22c55e';if(s>=6)return'#84cc16';if(s>=4)return'#eab308';return'#ef4444'; }
 
@@ -1202,7 +1216,7 @@ async function loadIssListAndRenderChips() {
   } catch(e) {
     // Tablo henüz yoksa fallback
     issListCache = [
-      {name:'TTNet (Türk Telekom)', color:'#005ea6'},
+      {name:'Türk Telekom', color:'#005ea6'},
       {name:'Superonline (Turkcell)', color:'#f5a623'},
       {name:'TurkNet', color:'#7b2d8b'},
       {name:'Vodafone', color:'#e60000'},
@@ -1212,7 +1226,13 @@ async function loadIssListAndRenderChips() {
       {name:'Netspeed', color:'#f97316'},
     ];
   }
-  const active = issListCache.filter(i => i.active !== false);
+  const activeMap = new Map();
+  issListCache.filter(i => i.active !== false).forEach(i => {
+    const name = canonicalIssName(i.name);
+    if (!activeMap.has(name)) activeMap.set(name, { ...i, name });
+  });
+  const active = [...activeMap.values()];
+  issListCache = active;
   activeISSFilters = new Set(active.map(i => i.name));
   activeISSFilters.add('Diğer');
   renderISSChips(active);
@@ -1227,10 +1247,11 @@ function renderISSChips(list) {
   if (!container) return;
   const chips = list.map(item => {
     const c = issColor(item);
-    const label = item.name.replace(' (Türk Telekom)','').replace(' (Turkcell)','').replace(' (Türksat)','');
-    return `<div class="chip chip-iss on" data-iss="${item.name}"
+    const name = displayIssName(item.name);
+    const label = name.replace(' (Turkcell)','').replace(' (Türksat)','');
+    return `<div class="chip chip-iss on" data-iss="${name}"
       style="color:${c};border-color:${c};"
-      onclick="toggleISSChip(this,'${item.name.replace(/'/g,"\\'")}')">
+      onclick="toggleISSChip(this,'${name.replace(/'/g,"\\'")}')">
       ${label}
     </div>`;
   });
@@ -1241,9 +1262,9 @@ function renderISSChips(list) {
   if (sel) {
     const cur = sel.value;
     sel.innerHTML = '<option value="">Seçin...</option>' +
-      list.map(i => `<option value="${i.name}">${i.name}</option>`).join('') +
+      list.map(i => `<option value="${displayIssName(i.name)}">${displayIssName(i.name)}</option>`).join('') +
       '<option value="Diğer">Diğer (İSS adını girin)</option>';
-    if (cur) sel.value = cur;
+    if (cur) sel.value = canonicalIssName(cur);
   }
 }
 let colorMode = 'hiz', hexLayers =[], pinMarkerLayers =[], isModLoggedIn = false, currentModUser = null, regionSortMode = 'dl';
@@ -1342,7 +1363,7 @@ function renderHex() {
   // ALTIGEN BOYUTLARI KÜÇÜLTÜLDÜ (Daha detaylı çözünürlük kullanılıyor)
   const res = z<=5 ? 4 : z<=7 ? 5 : z<=9 ? 6 : z<=11 ? 7 : z<=13 ? 8 : z<=15 ? 9 : 10; 
   const hexMap = {};
-  cleanPinsData.forEach(p => { if (!p.lat || !activeFilters.has(p.baglanti_turu)) return; const issKey = Object.keys(IC).includes(p.iss) ? p.iss : 'Diğer'; if (!activeISSFilters.has(issKey)) return; try { const h = h3.latLngToCell(p.lat, p.lng, res); if (!hexMap[h]) hexMap[h]=[]; hexMap[h].push(p); } catch(e) {} });
+  cleanPinsData.forEach(p => { if (!p.lat || !activeFilters.has(p.baglanti_turu)) return; const canonicalIss = canonicalIssName(p.iss); const issKey = activeISSFilters.has(canonicalIss) ? canonicalIss : 'Diğer'; if (!activeISSFilters.has(issKey)) return; try { const h = h3.latLngToCell(p.lat, p.lng, res); if (!hexMap[h]) hexMap[h]=[]; hexMap[h].push(p); } catch(e) {} });
   Object.entries(hexMap).forEach(([hex, pins]) => {
     try {
       const coords = h3.cellToBoundary(hex).map(([lat,lng]) =>[lat,lng]);
@@ -1359,7 +1380,7 @@ function renderModPins() {
   if (!isModLoggedIn || !maps.main || maps.main.getZoom() < 10) return;
   pinsData.forEach(p => {
     if (!p.lat || !activeFilters.has(p.baglanti_turu)) return;
-    const issKey = Object.keys(IC).includes(p.iss) ? p.iss : 'Diğer'; if (!activeISSFilters.has(issKey)) return;
+    const canonicalIss = canonicalIssName(p.iss); const issKey = activeISSFilters.has(canonicalIss) ? canonicalIss : 'Diğer'; if (!activeISSFilters.has(issKey)) return;
     const color = colorMode==='hiz' ? speedColor(p.gercek_dl) : memColor(p.puan); const isSpamPin = isSpam(p);
     const m = L.circleMarker([p.lat, p.lng], { radius: isSpamPin?7:5, color: isSpamPin?'#ff0000':'#fff', fillColor: isSpamPin?'#ff4444':color, fillOpacity: 0.9, weight: isSpamPin?2.5:1.5 }).addTo(maps.main);
     const tarihStr = new Date(p.created_at).toLocaleString('tr-TR');
@@ -1463,8 +1484,8 @@ async function renderStats() {
   document.getElementById('sumGrid').innerHTML = `<div class="sum-card"><div class="sum-val">${pins.length}</div><div class="sum-label">Onaylı Ölçüm</div></div><div class="sum-card"><div class="sum-val" style="color:${speedColor(avgDL)}">${avgDL}</div><div class="sum-label">Ort. İndirme (↓ Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgUL?speedColor(avgUL):'var(--text3)'}">${avgUL||'—'}</div><div class="sum-label">Ort. Yükleme (↑ Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgS!=='—'?memColor(avgS):'var(--text3)'}">${avgS}</div><div class="sum-label">Ort. Memnuniyet</div></div>`;
 
   const KNOWN_ISS_LIST = getAllIss();
-  const im = {}; pins.forEach(p => { if(!p.iss || !KNOWN_ISS_LIST.includes(p.iss)) return; if(!im[p.iss]) im[p.iss]={t:0,c:0}; im[p.iss].t+=p.puan; im[p.iss].c++; });
-  document.getElementById('issRankList').innerHTML = Object.entries(im).map(([iss,d])=>({iss, s:(d.t/d.c).toFixed(1), c:d.c})).sort((a,b)=>b.s-a.s).map((x,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${x.iss}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.s)}">${x.s}</div></div>`).join('');
+  const im = {}; pins.forEach(p => { const iss = canonicalIssName(p.iss); if(!iss || !KNOWN_ISS_LIST.includes(iss)) return; if(!im[iss]) im[iss]={t:0,c:0}; im[iss].t+=p.puan; im[iss].c++; });
+  document.getElementById('issRankList').innerHTML = Object.entries(im).map(([iss,d])=>({iss, s:(d.t/d.c).toFixed(1), c:d.c})).sort((a,b)=>b.s-a.s).map((x,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${displayIssName(x.iss)}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.s)}">${x.s}</div></div>`).join('');
   
   // EN HIZLI LOKASYONLAR: FORMAT SABİTLENDİ
   const lm = {}; pins.forEach(p=>{ const k=[p.il||'?',p.ilce||'?',p.mahalle||''].filter(Boolean).join('_'); if(!lm[k]) lm[k]={t:0,c:0,il:p.il,ilce:p.ilce,mahalle:p.mahalle,type:p.baglanti_turu}; lm[k].t+=p.gercek_dl; lm[k].c++; });
@@ -1486,10 +1507,11 @@ async function renderStats() {
   // ISS BAŞINA ORTALAMA HIZ TREND CHART
   const issSpeedMap = {};
   pins.forEach(p => {
-    if (!p.iss) return;
-    if (!issSpeedMap[p.iss]) issSpeedMap[p.iss] = { total:0, count:0 };
-    issSpeedMap[p.iss].total += p.gercek_dl;
-    issSpeedMap[p.iss].count++;
+    const iss = canonicalIssName(p.iss);
+    if (!iss) return;
+    if (!issSpeedMap[iss]) issSpeedMap[iss] = { total:0, count:0 };
+    issSpeedMap[iss].total += p.gercek_dl;
+    issSpeedMap[iss].count++;
   });
   const issSpeedList = Object.entries(issSpeedMap)
     .map(([iss, d]) => ({ iss, avg: Math.round(d.total/d.count), count: d.count }))
@@ -1503,9 +1525,9 @@ async function renderStats() {
       const h = Math.round((x.avg / maxAvg) * 90); // 90px max bar, 10px gap top
       const col = ic(x.iss);
       // Kısa etiket: parantez içini çıkar
-      const label = x.iss
-        .replace(' (Türk Telekom)','').replace(' (Turkcell)','')
-        .replace(' (Türksat)','').replace('Türk Telekom','TT')
+      const label = displayIssName(x.iss)
+        .replace(' (Turkcell)','')
+        .replace(' (Türksat)','')
         .replace('Superonline','S.online');
       return '<div class="trend-bar-wrap">'
         + '<div class="trend-val" style="color:' + col + '">' + x.avg + '</div>'
@@ -1547,7 +1569,7 @@ async function submitPin() {
   if (!pinLat) return showToast('Lütfen konum seçin','err');
   const issVal = document.getElementById('issSelect').value;
   const customIss = document.getElementById('customIssInput')?.value?.trim();
-  const finalIss = issVal === 'Diğer' ? (customIss || 'Diğer') : issVal;
+  const finalIss = issVal === 'Diğer' ? canonicalIssName(customIss || 'Diğer') : canonicalIssName(issVal);
   if (!finalIss) return showToast('Lütfen ISS seçin','err');
   if (!selConnVal) return showToast('Bağlantı türü seçin','err');
   const dl = parseInt(document.getElementById('dlSpeed').value);
@@ -2102,6 +2124,7 @@ function updateMapTiles() {
 
 // ===== ISS FİLTRESİ =====
 function toggleISSChip(el, issName) {
+  issName = canonicalIssName(issName);
   el.classList.toggle('on');
   if (activeISSFilters.has(issName)) activeISSFilters.delete(issName);
   else activeISSFilters.add(issName);
