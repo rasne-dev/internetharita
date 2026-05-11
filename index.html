@@ -2372,41 +2372,20 @@ async function measureDownload(onLive) {
 }
 
 function uploadOnce(bytes, onLive) {
-  return new Promise((resolve) => {
-    const xhr = new XMLHttpRequest();
-    const url = `${SPEED_UPLOAD_URL}?bytes=${bytes}&t=${Date.now()}_${Math.random()}`;
-    let t0 = 0, lastT = 0, lastLoaded = 0, settled = false;
-    const finish = (ok, loaded) => {
-      if (settled) return;
-      settled = true;
-      if (!ok || !t0 || loaded < Math.min(bytes * 0.9, 100000)) return resolve(null);
-      const elapsed = (performance.now() - t0) / 1000;
-      if (elapsed <= 0.05) return resolve(null);
-      resolve(Math.round((loaded * 8) / elapsed / 1e6));
-    };
-    xhr.open('POST', url, true);
-    xhr.timeout = 25000;
-    xhr.upload.onloadstart = () => { t0 = performance.now(); lastT = t0; };
-    xhr.upload.onprogress = (e) => {
-      const now = performance.now();
-      if (!t0) { t0 = now; lastT = now; }
-      const loaded = e.loaded || 0;
-      if (now - lastT >= 350) {
-        const delta = loaded - lastLoaded;
-        const instantMbps = Math.round((delta * 8) / ((now - lastT) / 1000) / 1e6);
-        if (instantMbps > 0 && onLive) onLive(instantMbps);
-        lastLoaded = loaded;
-        lastT = now;
-      }
-    };
-    xhr.onload = () => finish(xhr.status >= 200 && xhr.status < 300, bytes);
-    xhr.onerror = () => finish(false, 0);
-    xhr.ontimeout = () => finish(false, 0);
-    xhr.onabort = () => finish(false, 0);
-    t0 = performance.now();
-    lastT = t0;
-    xhr.send(makeUploadBlob(bytes));
-  });
+  const url = `${SPEED_UPLOAD_URL}?bytes=${bytes}&t=${Date.now()}_${Math.random()}`;
+  const t0 = performance.now();
+  return fetch(url, {
+    method: 'POST',
+    mode: 'no-cors',
+    cache: 'no-store',
+    body: makeUploadBlob(bytes)
+  }).then(() => {
+    const elapsed = (performance.now() - t0) / 1000;
+    if (elapsed <= 0.05) return null;
+    const mbps = Math.round((bytes * 8) / elapsed / 1e6);
+    if (mbps > 0 && onLive) onLive(mbps);
+    return mbps;
+  }).catch(() => null);
 }
 
 async function measureUpload(onLive) {
@@ -2508,7 +2487,7 @@ async function runSpeedTest() {
   if (!finalUL) {
     document.getElementById('stPhase').textContent = 'HATA';
     document.getElementById('stSub').style.color = 'var(--danger)';
-    document.getElementById('stSub').textContent = 'Upload ölçülemedi: upload endpoint CORS/POST kabul etmiyor. Backend /up endpointi gerekir.';
+    document.getElementById('stSub').textContent = 'Yükleme hızı ölçülemedi. Lütfen bağlantınızı kontrol edip tekrar deneyin.';
     document.getElementById('stULVal').textContent = '—';
     btn.disabled = false; btn.textContent = 'Tekrar Dene';
     document.getElementById('stRetryBtn').style.display = 'block';
