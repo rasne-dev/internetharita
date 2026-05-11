@@ -2318,7 +2318,7 @@ function makeUploadBlob(bytes) {
     if (i + 2 < bytes) data[i + 2] = (v >>> 16) & 255;
     if (i + 3 < bytes) data[i + 3] = (v >>> 24) & 255;
   }
-  return new Blob([data], { type: 'application/octet-stream' });
+  return new Blob([data], { type: 'text/plain' });
 }
 async function measurePing() {
   try {
@@ -2403,7 +2403,6 @@ function uploadOnce(bytes, onLive) {
     xhr.onerror = () => finish(false, 0);
     xhr.ontimeout = () => finish(false, 0);
     xhr.onabort = () => finish(false, 0);
-    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
     t0 = performance.now();
     lastT = t0;
     xhr.send(makeUploadBlob(bytes));
