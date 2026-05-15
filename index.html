@@ -821,10 +821,10 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
 
     <!-- 3 ANA SEKME -->
     <div class="mod-tabs">
-      <button class="mod-tab-btn" id="modTabBtn-sikayetler" onclick="switchModTab('sikayetler')">🚩 Şikayetler <span class="mod-tab-count" id="raporCount"></span></button>
-      <button class="mod-tab-btn active" id="modTabBtn-tumPinler" onclick="switchModTab('tumPinler')">📌 Tüm Pinler <span class="mod-tab-count" id="pinCount" style="background:var(--surface3);color:var(--text3);"></span></button>
-      <button class="mod-tab-btn" id="modTabBtn-onay" onclick="switchModTab('onay')">✅ Onay &amp; Yönetim <span class="mod-tab-count" id="onayCount" style="background:var(--warn);color:#000;"></span></button>
-      <button class="mod-tab-btn" id="modTabBtn-issManager" onclick="switchModTab('issManager')">🏷 İSS Listesi</button>
+      <button class="mod-tab-btn" id="modTabBtn-sikayetler" onclick="switchModTab('sikayetler')">🚩 Kullanıcı Bildirimleri <span class="mod-tab-count" id="raporCount"></span></button>
+      <button class="mod-tab-btn active" id="modTabBtn-tumPinler" onclick="switchModTab('tumPinler')">📋 Tüm Pinler <span class="mod-tab-count" id="pinCount" style="background:var(--surface3);color:var(--text3);"></span></button>
+      <button class="mod-tab-btn" id="modTabBtn-onay" onclick="switchModTab('onay')">🔍 İnceleme &amp; Düzenle <span class="mod-tab-count" id="onayCount" style="background:var(--warn);color:#000;"></span></button>
+      <button class="mod-tab-btn" id="modTabBtn-issManager" onclick="switchModTab('issManager')">🏷 İSS Yönetimi</button>
     </div>
 
     <!-- SEKME 1: ŞİKAYETLER — kullanıcı raporları -->
@@ -834,19 +834,19 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
       <div id="bekleyenList"><div class="loading-text loading-dots">Yükleniyor</div></div>
     </div>
 
-    <!-- SEKME 2: TÜM PİNLER — silinmemiş her pin, her zaman tam liste -->
+    <!-- SEKME 2: TÜM PİNLER -->
     <div id="modTab-tumPinler">
-      <div class="mod-section-title" style="margin-bottom:10px;">📌 Tüm Pinler <span style="font-size:9px;color:var(--text3);font-weight:400;font-family:var(--font-body);">(onaylı, gizli, karantina — silinmemiş her kayıt)</span></div>
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
         <button class="btn-approve" style="padding:8px 16px;" id="bulkApproveBtn" onclick="bulkApprovePins()">✅ Seçilileri Onayla</button>
         <button class="btn-del" style="padding:8px 16px;" id="bulkDelBtn" onclick="bulkDeletePins()">🗑 Seçilileri Sil</button>
         <input type="text" class="fi" id="tableSearch" placeholder="İSS, il, ilçe ara..." style="flex:1;min-width:120px;max-width:240px;" oninput="filterAdminTable(this.value)">
-        <select class="fs" id="tableFilter" style="width:auto;min-width:130px;" onchange="filterAdminTable(document.getElementById('tableSearch').value)">
+        <select class="fs" id="tableFilter" style="width:auto;min-width:150px;" onchange="filterAdminTable(document.getElementById('tableSearch').value)">
           <option value="">Tümü</option>
-          <option value="gorunur">✅ Görünür</option>
+          <option value="gorunur">✅ Görünür (haritada)</option>
           <option value="gizli">🙈 Gizli</option>
           <option value="karantina">🔒 Karantina</option>
           <option value="spam">⚠ Spam</option>
+          <option value="bilinmeyen_iss">❓ Bilinmeyen İSS</option>
         </select>
       </div>
       <div class="mod-table-wrap">
@@ -868,27 +868,36 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
       </div>
     </div>
 
-    <!-- SEKME 3: ONAY & YÖNETİM — karantina pinler + özel ISS + istatistik editörü -->
+    <!-- SEKME 3: ONAY & YÖNETİM -->
     <div id="modTab-onay" style="display:none;">
 
-      <!-- 3a: Bekleyen / Karantina Pinler -->
+      <!-- 3a: İnceleme Gerektiren Pinler (karantina + spam + gizli) -->
       <div class="mod-section">
-        <div class="mod-section-title">🔒 Bekleyen / İnceleme Gerektiren Pinler</div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">Karantinaya alınan, spam şüpheli veya gizlenen pinler. Onayla / Gizle / Sil işlemlerini buradan yapın.</div>
+        <div class="mod-section-title">🔒 İnceleme Gerektiren Pinler</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">
+          Karantina, spam şüpheli veya gizlenen pinler. Her grup cihaz FP'sine göre gruplandırılır.<br>
+          <span style="color:var(--warn);">⚠ Spam</span> = hız değerleri geçersiz &nbsp;·&nbsp;
+          <span style="color:var(--warn);">🔒 Karantina</span> = outlier veya özel İSS &nbsp;·&nbsp;
+          <span style="color:var(--text3);">🙈 Gizli</span> = moderatör tarafından gizlendi
+        </div>
         <div id="sikayetList"><div class="loading-text loading-dots">Yükleniyor</div></div>
       </div>
 
       <!-- 3b: Özel İSS Teklifleri -->
       <div class="mod-section">
         <div class="mod-section-title">🏷 Özel İSS Teklifleri</div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">Kullanıcıların "Diğer" seçerek girdiği İSS isimleri. Onaylarsanız resmi listeye eklenebilir (kod güncellemesi gerektirir). Onaylamak pini görünür yapar; reddetmek gizler.</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">
+          Kullanıcıların "Diğer" seçerek girdiği İSS isimleri. Onayla → resmi listeye ekle + pinler yayınlanır. Reddet → pinler gizlenir.
+        </div>
         <div id="customIssList"><div class="loading-text loading-dots">Yükleniyor</div></div>
       </div>
 
       <!-- 3c: İstatistik Veri Editörü -->
       <div class="mod-section">
-        <div class="mod-section-title">📊 İstatistik Veri Editörü</div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">Onaylı pinlerin değerlerini doğrudan düzenleyebilirsiniz. İstatistikler yalnızca <b style="color:var(--success)">gorunur=true</b> pinlerden hesaplanır.</div>
+        <div class="mod-section-title">📊 Pin Değeri Düzenle</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">
+          Onaylı pinlerin hız/puan/görünürlük değerlerini doğrudan düzenle. Sadece <b style="color:var(--success)">gorunur=true</b> pinler istatistiklere girer.
+        </div>
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
           <input type="text" class="fi" id="statEditSearch" placeholder="İSS veya il ara..." style="flex:1;min-width:160px;" oninput="loadStatEditTable(this.value)">
           <button class="btn-ghost" onclick="loadStatEditTable('')">🔄 Tümünü Getir</button>
@@ -1988,7 +1997,8 @@ function renderAdminTable(pins) {
     let durumBadges = '';
     if (spam) durumBadges += '<span class="quarantine-badge" style="display:block;margin-bottom:2px;">⚠ SPAM</span>';
     if (p.is_quarantine) durumBadges += '<span class="quarantine-badge" style="display:block;margin-bottom:2px;border-color:var(--warn);color:var(--warn);background:rgba(245,158,11,.1);">🔒 KARANTİNA</span>';
-    if (!spam && !p.is_quarantine && p.gorunur !== false) durumBadges += '<span style="color:var(--success);font-size:9px;font-family:var(--font-mono);">✅ ONAYLI</span>';
+    if (!spam && !p.is_quarantine && p.gorunur !== false && !isApprovedPublicIss(p.iss)) durumBadges += '<span class="quarantine-badge" style="display:block;margin-bottom:2px;border-color:#a855f7;color:#a855f7;background:rgba(168,85,247,.1);">❓ BİLİNMEYEN İSS</span>';
+    if (!spam && !p.is_quarantine && p.gorunur !== false && isApprovedPublicIss(p.iss)) durumBadges += '<span style="color:var(--success);font-size:9px;font-family:var(--font-mono);">✅ ONAYLI</span>';
     if (p.gorunur === false && !spam && !p.is_quarantine) durumBadges += '<span style="color:var(--text3);font-size:9px;font-family:var(--font-mono);">🙈 GİZLİ</span>';
     if (p.mod_notu) durumBadges += '<span style="color:var(--accent);font-size:9px;font-family:var(--font-mono);display:block;margin-top:2px;" title="'+p.mod_notu+'">📝 NOT</span>';
     return `<tr style="${spam?'background:rgba(239,68,68,.05);':p.is_quarantine?'background:rgba(245,158,11,.04);':''}">
@@ -2011,9 +2021,10 @@ function filterAdminTable(search) {
   const filterVal = document.getElementById('tableFilter')?.value || ''; let filtered = adminPinsCache;
   if (search) { const s = search.toLowerCase(); filtered = filtered.filter(p => (p.iss||'').toLowerCase().includes(s) || (p.il||'').toLowerCase().includes(s) || (p.ilce||'').toLowerCase().includes(s)); }
   if (filterVal === 'spam') filtered = filtered.filter(p => isSpam(p));
-  else if (filterVal === 'gorunur') filtered = filtered.filter(p => p.gorunur !== false && !p.is_quarantine && !isSpam(p));
+  else if (filterVal === 'gorunur') filtered = filtered.filter(p => p.gorunur !== false && !p.is_quarantine && !isSpam(p) && isApprovedPublicIss(p.iss));
   else if (filterVal === 'gizli') filtered = filtered.filter(p => p.gorunur === false && !p.is_quarantine);
   else if (filterVal === 'karantina') filtered = filtered.filter(p => p.is_quarantine === true);
+  else if (filterVal === 'bilinmeyen_iss') filtered = filtered.filter(p => !isSpam(p) && !p.is_quarantine && p.gorunur !== false && !isApprovedPublicIss(p.iss));
   renderAdminTable(filtered);
 }
 
