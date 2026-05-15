@@ -1790,10 +1790,19 @@ async function loadIssManager() {
     if (!items.length) { list.innerHTML='<div class="empty-state">Liste boş</div>'; return; }
     // Haritada gözüken ISS isimlerini hesapla (onaylı pinlerden)
     const visibleIssNames = new Set(cleanPinsData.map(p => canonicalIssName(p.iss)));
+    // Tüm pinlerden ISS başına ölçüm sayısı (silinmemiş, gorunur olan)
+    const allPinsForCount = await getAllPinsAdmin() || [];
+    const issCountMap = {};
+    allPinsForCount.forEach(p => {
+      const name = canonicalIssName(p.iss);
+      if (!name) return;
+      issCountMap[name] = (issCountMap[name] || 0) + 1;
+    });
     list.innerHTML = items.map(item => {
       const c = item.color || issHashColor(item.name);
       const isInactive = item.active === false;
       const hasData = visibleIssNames.has(canonicalIssName(item.name));
+      const pinCount = issCountMap[canonicalIssName(item.name)] || 0;
       const statusBadge = isInactive
         ? `<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(239,68,68,.12);border:1px solid var(--danger);color:var(--danger);font-family:var(--font-mono);font-weight:700;">PASİF</span>`
         : !hasData
@@ -1803,6 +1812,7 @@ async function loadIssManager() {
         <div style="display:flex;align-items:center;gap:10px;">
           <div style="width:10px;height:10px;border-radius:50%;background:${c};flex-shrink:0;"></div>
           <div style="flex:1;font-size:12px;font-weight:600;color:var(--text);">${item.name}</div>
+          <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);">${pinCount} pin</span>
           ${statusBadge}
           <input type="color" value="${c.startsWith('hsl') ? '#6366f1' : c}"
             style="width:28px;height:24px;border:1px solid var(--border);border-radius:4px;background:none;cursor:pointer;padding:1px;flex-shrink:0;"
@@ -1870,9 +1880,19 @@ async function refreshModData() {
     const raporlar = await getRaporlar() || [];
     const raporEl = document.getElementById('raporCount');
     if (raporEl) raporEl.textContent = raporlar.length > 0 ? raporlar.length : '';
-    const totalVisible = pins.filter(p => p.gorunur !== false && !p.is_quarantine && !isSpam(p)).length;
-    const hiddenCount = pins.length - totalVisible;
-    document.getElementById('modSubtitle').textContent = `Toplam ${pins.length} pin · Haritada ${totalVisible} görünür · ${hiddenCount} gizli/karantina — ${currentModUser?.email||''}`;
+    const totalVisible = pins.filter(p => p.gorunur !== false && !p.is_quarantine && !isSpam(p) && isApprovedPublicIss(p.iss)).length;
+    const spamCount = pins.filter(p => isSpam(p)).length;
+    const quarantineCount = pins.filter(p => !isSpam(p) && p.is_quarantine).length;
+    const hiddenCount = pins.filter(p => !isSpam(p) && !p.is_quarantine && p.gorunur === false).length;
+    const unknownIssCount = pins.filter(p => !isSpam(p) && !p.is_quarantine && p.gorunur !== false && !isApprovedPublicIss(p.iss)).length;
+    const parts = [];
+    if (spamCount) parts.push(`${spamCount} spam`);
+    if (quarantineCount) parts.push(`${quarantineCount} karantina`);
+    if (hiddenCount) parts.push(`${hiddenCount} gizli`);
+    if (unknownIssCount) parts.push(`${unknownIssCount} bilinmeyen İSS`);
+    const hiddenDetail = parts.length ? ` (${parts.join(', ')})` : '';
+    const hiddenTotal = pins.length - totalVisible;
+    document.getElementById('modSubtitle').innerHTML = `Toplam ${pins.length} pin · Haritada <b style="color:var(--success)">${totalVisible}</b> görünür · <b style="color:${hiddenTotal>0?'var(--warn)':'var(--text3)'}">${hiddenTotal} gizli${hiddenDetail}</b> — ${currentModUser?.email||''}`;
   } catch(e) { /* badge update failed silently */ }
 }
 
