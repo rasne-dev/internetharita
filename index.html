@@ -396,14 +396,16 @@ html.light .sr-ping { background:#f5f7fa; }
 .hex-pin-speeds { font-family:var(--font-mono); font-size:10px; color:var(--text2); }
 .hex-pins-toggle { width:100%; padding:6px; margin-top:6px; background:none; border:1px solid var(--border); border-radius:7px; color:var(--text3); font-size:10px; cursor:pointer; transition:all .2s; font-family:var(--font-body); }
 .hex-pins-toggle:hover { border-color:var(--accent); color:var(--accent); }
-/* ===== TREND CHART ===== */
-.trend-section { margin-top:14px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:16px 16px 12px; }
+/* ===== TREND CHART (yatay) ===== */
+.trend-section { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:16px; }
 .trend-title { font-family:var(--font-mono); font-size:9px; font-weight:700; color:var(--text3); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:14px; }
-.trend-chart { display:flex; align-items:flex-end; gap:6px; height:100px; padding-bottom:0; }
-.trend-bar-wrap { display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; min-width:0; }
-.trend-bar { width:100%; border-radius:4px 4px 0 0; min-height:4px; transition:height .4s ease; }
-.trend-label { font-size:8px; color:var(--text3); font-family:var(--font-body); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; text-align:center; margin-top:4px; }
-.trend-val { font-size:9px; color:var(--text); font-family:var(--font-mono); font-weight:700; }
+.trend-chart { display:flex; flex-direction:column; gap:9px; }
+.trend-row { display:grid; grid-template-columns:110px 1fr 56px; align-items:center; gap:10px; }
+.trend-label { font-size:11px; font-weight:600; color:var(--text); font-family:var(--font-body); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.trend-track { height:8px; background:var(--surface3,#1c2733); border-radius:4px; overflow:hidden; }
+.trend-bar { height:100%; border-radius:4px; transition:width .5s cubic-bezier(.4,0,.2,1); min-width:3px; }
+.trend-val { font-size:11px; font-weight:700; font-family:var(--font-mono); text-align:right; }
+.trend-count { font-size:9px; color:var(--text3); text-align:right; line-height:1; margin-top:1px; }
 .region-name{font-family:var(--font-mono);font-size:14px;font-weight:700;margin-bottom:3px;}
 .region-cities{font-size:10px;color:var(--text3);margin-bottom:12px;}
 .region-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
@@ -1532,26 +1534,31 @@ async function renderStats() {
     .map(([iss, d]) => ({ iss, avg: Math.round(d.total/d.count), count: d.count }))
     .filter(x => x.count >= 1)
     .sort((a,b) => b.avg - a.avg)
-    .slice(0, 8);
+    .slice(0, 10);
   const maxAvg = Math.max(...issSpeedList.map(x=>x.avg), 1);
   const trendEl = document.getElementById('issSpeedTrend');
   if (trendEl && issSpeedList.length) {
-    const bars = issSpeedList.map(x => {
-      const h = Math.round((x.avg / maxAvg) * 90); // 90px max bar, 10px gap top
+    const rows = issSpeedList.map((x, i) => {
       const col = ic(x.iss);
-      // Kısa etiket: parantez içini çıkar
+      const pct = Math.round((x.avg / maxAvg) * 100);
       const label = displayIssName(x.iss)
-        .replace(' (Turkcell)','')
-        .replace(' (Türksat)','')
-        .replace('Superonline','S.online');
-      return '<div class="trend-bar-wrap">'
-        + '<div class="trend-val" style="color:' + col + '">' + x.avg + '</div>'
-        + '<div class="trend-bar" style="height:' + h + 'px;background:' + col + ';opacity:0.85;"></div>'
-        + '<div class="trend-label" title="' + x.iss + ' (' + x.count + ' ölçüm)">' + label + '</div>'
-        + '</div>';
+        .replace(' (Turkcell)','').replace(' (Türksat)','');
+      const speedLabel = x.avg >= 1000 ? (x.avg/1000).toFixed(1)+'G' : x.avg + ' Mbps';
+      return `<div class="trend-row">
+        <div class="trend-label" title="${displayIssName(x.iss)}">
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${col};margin-right:5px;vertical-align:middle;flex-shrink:0;"></span>${label}
+        </div>
+        <div class="trend-track">
+          <div class="trend-bar" style="width:${pct}%;background:${col};opacity:0.9;"></div>
+        </div>
+        <div>
+          <div class="trend-val" style="color:${col}">${speedLabel}</div>
+          <div class="trend-count">${x.count} ölçüm</div>
+        </div>
+      </div>`;
     }).join('');
-    trendEl.innerHTML = '<div class="trend-title">İSS Başına Ort. İndirme Hızı (Mbps)</div>'
-      + '<div class="trend-chart">' + bars + '</div>';
+    trendEl.innerHTML = '<div class="trend-title">İSS Başına Ort. İndirme Hızı</div>'
+      + '<div class="trend-chart">' + rows + '</div>';
   }
 }
 
@@ -1781,12 +1788,22 @@ async function loadIssManager() {
   try {
     const items = await getIssList() || [];
     if (!items.length) { list.innerHTML='<div class="empty-state">Liste boş</div>'; return; }
+    // Haritada gözüken ISS isimlerini hesapla (onaylı pinlerden)
+    const visibleIssNames = new Set(cleanPinsData.map(p => canonicalIssName(p.iss)));
     list.innerHTML = items.map(item => {
       const c = item.color || issHashColor(item.name);
-      return `<div class="mod-card" id="issrow_${item.id}" style="margin-bottom:6px;padding:10px 12px;">
+      const isInactive = item.active === false;
+      const hasData = visibleIssNames.has(canonicalIssName(item.name));
+      const statusBadge = isInactive
+        ? `<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(239,68,68,.12);border:1px solid var(--danger);color:var(--danger);font-family:var(--font-mono);font-weight:700;">PASİF</span>`
+        : !hasData
+          ? `<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(245,158,11,.12);border:1px solid var(--warn);color:var(--warn);font-family:var(--font-mono);font-weight:700;" title="Bu ISS'e ait haritada görünen onaylı pin yok">VERİ YOK</span>`
+          : `<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(34,197,94,.1);border:1px solid var(--success);color:var(--success);font-family:var(--font-mono);font-weight:700;">AKTİF</span>`;
+      return `<div class="mod-card" id="issrow_${item.id}" style="margin-bottom:6px;padding:10px 12px;${isInactive?'opacity:0.55;':''}">
         <div style="display:flex;align-items:center;gap:10px;">
           <div style="width:10px;height:10px;border-radius:50%;background:${c};flex-shrink:0;"></div>
           <div style="flex:1;font-size:12px;font-weight:600;color:var(--text);">${item.name}</div>
+          ${statusBadge}
           <input type="color" value="${c.startsWith('hsl') ? '#6366f1' : c}"
             style="width:28px;height:24px;border:1px solid var(--border);border-radius:4px;background:none;cursor:pointer;padding:1px;flex-shrink:0;"
             onchange="updateIssColor(${item.id}, this.value, '${item.name.replace(/'/g,"\\'")}')">
@@ -1853,7 +1870,9 @@ async function refreshModData() {
     const raporlar = await getRaporlar() || [];
     const raporEl = document.getElementById('raporCount');
     if (raporEl) raporEl.textContent = raporlar.length > 0 ? raporlar.length : '';
-    document.getElementById('modSubtitle').textContent = `${pendingOnay} bekleyen — Giriş: ${currentModUser?.email||''}`;
+    const totalVisible = pins.filter(p => p.gorunur !== false && !p.is_quarantine && !isSpam(p)).length;
+    const hiddenCount = pins.length - totalVisible;
+    document.getElementById('modSubtitle').textContent = `Toplam ${pins.length} pin · Haritada ${totalVisible} görünür · ${hiddenCount} gizli/karantina — ${currentModUser?.email||''}`;
   } catch(e) { /* badge update failed silently */ }
 }
 
