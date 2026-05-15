@@ -678,17 +678,12 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
 
         <!-- İSS FİLTRESİ -->
         <div class="sidebar-section">
-          <div class="sidebar-section-title">İSS Filtresi</div>
+          <div class="sidebar-section-title" style="display:flex;justify-content:space-between;align-items:center;">
+            İSS Filtresi
+            <button onclick="toggleAllISSChips()" style="font-size:8px;padding:2px 6px;background:var(--surface3);border:1px solid var(--border2);color:var(--text3);border-radius:4px;cursor:pointer;font-family:var(--font-mono);" id="issToggleAllBtn">TÜM</button>
+          </div>
           <div class="chips" id="issChips">
-            <div class="chip chip-iss on" style="color:#ef4444;border-color:#ef4444;" onclick="toggleISSChip(this,'TTNet (Türk Telekom)')">TTNet</div>
-            <div class="chip chip-iss on" style="color:#00b4d8;border-color:#00b4d8;" onclick="toggleISSChip(this,'Superonline (Turkcell)')">Superonline</div>
-            <div class="chip chip-iss on" style="color:#9f7aea;border-color:#9f7aea;" onclick="toggleISSChip(this,'TurkNet')">TurkNet</div>
-            <div class="chip chip-iss on" style="color:#e60000;border-color:#e60000;" onclick="toggleISSChip(this,'Vodafone')">Vodafone</div>
-            <div class="chip chip-iss on" style="color:#1e88e5;border-color:#1e88e5;" onclick="toggleISSChip(this,'Türksat')">Türksat</div>
-            <div class="chip chip-iss on" style="color:#43a047;border-color:#43a047;" onclick="toggleISSChip(this,'Kablonet (Türksat)')">Kablonet</div>
-            <div class="chip chip-iss on" style="color:#10b981;border-color:#10b981;" onclick="toggleISSChip(this,'Millenicom')">Millenicom</div>
-            <div class="chip chip-iss on" style="color:#f59e0b;border-color:#f59e0b;" onclick="toggleISSChip(this,'Netspeed')">Netspeed</div>
-            <div class="chip chip-iss on" style="color:#6b7280;border-color:#6b7280;" onclick="toggleISSChip(this,'Diğer')">Diğer</div>
+            <!-- Dinamik olarak renderISSChips() ile doldurulur -->
           </div>
         </div>
 
@@ -809,7 +804,7 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
     </div>
   </div>
 
-  <div id="modPanelContent" class="mod-panel-content" style="display:none;">
+  <div id="modPanelContent" class="mod-panel-content" style="display:none;flex-direction:column;">
     <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
       <div><div class="page-title">Moderatör Paneli</div><div class="page-sub" id="modSubtitle">Yükleniyor...</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -825,7 +820,7 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
     <!-- 3 ANA SEKME -->
     <div class="mod-tabs">
       <button class="mod-tab-btn" id="modTabBtn-sikayetler" onclick="switchModTab('sikayetler')">🚩 Şikayetler <span class="mod-tab-count" id="raporCount"></span></button>
-      <button class="mod-tab-btn active" id="modTabBtn-tumPinler" onclick="switchModTab('tumPinler')">📌 Tüm Pinler</button>
+      <button class="mod-tab-btn active" id="modTabBtn-tumPinler" onclick="switchModTab('tumPinler')">📌 Tüm Pinler <span class="mod-tab-count" id="pinCount" style="background:var(--surface3);color:var(--text3);"></span></button>
       <button class="mod-tab-btn" id="modTabBtn-onay" onclick="switchModTab('onay')">✅ Onay &amp; Yönetim <span class="mod-tab-count" id="onayCount" style="background:var(--warn);color:#000;"></span></button>
       <button class="mod-tab-btn" id="modTabBtn-issManager" onclick="switchModTab('issManager')">🏷 İSS Listesi</button>
     </div>
@@ -981,7 +976,7 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
     <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">Listeye yeni bir İSS ekleyin. Hem bu oturumda hem sonraki kullanımlarda görünür. Kalıcı eklemek için kodu güncelleyin.</div>
     <div class="fg" style="margin-bottom:16px;">
       <div class="fl">İSS Adı</div>
-      <input class="fi" type="text" id="newIssName" placeholder="Örn: Fibernet, Bimcell..." maxlength="60" onkeydown="if(event.key==='Enter')confirmAddIss()">
+      <input class="fi" type="text" id="addIssName" placeholder="Örn: Fibernet, Bimcell..." maxlength="60" onkeydown="if(event.key==='Enter')confirmAddIss()">
     </div>
     <div style="display:flex;gap:8px;">
       <button class="btn-primary" style="flex:1;padding:10px;" onclick="confirmAddIss()">✅ Ekle</button>
@@ -1085,6 +1080,19 @@ function canonicalIssName(name) {
 function displayIssName(name) {
   return canonicalIssName(name);
 }
+function approvedIssNames() {
+  const active = issListCache
+    .filter(i => i.active !== false)
+    .map(i => canonicalIssName(i.name))
+    .filter(Boolean);
+  return new Set(active.length ? active : BASE_ISS);
+}
+function isApprovedPublicIss(name) {
+  return approvedIssNames().has(canonicalIssName(name));
+}
+function publicCleanPins(pins) {
+  return cleanPins(pins).filter(p => isApprovedPublicIss(p.iss));
+}
 
 // Moderatörün oturumda eklediği ISS'ler localStorage'da saklanır
 function getExtraIss() { try { return JSON.parse(localStorage.getItem('ih_extra_iss') || '[]'); } catch(e) { return []; } }
@@ -1097,10 +1105,10 @@ function buildIssOptions(selectEl, currentVal) {
   selectEl.innerHTML = all.map(iss => `<option value="${iss}" ${iss===current?'selected':''}>${iss}</option>`).join('');
 }
 
-function showAddIssModal() { document.getElementById('newIssName').value=''; document.getElementById('addIssModal').classList.add('open'); setTimeout(()=>document.getElementById('newIssName').focus(),100); }
+function showAddIssModal() { document.getElementById('addIssName').value=''; document.getElementById('addIssModal').classList.add('open'); setTimeout(()=>document.getElementById('addIssName').focus(),100); }
 function closeAddIssModal() { document.getElementById('addIssModal').classList.remove('open'); }
 function confirmAddIss() {
-  const name = canonicalIssName(document.getElementById('newIssName').value.trim());
+  const name = canonicalIssName(document.getElementById('addIssName').value.trim());
   if (!name) return showToast('İSS adı boş olamaz','err');
   if (getAllIss().includes(name)) return showToast('Bu İSS zaten listede','warn');
   const extras = getExtraIss(); extras.push(name); saveExtraIss(extras);
@@ -1236,6 +1244,11 @@ async function loadIssListAndRenderChips() {
   activeISSFilters = new Set(active.map(i => i.name));
   activeISSFilters.add('Diğer');
   renderISSChips(active);
+  if (pinsData.length) {
+    cleanPinsData = publicCleanPins(pinsData);
+    renderHex();
+    renderModPins();
+  }
 }
 
 function issColor(item) {
@@ -1272,8 +1285,6 @@ let colorMode = 'hiz', hexLayers =[], pinMarkerLayers =[], isModLoggedIn = false
 function setColorMode(m) {
   colorMode = m==='memnuniyet' ? 'mem' : m;
   const isHiz = colorMode === 'hiz';
-  document.getElementById('ctHiz')?.classList.toggle('active', isHiz);
-  document.getElementById('ctMem')?.classList.toggle('active', !isHiz);
   document.getElementById('colorModeHiz')?.classList.toggle('active', isHiz);
   document.getElementById('colorModeMem')?.classList.toggle('active', !isHiz);
   const items = document.getElementById('legendItems');
@@ -1348,7 +1359,7 @@ function onZoomEnd() {
 
 async function loadPins() {
   try {
-    pinsData = await getPins() ||[]; cleanPinsData = cleanPins(pinsData); renderHex(); renderModPins();
+    pinsData = await getPins() ||[]; cleanPinsData = publicCleanPins(pinsData); renderHex(); renderModPins();
     const cnt = cleanPinsData.length;
     const avg = cnt ? Math.round(cleanPinsData.reduce((a,p) => a+p.gercek_dl, 0)/cnt) : 0;
     const ulPins = cleanPinsData.filter(p => p.gercek_ul > 0);
@@ -1363,7 +1374,7 @@ function renderHex() {
   // ALTIGEN BOYUTLARI KÜÇÜLTÜLDÜ (Daha detaylı çözünürlük kullanılıyor)
   const res = z<=5 ? 4 : z<=7 ? 5 : z<=9 ? 6 : z<=11 ? 7 : z<=13 ? 8 : z<=15 ? 9 : 10; 
   const hexMap = {};
-  cleanPinsData.forEach(p => { if (!p.lat || !activeFilters.has(p.baglanti_turu)) return; const canonicalIss = canonicalIssName(p.iss); const issKey = activeISSFilters.has(canonicalIss) ? canonicalIss : 'Diğer'; if (!activeISSFilters.has(issKey)) return; try { const h = h3.latLngToCell(p.lat, p.lng, res); if (!hexMap[h]) hexMap[h]=[]; hexMap[h].push(p); } catch(e) {} });
+  cleanPinsData.forEach(p => { if (!p.lat || !activeFilters.has(p.baglanti_turu)) return; const canonicalIss = canonicalIssName(p.iss); if (!isApprovedPublicIss(canonicalIss) || !activeISSFilters.has(canonicalIss)) return; try { const h = h3.latLngToCell(p.lat, p.lng, res); if (!hexMap[h]) hexMap[h]=[]; hexMap[h].push(p); } catch(e) {} });
   Object.entries(hexMap).forEach(([hex, pins]) => {
     try {
       const coords = h3.cellToBoundary(hex).map(([lat,lng]) =>[lat,lng]);
@@ -1380,7 +1391,7 @@ function renderModPins() {
   if (!isModLoggedIn || !maps.main || maps.main.getZoom() < 10) return;
   pinsData.forEach(p => {
     if (!p.lat || !activeFilters.has(p.baglanti_turu)) return;
-    const canonicalIss = canonicalIssName(p.iss); const issKey = activeISSFilters.has(canonicalIss) ? canonicalIss : 'Diğer'; if (!activeISSFilters.has(issKey)) return;
+    const canonicalIss = canonicalIssName(p.iss); if (!isApprovedPublicIss(canonicalIss) || !activeISSFilters.has(canonicalIss)) return;
     const color = colorMode==='hiz' ? speedColor(p.gercek_dl) : memColor(p.puan); const isSpamPin = isSpam(p);
     const m = L.circleMarker([p.lat, p.lng], { radius: isSpamPin?7:5, color: isSpamPin?'#ff0000':'#fff', fillColor: isSpamPin?'#ff4444':color, fillOpacity: 0.9, weight: isSpamPin?2.5:1.5 }).addTo(maps.main);
     const tarihStr = new Date(p.created_at).toLocaleString('tr-TR');
@@ -1483,8 +1494,11 @@ async function renderStats() {
   const avgS = pins.length ? (pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1) : '—';
   document.getElementById('sumGrid').innerHTML = `<div class="sum-card"><div class="sum-val">${pins.length}</div><div class="sum-label">Onaylı Ölçüm</div></div><div class="sum-card"><div class="sum-val" style="color:${speedColor(avgDL)}">${avgDL}</div><div class="sum-label">Ort. İndirme (↓ Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgUL?speedColor(avgUL):'var(--text3)'}">${avgUL||'—'}</div><div class="sum-label">Ort. Yükleme (↑ Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgS!=='—'?memColor(avgS):'var(--text3)'}">${avgS}</div><div class="sum-label">Ort. Memnuniyet</div></div>`;
 
-  const KNOWN_ISS_LIST = getAllIss();
-  const im = {}; pins.forEach(p => { const iss = canonicalIssName(p.iss); if(!iss || !KNOWN_ISS_LIST.includes(iss)) return; if(!im[iss]) im[iss]={t:0,c:0}; im[iss].t+=p.puan; im[iss].c++; });
+  // issListCache (Supabase) + getAllIss() (BASE_ISS + localStorage) birleşimi — hiçbir onaylı ISS atlanmasın
+  const knownFromCache = issListCache.map(i => canonicalIssName(i.name));
+  const knownFromLocal = getAllIss();
+  const KNOWN_ISS_SET = new Set([...knownFromCache, ...knownFromLocal]);
+  const im = {}; pins.forEach(p => { const iss = canonicalIssName(p.iss); if(!iss || !KNOWN_ISS_SET.has(iss)) return; if(!im[iss]) im[iss]={t:0,c:0}; im[iss].t+=p.puan; im[iss].c++; });
   document.getElementById('issRankList').innerHTML = Object.entries(im).map(([iss,d])=>({iss, s:(d.t/d.c).toFixed(1), c:d.c})).sort((a,b)=>b.s-a.s).map((x,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${displayIssName(x.iss)}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.s)}">${x.s}</div></div>`).join('');
   
   // EN HIZLI LOKASYONLAR: FORMAT SABİTLENDİ
@@ -1582,9 +1596,12 @@ async function submitPin() {
   if (!selScoreVal) return showToast('Puan verin','err');
   if (!canSubmit()) return showToast(rateLimitMessage(), 'warn');
   
+  const btn = document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='Kontrol ediliyor...';
+  
   const isCustomIss = issVal === 'Diğer' && !!customIss;
   const outlier = isOutlier(dl, pinLat, pinLng);
-  const quarantine = !!(outlier || isCustomIss);
+  const rateQuarantine = shouldQuarantine();
+  const quarantine = !!(outlier || isCustomIss || rateQuarantine);
 
   // Konum bazlı tekrar giriş kontrolü — aynı FP, 500m, 24 saat
   const nearbyRecent = cleanPinsData.find(p => {
@@ -1601,12 +1618,13 @@ async function submitPin() {
     return showToast(`⚠ Bu bölge için son 24 saat içinde veri girdiniz (↓${nearbyRecent.gercek_dl} Mbps). Lütfen farklı bir konumdan giriş yapın.`, 'warn');
   }
   const f = fuzzy(pinLat, pinLng);
-  const btn = document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='Gönderiliyor...';
+  btn.textContent='Gönderiliyor...';
   try {
     await addPin({ lat:f.lat, lng:f.lng, il:document.getElementById('ilInput').value||null, ilce:document.getElementById('ilceInput').value||null, mahalle:document.getElementById('mahalleInput').value||null, iss: finalIss, baglanti_turu:selConnVal, altyapi_sahibi:document.getElementById('infraSelect').value||null, paket_hizi:parseInt(document.getElementById('packageSpeed').value)||null, gercek_dl:dl, gercek_ul:ul, puan:selScoreVal, yorum:document.getElementById('commentInput').value||null, browser_fp: browserFingerprint || null, ip_hash: browserFingerprint ? 'fp_' + browserFingerprint.slice(0,8) : null, gorunur: !quarantine, sikayet_sayisi: 0, is_quarantine: quarantine, custom_iss: isCustomIss ? true : null });
     markSubmit(); 
     if (quarantine) {
-      showToast(outlier ? '⚠ Bölge ortalamasından sapma — incelemeye alındı' : '⚠ Verini aldık — incelemeye alındı', 'warn');
+      const reason = outlier ? '⚠ Bölge ortalamasından sapma' : rateQuarantine ? '⚠ Hızlı giriş algılandı' : '⚠ Verini aldık';
+      showToast(`${reason} — incelemeye alındı`, 'warn');
       showThankyou({ dl, ul, iss: finalIss, il: document.getElementById('ilInput').value, quarantine: true });
     } else {
       showThankyou({ dl, ul, iss: finalIss, il: document.getElementById('ilInput').value, quarantine: false });
@@ -1657,7 +1675,10 @@ async function modLogin() {
   try {
     const { data, error } = await sbc.auth.signInWithPassword({ email: document.getElementById('modEmail').value, password: document.getElementById('modPw').value }); if (error) throw error;
     isModLoggedIn=true; currentModUser=data.user;
-    document.getElementById('modAuthScreen').style.display='none'; document.getElementById('modPanelContent').style.display='flex'; document.getElementById('modBadge').style.display='block'; document.getElementById('headerMaintenanceToggle').style.display='flex'; document.getElementById('modSubtitle').textContent=`Giriş: ${data.user.email}`;
+    const mpc = document.getElementById('modPanelContent');
+    document.getElementById('modAuthScreen').style.display='none';
+    mpc.style.display='flex'; mpc.style.flexDirection='column';
+    document.getElementById('modBadge').style.display='block'; document.getElementById('headerMaintenanceToggle').style.display='flex'; document.getElementById('modSubtitle').textContent=`Giriş: ${data.user.email}`;
     showToast('✅ Giriş başarılı'); switchModTab('tumPinler'); refreshModData(); if(maps.main) renderModPins(); loadMaintenanceState();
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
@@ -1817,7 +1838,7 @@ async function removeIssFromList(id, name) {
 }
 async function refreshModData() {
   // Aktif sekmeyi tespit et ve yenile
-  const TABS = ['sikayetler','tumPinler','onay'];
+  const TABS = ['sikayetler','tumPinler','onay','issManager'];
   const activeTab = TABS.find(t => { const el = document.getElementById('modTab-'+t); return el && el.style.display !== 'none'; }) || 'tumPinler';
   switchModTab(activeTab);
   // Badge sayaçlarını güncelle (arka planda)
@@ -1826,6 +1847,8 @@ async function refreshModData() {
     const pendingOnay = pins.filter(p => !p.gorunur || p.is_quarantine || isSpam(p)).length;
     const el = document.getElementById('onayCount');
     if (el) el.textContent = pendingOnay > 0 ? pendingOnay : '';
+    const pinCountEl = document.getElementById('pinCount');
+    if (pinCountEl) pinCountEl.textContent = pins.length > 0 ? pins.length : '';
     const raporlar = await getRaporlar() || [];
     const raporEl = document.getElementById('raporCount');
     if (raporEl) raporEl.textContent = raporlar.length > 0 ? raporlar.length : '';
@@ -1903,7 +1926,7 @@ async function groupDelete(idsJson) {
     ids.forEach(id => document.getElementById('mc_'+id)?.remove());
     adminPinsCache = adminPinsCache.filter(p => !ids.includes(p.id));
     pinsData = pinsData.filter(p => !ids.includes(p.id));
-    cleanPinsData = cleanPins(pinsData);
+    cleanPinsData = publicCleanPins(pinsData);
     if (maps.main) { renderHex(); renderModPins(); }
     showToast(`🗑 ${ids.length} pin silindi`);
     loadAdminTable();
@@ -1948,9 +1971,9 @@ function filterAdminTable(search) {
   const filterVal = document.getElementById('tableFilter')?.value || ''; let filtered = adminPinsCache;
   if (search) { const s = search.toLowerCase(); filtered = filtered.filter(p => (p.iss||'').toLowerCase().includes(s) || (p.il||'').toLowerCase().includes(s) || (p.ilce||'').toLowerCase().includes(s)); }
   if (filterVal === 'spam') filtered = filtered.filter(p => isSpam(p));
-  else if (filterVal === 'gorunur') filtered = filtered.filter(p => p.gorunur !== false && !p.is_quarantine);
-  else if (filterVal === 'gizli') filtered = filtered.filter(p => p.gorunur === false);
-  else if (filterVal === 'karantina') filtered = filtered.filter(p => p.is_quarantine);
+  else if (filterVal === 'gorunur') filtered = filtered.filter(p => p.gorunur !== false && !p.is_quarantine && !isSpam(p));
+  else if (filterVal === 'gizli') filtered = filtered.filter(p => p.gorunur === false && !p.is_quarantine);
+  else if (filterVal === 'karantina') filtered = filtered.filter(p => p.is_quarantine === true);
   renderAdminTable(filtered);
 }
 
@@ -2011,7 +2034,7 @@ function closeEditModal() { document.getElementById('editModal').classList.remov
 async function modDeletePin(id, permanent = false) {
   try { 
     if (permanent) await hardDelPin(id); else await delPin(id); 
-    document.getElementById('mc_'+id)?.remove(); document.getElementById('se_'+id)?.remove(); adminPinsCache = adminPinsCache.filter(p=>p.id!==id); pinsData = pinsData.filter(p=>p.id!==id); cleanPinsData = cleanPins(pinsData); if (maps.main) { renderHex(); renderModPins(); } showToast('🗑 Pin silindi'); loadAdminTable(); 
+    document.getElementById('mc_'+id)?.remove(); document.getElementById('se_'+id)?.remove(); adminPinsCache = adminPinsCache.filter(p=>p.id!==id); pinsData = pinsData.filter(p=>p.id!==id); cleanPinsData = publicCleanPins(pinsData); if (maps.main) { renderHex(); renderModPins(); } showToast('🗑 Pin silindi'); loadAdminTable(); 
   } catch(e) { 
     if(e.message.includes("does not exist") || e.message.includes("schema cache")) showToast("Supabase Cache yenileniyor, birazdan tekrar dene.", "warn");
     else showToast('Hata: '+e.message,'err'); 
@@ -2030,7 +2053,7 @@ async function bulkApprovePins() {
   showToast(`✅ ${ok} pin onaylandı${fail?', '+fail+' hata':''}`);
   adminPinsCache = adminPinsCache.map(p => ids.includes(p.id) ? {...p, gorunur:true, is_quarantine:false} : p);
   pinsData = pinsData.map(p => ids.includes(p.id) ? {...p, gorunur:true} : p);
-  cleanPinsData = cleanPins(pinsData);
+  cleanPinsData = publicCleanPins(pinsData);
   if (maps.main) { renderHex(); renderModPins(); }
   loadAdminTable();
 }
@@ -2067,7 +2090,10 @@ async function checkSession() {
     const { data: { session } } = await sbc.auth.getSession();
     if (session) {
       isModLoggedIn=true; currentModUser=session.user;
-      document.getElementById('modAuthScreen').style.display='none'; document.getElementById('modPanelContent').style.display='flex'; document.getElementById('modBadge').style.display='block'; document.getElementById('headerMaintenanceToggle').style.display='flex'; document.getElementById('modSubtitle').textContent=`Giriş: ${session.user.email}`;
+      const mpc = document.getElementById('modPanelContent');
+      document.getElementById('modAuthScreen').style.display='none';
+      mpc.style.display='flex'; mpc.style.flexDirection='column';
+      document.getElementById('modBadge').style.display='block'; document.getElementById('headerMaintenanceToggle').style.display='flex'; document.getElementById('modSubtitle').textContent=`Giriş: ${session.user.email}`;
       loadMaintenanceState();
     }
   } catch(e) {}
@@ -2080,8 +2106,11 @@ async function checkPublicMaintenance() {
   } catch(e) { /* ignore silently */ }
 }
 
-checkSession(); checkPublicMaintenance(); setTimeout(()=>initMainMap(), 100);
-loadIssListAndRenderChips();
+checkSession(); checkPublicMaintenance();
+(async () => {
+  await loadIssListAndRenderChips();
+  setTimeout(()=>initMainMap(), 100);
+})();
 
 // ===== TEMA =====
 function applyTheme(theme) {
@@ -2130,6 +2159,18 @@ function toggleISSChip(el, issName) {
   else activeISSFilters.add(issName);
   renderHex();
   renderModPins();
+}
+
+function toggleAllISSChips() {
+  const chips = document.querySelectorAll('#issChips .chip-iss');
+  const allOn = [...chips].every(c => c.classList.contains('on'));
+  chips.forEach(chip => {
+    const name = canonicalIssName(chip.dataset.iss || '');
+    if (!name) return;
+    if (allOn) { chip.classList.remove('on'); activeISSFilters.delete(name); }
+    else { chip.classList.add('on'); activeISSFilters.add(name); }
+  });
+  renderHex(); renderModPins();
 }
 
 // ===== HARİTA ARAMA (NOMİNATİM) =====
