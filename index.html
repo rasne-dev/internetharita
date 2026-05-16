@@ -387,6 +387,13 @@ html.light .sr-ping { background:#f5f7fa; }
 .ty-btn.primary:hover { background:#33deff; }
 .ty-btn.secondary { background:var(--surface2); border:1px solid var(--border2); color:var(--text2); }
 .ty-btn.secondary:hover { border-color:var(--accent); color:var(--accent); }
+.ty-btn.danger { background:rgba(239,68,68,.12); border:1px solid var(--danger); color:var(--danger); }
+.ty-btn.danger:hover { background:rgba(239,68,68,.22); }
+.kvkk-detail { font-size:9px; color:var(--text3); margin-top:8px; line-height:1.5; }
+.kvkk-detail a { color:var(--accent); }
+.my-pins-box { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-top:4px; }
+.my-pins-box .my-pin-row { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-size:10px; }
+.my-pins-box .my-pin-row:last-child { border-bottom:none; }
 /* ===== HEX PİN LİSTESİ ===== */
 .hex-pins-list { display:flex; flex-direction:column; gap:5px; margin-top:8px; }
 .hex-pin-item { background:var(--surface2); border:1px solid var(--border); border-radius:7px; padding:7px 9px; }
@@ -764,6 +771,9 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
           <div class="btn-loc" onclick="showToast('Haritaya tıklayarak konum seçin','warn')">🗺 Haritadan Seç</div>
           <div class="btn-loc" style="background:var(--surface2);border-color:var(--border2);color:var(--text2);" onclick="toggleManualAddress()">📋 Elle Adres Gir</div>
         </div>
+        <div class="loc-actions" style="margin-top:4px;">
+          <div class="btn-loc" style="flex:1;background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.35);color:var(--danger);" onclick="clearPinLocation()">✕ Konumu Temizle</div>
+        </div>
         <div style="font-size:10px;color:var(--text3);margin-top:3px;">⚠ Konumunuz ~100m içinde gizlenir. Kesin adresiniz gösterilmez.</div>
       </div>
 
@@ -826,7 +836,21 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
         <select class="fs" id="infraSelect"><option value="">Bilmiyorum</option><option>Türk Telekom (kiralık port)</option><option>TurkNet öz altyapı</option><option>Superonline öz altyapı</option><option>Diğer öz altyapı</option></select>
       </div>
       <div class="flag-note"><span>🚩</span><span>Yanlış veriler topluluk tarafından bildirilebilir ve moderatörler kaldırabilir.</span></div>
-      <button class="btn-submit" id="submitBtn" onclick="submitPin()">📍 Veriyi Paylaş</button>
+      
+      <!-- KVKK / Açık Rıza Alanı -->
+      <div class="kvkk-box" style="background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:12px; margin-top:5px; margin-bottom:10px;">
+        <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
+          <input type="checkbox" id="kvkkCheck" style="margin-top:2px; cursor:pointer;" onchange="document.getElementById('submitBtn').disabled = !this.checked;">
+          <span style="font-size:10px; color:var(--text2); line-height:1.4;">
+            <b style="color:var(--text);">KVKK/GDPR Aydınlatma Metni ve Açık Rıza:</b> 
+            Altyapı haritası oluşturmak amacıyla internet performans verilerimin (ISS, hız, memnuniyet puanı, yaklaşık konum) açık yayınlanmasını onaylıyorum. 
+            Moderatör süreçlerinde sahte ve spam verileri önlemek amacıyla teknik tarayıcı parmak izimin geçici ve güvenli şekilde işlenmesini kabul ediyorum. <br><br>
+            <i style="color:var(--success);">🔒 Gizlilik Notu: Kesin konumunuz cihazınızdan çıkmadan önce otomatik olarak matematiksel bir sapma (~100m) ile bulanıklaştırılır. Sistem yöneticileri ve moderatörler dahil hiç kimse ham (kesin) konum verinize erişemez. Bu işlem "kişisel veri" oluşmasını engeller.</i>
+          </span>
+        </label>
+      </div>
+
+      <button class="btn-submit" id="submitBtn" onclick="submitPin()" disabled>📍 Veriyi Paylaş</button>
     </div>
   </div>
 </div>
@@ -1671,6 +1695,7 @@ const IL_COORDS = {
 
 // İlçe listesi — büyük şehirler (tam liste için statik veri kullanılır)
 const ILCE_MAP = {
+  'Giresun':['Alucra','Bulancak','Çamoluk','Çanakçı','Dereli','Doğankent','Espiye','Eynesil','Görele','Güce','Keşap','Merkez','Piraziz','Şebinkarahisar','Tirebolu','Yağlıdere'],
   'İstanbul':['Adalar','Arnavutköy','Ataşehir','Avcılar','Bağcılar','Bahçelievler','Bakırköy','Başakşehir','Bayrampaşa','Beşiktaş','Beykoz','Beylikdüzü','Beyoğlu','Büyükçekmece','Çatalca','Çekmeköy','Esenler','Esenyurt','Eyüpsultan','Fatih','Gaziosmanpaşa','Güngören','Kadıköy','Kağıthane','Kartal','Küçükçekmece','Maltepe','Pendik','Sancaktepe','Sarıyer','Şile','Şişli','Silivri','Sultanbeyli','Sultangazi','Tuzla','Ümraniye','Üsküdar','Zeytinburnu'],
   'Ankara':['Akyurt','Altındağ','Ayaş','Bala','Beypazarı','Çamlıdere','Çankaya','Çubuk','Elmadağ','Etimesgut','Evren','Gölbaşı','Güdül','Haymana','Kahramankazan','Kalecik','Keçiören','Kızılcahamam','Mamak','Nallıhan','Polatlı','Pursaklar','Sincan','Şereflikoçhisar','Yenimahalle'],
   'İzmir':['Aliağa','Balçova','Bayındır','Bayraklı','Bergama','Beydağ','Bornova','Buca','Çeşme','Çiğli','Dikili','Foça','Gaziemir','Güzelbahçe','Karabağlar','Karaburun','Karşıyaka','Kemalpaşa','Kınık','Kiraz','Konak','Menderes','Menemen','Narlıdere','Ödemiş','Seferihisar','Selçuk','Tire','Torbalı','Urla'],
@@ -1693,13 +1718,29 @@ function populateIlSelect() {
   sel.innerHTML = '<option value="">İl seçin...</option>' + iller.map(il => `<option value="${il}">${il}</option>`).join('');
 }
 
-function onManualIlChange() {
+async function onManualIlChange() {
   const il = document.getElementById('manualIl').value;
   const ilceSel = document.getElementById('manualIlce');
   if (!il) { ilceSel.innerHTML='<option value="">Önce il seçin</option>'; ilceSel.disabled=true; return; }
-  const ilceler = ILCE_MAP[il] || [];
-  ilceSel.disabled = false;
-  ilceSel.innerHTML = '<option value="">İlçe seçin...</option>' + ilceler.map(i => `<option value="${i}">${i}</option>`).join('') + '<option value="Diğer">Diğer</option>';
+  
+  ilceSel.disabled = true;
+  ilceSel.innerHTML = '<option value="">Yükleniyor...</option>';
+  try {
+    const res = await fetch(`https://turkiyeapi.dev/api/v1/provinces?name=${il}`);
+    const data = await res.json();
+    let ilceler = [];
+    if (data && data.data && data.data[0] && data.data[0].districts) {
+      ilceler = data.data[0].districts.map(d => d.name).sort();
+    } else {
+      ilceler = ILCE_MAP[il] || ['Merkez'];
+    }
+    ilceSel.innerHTML = '<option value="">İlçe seçin...</option>' + ilceler.map(i => `<option value="${i}">${i}</option>`).join('') + '<option value="Diğer">Diğer</option>';
+    ilceSel.disabled = false;
+  } catch(e) {
+    const fallback = ILCE_MAP[il] || ['Merkez'];
+    ilceSel.innerHTML = '<option value="">İlçe seçin...</option>' + fallback.map(i => `<option value="${i}">${i}</option>`).join('') + '<option value="Diğer">Diğer</option>';
+    ilceSel.disabled = false;
+  }
 }
 
 function onManualIlceChange() { /* gelecekte mahalle listesi eklenebilir */ }
@@ -1748,6 +1789,8 @@ async function submitPin() {
   if (ul > 1000) return showToast('Geçersiz upload hızı (max 1000 Mbps)','err');
   if (ul > dl * 2) return showToast('Upload hızı download hızının 2 katından fazla olamaz','err');
   if (!selScoreVal) return showToast('Puan verin','err');
+  const kvkk = document.getElementById('kvkkCheck')?.checked;
+  if (!kvkk) return showToast('Aydınlatma metnini onaylamanız gerekmektedir.','err');
   if (!canSubmit()) return showToast(rateLimitMessage(), 'warn');
   
   const btn = document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='Kontrol ediliyor...';
@@ -1799,7 +1842,18 @@ function toggleCustomIss(val) {
   if (val !== 'Diğer' && document.getElementById('customIssInput')) document.getElementById('customIssInput').value = '';
 }
 
-function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeed','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; document.getElementById('speedVerifiedBadge')?.classList.remove('show'); }
+function clearPinLocation() {
+  pinLat=null; pinLng=null; 
+  if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} 
+  document.getElementById('locDot').classList.remove('set'); 
+  document.getElementById('locText').textContent='Henüz seçilmedi';
+  ['ilInput','ilceInput','mahalleInput'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  const manualWrap = document.getElementById('manualAddressWrap');
+  if (manualWrap) manualWrap.style.display = 'none';
+  showToast('Konum temizlendi', 'warn');
+}
+
+function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeed','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; document.getElementById('speedVerifiedBadge')?.classList.remove('show'); const kvkkCheck = document.getElementById('kvkkCheck'); if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; } }
 
 function openReportModal(pinId) { document.getElementById('reportPinId').value = pinId; document.getElementById('reportLocationInfo').style.display = 'none'; document.getElementById('reportModal').classList.add('open'); }
 function openHexReport() { document.getElementById('reportPinId').value = ''; document.getElementById('reportLocationText').textContent = document.getElementById('reportBolge').value||'—'; document.getElementById('reportLocationInfo').style.display = 'block'; document.getElementById('reportText').value = ''; document.getElementById('reportModal').classList.add('open'); }
@@ -2743,19 +2797,38 @@ function uploadOnce(bytes, onLive) {
 }
 
 async function measureUpload(onLive) {
-  const sizes = [512 * 1024, 2 * 1024 * 1024, 8 * 1024 * 1024, 24 * 1024 * 1024, 64 * 1024 * 1024];
-  const results = [];
-  for (const bytes of sizes) {
-    const mbps = await uploadOnce(bytes, onLive);
-    if (!mbps || mbps <= 0) continue;
-    if (onLive) onLive(mbps);
-    results.push(mbps);
-    if (results.length >= 3 && mbps < 700) break;
+  const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB chunks
+  const MEASURE_MS = 8500;
+  const PARALLEL_STREAMS = 3;
+  const startedAt = performance.now();
+  const stopAt = startedAt + MEASURE_MS;
+  let totalBytes = 0, lastLiveBytes = 0, lastLiveAt = startedAt;
+
+  async function uploadStream(n) {
+    while (performance.now() < stopAt) {
+      const url = `${SPEED_UPLOAD_URL}?t=${Date.now()}_${n}_${Math.random()}`;
+      const blob = makeUploadBlob(CHUNK_SIZE);
+      const t0 = performance.now();
+      try {
+        await fetch(url, { method: 'POST', mode: 'no-cors', cache: 'no-store', body: blob });
+        const now = performance.now();
+        totalBytes += CHUNK_SIZE;
+        if (now - lastLiveAt >= 350) {
+          const instantMbps = Math.round(((totalBytes - lastLiveBytes) * 8) / ((now - lastLiveAt) / 1000) / 1e6);
+          if (instantMbps > 0 && onLive) onLive(instantMbps);
+          lastLiveBytes = totalBytes;
+          lastLiveAt = now;
+        }
+      } catch(e) { break; }
+    }
   }
-  if (!results.length) return null;
-  results.sort((a,b)=>a-b);
-  const usable = results.length >= 3 ? results.slice(1) : results;
-  return Math.round(usable.reduce((a,b)=>a+b,0) / usable.length);
+
+  try {
+    await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => uploadStream(i)));
+    const elapsed = (performance.now() - startedAt) / 1000;
+    if (totalBytes < 100000 || elapsed <= 0) return null;
+    return Math.round((totalBytes * 8) / elapsed / 1e6);
+  } catch(e) { return null; }
 }
 
 // 3. UI GÜNCELLEYİCİ: runSpeedTest (Ortalama Değerlerin Bastırılması)
