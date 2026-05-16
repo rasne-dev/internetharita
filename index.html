@@ -448,6 +448,9 @@ html.light .sr-ping { background:#f5f7fa; }
 .mod-auth-card{ background:var(--surface);border:1px solid var(--border); border-radius:12px;padding:28px 24px;width:100%;max-width:320px; text-align:center; }
 .mod-auth-title{font-family:var(--font-mono);font-size:16px;font-weight:700;margin-bottom:6px;}
 .mod-panel-content{display:flex;flex-direction:column;gap:14px;width:100%;}
+.filter-tab-btn { padding:6px 12px; border-radius:6px; border:1px solid var(--border2); background:var(--surface2); color:var(--text3); font-size:11px; font-weight:700; font-family:var(--font-mono); cursor:pointer; white-space:nowrap; transition:all .15s; }
+.filter-tab-btn.active { background:var(--accent-dim); border-color:rgba(0,212,255,.4); color:var(--accent); }
+.filter-tab-btn:hover:not(.active) { color:var(--text2); border-color:var(--border2); }
 .mod-tabs{display:flex;gap:6px;border-bottom:1px solid var(--border);padding-bottom:12px;flex-wrap:wrap;}
 .mod-tab-btn{ padding:6px 14px;border-radius:6px;border:none; background:var(--surface2);color:var(--text3); font-size:11px;font-weight:700;font-family:var(--font-mono); cursor:pointer;}
 .mod-tab-btn.active{background:var(--accent-dim);color:var(--accent);}
@@ -585,7 +588,13 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
   }
   .map-sidebar-toggle { display:block; }
   .map-info { width:calc(100vw - 28px); right:14px; top:calc(var(--nav-h) + 8px); max-height:calc(100vh - var(--nav-h) - 80px); }
-  .pin-layout { grid-template-columns:1fr; grid-template-rows:45vh 1fr; } #pin-map { height:100%; } .pform { border-left:none; border-top:1px solid var(--border); } .stats-top { grid-template-columns:1fr 1fr; } .stats-grid { grid-template-columns:1fr; } #page-mod { padding:14px; } .regions-grid { grid-template-columns:1fr; } .header-mtoggle-text { display: none; }
+  .pin-layout { grid-template-columns:1fr; grid-template-rows:40vh 1fr; } 
+  #pin-map { height:100%; } 
+  .pform { border-left:none; border-top:1px solid var(--border); overflow-y:auto; -webkit-overflow-scrolling:touch; max-height:60vh; }
+  .stats-top { grid-template-columns:1fr 1fr; } .stats-grid { grid-template-columns:1fr; } #page-mod { padding:14px; } .regions-grid { grid-template-columns:1fr; } .header-mtoggle-text { display: none; }
+  .loc-actions { flex-wrap:wrap; }
+  .btn-loc { min-height:44px; font-size:12px; }
+  .btn-submit { min-height:48px; }
 }
 </style>
 <!-- Tema erken init — flash önleme -->
@@ -750,8 +759,36 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
       <div class="fg">
         <div class="fl">Konum</div>
         <div class="loc-box"><div class="loc-dot" id="locDot"></div><span id="locText">Henüz seçilmedi</span></div>
-        <div class="loc-actions"><div class="btn-loc" onclick="autoLocate()">📍 Konumumu Bul</div><div class="btn-loc" onclick="showToast('Haritaya tıklayarak konum seçin','warn')">🗺 Haritadan Seç</div></div>
+        <div class="loc-actions">
+          <div class="btn-loc" onclick="autoLocate()">📍 Konumumu Bul</div>
+          <div class="btn-loc" onclick="showToast('Haritaya tıklayarak konum seçin','warn')">🗺 Haritadan Seç</div>
+          <div class="btn-loc" style="background:var(--surface2);border-color:var(--border2);color:var(--text2);" onclick="toggleManualAddress()">📋 Elle Adres Gir</div>
+        </div>
         <div style="font-size:10px;color:var(--text3);margin-top:3px;">⚠ Konumunuz ~100m içinde gizlenir. Kesin adresiniz gösterilmez.</div>
+      </div>
+
+      <!-- MANUEL ADRES GİRİŞİ (gizli, toggle ile açılır) -->
+      <div id="manualAddressWrap" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;gap:10px;flex-direction:column;">
+        <div style="font-size:9px;color:var(--warn);font-family:var(--font-mono);font-weight:700;">⚠ MANUEL ADRES — Konum GPS olmadan kaydedilir, haritada merkezi koordinat kullanılır</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="fg">
+            <div class="fl">İl</div>
+            <select class="fs" id="manualIl" onchange="onManualIlChange()">
+              <option value="">İl seçin...</option>
+            </select>
+          </div>
+          <div class="fg">
+            <div class="fl">İlçe</div>
+            <select class="fs" id="manualIlce" onchange="onManualIlceChange()" disabled>
+              <option value="">Önce il seçin</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg">
+          <div class="fl">Mahalle / Semt (opsiyonel)</div>
+          <input class="fi" type="text" id="manualMahalle" placeholder="Örn: Kavacık Mahallesi">
+        </div>
+        <button class="btn-ghost" style="font-size:11px;padding:8px;" onclick="applyManualAddress()">✅ Bu Adresi Kullan</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         <div class="fg"><div class="fl">İl</div><input class="fi" type="text" id="ilInput" readonly placeholder="Otomatik"></div>
@@ -840,14 +877,11 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
         <button class="btn-approve" style="padding:8px 16px;" id="bulkApproveBtn" onclick="bulkApprovePins()">✅ Seçilileri Onayla</button>
         <button class="btn-del" style="padding:8px 16px;" id="bulkDelBtn" onclick="bulkDeletePins()">🗑 Seçilileri Sil</button>
         <input type="text" class="fi" id="tableSearch" placeholder="İSS, il, ilçe ara..." style="flex:1;min-width:120px;max-width:240px;" oninput="filterAdminTable(this.value)">
-        <select class="fs" id="tableFilter" style="width:auto;min-width:150px;" onchange="filterAdminTable(document.getElementById('tableSearch').value)">
-          <option value="">Tümü</option>
-          <option value="gorunur">✅ Görünür (haritada)</option>
-          <option value="gizli">🙈 Gizli</option>
-          <option value="karantina">🔒 Karantina</option>
-          <option value="spam">⚠ Spam</option>
-          <option value="bilinmeyen_iss">❓ Bilinmeyen İSS</option>
-        </select>
+        <div style="display:flex;gap:6px;">
+          <button class="filter-tab-btn active" id="ftb-tumu" onclick="setTableFilter('',this)">Tümü</button>
+          <button class="filter-tab-btn" id="ftb-gorunur" onclick="setTableFilter('gorunur',this)">✅ Haritada</button>
+          <button class="filter-tab-btn" id="ftb-sorunlu" onclick="setTableFilter('sorunlu',this)">⚠ Sorunlu <span id="sorunluCount" style="display:inline-block;margin-left:3px;background:var(--warn);color:#000;border-radius:10px;padding:0 5px;font-size:9px;"></span></button>
+        </div>
       </div>
       <div class="mod-table-wrap">
         <table class="mod-table">
@@ -959,6 +993,7 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
   <div class="modal" style="max-width:480px;">
     <span class="modal-close" onclick="closeEditModal()">×</span>
     <div class="modal-title">✏️ Pin Düzenle</div>
+    <div id="editPinStatus" style="margin-bottom:12px;padding:8px 10px;border-radius:7px;font-size:10px;font-family:var(--font-mono);font-weight:700;display:none;"></div>
     <input type="hidden" id="editPinId">
     <div class="edit-grid" style="margin-bottom:10px;">
       <div class="fg">
@@ -966,7 +1001,8 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
           İSS
           <button onclick="showAddIssModal()" style="font-size:9px;padding:2px 8px;background:var(--accent-dim);border:1px solid rgba(0,212,255,.3);color:var(--accent);border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-weight:700;">+ Yeni İSS</button>
         </div>
-        <select class="fs" id="editIss"></select>
+        <select class="fs" id="editIss" onchange="checkEditIssValidity()"></select>
+        <div id="editIssWarning" style="display:none;font-size:9px;color:var(--warn);font-family:var(--font-mono);margin-top:3px;">⚠ Bu İSS onaylı listede değil — kaydetmek pini haritada göstermez</div>
       </div>
       <div class="fg"><div class="fl">Bağlantı Türü</div><select class="fs" id="editConn"><option value="fiber">Fiber</option><option value="vdsl">VDSL</option><option value="adsl">ADSL</option></select></div>
       <div class="fg"><div class="fl">DL Hızı (Mbps)</div><input class="fi" type="number" id="editDL" placeholder="100"></div>
@@ -974,9 +1010,19 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
       <div class="fg"><div class="fl">Paket Hızı (Mbps)</div><input class="fi" type="number" id="editPkg" placeholder="opsiyonel"></div>
       <div class="fg"><div class="fl">Memnuniyet Puanı (1–10)</div><input class="fi" type="number" min="1" max="10" id="editPuan" placeholder="8"></div>
     </div>
-    <div class="fg" style="margin-bottom:10px;"><div class="fl">Görünürlük</div><select class="fs" id="editGorunur"><option value="true">👁 Görünür</option><option value="false">🙈 Gizli (İstatistiklerden çıkar)</option></select></div>
+    <div class="fg" style="margin-bottom:10px;">
+      <div class="fl">Görünürlük</div>
+      <select class="fs" id="editGorunur">
+        <option value="true">👁 Görünür — haritada yayınla</option>
+        <option value="false">🙈 Gizli — haritadan kaldır</option>
+      </select>
+    </div>
     <div class="fg" style="margin-bottom:16px;"><div class="fl">Moderatör Notu <span class="mod-note-badge">MOD</span></div><textarea class="fta" id="editModNote" placeholder="Bu pin ile ilgili bir not ekleyin..." style="min-height:70px;"></textarea></div>
-    <div style="display:flex;gap:8px;"><button class="btn-primary" style="flex:1;padding:11px;" onclick="saveEdit()">💾 Kaydet</button><button class="btn-ghost" style="padding:11px 16px;" onclick="closeEditModal()">İptal</button></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-primary" style="flex:1;padding:11px;" onclick="saveEdit()">💾 Kaydet</button>
+      <button class="btn-approve" style="padding:11px 14px;" onclick="quickApproveEdit()" title="ISS'i onayla, görünür yap, kaydet">✅ Onayla</button>
+      <button class="btn-ghost" style="padding:11px 16px;" onclick="closeEditModal()">İptal</button>
+    </div>
   </div>
 </div>
 
@@ -1111,8 +1157,13 @@ function saveExtraIss(list) { localStorage.setItem('ih_extra_iss', JSON.stringif
 function getAllIss() { return [...new Set([...BASE_ISS, ...getExtraIss()].map(canonicalIssName))]; }
 
 function buildIssOptions(selectEl, currentVal) {
-  const all = getAllIss();
+  // BASE_ISS + localStorage extras + issListCache (Supabase) birleşimi
+  const fromCache = issListCache.filter(i => i.active !== false).map(i => canonicalIssName(i.name));
+  const fromLocal = getAllIss();
+  const all = [...new Set([...fromLocal, ...fromCache])].sort();
   const current = canonicalIssName(currentVal);
+  // Pindeki ISS listede yoksa yine de göster (bilinmeyen ISS durumu)
+  if (current && !all.includes(current)) all.unshift(current);
   selectEl.innerHTML = all.map(iss => `<option value="${iss}" ${iss===current?'selected':''}>${iss}</option>`).join('');
 }
 
@@ -1591,6 +1642,92 @@ async function setLocation(lat, lng) {
   try { const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=tr`); const d = await r.json(); const a = d.address||{}; document.getElementById('ilInput').value = a.province||a.state||a.city||''; document.getElementById('ilceInput').value = a.county||a.district||a.town||''; document.getElementById('mahalleInput').value = a.suburb||a.neighbourhood||a.village||''; } catch(e) {}
 }
 function autoLocate() { if (!navigator.geolocation) return showToast('Konum desteklenmiyor','err'); showToast('Konum alınıyor...','warn'); navigator.geolocation.getCurrentPosition(pos => { maps.pin.setView([pos.coords.latitude,pos.coords.longitude],15); setLocation(pos.coords.latitude,pos.coords.longitude); }, err => showToast('Konum alınamadı: '+err.message,'err'), { enableHighAccuracy:true, timeout:10000 }); }
+
+// ===== MANUEL ADRES =====
+// İl koordinatları (merkezi)
+const IL_COORDS = {
+  'Adana':[37.0,35.32],'Adıyaman':[37.76,38.27],'Afyonkarahisar':[38.75,30.54],'Ağrı':[39.72,43.05],
+  'Amasya':[40.65,35.83],'Ankara':[39.93,32.85],'Antalya':[36.89,30.71],'Artvin':[41.18,41.82],
+  'Aydın':[37.85,27.84],'Balıkesir':[39.64,27.88],'Bilecik':[40.14,29.98],'Bingöl':[38.88,40.50],
+  'Bitlis':[38.40,42.12],'Bolu':[40.74,31.61],'Burdur':[37.72,30.29],'Bursa':[40.18,29.06],
+  'Çanakkale':[40.15,26.41],'Çankırı':[40.60,33.61],'Çorum':[40.55,34.96],'Denizli':[37.77,29.09],
+  'Diyarbakır':[37.91,40.22],'Edirne':[41.68,26.56],'Elazığ':[38.68,39.22],'Erzincan':[39.75,39.49],
+  'Erzurum':[39.90,41.27],'Eskişehir':[39.78,30.52],'Gaziantep':[37.06,37.38],'Giresun':[40.91,38.39],
+  'Gümüşhane':[40.46,39.48],'Hakkari':[37.57,43.74],'Hatay':[36.40,36.35],'Isparta':[37.76,30.55],
+  'İçel (Mersin)':[36.81,34.64],'İstanbul':[41.01,28.95],'İzmir':[38.42,27.14],'Kars':[40.61,43.09],
+  'Kastamonu':[41.38,33.78],'Kayseri':[38.72,35.49],'Kırklareli':[41.73,27.22],'Kırşehir':[39.15,34.17],
+  'Kocaeli':[40.85,29.88],'Konya':[37.87,32.49],'Kütahya':[39.42,29.98],'Malatya':[38.35,38.32],
+  'Manisa':[38.62,27.43],'Kahramanmaraş':[37.58,36.94],'Mardin':[37.31,40.74],'Muğla':[37.21,28.36],
+  'Muş':[38.73,41.51],'Nevşehir':[38.62,34.71],'Niğde':[37.97,34.68],'Ordu':[40.98,37.88],
+  'Rize':[41.02,40.52],'Sakarya':[40.69,30.43],'Samsun':[41.29,36.33],'Siirt':[37.93,41.94],
+  'Sinop':[42.03,35.15],'Sivas':[39.75,37.02],'Tekirdağ':[40.98,27.51],'Tokat':[40.31,36.55],
+  'Trabzon':[41.00,39.72],'Tunceli':[39.11,39.55],'Şanlıurfa':[37.16,38.80],'Uşak':[38.68,29.41],
+  'Van':[38.49,43.38],'Yozgat':[39.82,34.81],'Zonguldak':[41.45,31.80],'Aksaray':[38.37,34.04],
+  'Bayburt':[40.26,40.23],'Karaman':[37.18,33.22],'Kırıkkale':[39.85,33.51],'Batman':[37.88,41.13],
+  'Şırnak':[37.52,42.46],'Bartın':[41.64,32.34],'Ardahan':[41.11,42.70],'Iğdır':[39.92,44.04],
+  'Yalova':[40.65,29.27],'Karabük':[41.20,32.63],'Kilis':[36.72,37.12],'Osmaniye':[37.07,36.25],
+  'Düzce':[40.84,31.16]
+};
+
+// İlçe listesi — büyük şehirler (tam liste için statik veri kullanılır)
+const ILCE_MAP = {
+  'İstanbul':['Adalar','Arnavutköy','Ataşehir','Avcılar','Bağcılar','Bahçelievler','Bakırköy','Başakşehir','Bayrampaşa','Beşiktaş','Beykoz','Beylikdüzü','Beyoğlu','Büyükçekmece','Çatalca','Çekmeköy','Esenler','Esenyurt','Eyüpsultan','Fatih','Gaziosmanpaşa','Güngören','Kadıköy','Kağıthane','Kartal','Küçükçekmece','Maltepe','Pendik','Sancaktepe','Sarıyer','Şile','Şişli','Silivri','Sultanbeyli','Sultangazi','Tuzla','Ümraniye','Üsküdar','Zeytinburnu'],
+  'Ankara':['Akyurt','Altındağ','Ayaş','Bala','Beypazarı','Çamlıdere','Çankaya','Çubuk','Elmadağ','Etimesgut','Evren','Gölbaşı','Güdül','Haymana','Kahramankazan','Kalecik','Keçiören','Kızılcahamam','Mamak','Nallıhan','Polatlı','Pursaklar','Sincan','Şereflikoçhisar','Yenimahalle'],
+  'İzmir':['Aliağa','Balçova','Bayındır','Bayraklı','Bergama','Beydağ','Bornova','Buca','Çeşme','Çiğli','Dikili','Foça','Gaziemir','Güzelbahçe','Karabağlar','Karaburun','Karşıyaka','Kemalpaşa','Kınık','Kiraz','Konak','Menderes','Menemen','Narlıdere','Ödemiş','Seferihisar','Selçuk','Tire','Torbalı','Urla'],
+  'Bursa':['Büyükorhan','Gemlik','Gürsu','Harmancık','İnegöl','İznik','Karacabey','Keles','Kestel','Mudanya','Mustafakemalpaşa','Nilüfer','Orhaneli','Orhangazi','Osmangazi','Yenişehir','Yıldırım'],
+  'Antalya':['Akseki','Aksu','Alanya','Demre','Döşemealtı','Elmalı','Finike','Gazipaşa','Gündoğmuş','İbradı','Kaş','Kemer','Kepez','Konyaaltı','Korkuteli','Kumluca','Manavgat','Muratpaşa','Serik'],
+  'Konya':['Ahırlı','Akören','Akşehir','Altınekin','Beyşehir','Bozkır','Cihanbeyli','Çeltik','Çumra','Derbent','Derebucak','Doğanhisar','Emirgazi','Ereğli','Güneysınır','Hadim','Halkapınar','Hüyük','Ilgın','Kadınhanı','Karapınar','Karatay','Kulu','Meram','Sarayönü','Selçuklu','Seydişehir','Taşkent','Tuzlukçu','Yalıhüyük','Yunak'],
+  'Gaziantep':['Araban','İslahiye','Karkamış','Nurdağı','Nizip','Oğuzeli','Şahinbey','Şehitkamil','Yavuzeli'],
+};
+
+function toggleManualAddress() {
+  const wrap = document.getElementById('manualAddressWrap');
+  const isOpen = wrap.style.display !== 'none';
+  wrap.style.display = isOpen ? 'none' : 'flex';
+  if (!isOpen) populateIlSelect();
+}
+
+function populateIlSelect() {
+  const sel = document.getElementById('manualIl');
+  const iller = Object.keys(IL_COORDS).sort();
+  sel.innerHTML = '<option value="">İl seçin...</option>' + iller.map(il => `<option value="${il}">${il}</option>`).join('');
+}
+
+function onManualIlChange() {
+  const il = document.getElementById('manualIl').value;
+  const ilceSel = document.getElementById('manualIlce');
+  if (!il) { ilceSel.innerHTML='<option value="">Önce il seçin</option>'; ilceSel.disabled=true; return; }
+  const ilceler = ILCE_MAP[il] || [];
+  ilceSel.disabled = false;
+  ilceSel.innerHTML = '<option value="">İlçe seçin...</option>' + ilceler.map(i => `<option value="${i}">${i}</option>`).join('') + '<option value="Diğer">Diğer</option>';
+}
+
+function onManualIlceChange() { /* gelecekte mahalle listesi eklenebilir */ }
+
+function applyManualAddress() {
+  const il = document.getElementById('manualIl').value;
+  const ilce = document.getElementById('manualIlce').value;
+  const mahalle = document.getElementById('manualMahalle').value.trim();
+  if (!il) return showToast('İl seçin','err');
+  // İl merkezinin koordinatını kullan
+  const coords = IL_COORDS[il];
+  if (!coords) return showToast('Bu il için koordinat bulunamadı','err');
+  // İlçe varsa küçük offset ekle (aynı koordinata yığılmasın)
+  const lat = coords[0] + (Math.random() - 0.5) * 0.05;
+  const lng = coords[1] + (Math.random() - 0.5) * 0.05;
+  // Konum set et
+  pinLat = lat; pinLng = lng;
+  document.getElementById('ilInput').value = il;
+  document.getElementById('ilceInput').value = ilce || '';
+  document.getElementById('mahalleInput').value = mahalle || '';
+  document.getElementById('locDot').classList.add('set');
+  document.getElementById('locText').textContent = `${il}${ilce?' › '+ilce:''}${mahalle?' · '+mahalle:''} (Manuel)`;
+  // Haritada göster
+  if (maps.pin) maps.pin.setView([lat, lng], 12);
+  // Paneli kapat
+  document.getElementById('manualAddressWrap').style.display = 'none';
+  showToast(`✅ Adres ayarlandı: ${il}${ilce?' / '+ilce:''}`, 'warn');
+}
 function selConn(el,type) { document.querySelectorAll('.cbtn').forEach(b=>b.className=b.className.replace(/ sel/g,'')); el.classList.add('sel'); selConnVal=type; }
 function selScore(el,val) { document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); selScoreVal=val; }
 (function buildScoreRow() { const row = document.getElementById('scoreRow'); if(!row) return; for(let i=1;i<=10;i++){const b=document.createElement('div');b.className='sbtn';b.textContent=i;b.onclick=()=>selScore(b,i);row.appendChild(b);} })();
@@ -1719,9 +1856,15 @@ function switchModTab(tab) {
 async function loadCustomIss() {
   const list = document.getElementById('customIssList'); list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
   try {
+    // Taze cache — az önce ISS eklenmiş olabilir
+    await loadIssListAndRenderChips();
     const pins = await getAllPinsAdmin() || [];
-    const knownNames = issListCache.map(i => i.name);
-    const customPins = pins.filter(p => p.is_quarantine && p.iss && !knownNames.includes(p.iss) && p.iss !== 'Diğer');
+    const knownNames = new Set(issListCache.map(i => canonicalIssName(i.name)));
+    const customPins = pins.filter(p =>
+      p.is_quarantine && p.iss &&
+      !knownNames.has(canonicalIssName(p.iss)) &&
+      canonicalIssName(p.iss) !== 'diğer'
+    );
     const grouped = {};
     customPins.forEach(p => { if(!grouped[p.iss]) grouped[p.iss]={pins:[],count:0}; grouped[p.iss].pins.push(p); grouped[p.iss].count++; });
     if (!Object.keys(grouped).length) { list.innerHTML='<div class="empty-state">Bekleyen özel İSS teklifi yok ✅</div>'; return; }
@@ -1984,7 +2127,14 @@ async function groupDelete(idsJson) {
 
 async function loadAdminTable() {
   const tbody = document.getElementById('adminTableBody'); tbody.innerHTML = '<tr><td colspan="8" class="loading-dots">Yükleniyor</td></tr>';
-  try { const pins = await getAllPinsAdmin()||[]; adminPinsCache = pins; renderAdminTable(pins); } catch(e) { tbody.innerHTML='<tr><td colspan="8">Hata: '+e.message+'</td></tr>'; }
+  try {
+    const pins = await getAllPinsAdmin()||[];
+    adminPinsCache = pins;
+    const sorunlu = pins.filter(p => isSpam(p) || p.is_quarantine || p.gorunur === false || !isApprovedPublicIss(p.iss)).length;
+    const badge = document.getElementById('sorunluCount');
+    if (badge) badge.textContent = sorunlu > 0 ? sorunlu : '';
+    renderAdminTable(pins);
+  } catch(e) { tbody.innerHTML='<tr><td colspan="8">Hata: '+e.message+'</td></tr>'; }
 }
 
 function renderAdminTable(pins) {
@@ -1994,37 +2144,60 @@ function renderAdminTable(pins) {
     const spam = isSpam(p); const tarih = new Date(p.created_at);
     const tarihStr = tarih.toLocaleDateString('tr-TR'); const saatStr = tarih.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const cihazInfo = p.browser_fp || p.ip_hash || 'Bilinmiyor';
-    let durumBadges = '';
-    if (spam) durumBadges += '<span class="quarantine-badge" style="display:block;margin-bottom:2px;">⚠ SPAM</span>';
-    if (p.is_quarantine) durumBadges += '<span class="quarantine-badge" style="display:block;margin-bottom:2px;border-color:var(--warn);color:var(--warn);background:rgba(245,158,11,.1);">🔒 KARANTİNA</span>';
-    if (!spam && !p.is_quarantine && p.gorunur !== false && !isApprovedPublicIss(p.iss)) durumBadges += '<span class="quarantine-badge" style="display:block;margin-bottom:2px;border-color:#a855f7;color:#a855f7;background:rgba(168,85,247,.1);">❓ BİLİNMEYEN İSS</span>';
-    if (!spam && !p.is_quarantine && p.gorunur !== false && isApprovedPublicIss(p.iss)) durumBadges += '<span style="color:var(--success);font-size:9px;font-family:var(--font-mono);">✅ ONAYLI</span>';
-    if (p.gorunur === false && !spam && !p.is_quarantine) durumBadges += '<span style="color:var(--text3);font-size:9px;font-family:var(--font-mono);">🙈 GİZLİ</span>';
-    if (p.mod_notu) durumBadges += '<span style="color:var(--accent);font-size:9px;font-family:var(--font-mono);display:block;margin-top:2px;" title="'+p.mod_notu+'">📝 NOT</span>';
-    return `<tr style="${spam?'background:rgba(239,68,68,.05);':p.is_quarantine?'background:rgba(245,158,11,.04);':''}">
+    // Durum — tek satır, öncelik sırası: spam > karantina > bilinmeyen İSS > gizli > onaylı
+    let durumLabel, durumColor, rowBg;
+    if (spam) {
+      durumLabel = '⚠ Spam'; durumColor = 'var(--danger)'; rowBg = 'rgba(239,68,68,.04)';
+    } else if (p.is_quarantine) {
+      durumLabel = '🔒 Karantina'; durumColor = 'var(--warn)'; rowBg = 'rgba(245,158,11,.04)';
+    } else if (!isApprovedPublicIss(p.iss)) {
+      durumLabel = '❓ Bilinmeyen İSS'; durumColor = '#a855f7'; rowBg = 'rgba(168,85,247,.04)';
+    } else if (p.gorunur === false) {
+      durumLabel = '🙈 Gizli'; durumColor = 'var(--text3)'; rowBg = '';
+    } else {
+      durumLabel = '✅ Haritada'; durumColor = 'var(--success)'; rowBg = '';
+    }
+    const modNot = p.mod_notu ? `<div style="font-size:9px;color:var(--accent);margin-top:3px;" title="${p.mod_notu}">📝 ${p.mod_notu.slice(0,30)}${p.mod_notu.length>30?'…':''}</div>` : '';
+    return `<tr style="background:${rowBg}">
       <td><input type="checkbox" class="pin-check" value="${p.id}"></td>
       <td style="color:var(--text3);white-space:nowrap;">${tarihStr}<br><span style="font-size:10px;color:var(--accent);font-family:var(--font-mono)">${saatStr}</span></td>
-      <td>
-        <b style="color:${spam?'var(--danger)':'inherit'}">${p.iss}</b>
-        <br><span style="color:var(--text2);font-size:9px">Altyapı: ${p.altyapi_sahibi||'Belirtilmemiş'}</span>
-      </td>
+      <td><b style="color:${spam?'var(--danger)':'inherit'}">${p.iss}</b><br><span style="color:var(--text2);font-size:9px">Altyapı: ${p.altyapi_sahibi||'Belirtilmemiş'}</span></td>
       <td style="font-family:var(--font-mono)"><span style="color:${speedColor(p.gercek_dl)}">${p.gercek_dl}↓</span> / ${p.gercek_ul||0}↑<br><span style="font-size:9px;color:var(--text3)">Paket: ${p.paket_hizi?p.paket_hizi+' Mbps':'—'}</span></td>
       <td class="coord-text">${p.il||'?'} › ${p.ilce||'?'}<br><span style="color:var(--warn);font-size:9px;">Cihaz: ${cihazInfo.slice(0,10)}...</span></td>
       <td style="color:${memColor(p.puan)}">${p.puan}/10</td>
-      <td>${durumBadges||'—'}</td>
+      <td><span style="font-size:10px;font-weight:700;color:${durumColor};font-family:var(--font-mono);">${durumLabel}</span>${modNot}</td>
       <td style="display:flex;gap:4px;flex-wrap:wrap;"><button class="btn-edit" onclick="openEditModal('${p.id}')">✏️</button><button class="btn-del" onclick="modDeletePin('${p.id}')">🗑</button></td>
     </tr>`;
   }).join('');
 }
 
+let currentTableFilter = '';
+function setTableFilter(val, btn) {
+  currentTableFilter = val;
+  document.querySelectorAll('.filter-tab-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  filterAdminTable(document.getElementById('tableSearch')?.value || '');
+}
+
 function filterAdminTable(search) {
-  const filterVal = document.getElementById('tableFilter')?.value || ''; let filtered = adminPinsCache;
-  if (search) { const s = search.toLowerCase(); filtered = filtered.filter(p => (p.iss||'').toLowerCase().includes(s) || (p.il||'').toLowerCase().includes(s) || (p.ilce||'').toLowerCase().includes(s)); }
-  if (filterVal === 'spam') filtered = filtered.filter(p => isSpam(p));
-  else if (filterVal === 'gorunur') filtered = filtered.filter(p => p.gorunur !== false && !p.is_quarantine && !isSpam(p) && isApprovedPublicIss(p.iss));
-  else if (filterVal === 'gizli') filtered = filtered.filter(p => p.gorunur === false && !p.is_quarantine);
-  else if (filterVal === 'karantina') filtered = filtered.filter(p => p.is_quarantine === true);
-  else if (filterVal === 'bilinmeyen_iss') filtered = filtered.filter(p => !isSpam(p) && !p.is_quarantine && p.gorunur !== false && !isApprovedPublicIss(p.iss));
+  let filtered = adminPinsCache;
+  if (search) {
+    const s = search.toLowerCase();
+    filtered = filtered.filter(p =>
+      (p.iss||'').toLowerCase().includes(s) ||
+      (p.il||'').toLowerCase().includes(s) ||
+      (p.ilce||'').toLowerCase().includes(s)
+    );
+  }
+  if (currentTableFilter === 'gorunur') {
+    filtered = filtered.filter(p =>
+      p.gorunur !== false && !p.is_quarantine && !isSpam(p) && isApprovedPublicIss(p.iss)
+    );
+  } else if (currentTableFilter === 'sorunlu') {
+    filtered = filtered.filter(p =>
+      isSpam(p) || p.is_quarantine || p.gorunur === false || !isApprovedPublicIss(p.iss)
+    );
+  }
   renderAdminTable(filtered);
 }
 
@@ -2058,29 +2231,76 @@ async function modAction(id, approve) {
 
 async function openEditModal(id) {
   try {
+    // Cache'i yenile ki yeni eklenen ISS'ler dropdown'da görünsün
+    await loadIssListAndRenderChips();
     let p = adminPinsCache.find(x=>x.id===id); if (!p) { const res = await getPinById(id); p = res?.[0]; } if (!p) return showToast('Pin bulunamadı','err');
-    document.getElementById('editPinId').value=id; 
+    document.getElementById('editPinId').value=id;
+    // Pin durumunu göster
+    const statusEl = document.getElementById('editPinStatus');
+    if (statusEl) {
+      const spam = isSpam(p); const quar = p.is_quarantine; const unkIss = !isApprovedPublicIss(p.iss);
+      if (spam) { statusEl.style.display='block'; statusEl.style.background='rgba(239,68,68,.1)'; statusEl.style.color='var(--danger)'; statusEl.style.border='1px solid var(--danger)'; statusEl.textContent='⚠ SPAM — hız değerleri geçersiz'; }
+      else if (quar) { statusEl.style.display='block'; statusEl.style.background='rgba(245,158,11,.1)'; statusEl.style.color='var(--warn)'; statusEl.style.border='1px solid var(--warn)'; statusEl.textContent='🔒 KARANTİNA — moderatör incelemesi gerekli'; }
+      else if (unkIss) { statusEl.style.display='block'; statusEl.style.background='rgba(168,85,247,.1)'; statusEl.style.color='#a855f7'; statusEl.style.border='1px solid #a855f7'; statusEl.textContent='❓ BİLİNMEYEN İSS — haritada gözükmüyor, İSS değiştirip ✅ Onayla ya bas'; }
+      else if (!p.gorunur) { statusEl.style.display='block'; statusEl.style.background='rgba(74,98,120,.1)'; statusEl.style.color='var(--text3)'; statusEl.style.border='1px solid var(--border2)'; statusEl.textContent='🙈 GİZLİ — moderatör tarafından gizlendi'; }
+      else { statusEl.style.display='block'; statusEl.style.background='rgba(34,197,94,.08)'; statusEl.style.color='var(--success)'; statusEl.style.border='1px solid var(--success)'; statusEl.textContent='✅ ONAYLI — haritada görünüyor'; }
+    }
     const editIssSel = document.getElementById('editIss');
-    // Pinde kayıtlı ISS, listede yoksa otomatik ekle (örn: özel ISS onaylandıysa)
     const currentIss = p.iss || '';
     if (currentIss && !getAllIss().includes(currentIss)) { const extras = getExtraIss(); extras.push(currentIss); saveExtraIss(extras); }
     buildIssOptions(editIssSel, currentIss);
+    checkEditIssValidity();
     document.getElementById('editConn').value=p.baglanti_turu||'fiber'; document.getElementById('editDL').value=p.gercek_dl||''; document.getElementById('editUL').value=p.gercek_ul||''; document.getElementById('editPkg').value=p.paket_hizi||''; document.getElementById('editPuan').value=p.puan||''; document.getElementById('editGorunur').value=String(p.gorunur!==false); document.getElementById('editModNote').value=p.mod_notu||''; document.getElementById('editModal').classList.add('open');
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 
 async function saveEdit() {
-  const id = document.getElementById('editPinId').value; const dl = parseInt(document.getElementById('editDL').value); const puan = parseInt(document.getElementById('editPuan').value);
-  if (!dl) return showToast('DL hızı girin','err'); if (puan<1||puan>10||isNaN(puan)) return showToast('Puan 1-10 arasında olmalı','err');
+  const id = document.getElementById('editPinId').value;
+  const dl = parseInt(document.getElementById('editDL').value);
+  const puan = parseInt(document.getElementById('editPuan').value);
+  if (!dl) return showToast('DL hızı girin','err');
+  if (puan<1||puan>10||isNaN(puan)) return showToast('Puan 1-10 arasında olmalı','err');
+  const newIss = document.getElementById('editIss').value;
+  const isGorunur = document.getElementById('editGorunur').value === 'true';
   try {
-    await patchPin(id,{ iss:document.getElementById('editIss').value, baglanti_turu:document.getElementById('editConn').value, gercek_dl:dl, gercek_ul:parseInt(document.getElementById('editUL').value)||0, paket_hizi:parseInt(document.getElementById('editPkg').value)||null, puan, gorunur:document.getElementById('editGorunur').value==='true', mod_notu:document.getElementById('editModNote').value.trim()||null, is_quarantine:false });
-    showToast('✅ Pin güncellendi'); closeEditModal(); await loadPins(); loadAdminTable(); loadSikayetler();
+    // Cache'i yenile — moderatör az önce ISS eklemiş olabilir
+    await loadIssListAndRenderChips();
+    const issNowApproved = isApprovedPublicIss(newIss);
+    await patchPin(id, {
+      iss: newIss,
+      baglanti_turu: document.getElementById('editConn').value,
+      gercek_dl: dl,
+      gercek_ul: parseInt(document.getElementById('editUL').value)||0,
+      paket_hizi: parseInt(document.getElementById('editPkg').value)||null,
+      puan,
+      gorunur: isGorunur,
+      is_quarantine: isGorunur && issNowApproved ? false : (!isGorunur ? true : false),
+      mod_notu: document.getElementById('editModNote').value.trim()||null
+    });
+    showToast('✅ Pin güncellendi');
+    closeEditModal();
+    await loadPins();
+    loadAdminTable();
+    loadSikayetler();
+    refreshModData();
   } catch(e) {
     if(e.message.includes("does not exist")) showToast("Uyarı: Eksik sütunlar var. DB güncelleyin.", "err");
     else showToast('Hata: '+e.message,'err');
   }
 }
 function closeEditModal() { document.getElementById('editModal').classList.remove('open'); }
+
+function checkEditIssValidity() {
+  const val = document.getElementById('editIss').value;
+  const warn = document.getElementById('editIssWarning');
+  if (warn) warn.style.display = isApprovedPublicIss(val) ? 'none' : 'block';
+}
+
+async function quickApproveEdit() {
+  // Seçili ISS ile pini görünür yap — tek tık onay
+  document.getElementById('editGorunur').value = 'true';
+  await saveEdit();
+}
 
 async function modDeletePin(id, permanent = false) {
   try { 
