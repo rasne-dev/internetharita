@@ -1152,7 +1152,14 @@ const ISS_ALIASES = {
   'TTNet': 'Türk Telekom',
   'TTNet (Türk Telekom)': 'Türk Telekom',
   'TT (TTNet)': 'Türk Telekom',
-  'Türk Telekom (TTNet)': 'Türk Telekom'
+  'Türk Telekom (TTNet)': 'Türk Telekom',
+  'Turk Telekom': 'Türk Telekom',
+  'Turknet': 'TurkNet',
+  'Türksat': 'Türksat Kablonet',
+  'Kablonet (Türksat)': 'Türksat Kablonet',
+  'Türksat / Kablonet': 'Türksat Kablonet',
+  'Superonline': 'Superonline (Turkcell)',
+  'Turkcell Superonline': 'Superonline (Turkcell)'
 };
 function canonicalIssName(name) {
   const n = (name || '').trim();
@@ -1323,7 +1330,8 @@ async function loadIssListAndRenderChips() {
   const activeMap = new Map();
   issListCache.filter(i => i.active !== false).forEach(i => {
     const name = canonicalIssName(i.name);
-    if (!activeMap.has(name)) activeMap.set(name, { ...i, name });
+    const key = name.toLocaleLowerCase('tr-TR');
+    if (!activeMap.has(key)) activeMap.set(key, { ...i, name });
   });
   const active = [...activeMap.values()];
   issListCache = active;
@@ -1778,7 +1786,8 @@ async function submitPin() {
   if (!pinLat) return showToast('Lütfen konum seçin','err');
   const issVal = document.getElementById('issSelect').value;
   const customIss = document.getElementById('customIssInput')?.value?.trim();
-  const finalIss = issVal === 'Diğer' ? canonicalIssName(customIss || 'Diğer') : canonicalIssName(issVal);
+  if (issVal === 'Diğer' && !customIss) return showToast('Lütfen özel İSS adını girin','err');
+  const finalIss = issVal === 'Diğer' ? canonicalIssName(customIss) : canonicalIssName(issVal);
   if (!finalIss) return showToast('Lütfen ISS seçin','err');
   if (!selConnVal) return showToast('Bağlantı türü seçin','err');
   const dl = parseInt(document.getElementById('dlSpeed').value);
@@ -1840,6 +1849,7 @@ function toggleCustomIss(val) {
   const wrap = document.getElementById('customIssWrap');
   if (wrap) wrap.style.display = val === 'Diğer' ? 'block' : 'none';
   if (val !== 'Diğer' && document.getElementById('customIssInput')) document.getElementById('customIssInput').value = '';
+  if (val === 'Diğer') setTimeout(() => document.getElementById('customIssInput')?.focus(), 100);
 }
 
 function clearPinLocation() {
@@ -2026,7 +2036,8 @@ async function loadIssManager() {
           <label style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text3);cursor:pointer;flex-shrink:0;">
             <input type="checkbox" ${item.active!==false?'checked':''} onchange="toggleIssActive(${item.id}, this.checked)"> Aktif
           </label>
-          <button class="btn-del" style="padding:4px 8px;font-size:10px;" onclick="removeIssFromList(${item.id},'${item.name.replace(/'/g,"\\'")}')">🗑</button>
+          <button class="btn-edit" style="padding:4px 8px;font-size:10px;" onclick="renameIssInList(${item.id},'${item.name.replace(/'/g,"\\'")}')" title="İsim Değiştir">✏️</button>
+          <button class="btn-del" style="padding:4px 8px;font-size:10px;" onclick="removeIssFromList(${item.id},'${item.name.replace(/'/g,"\\'")}')" title="Sil">🗑</button>
         </div>
       </div>`;
     }).join('');
@@ -2069,6 +2080,25 @@ async function removeIssFromList(id, name) {
     await loadIssListAndRenderChips();
     showToast(`🗑 "${name}" listeden kaldırıldı`);
   } catch(e) { showToast('Hata: '+e.message,'err'); }
+}
+
+async function renameIssInList(id, oldName) {
+  const newName = prompt(`"${oldName}" İSS adını değiştir:\n(Bu işlem bu İSS'e ait tüm pinleri de günceller)`, oldName);
+  if (!newName || newName.trim() === oldName) return;
+  const canonicalNew = canonicalIssName(newName.trim());
+  try {
+    await patchIss(id, { name: canonicalNew });
+    const pins = await getAllPinsAdmin() || [];
+    const targets = pins.filter(p => p.iss === oldName);
+    if (targets.length > 0) {
+      showToast(`⏳ ${targets.length} pin güncelleniyor...`, 'warn');
+      await Promise.all(targets.map(p => patchPin(p.id, { iss: canonicalNew })));
+    }
+    await loadIssListAndRenderChips();
+    loadIssManager();
+    if (maps.main) { renderHex(); renderModPins(); }
+    showToast(`✅ İSS adı "${canonicalNew}" olarak güncellendi ve ${targets.length} pin taşındı`);
+  } catch(e) { showToast('Hata: '+e.message, 'err'); }
 }
 async function refreshModData() {
   // Aktif sekmeyi tespit et ve yenile
@@ -2236,11 +2266,11 @@ function setTableFilter(val, btn) {
 function filterAdminTable(search) {
   let filtered = adminPinsCache;
   if (search) {
-    const s = search.toLowerCase();
+    const s = search.toLocaleLowerCase('tr-TR');
     filtered = filtered.filter(p =>
-      (p.iss||'').toLowerCase().includes(s) ||
-      (p.il||'').toLowerCase().includes(s) ||
-      (p.ilce||'').toLowerCase().includes(s)
+      (p.iss||'').toLocaleLowerCase('tr-TR').includes(s) ||
+      (p.il||'').toLocaleLowerCase('tr-TR').includes(s) ||
+      (p.ilce||'').toLocaleLowerCase('tr-TR').includes(s)
     );
   }
   if (currentTableFilter === 'gorunur') {
