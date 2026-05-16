@@ -47,12 +47,21 @@ Bir bölgede hatalı veri olduğunu düşünüyorsanız haritada o bölgeye tık
 
 ---
 
+## Sorumluluk Reddi (Disclaimer)
+
+İnternetHarita tamamen açık kaynaklı ve topluluk odaklı bir platformdur. Haritadaki veriler (hız, konum, puan) tamamen kullanıcılar tarafından sağlanır ve doğruluğu garanti edilemez. 
+- Yanlış, yanıltıcı veya eksik olabilecek verilerden doğabilecek doğrudan veya dolaylı hiçbir zarardan sorumluluk kabul edilmez.
+- Projede yer alan hız verileri resmi, hukuki veya bağlayıcı nitelik taşımaz.
+- Veriler moderasyon süreçlerinden geçse de, her bir verinin kesin doğruluğu teknik olarak teyit edilemez.
+
+---
+
 ## Gizlilik & Güvenlik
 
-Kullanıcı gizliliği platformumuzun temel önceliğidir:
-- 📍 **Konum Gizliliği:** Haritada işaretlediğiniz konum, sistem tarafından rastgele bir miktar kaydırılarak (obfuscation) kaydedilir. Gerçek ev adresiniz haritada hiçbir zaman doğrudan gösterilmez, sadece genel bölge ortalaması alınır.
+Kullanıcı gizliliği platformumuzun temel önceliğidir (KVKK/GDPR Uyumlu):
+- 📍 **Konum Gizliliği (Fuzzing):** Haritada işaretlediğiniz konum, sistem tarafından matematiksel olarak ~100m kaydırılarak (obfuscation) kaydedilir. Moderatörler dahil kimse kesin (ham) ev adresinize veya koordinatınıza erişemez.
 - 👤 **Kişisel Veri İstenmez:** Adınız, e-posta adresiniz veya telefon numaranız gibi hiçbir kişisel veri talep edilmez ve toplanmaz.
-- 🔒 **Güvenli Altyapı:** Kötü niyetli kullanımları engellemek için cihaz eşleştirme teknolojileri kullanılır, ancak bireysel bağlantı kayıtları takip edilmez.
+- 🔒 **Tarayıcı Parmak İzi (Fingerprinting):** Kötü niyetli spam kullanımlarını engellemek ve veritabanı moderasyon süreçlerini yürütmek için anonimleştirilmiş cihaz bilgileri geçici ve güvenli şekilde işlenir. Bireysel bağlantı kayıtları takip edilmez.
 
 ---
 
@@ -107,8 +116,19 @@ If you spot an anomaly in a specific region, simply click the region on the map 
 
 ---
 
+## Liability Disclaimer
+
+İnternetHarita is a fully open-source and community-driven platform. The data on the map (speed, location, score) is provided entirely by users, and its accuracy cannot be guaranteed.
+- We accept no liability for any direct or indirect damages that may arise from incorrect, misleading, or incomplete data.
+- The speed data in the project has no official, legal, or binding status.
+- Even though data goes through moderation processes, the exact accuracy of every single entry cannot be technically verified.
+
+---
+
 ## Privacy & Security
 
-- 📍 **Location Obfuscation:** The exact location you select is always slightly shifted at random. Your precise home address is never displayed; pins are grouped to show regional averages.
+User privacy is our top priority (GDPR Compliant):
+
+- 📍 **Location Obfuscation (Fuzzing):** The exact location you select is mathematically shifted by ~100m (obfuscation) before saving. No one, including moderators, can access your precise (raw) coordinates or home address.
 - 👤 **No PII Collected:** We do not ask for or collect Personally Identifiable Information (name, email, phone number).
-- 🔒 **Secure Infrastructure:** We use background security measures to prevent spam attacks while ensuring individual user anonymity.
+- 🔒 **Browser Fingerprinting:** To prevent malicious spam attacks and conduct database moderation processes, anonymized device information is processed securely and temporarily. Individual connection records are not tracked.
