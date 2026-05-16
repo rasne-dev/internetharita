@@ -2263,9 +2263,16 @@ async function saveEdit() {
   const newIss = document.getElementById('editIss').value;
   const isGorunur = document.getElementById('editGorunur').value === 'true';
   try {
-    // Cache'i yenile — moderatör az önce ISS eklemiş olabilir
+    // Her zaman taze cache
     await loadIssListAndRenderChips();
-    const issNowApproved = isApprovedPublicIss(newIss);
+    let issNowApproved = isApprovedPublicIss(newIss);
+    // Moderatör görünür yaptıysa ama ISS listede yoksa → otomatik ekle
+    if (isGorunur && !issNowApproved) {
+      await addIssToList({ name: newIss, color: issHashColor(newIss), active: true, sort_order: 99 });
+      await loadIssListAndRenderChips();
+      issNowApproved = true;
+      showToast(`🏷 "${newIss}" İSS listesine otomatik eklendi`,'warn');
+    }
     await patchPin(id, {
       iss: newIss,
       baglanti_turu: document.getElementById('editConn').value,
@@ -2274,7 +2281,7 @@ async function saveEdit() {
       paket_hizi: parseInt(document.getElementById('editPkg').value)||null,
       puan,
       gorunur: isGorunur,
-      is_quarantine: isGorunur && issNowApproved ? false : (!isGorunur ? true : false),
+      is_quarantine: isGorunur && issNowApproved ? false : true,
       mod_notu: document.getElementById('editModNote').value.trim()||null
     });
     showToast('✅ Pin güncellendi');
@@ -2316,10 +2323,21 @@ async function bulkApprovePins() {
   const ids = Array.from(document.querySelectorAll('.pin-check:checked')).map(cb=>cb.value);
   if (!ids.length) return showToast('Seçili pin yok','err');
   const btn = document.getElementById('bulkApproveBtn'); btn.textContent='Onaylanıyor...'; btn.disabled=true;
+  await loadIssListAndRenderChips(); // taze cache
   let ok=0, fail=0;
   for (const id of ids) {
-    try { await patchPin(id, { gorunur:true, is_quarantine:false, sikayet_sayisi:0 }); ok++; } catch(e) { fail++; }
+    try {
+      const p = adminPinsCache.find(x=>x.id===id);
+      const issApproved = p ? isApprovedPublicIss(p.iss) : false;
+      // ISS listede değilse otomatik ekle
+      if (p && !issApproved) {
+        await addIssToList({ name: p.iss, color: issHashColor(p.iss), active: true, sort_order: 99 });
+      }
+      await patchPin(id, { gorunur:true, is_quarantine:false, sikayet_sayisi:0 });
+      ok++;
+    } catch(e) { fail++; }
   }
+  if (fail === 0) await loadIssListAndRenderChips(); // yeni ISS'ler varsa chip'leri güncelle
   btn.textContent='✅ Seçilileri Onayla'; btn.disabled=false;
   showToast(`✅ ${ok} pin onaylandı${fail?', '+fail+' hata':''}`);
   adminPinsCache = adminPinsCache.map(p => ids.includes(p.id) ? {...p, gorunur:true, is_quarantine:false} : p);
@@ -2327,6 +2345,7 @@ async function bulkApprovePins() {
   cleanPinsData = publicCleanPins(pinsData);
   if (maps.main) { renderHex(); renderModPins(); }
   loadAdminTable();
+  refreshModData();
 }
 
 async function bulkDeletePins() {
