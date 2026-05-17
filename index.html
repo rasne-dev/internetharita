@@ -1570,9 +1570,22 @@ async function renderStats() {
   const knownFromCache = issListCache.map(i => canonicalIssName(i.name));
   const knownFromLocal = getAllIss();
   const KNOWN_ISS_SET = new Set([...knownFromCache, ...knownFromLocal]);
-  const im = {}; pins.forEach(p => { const iss = canonicalIssName(p.iss); if(!iss || !KNOWN_ISS_SET.has(iss)) return; if(!im[iss]) im[iss]={t:0,c:0}; im[iss].t+=p.puan; im[iss].c++; });
-  const MIN_VOTES = 5;
-  document.getElementById('issRankList').innerHTML = Object.entries(im).map(([iss,d])=>({iss, s:(d.t/d.c).toFixed(1), c:d.c})).filter(x => x.c >= MIN_VOTES).sort((a,b)=>b.s-a.s).map((x,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${displayIssName(x.iss)}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.s)}">${x.s}</div></div>`).join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok (min. 5 ölçüm gerekli)</div>';
+  const im = {}; pins.forEach(p => {
+    const iss = canonicalIssName(p.iss);
+    if(!iss || !KNOWN_ISS_SET.has(iss)) return;
+    if(!im[iss]) im[iss]={t:0,c:0,fps:new Set()};
+    im[iss].t += p.puan;
+    im[iss].c++;
+    const fp = p.browser_fp || p.ip_hash;
+    if(fp) im[iss].fps.add(fp);
+  });
+  const MIN_UNIQUE = 3;
+  document.getElementById('issRankList').innerHTML = Object.entries(im)
+    .map(([iss,d]) => ({ iss, s:(d.t/d.c).toFixed(1), c:d.c, u:d.fps.size }))
+    .filter(x => x.u >= MIN_UNIQUE)
+    .sort((a,b) => b.s-a.s)
+    .map((x,i) => `<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${displayIssName(x.iss)}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.s)}">${x.s}</div></div>`)
+    .join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok (min. 3 farklı kullanıcı gerekli)</div>';
   
   // EN HIZLI LOKASYONLAR: FORMAT SABİTLENDİ
   const lm = {}; pins.forEach(p=>{ const k=[p.il||'?',p.ilce||'?',p.mahalle||''].filter(Boolean).join('_'); if(!lm[k]) lm[k]={t:0,c:0,il:p.il,ilce:p.ilce,mahalle:p.mahalle,type:p.baglanti_turu}; lm[k].t+=p.gercek_dl; lm[k].c++; });
