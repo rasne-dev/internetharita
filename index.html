@@ -458,6 +458,12 @@ html.light .sr-ping { background:#f5f7fa; }
 .filter-tab-btn { padding:6px 12px; border-radius:6px; border:1px solid var(--border2); background:var(--surface2); color:var(--text3); font-size:11px; font-weight:700; font-family:var(--font-mono); cursor:pointer; white-space:nowrap; transition:all .15s; }
 .filter-tab-btn.active { background:var(--accent-dim); border-color:rgba(0,212,255,.4); color:var(--accent); }
 .filter-tab-btn:hover:not(.active) { color:var(--text2); border-color:var(--border2); }
+.iss-drag-item { cursor:grab; transition:opacity .15s, background .15s; user-select:none; }
+.iss-drag-item:active { cursor:grabbing; }
+.iss-drag-item.dragging { opacity:0.4; }
+.iss-drag-item.drag-over { background:rgba(0,212,255,.08); border-color:rgba(0,212,255,.4); }
+.drag-handle { color:var(--text3); font-size:14px; cursor:grab; padding:0 4px; flex-shrink:0; line-height:1; }
+.drag-handle:active { cursor:grabbing; }
 .mod-tabs{display:flex;gap:6px;border-bottom:1px solid var(--border);padding-bottom:12px;flex-wrap:wrap;}
 .mod-tab-btn{ padding:6px 14px;border-radius:6px;border:none; background:var(--surface2);color:var(--text3); font-size:11px;font-weight:700;font-family:var(--font-mono); cursor:pointer;}
 .mod-tab-btn.active{background:var(--accent-dim);color:var(--accent);}
@@ -796,10 +802,9 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
         </div>
         <div class="fg">
           <div class="fl">Mahalle / Semt (opsiyonel)</div>
-          <select class="fs" id="manualMahalle" disabled style="display:none;">
+          <select class="fs" id="manualMahalle" disabled>
             <option value="">Önce ilçe seçin</option>
           </select>
-          <input class="fi" type="text" id="manualMahalleText" placeholder="Mahalle adı yazın veya yukarıdan seçin" style="margin-top:4px;">
         </div>
         <button class="btn-ghost" style="font-size:11px;padding:8px;" onclick="applyManualAddress()">✅ Bu Adresi Kullan</button>
       </div>
@@ -1818,24 +1823,26 @@ function populateIlSelect() {
 async function onManualIlChange() {
   const il = document.getElementById('manualIl').value;
   const ilceSel = document.getElementById('manualIlce');
-  if (!il) { ilceSel.innerHTML='<option value="">Önce il seçin</option>'; ilceSel.disabled=true; return; }
+  const mahalleSel = document.getElementById('manualMahalle');
+  // İlçe ve mahalle sıfırla
+  ilceSel.innerHTML = '<option value="">Yükleniyor...</option>';
+  ilceSel.disabled = true;
+  mahalleSel.innerHTML = '<option value="">Önce ilçe seçin</option>';
+  mahalleSel.disabled = true;
+  if (!il) { ilceSel.innerHTML='<option value="">Önce il seçin</option>'; return; }
 
-  const buildOptions = (ilceler) =>
+  const buildIlceOptions = (ilceler) =>
     '<option value="">İlçe seçin...</option>' +
-    ilceler.sort().map(i => `<option value="${i}">${i}</option>`).join('') +
-    '<option value="Diğer">Diğer</option>';
+    [...ilceler].sort((a,b) => a.localeCompare(b,'tr')).map(i => `<option value="${i}">${i}</option>`).join('');
 
   // Yerel listeyi anında göster
   const local = ILCE_MAP[il] || [];
   if (local.length) {
-    ilceSel.innerHTML = buildOptions(local);
+    ilceSel.innerHTML = buildIlceOptions(local);
     ilceSel.disabled = false;
-  } else {
-    ilceSel.innerHTML = '<option value="">Yükleniyor...</option>';
-    ilceSel.disabled = true;
   }
 
-  // API'den tam listeyi arka planda dene (5sn timeout)
+  // API'den tam listeyi arka planda dene
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 5000);
@@ -1848,24 +1855,49 @@ async function onManualIlChange() {
     const data = await res.json();
     const apiList = data?.data?.[0]?.districts?.map(d => d.name) || [];
     if (apiList.length > 0) {
-      ilceSel.innerHTML = buildOptions(apiList);
+      ilceSel.innerHTML = buildIlceOptions(apiList);
       ilceSel.disabled = false;
     }
   } catch(e) {
-    // Timeout veya hata — local zaten gösteriliyor
     if (!local.length) {
-      ilceSel.innerHTML = '<option value="">İlçe bulunamadı</option><option value="Diğer">Diğer</option>';
-      ilceSel.disabled = false;
+      ilceSel.innerHTML = '<option value="">İlçe listesi yüklenemedi</option>';
+      ilceSel.disabled = true;
     }
   }
 }
 
-function onManualIlceChange() { /* gelecekte mahalle listesi eklenebilir */ }
+function onManualIlceChange() {
+  const ilce = document.getElementById('manualIlce').value;
+  const mahalleSel = document.getElementById('manualMahalle');
+  mahalleSel.innerHTML = '<option value="">Yükleniyor...</option>';
+  mahalleSel.disabled = true;
+  if (!ilce) { mahalleSel.innerHTML = '<option value="">Önce ilçe seçin</option>'; return; }
+  const ctrl = new AbortController();
+  setTimeout(() => ctrl.abort(), 5000);
+  fetch(`https://api.turkiyeapi.dev/v1/neighborhoods?district=${encodeURIComponent(ilce)}&limit=500`, { signal: ctrl.signal, cache: 'force-cache' })
+    .then(r => r.json())
+    .then(data => {
+      const mahalleler = (data?.data || []).map(m => m.name).sort((a,b) => a.localeCompare(b,'tr'));
+      if (mahalleler.length) {
+        mahalleSel.innerHTML = '<option value="">Belirtmek istemiyorum</option>' +
+          mahalleler.map(m => `<option value="${m}">${m}</option>`).join('');
+        mahalleSel.disabled = false;
+      } else {
+        mahalleSel.innerHTML = '<option value="">Belirtmek istemiyorum</option>';
+        mahalleSel.disabled = false;
+      }
+    })
+    .catch(() => {
+      // API başarısız — seçenek olmasa da disabled bırakma, kullanıcı geçebilmeli
+      mahalleSel.innerHTML = '<option value="">Belirtmek istemiyorum</option>';
+      mahalleSel.disabled = false;
+    });
+}
 
 function applyManualAddress() {
   const il = document.getElementById('manualIl').value;
   const ilce = document.getElementById('manualIlce').value;
-  const mahalle = document.getElementById('manualMahalle').value.trim();
+  const mahalle = document.getElementById('manualMahalle')?.value || '';
   if (!il) return showToast('İl seçin','err');
   // İl merkezinin koordinatını kullan
   const coords = IL_COORDS[il];
@@ -2132,14 +2164,15 @@ async function loadIssManager() {
         : !hasData
           ? `<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(245,158,11,.12);border:1px solid var(--warn);color:var(--warn);font-family:var(--font-mono);font-weight:700;" title="Bu ISS'e ait haritada görünen onaylı pin yok">VERİ YOK</span>`
           : `<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(34,197,94,.1);border:1px solid var(--success);color:var(--success);font-family:var(--font-mono);font-weight:700;">AKTİF</span>`;
-      const isFirst = idx === 0;
-      const isLast = idx === items.length - 1;
-      return `<div class="mod-card" id="issrow_${item.id}" style="margin-bottom:6px;padding:10px 12px;${isInactive?'opacity:0.55;':''}">
+      return `<div class="mod-card iss-drag-item" id="issrow_${item.id}" data-id="${item.id}" data-idx="${idx}"
+        draggable="true"
+        style="margin-bottom:6px;padding:10px 12px;${isInactive?'opacity:0.55;':''}"
+        ondragstart="issDragStart(event,${item.id})"
+        ondragover="issDragOver(event)"
+        ondragleave="issDragLeave(event)"
+        ondrop="issDrop(event,${item.id})">
         <div style="display:flex;align-items:center;gap:8px;">
-          <div style="display:flex;flex-direction:column;gap:1px;flex-shrink:0;">
-            <button onclick="reorderIss(${item.id},${idx},'up')" ${isFirst?'disabled':''} style="padding:0 4px;height:14px;font-size:9px;line-height:1;background:var(--surface3);border:1px solid var(--border2);border-radius:3px;cursor:pointer;color:${isFirst?'var(--text3)':'var(--text2)'};opacity:${isFirst?0.3:1}">▲</button>
-            <button onclick="reorderIss(${item.id},${idx},'down')" ${isLast?'disabled':''} style="padding:0 4px;height:14px;font-size:9px;line-height:1;background:var(--surface3);border:1px solid var(--border2);border-radius:3px;cursor:pointer;color:${isLast?'var(--text3)':'var(--text2)'};opacity:${isLast?0.3:1}">▼</button>
-          </div>
+          <span class="drag-handle" title="Sıralamak için sürükle">⠿</span>
           <div style="width:10px;height:10px;border-radius:50%;background:${c};flex-shrink:0;"></div>
           <div style="flex:1;font-size:12px;font-weight:600;color:var(--text);">${item.name}</div>
           <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);">${pinCount} pin</span>
@@ -2155,6 +2188,7 @@ async function loadIssManager() {
         </div>
       </div>`;
     }).join('');
+    initIssDragDrop();
   } catch(e) { list.innerHTML='Hata: '+e.message; }
 }
 
@@ -2196,25 +2230,69 @@ async function removeIssFromList(id, name) {
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 
-async function reorderIss(id, idx, dir) {
+// ===== ISS DRAG-DROP SIRALAMA =====
+let _dragSrcId = null;
+
+function initIssDragDrop() {
+  // Touch cihazlar için de çalışsın — sadece bilgi amaçlı
+  const items = document.querySelectorAll('.iss-drag-item');
+  items.forEach(el => {
+    el.addEventListener('dragstart', e => issDragStart(e, parseInt(el.dataset.id)));
+    el.addEventListener('dragover', issDragOver);
+    el.addEventListener('dragleave', issDragLeave);
+    el.addEventListener('drop', e => issDrop(e, parseInt(el.dataset.id)));
+    el.addEventListener('dragend', issDragEnd);
+  });
+}
+
+function issDragStart(e, id) {
+  _dragSrcId = id;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', id);
+}
+
+function issDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+
+function issDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function issDragEnd(e) {
+  document.querySelectorAll('.iss-drag-item').forEach(el => {
+    el.classList.remove('dragging','drag-over');
+  });
+}
+
+async function issDrop(e, targetId) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (_dragSrcId === null || _dragSrcId === targetId) return;
   try {
     const items = await getIssList() || [];
-    const swapIdx = dir === 'up' ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= items.length) return;
+    const srcIdx = items.findIndex(i => i.id === _dragSrcId);
+    const tgtIdx = items.findIndex(i => i.id === targetId);
+    if (srcIdx === -1 || tgtIdx === -1) return;
     // sort_order null ise önce tüm listeye sıralı değer ata
     const needsInit = items.some(i => i.sort_order == null);
     if (needsInit) {
-      await Promise.all(items.map((item, i) => patchIss(item.id, { sort_order: i })));
-      // Güncel listeyi tekrar al
-      const fresh = await getIssList() || [];
-      const a = fresh[idx];
-      const b = fresh[swapIdx];
-      await Promise.all([patchIss(a.id, { sort_order: b.sort_order }), patchIss(b.id, { sort_order: a.sort_order })]);
-    } else {
-      const a = items[idx];
-      const b = items[swapIdx];
-      await Promise.all([patchIss(a.id, { sort_order: b.sort_order }), patchIss(b.id, { sort_order: a.sort_order })]);
+      await Promise.all(items.map((item, i) => patchIss(item.id, { sort_order: i * 10 })));
     }
+    // Güncel sıraları al ve takas et
+    const fresh = needsInit
+      ? items.map((item, i) => ({ ...item, sort_order: i * 10 }))
+      : items;
+    const srcOrder = fresh[srcIdx].sort_order;
+    const tgtOrder = fresh[tgtIdx].sort_order;
+    await Promise.all([
+      patchIss(_dragSrcId, { sort_order: tgtOrder }),
+      patchIss(targetId, { sort_order: srcOrder })
+    ]);
+    _dragSrcId = null;
     await loadIssListAndRenderChips();
     loadIssManager();
   } catch(e) { showToast('Sıralama hatası: ' + e.message, 'err'); }
