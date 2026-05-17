@@ -884,15 +884,25 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
     <div class="mod-tabs">
       <button class="mod-tab-btn" id="modTabBtn-sikayetler" onclick="switchModTab('sikayetler')">🚩 Kullanıcı Bildirimleri <span class="mod-tab-count" id="raporCount"></span></button>
       <button class="mod-tab-btn active" id="modTabBtn-tumPinler" onclick="switchModTab('tumPinler')">📋 Tüm Pinler <span class="mod-tab-count" id="pinCount" style="background:var(--surface3);color:var(--text3);"></span></button>
-      <button class="mod-tab-btn" id="modTabBtn-onay" onclick="switchModTab('onay')">🔍 İnceleme &amp; Düzenle <span class="mod-tab-count" id="onayCount" style="background:var(--warn);color:#000;"></span></button>
-      <button class="mod-tab-btn" id="modTabBtn-issManager" onclick="switchModTab('issManager')">🏷 İSS Yönetimi</button>
+      <button class="mod-tab-btn" id="modTabBtn-issManager" onclick="switchModTab('issManager')">🏷 İSS Yönetimi <span class="mod-tab-count" id="onayCount" style="background:var(--warn);color:#000;"></span></button>
     </div>
 
     <!-- SEKME 1: ŞİKAYETLER — kullanıcı raporları -->
     <div id="modTab-sikayetler" style="display:none;">
-      <div class="mod-section-title">🚩 Kullanıcı Bildirimleri</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">Kullanıcıların "Bildir" butonu ile gönderdiği raporlar. Bekleyen durumdakiler listelenir.</div>
-      <div id="bekleyenList"><div class="loading-text loading-dots">Yükleniyor</div></div>
+      <div class="mod-section">
+        <div class="mod-section-title">🚩 Kullanıcı Bildirimleri</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">Kullanıcıların "Bildir" butonu ile gönderdiği raporlar.</div>
+        <div id="bekleyenList"><div class="loading-text loading-dots">Yükleniyor</div></div>
+      </div>
+      <div class="mod-section" style="margin-top:16px;">
+        <div class="mod-section-title">🔒 İnceleme Gerektiren Pinler</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">
+          <span style="color:var(--warn);">⚠ Spam</span> = hız geçersiz &nbsp;·&nbsp;
+          <span style="color:var(--warn);">🔒 Karantina</span> = outlier/özel İSS &nbsp;·&nbsp;
+          <span style="color:var(--text3);">🙈 Gizli</span> = moderatör gizledi
+        </div>
+        <div id="sikayetList"><div class="loading-text loading-dots">Yükleniyor</div></div>
+      </div>
     </div>
 
     <!-- SEKME 2: TÜM PİNLER -->
@@ -926,23 +936,11 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
       </div>
     </div>
 
-    <!-- SEKME 3: ONAY & YÖNETİM -->
-    <div id="modTab-onay" style="display:none;">
+    <!-- İSS YÖNETİMİ TAB -->
+    <div id="modTab-issManager" style="display:none;">
 
-      <!-- 3a: İnceleme Gerektiren Pinler (karantina + spam + gizli) -->
-      <div class="mod-section">
-        <div class="mod-section-title">🔒 İnceleme Gerektiren Pinler</div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">
-          Karantina, spam şüpheli veya gizlenen pinler. Her grup cihaz FP'sine göre gruplandırılır.<br>
-          <span style="color:var(--warn);">⚠ Spam</span> = hız değerleri geçersiz &nbsp;·&nbsp;
-          <span style="color:var(--warn);">🔒 Karantina</span> = outlier veya özel İSS &nbsp;·&nbsp;
-          <span style="color:var(--text3);">🙈 Gizli</span> = moderatör tarafından gizlendi
-        </div>
-        <div id="sikayetList"><div class="loading-text loading-dots">Yükleniyor</div></div>
-      </div>
-
-      <!-- 3b: Özel İSS Teklifleri -->
-      <div class="mod-section">
+      <!-- Özel İSS Teklifleri -->
+      <div class="mod-section" style="margin-bottom:16px;">
         <div class="mod-section-title">🏷 Özel İSS Teklifleri</div>
         <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">
           Kullanıcıların "Diğer" seçerek girdiği İSS isimleri. Onayla → resmi listeye ekle + pinler yayınlanır. Reddet → pinler gizlenir.
@@ -950,31 +948,10 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
         <div id="customIssList"><div class="loading-text loading-dots">Yükleniyor</div></div>
       </div>
 
-      <!-- 3c: İstatistik Veri Editörü -->
-      <div class="mod-section">
-        <div class="mod-section-title">📊 Pin Değeri Düzenle</div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">
-          Onaylı pinlerin hız/puan/görünürlük değerlerini doğrudan düzenle. Sadece <b style="color:var(--success)">gorunur=true</b> pinler istatistiklere girer.
-        </div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-          <input type="text" class="fi" id="statEditSearch" placeholder="İSS veya il ara..." style="flex:1;min-width:160px;" oninput="loadStatEditTable(this.value)">
-          <button class="btn-ghost" onclick="loadStatEditTable('')">🔄 Tümünü Getir</button>
-        </div>
-        <div class="mod-table-wrap">
-          <table class="mod-table">
-            <thead><tr><th>İSS</th><th>Bağlantı</th><th>DL Mbps</th><th>UL Mbps</th><th>Puan</th><th>Görünür</th><th>İşlem</th></tr></thead>
-            <tbody id="statEditBody"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:20px;">Aramak için filtreleyin</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-
-    </div><!-- /modTab-onay -->
-
-    <!-- İSS MANAGER TAB -->
-    <div id="modTab-issManager" style="display:none;">
+      <!-- İSS Listesi Yönetimi -->
       <div class="mod-section">
         <div class="mod-section-title">🏷 İSS Listesi Yönetimi</div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">Haritada görünen İSS listesini buradan yönetin. Değişiklikler anında yansır, kod güncellemenize gerek yok.</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">Haritada görünen İSS listesini buradan yönetin. Değişiklikler anında yansır.</div>
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px;">
           <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);font-weight:700;letter-spacing:1px;margin-bottom:10px;">➕ YENİ İSS EKLE</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
@@ -991,6 +968,7 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
         </div>
         <div id="issManagerList"><div class="loading-dots">Yükleniyor</div></div>
       </div>
+
     </div><!-- /modTab-issManager -->
 
   </div>
@@ -1703,14 +1681,87 @@ const IL_COORDS = {
 
 // İlçe listesi — büyük şehirler (tam liste için statik veri kullanılır)
 const ILCE_MAP = {
-  'Giresun':['Alucra','Bulancak','Çamoluk','Çanakçı','Dereli','Doğankent','Espiye','Eynesil','Görele','Güce','Keşap','Merkez','Piraziz','Şebinkarahisar','Tirebolu','Yağlıdere'],
-  'İstanbul':['Adalar','Arnavutköy','Ataşehir','Avcılar','Bağcılar','Bahçelievler','Bakırköy','Başakşehir','Bayrampaşa','Beşiktaş','Beykoz','Beylikdüzü','Beyoğlu','Büyükçekmece','Çatalca','Çekmeköy','Esenler','Esenyurt','Eyüpsultan','Fatih','Gaziosmanpaşa','Güngören','Kadıköy','Kağıthane','Kartal','Küçükçekmece','Maltepe','Pendik','Sancaktepe','Sarıyer','Şile','Şişli','Silivri','Sultanbeyli','Sultangazi','Tuzla','Ümraniye','Üsküdar','Zeytinburnu'],
+  'Adana':['Aladağ','Ceyhan','Çukurova','Feke','İmamoğlu','Karaisalı','Karataş','Kozan','Pozantı','Saimbeyli','Sarıçam','Seyhan','Tufanbeyli','Yumurtalık','Yüreğir'],
+  'Adıyaman':['Besni','Çelikhan','Gerger','Gölbaşı','Kahta','Merkez','Samsat','Sincik','Tut'],
+  'Afyonkarahisar':['Başmakçı','Bayat','Bolvadin','Çay','Çobanlar','Dazkırı','Dinar','Emirdağ','Evciler','Hocalar','İhsaniye','İscehisar','Kızılören','Merkez','Sandıklı','Sinanpaşa','Sultandağı','Şuhut'],
+  'Ağrı':['Diyadin','Doğubayazıt','Eleşkirt','Hamur','Merkez','Patnos','Taşlıçay','Tutak'],
+  'Aksaray':['Ağaçören','Eskil','Gülağaç','Güzelyurt','Merkez','Ortaköy','Sarıyahşi','Sultanhani'],
+  'Amasya':['Göynücek','Gümüşhacıköy','Hamamözü','Merkez','Merzifon','Suluova','Taşova'],
   'Ankara':['Akyurt','Altındağ','Ayaş','Bala','Beypazarı','Çamlıdere','Çankaya','Çubuk','Elmadağ','Etimesgut','Evren','Gölbaşı','Güdül','Haymana','Kahramankazan','Kalecik','Keçiören','Kızılcahamam','Mamak','Nallıhan','Polatlı','Pursaklar','Sincan','Şereflikoçhisar','Yenimahalle'],
-  'İzmir':['Aliağa','Balçova','Bayındır','Bayraklı','Bergama','Beydağ','Bornova','Buca','Çeşme','Çiğli','Dikili','Foça','Gaziemir','Güzelbahçe','Karabağlar','Karaburun','Karşıyaka','Kemalpaşa','Kınık','Kiraz','Konak','Menderes','Menemen','Narlıdere','Ödemiş','Seferihisar','Selçuk','Tire','Torbalı','Urla'],
-  'Bursa':['Büyükorhan','Gemlik','Gürsu','Harmancık','İnegöl','İznik','Karacabey','Keles','Kestel','Mudanya','Mustafakemalpaşa','Nilüfer','Orhaneli','Orhangazi','Osmangazi','Yenişehir','Yıldırım'],
   'Antalya':['Akseki','Aksu','Alanya','Demre','Döşemealtı','Elmalı','Finike','Gazipaşa','Gündoğmuş','İbradı','Kaş','Kemer','Kepez','Konyaaltı','Korkuteli','Kumluca','Manavgat','Muratpaşa','Serik'],
-  'Konya':['Ahırlı','Akören','Akşehir','Altınekin','Beyşehir','Bozkır','Cihanbeyli','Çeltik','Çumra','Derbent','Derebucak','Doğanhisar','Emirgazi','Ereğli','Güneysınır','Hadim','Halkapınar','Hüyük','Ilgın','Kadınhanı','Karapınar','Karatay','Kulu','Meram','Sarayönü','Selçuklu','Seydişehir','Taşkent','Tuzlukçu','Yalıhüyük','Yunak'],
+  'Ardahan':['Çıldır','Damal','Göle','Hanak','Merkez','Posof'],
+  'Artvin':['Ardanuç','Arhavi','Borçka','Hopa','Kemalpaşa','Merkez','Murgul','Şavşat','Yusufeli'],
+  'Aydın':['Bozdoğan','Buharkent','Çine','Didim','Efeler','Germencik','İncirliova','Karacasu','Karpuzlu','Koçarlı','Köşk','Kuşadası','Kuyucak','Nazilli','Söke','Sultanhisar','Yenipazar'],
+  'Balıkesir':['Altıeylül','Ayvalık','Balya','Bandırma','Bigadiç','Burhaniye','Dursunbey','Edremit','Erdek','Gömeç','Gönen','Havran','İvrindi','Karesi','Kepsut','Manyas','Marmara','Savaştepe','Sındırgı','Susurluk'],
+  'Bartın':['Amasra','Kurucaşile','Merkez','Ulus'],
+  'Batman':['Beşiri','Gercüş','Hasankeyf','Kozluk','Merkez','Sason'],
+  'Bayburt':['Aydıntepe','Demirözü','Merkez'],
+  'Bilecik':['Bozüyük','Gölpazarı','İnhisar','Merkez','Osmaneli','Pazaryeri','Söğüt','Yenipazar'],
+  'Bingöl':['Adaklı','Genç','Karlıova','Kiğı','Merkez','Solhan','Yayladere','Yedisu'],
+  'Bitlis':['Adilcevaz','Ahlat','Güroymak','Hizan','Merkez','Mutki','Tatvan'],
+  'Bolu':['Dörtdivan','Gerede','Göynük','Kıbrıscık','Mengen','Merkez','Mudurnu','Seben','Yeniçağa'],
+  'Burdur':['Ağlasun','Altınyayla','Bucak','Çavdır','Çeltikçi','Gölhisar','Karamanlı','Kemer','Merkez','Tefenni','Yeşilova'],
+  'Bursa':['Büyükorhan','Gemlik','Gürsu','Harmancık','İnegöl','İznik','Karacabey','Keles','Kestel','Mudanya','Mustafakemalpaşa','Nilüfer','Orhaneli','Orhangazi','Osmangazi','Yenişehir','Yıldırım'],
+  'Çanakkale':['Ayvacık','Bayramiç','Biga','Bozcaada','Çan','Eceabat','Ezine','Gelibolu','Gökçeada','Lapseki','Merkez','Yenice'],
+  'Çankırı':['Atkaracalar','Bayramören','Çerkeş','Eldivan','Ilgaz','Korgun','Kurşunlu','Merkez','Orta','Şabanözü','Yapraklı'],
+  'Çorum':['Alaca','Bayat','Boğazkale','Dodurga','İskilip','Kargı','Laçin','Mecitözü','Merkez','Oğuzlar','Ortaköy','Osmancık','Sungurlu','Uğurludağ'],
+  'Denizli':['Acıpayam','Babadağ','Baklan','Bekilli','Beyağaç','Bozkurt','Buldan','Çal','Çameli','Çardak','Çivril','Güney','Honaz','Kale','Merkezefendi','Pamukkale','Sarayköy','Serinhisar','Tavas'],
+  'Diyarbakır':['Bağlar','Bismil','Çermik','Çınar','Çüngüş','Dicle','Eğil','Ergani','Hani','Hazro','Kayapınar','Kocaköy','Kulp','Lice','Silvan','Sur','Yenişehir'],
+  'Düzce':['Akçakoca','Cumayeri','Çilimli','Gölyaka','Gümüşova','Kaynaşlı','Merkez','Yığılca'],
+  'Edirne':['Enez','Havsa','İpsala','Keşan','Lalapaşa','Meriç','Merkez','Süloğlu','Uzunköprü'],
+  'Elazığ':['Ağın','Alacakaya','Arıcak','Baskil','Karakoçan','Keban','Kovancılar','Maden','Merkez','Palu','Sivrice'],
+  'Erzincan':['Çayırlı','İliç','Kemah','Kemaliye','Merkez','Otlukbeli','Refahiye','Tercan','Üzümlü'],
+  'Erzurum':['Aşkale','Aziziye','Çat','Hınıs','Horasan','İspir','Karaçoban','Karayazı','Köprüköy','Merkez','Narman','Oltu','Olur','Palandöken','Pasinler','Pazaryolu','Şenkaya','Tekman','Tortum','Uzundere','Yakutiye'],
+  'Eskişehir':['Alpu','Beylikova','Çifteler','Günyüzü','Han','İnönü','Mahmudiye','Mihalgazi','Mihalıçcık','Odunpazarı','Sarıcakaya','Seyitgazi','Sivrihisar','Tepebaşı'],
   'Gaziantep':['Araban','İslahiye','Karkamış','Nurdağı','Nizip','Oğuzeli','Şahinbey','Şehitkamil','Yavuzeli'],
+  'Giresun':['Alucra','Bulancak','Çamoluk','Çanakçı','Dereli','Doğankent','Espiye','Eynesil','Görele','Güce','Keşap','Merkez','Piraziz','Şebinkarahisar','Tirebolu','Yağlıdere'],
+  'Gümüşhane':['Kelkit','Köse','Kürtün','Merkez','Şiran','Torul'],
+  'Hakkari':['Çukurca','Derecik','Merkez','Şemdinli','Yüksekova'],
+  'Hatay':['Altınözü','Antakya','Arsuz','Belen','Defne','Dörtyol','Erzin','Hassa','İskenderun','Kırıkhan','Kumlu','Payas','Reyhanlı','Samandağ','Yayladağı'],
+  'Iğdır':['Aralık','Karakoyunlu','Merkez','Tuzluca'],
+  'Isparta':['Aksu','Atabey','Eğirdir','Gelendost','Gönen','Keçiborlu','Merkez','Senirkent','Sütçüler','Şarkikaraağaç','Uluborlu','Yalvaç','Yenişarbademli'],
+  'İstanbul':['Adalar','Arnavutköy','Ataşehir','Avcılar','Bağcılar','Bahçelievler','Bakırköy','Başakşehir','Bayrampaşa','Beşiktaş','Beykoz','Beylikdüzü','Beyoğlu','Büyükçekmece','Çatalca','Çekmeköy','Esenler','Esenyurt','Eyüpsultan','Fatih','Gaziosmanpaşa','Güngören','Kadıköy','Kağıthane','Kartal','Küçükçekmece','Maltepe','Pendik','Sancaktepe','Sarıyer','Şile','Şişli','Silivri','Sultanbeyli','Sultangazi','Tuzla','Ümraniye','Üsküdar','Zeytinburnu'],
+  'İzmir':['Aliağa','Balçova','Bayındır','Bayraklı','Bergama','Beydağ','Bornova','Buca','Çeşme','Çiğli','Dikili','Foça','Gaziemir','Güzelbahçe','Karabağlar','Karaburun','Karşıyaka','Kemalpaşa','Kınık','Kiraz','Konak','Menderes','Menemen','Narlıdere','Ödemiş','Seferihisar','Selçuk','Tire','Torbalı','Urla'],
+  'Kahramanmaraş':['Afşin','Andırın','Çağlayancerit','Dulkadiroğlu','Ekinözü','Elbistan','Göksun','Nurhak','Onikişubat','Pazarcık','Türkoğlu'],
+  'Karabük':['Eflani','Eskipazar','Merkez','Ovacık','Safranbolu','Yenice'],
+  'Karaman':['Ayrancı','Başyayla','Ermenek','Kazımkarabekir','Merkez','Sarıveliler'],
+  'Kars':['Akyaka','Arpaçay','Digor','Kağızman','Merkez','Sarıkamış','Selim','Susuz'],
+  'Kastamonu':['Abana','Ağlı','Araç','Azdavay','Bozkurt','Cide','Çatalzeytin','Daday','Devrekani','Doğanyurt','Hanönü','İhsangazi','İnebolu','Küre','Merkez','Pınarbaşı','Seydiler','Şenpazar','Taşköprü','Tosya'],
+  'Kayseri':['Akkışla','Bünyan','Develi','Felahiye','Hacılar','İncesu','Kocasinan','Melikgazi','Özvatan','Pınarbaşı','Sarıoğlan','Sarız','Talas','Tomarza','Yahyalı','Yeşilhisar'],
+  'Kilis':['Elbeyli','Merkez','Musabeyli','Polateli'],
+  'Kırıkkale':['Bahşılı','Balışeyh','Çelebi','Delice','Karakeçili','Keskin','Merkez','Sulakyurt','Yahşihan'],
+  'Kırklareli':['Babaeski','Demirköy','Kofçaz','Lüleburgaz','Merkez','Pehlivanköy','Pınarhisar','Vize'],
+  'Kırşehir':['Akçakent','Akpınar','Boztepe','Çiçekdağı','Kaman','Merkez','Mucur'],
+  'Kocaeli':['Başiskele','Çayırova','Darıca','Derince','Dilovası','Gebze','Gölcük','İzmit','Kandıra','Karamürsel','Kartepe','Körfez'],
+  'Konya':['Ahırlı','Akören','Akşehir','Altınekin','Beyşehir','Bozkır','Cihanbeyli','Çeltik','Çumra','Derbent','Derebucak','Doğanhisar','Emirgazi','Ereğli','Güneysınır','Hadim','Halkapınar','Hüyük','Ilgın','Kadınhanı','Karapınar','Karatay','Kulu','Meram','Sarayönü','Selçuklu','Seydişehir','Taşkent','Tuzlukçu','Yalıhüyük','Yunak'],
+  'Kütahya':['Altıntaş','Aslanapa','Çavdarhisar','Domaniç','Dumlupınar','Emet','Gediz','Hisarcık','Merkez','Pazarlar','Simav','Şaphane','Tavşanlı'],
+  'Malatya':['Akçadağ','Arapgir','Arguvan','Battalgazi','Darende','Doğanşehir','Doğanyol','Hekimhan','Kale','Kuluncak','Pütürge','Yazıhan','Yeşilyurt'],
+  'Manisa':['Ahmetli','Akhisar','Alaşehir','Demirci','Gölmarmara','Gördes','Kırkağaç','Köprübaşı','Kula','Merkez','Salihli','Sarıgöl','Saruhanlı','Selendi','Soma','Şehzadeler','Turgutlu','Yunusemre'],
+  'Mardin':['Artuklu','Dargeçit','Derik','Kızıltepe','Mazıdağı','Midyat','Nusaybin','Ömerli','Savur','Yeşilli'],
+  'Mersin':['Akdeniz','Anamur','Aydıncık','Bozyazı','Çamlıyayla','Erdemli','Gülnar','Mezitli','Mut','Silifke','Tarsus','Toroslar','Yenişehir'],
+  'Muğla':['Bodrum','Dalaman','Datça','Fethiye','Kavaklıdere','Köyceğiz','Marmaris','Menteşe','Milas','Ortaca','Seydikemer','Ula','Yatağan'],
+  'Muş':['Bulanık','Hasköy','Korkut','Malazgirt','Merkez','Varto'],
+  'Nevşehir':['Acıgöl','Avanos','Derinkuyu','Gülşehir','Hacıbektaş','Kozaklı','Merkez','Ürgüp'],
+  'Niğde':['Altunhisar','Bor','Çamardı','Çiftlik','Merkez','Ulukışla'],
+  'Ordu':['Akkuş','Altınordu','Aybastı','Çamaş','Çatalpınar','Çaybaşı','Fatsa','Gölköy','Gülyalı','Gürgentepe','İkizce','Kabadüz','Kabataş','Korgan','Kumru','Mesudiye','Perşembe','Ulubey','Ünye'],
+  'Osmaniye':['Bahçe','Düziçi','Hasanbeyli','Kadirli','Merkez','Sumbas','Toprakkale'],
+  'Rize':['Ardeşen','Çamlıhemşin','Çayeli','Derepazarı','Fındıklı','Güneysu','Hemşin','İkizdere','İyidere','Kalkandere','Merkez','Pazar'],
+  'Sakarya':['Adapazarı','Akyazı','Arifiye','Erenler','Ferizli','Geyve','Hendek','Karapürçek','Karasu','Kaynarca','Kocaali','Pamukova','Sapanca','Serdivan','Söğütlü','Taraklı'],
+  'Samsun':['Alaçam','Asarcık','Atakum','Ayvacık','Bafra','Canik','Çarşamba','İlkadım','Kavak','Ladik','19 Mayıs','Salıpazarı','Tekkeköy','Terme','Vezirköprü','Yakakent'],
+  'Siirt':['Baykan','Eruh','Kurtalan','Merkez','Pervari','Şirvan','Tillo'],
+  'Sinop':['Ayancık','Boyabat','Dikmen','Durağan','Erfelek','Gerze','Merkez','Saraydüzü','Türkeli'],
+  'Sivas':['Akıncılar','Altınyayla','Divriği','Doğanşar','Gemerek','Gölova','Gürün','Hafik','İmranlı','Kangal','Koyulhisar','Merkez','Suşehri','Şarkışla','Ulaş','Yıldızeli','Zara'],
+  'Şanlıurfa':['Akçakale','Birecik','Bozova','Ceylanpınar','Eyyübiye','Halfeti','Haliliye','Harran','Hilvan','Karaköprü','Siverek','Suruç','Viranşehir'],
+  'Şırnak':['Beytüşşebap','Cizre','Güçlükonak','İdil','Merkez','Silopi','Uludere'],
+  'Tekirdağ':['Çerkezköy','Çorlu','Ergene','Hayrabolu','Kapaklı','Malkara','Marmaraereğlisi','Merkez','Muratlı','Saray','Süleymanpaşa','Şarköy'],
+  'Tokat':['Almus','Artova','Başçiftlik','Erbaa','Merkez','Niksar','Pazar','Reşadiye','Sulusaray','Turhal','Yeşilyurt','Zile'],
+  'Trabzon':['Akçaabat','Araklı','Arsin','Beşikdüzü','Çarşıbaşı','Çaykara','Dernekpazarı','Düzköy','Hayrat','Köprübaşı','Maçka','Merkez','Of','Ortahisar','Sürmene','Şalpazarı','Tonya','Vakfıkebir','Yomra'],
+  'Tunceli':['Çemişgezek','Hozat','Mazgirt','Merkez','Nazımiye','Ovacık','Pertek','Pülümür'],
+  'Uşak':['Banaz','Eşme','Karahallı','Merkez','Sivaslı','Ulubey'],
+  'Van':['Bahçesaray','Başkale','Çaldıran','Çatak','Edremit','Erciş','Gevaş','Gürpınar','İpekyolu','Muradiye','Özalp','Saray','Tuşba'],
+  'Yalova':['Altınova','Armutlu','Çınarcık','Çiftlikköy','Merkez','Termal'],
+  'Yozgat':['Akdağmadeni','Aydıncık','Boğazlıyan','Çandır','Çayıralan','Çekerek','Kadışehri','Merkez','Saraykent','Sarıkaya','Şefaatli','Sorgun','Yenifakılı','Yerköy'],
+  'Zonguldak':['Alaplı','Çaycuma','Devrek','Gökçebey','Kilimli','Kozlu','Merkez'],
 };
 
 function toggleManualAddress() {
@@ -1730,24 +1781,44 @@ async function onManualIlChange() {
   const il = document.getElementById('manualIl').value;
   const ilceSel = document.getElementById('manualIlce');
   if (!il) { ilceSel.innerHTML='<option value="">Önce il seçin</option>'; ilceSel.disabled=true; return; }
-  
-  ilceSel.disabled = true;
-  ilceSel.innerHTML = '<option value="">Yükleniyor...</option>';
+
+  const buildOptions = (ilceler) =>
+    '<option value="">İlçe seçin...</option>' +
+    ilceler.sort().map(i => `<option value="${i}">${i}</option>`).join('') +
+    '<option value="Diğer">Diğer</option>';
+
+  // Yerel listeyi anında göster
+  const local = ILCE_MAP[il] || [];
+  if (local.length) {
+    ilceSel.innerHTML = buildOptions(local);
+    ilceSel.disabled = false;
+  } else {
+    ilceSel.innerHTML = '<option value="">Yükleniyor...</option>';
+    ilceSel.disabled = true;
+  }
+
+  // API'den tam listeyi arka planda dene (5sn timeout)
   try {
-    const res = await fetch(`https://turkiyeapi.dev/api/v1/provinces?name=${il}`);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000);
+    const res = await fetch(
+      `https://turkiyeapi.dev/api/v1/provinces?name=${encodeURIComponent(il)}`,
+      { signal: ctrl.signal, cache: 'force-cache' }
+    );
+    clearTimeout(timer);
+    if (!res.ok) throw new Error('api_err');
     const data = await res.json();
-    let ilceler = [];
-    if (data && data.data && data.data[0] && data.data[0].districts) {
-      ilceler = data.data[0].districts.map(d => d.name).sort();
-    } else {
-      ilceler = ILCE_MAP[il] || ['Merkez'];
+    const apiList = data?.data?.[0]?.districts?.map(d => d.name) || [];
+    if (apiList.length > 0) {
+      ilceSel.innerHTML = buildOptions(apiList);
+      ilceSel.disabled = false;
     }
-    ilceSel.innerHTML = '<option value="">İlçe seçin...</option>' + ilceler.map(i => `<option value="${i}">${i}</option>`).join('') + '<option value="Diğer">Diğer</option>';
-    ilceSel.disabled = false;
   } catch(e) {
-    const fallback = ILCE_MAP[il] || ['Merkez'];
-    ilceSel.innerHTML = '<option value="">İlçe seçin...</option>' + fallback.map(i => `<option value="${i}">${i}</option>`).join('') + '<option value="Diğer">Diğer</option>';
-    ilceSel.disabled = false;
+    // Timeout veya hata — local zaten gösteriliyor
+    if (!local.length) {
+      ilceSel.innerHTML = '<option value="">İlçe bulunamadı</option><option value="Diğer">Diğer</option>';
+      ilceSel.disabled = false;
+    }
   }
 }
 
@@ -1904,7 +1975,7 @@ async function modLogout() {
   await sbc.auth.signOut(); isModLoggedIn=false; currentModUser=null; document.getElementById('modAuthScreen').style.display='flex'; document.getElementById('modPanelContent').style.display='none'; document.getElementById('modBadge').style.display='none'; document.getElementById('headerMaintenanceToggle').style.display='none'; pinMarkerLayers.forEach(l=>maps.main?.removeLayer(l)); pinMarkerLayers=[]; showToast('Çıkış yapıldı');
 }
 function switchModTab(tab) {
-  const TABS = ['sikayetler','tumPinler','onay','issManager'];
+  const TABS = ['sikayetler','tumPinler','issManager'];
   TABS.forEach(t => {
     const el = document.getElementById('modTab-' + t);
     const btn = document.getElementById('modTabBtn-' + t);
@@ -1912,9 +1983,8 @@ function switchModTab(tab) {
     if (btn) btn.classList.toggle('active', t === tab);
   });
   if (tab === 'tumPinler') loadAdminTable();
-  if (tab === 'sikayetler') loadRaporlar();
-  if (tab === 'onay') { loadSikayetler(); loadCustomIss(); }
-  if (tab === 'issManager') loadIssManager();
+  if (tab === 'sikayetler') { loadRaporlar(); loadSikayetler(); }
+  if (tab === 'issManager') { loadIssManager(); loadCustomIss(); }
 }
 
 async function loadCustomIss() {
@@ -2102,7 +2172,7 @@ async function renameIssInList(id, oldName) {
 }
 async function refreshModData() {
   // Aktif sekmeyi tespit et ve yenile
-  const TABS = ['sikayetler','tumPinler','onay','issManager'];
+  const TABS = ['sikayetler','tumPinler','issManager'];
   const activeTab = TABS.find(t => { const el = document.getElementById('modTab-'+t); return el && el.style.display !== 'none'; }) || 'tumPinler';
   switchModTab(activeTab);
   // Badge sayaçlarını güncelle (arka planda)
@@ -2827,12 +2897,19 @@ function uploadOnce(bytes, onLive) {
 }
 
 async function measureUpload(onLive) {
-  const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB chunks
-  const MEASURE_MS = 8500;
+  const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB
+  const WARMUP_SIZE = 512 * 1024;      // 512KB warmup — ilk bağlantı gecikmesini hesaba katma
+  const MEASURE_MS = 9000;
   const PARALLEL_STREAMS = 3;
-  const startedAt = performance.now();
-  const stopAt = startedAt + MEASURE_MS;
-  let totalBytes = 0, lastLiveBytes = 0, lastLiveAt = startedAt;
+  const stopAt = performance.now() + MEASURE_MS;
+  const samples = [];
+
+  // Warmup — TCP bağlantısı kurulsun, sonuçlarını sayma
+  try {
+    await fetch(`${SPEED_UPLOAD_URL}?t=wu_${Date.now()}`, {
+      method:'POST', mode:'no-cors', cache:'no-store', body: makeUploadBlob(WARMUP_SIZE)
+    });
+  } catch(e) {}
 
   async function uploadStream(n) {
     while (performance.now() < stopAt) {
@@ -2840,14 +2917,14 @@ async function measureUpload(onLive) {
       const blob = makeUploadBlob(CHUNK_SIZE);
       const t0 = performance.now();
       try {
-        await fetch(url, { method: 'POST', mode: 'no-cors', cache: 'no-store', body: blob });
-        const now = performance.now();
-        totalBytes += CHUNK_SIZE;
-        if (now - lastLiveAt >= 350) {
-          const instantMbps = Math.round(((totalBytes - lastLiveBytes) * 8) / ((now - lastLiveAt) / 1000) / 1e6);
-          if (instantMbps > 0 && onLive) onLive(instantMbps);
-          lastLiveBytes = totalBytes;
-          lastLiveAt = now;
+        await fetch(url, { method:'POST', mode:'no-cors', cache:'no-store', body: blob });
+        const elapsed = (performance.now() - t0) / 1000;
+        if (elapsed > 0.15) { // çok kısa = güvenilmez
+          const mbps = Math.round((CHUNK_SIZE * 8) / elapsed / 1e6);
+          if (mbps > 0 && mbps < 2500) {
+            samples.push(mbps);
+            if (onLive) onLive(mbps);
+          }
         }
       } catch(e) { break; }
     }
@@ -2855,9 +2932,13 @@ async function measureUpload(onLive) {
 
   try {
     await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => uploadStream(i)));
-    const elapsed = (performance.now() - startedAt) / 1000;
-    if (totalBytes < 100000 || elapsed <= 0) return null;
-    return Math.round((totalBytes * 8) / elapsed / 1e6);
+    if (!samples.length) return null;
+    // En yüksek ve en düşük %15'i at — outlier temizleme
+    samples.sort((a, b) => a - b);
+    const trim = Math.max(1, Math.floor(samples.length * 0.15));
+    const trimmed = samples.slice(trim, samples.length - trim);
+    const arr = trimmed.length ? trimmed : samples;
+    return Math.round(arr.reduce((a, b) => a + b, 0) / arr.length);
   } catch(e) { return null; }
 }
 
