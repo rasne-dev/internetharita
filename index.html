@@ -796,7 +796,10 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
         </div>
         <div class="fg">
           <div class="fl">Mahalle / Semt (opsiyonel)</div>
-          <input class="fi" type="text" id="manualMahalle" placeholder="Örn: Kavacık Mahallesi">
+          <select class="fs" id="manualMahalle" disabled style="display:none;">
+            <option value="">Önce ilçe seçin</option>
+          </select>
+          <input class="fi" type="text" id="manualMahalleText" placeholder="Mahalle adı yazın veya yukarıdan seçin" style="margin-top:4px;">
         </div>
         <button class="btn-ghost" style="font-size:11px;padding:8px;" onclick="applyManualAddress()">✅ Bu Adresi Kullan</button>
       </div>
@@ -1340,9 +1343,9 @@ function renderISSChips(list) {
       ${label}
     </div>`;
   });
-  chips.push(`<div class="chip chip-iss on" data-iss="Diğer" style="color:#6b7280;border-color:#6b7280;" onclick="toggleISSChip(this,'Diğer')">Diğer</div>`);
+  // "Diğer" chip filtreden kaldırıldı — sadece veri ekleme formunda gösteriliyor
   container.innerHTML = chips.join('');
-  // Dropdown'u da güncelle
+  // Dropdown'u da güncelle (Diğer seçeneği formda kalıyor)
   const sel = document.getElementById('issSelect');
   if (sel) {
     const cur = sel.value;
@@ -1524,6 +1527,7 @@ function toggleHexPinsList() {
         .map(p => {
           const c = ic(p.iss);
           const dlBand = p.gercek_dl >= 500 ? '500+' : p.gercek_dl >= 200 ? '200–500' : p.gercek_dl >= 100 ? '100–200' : p.gercek_dl >= 25 ? '25–100' : '<25';
+          const ulText = p.gercek_ul > 0 ? `↑ ${p.gercek_ul} Mbps` : '';
           return `<div class="hex-pin-item">
             <div class="hex-pin-header">
               <span class="hex-pin-iss" style="color:${c}">● ${p.iss}</span>
@@ -1531,6 +1535,7 @@ function toggleHexPinsList() {
             </div>
             <div class="hex-pin-speeds">
               ↓ <span style="color:${speedColor(p.gercek_dl)}">${dlBand} Mbps</span>
+              ${ulText ? `· <span style="color:var(--text3)">${ulText}</span>` : ''}
               · <span style="color:${memColor(p.puan)}">${p.puan}/10</span>
             </div>
           </div>`;
@@ -1587,19 +1592,39 @@ async function renderStats() {
     .map((x,i) => `<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${displayIssName(x.iss)}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.s)}">${x.s}</div></div>`)
     .join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok (min. 3 farklı kullanıcı gerekli)</div>';
   
-  // EN HIZLI LOKASYONLAR: FORMAT SABİTLENDİ
-  const lm = {}; pins.forEach(p=>{ const k=[p.il||'?',p.ilce||'?',p.mahalle||''].filter(Boolean).join('_'); if(!lm[k]) lm[k]={t:0,c:0,il:p.il,ilce:p.ilce,mahalle:p.mahalle,type:p.baglanti_turu}; lm[k].t+=p.gercek_dl; lm[k].c++; });
-  document.getElementById('speedRankList').innerHTML = Object.entries(lm).map(([k,d])=>({...d,dl:Math.round(d.t/d.c)})).sort((a,b)=>b.dl-a.dl).slice(0,8).map((x,i)=>{
-    let titleText = '';
-    if (x.il && x.ilce) titleText = `${x.il} / ${x.ilce}`;
-    else if (x.il) titleText = x.il;
-    else if (x.ilce) titleText = x.ilce;
-    else titleText = 'Bilinmeyen Konum';
-
-    const subText = (x.mahalle && x.mahalle !== 'Belirtilmemiş') ? x.mahalle : '';
-    
-    return `<div class="speed-item"><div><div class="speed-name"><span style="color:var(--text3);font-size:11px;margin-right:4px;">${i+1}.</span>${titleText}</div>${subText ? `<div class="speed-loc">${subText}</div>` : ''}</div><div class="speed-val" style="color:${speedColor(x.dl)}">${x.dl} Mbps</div></div>`;
-  }).join('');
+  // EN HIZLI LOKASYONLAR: sadece hız testi yapılmış pinler (gercek_ul > 0 = hız testi var)
+  const testedPins = pins.filter(p => p.gercek_ul > 0);
+  const lm = {};
+  testedPins.forEach(p => {
+    // il+ilce bazında grupla (mahalle farklılıkları aynı yeri böldüğü için dahil etme)
+    const k = [p.il||'?', p.ilce||'?'].join('_');
+    if (!lm[k]) lm[k] = { t:0, tul:0, c:0, il:p.il, ilce:p.ilce };
+    lm[k].t += p.gercek_dl;
+    lm[k].tul += p.gercek_ul || 0;
+    lm[k].c++;
+  });
+  const speedRankEl = document.getElementById('speedRankList');
+  if (!Object.keys(lm).length) {
+    speedRankEl.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz hız testi verisi yok</div>';
+  } else {
+    speedRankEl.innerHTML = Object.entries(lm)
+      .map(([k,d]) => ({ ...d, dl: Math.round(d.t/d.c), ul: Math.round(d.tul/d.c) }))
+      .sort((a,b) => b.dl - a.dl)
+      .slice(0, 8)
+      .map((x, i) => {
+        const title = (x.il && x.ilce) ? `${x.il} / ${x.ilce}` : x.il || x.ilce || 'Bilinmeyen';
+        return `<div class="speed-item">
+          <div>
+            <div class="speed-name"><span style="color:var(--text3);font-size:11px;margin-right:4px;">${i+1}.</span>${title}</div>
+            <div class="speed-loc" style="color:var(--text3);font-size:10px;">${x.c} ölçüm</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="speed-val" style="color:${speedColor(x.dl)}">↓ ${x.dl}</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);">↑ ${x.ul} Mbps</div>
+          </div>
+        </div>`;
+      }).join('');
+  }
   
   const cm={fiber:0,vdsl:0,adsl:0}; pins.forEach(p=>{if(cm[p.baglanti_turu]!==undefined) cm[p.baglanti_turu]++;});
   document.getElementById('connChart').innerHTML =[{l:'Fiber',v:cm.fiber,c:'#00d4ff'},{l:'VDSL',v:cm.vdsl,c:'#FB8C00'},{l:'ADSL',v:cm.adsl,c:'#E53935'}].map(t=>`<div class="ct-row"><div class="ct-label">${t.l}</div><div class="ct-track"><div class="ct-fill" style="width:${pins.length?(t.v/pins.length*100).toFixed(0):0}%;background:${t.c}"></div></div><div class="ct-pct">${pins.length?(t.v/pins.length*100).toFixed(0):0}%</div></div>`).join('');
@@ -2097,7 +2122,7 @@ async function loadIssManager() {
       if (!name) return;
       issCountMap[name] = (issCountMap[name] || 0) + 1;
     });
-    list.innerHTML = items.map(item => {
+    list.innerHTML = items.map((item, idx) => {
       const c = item.color || issHashColor(item.name);
       const isInactive = item.active === false;
       const hasData = visibleIssNames.has(canonicalIssName(item.name));
@@ -2107,8 +2132,14 @@ async function loadIssManager() {
         : !hasData
           ? `<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(245,158,11,.12);border:1px solid var(--warn);color:var(--warn);font-family:var(--font-mono);font-weight:700;" title="Bu ISS'e ait haritada görünen onaylı pin yok">VERİ YOK</span>`
           : `<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(34,197,94,.1);border:1px solid var(--success);color:var(--success);font-family:var(--font-mono);font-weight:700;">AKTİF</span>`;
+      const isFirst = idx === 0;
+      const isLast = idx === items.length - 1;
       return `<div class="mod-card" id="issrow_${item.id}" style="margin-bottom:6px;padding:10px 12px;${isInactive?'opacity:0.55;':''}">
-        <div style="display:flex;align-items:center;gap:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="display:flex;flex-direction:column;gap:1px;flex-shrink:0;">
+            <button onclick="reorderIss(${item.id},${idx},'up')" ${isFirst?'disabled':''} style="padding:0 4px;height:14px;font-size:9px;line-height:1;background:var(--surface3);border:1px solid var(--border2);border-radius:3px;cursor:pointer;color:${isFirst?'var(--text3)':'var(--text2)'};opacity:${isFirst?0.3:1}">▲</button>
+            <button onclick="reorderIss(${item.id},${idx},'down')" ${isLast?'disabled':''} style="padding:0 4px;height:14px;font-size:9px;line-height:1;background:var(--surface3);border:1px solid var(--border2);border-radius:3px;cursor:pointer;color:${isLast?'var(--text3)':'var(--text2)'};opacity:${isLast?0.3:1}">▼</button>
+          </div>
           <div style="width:10px;height:10px;border-radius:50%;background:${c};flex-shrink:0;"></div>
           <div style="flex:1;font-size:12px;font-weight:600;color:var(--text);">${item.name}</div>
           <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);">${pinCount} pin</span>
@@ -2163,6 +2194,30 @@ async function removeIssFromList(id, name) {
     await loadIssListAndRenderChips();
     showToast(`🗑 "${name}" listeden kaldırıldı`);
   } catch(e) { showToast('Hata: '+e.message,'err'); }
+}
+
+async function reorderIss(id, idx, dir) {
+  try {
+    const items = await getIssList() || [];
+    const swapIdx = dir === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= items.length) return;
+    // sort_order null ise önce tüm listeye sıralı değer ata
+    const needsInit = items.some(i => i.sort_order == null);
+    if (needsInit) {
+      await Promise.all(items.map((item, i) => patchIss(item.id, { sort_order: i })));
+      // Güncel listeyi tekrar al
+      const fresh = await getIssList() || [];
+      const a = fresh[idx];
+      const b = fresh[swapIdx];
+      await Promise.all([patchIss(a.id, { sort_order: b.sort_order }), patchIss(b.id, { sort_order: a.sort_order })]);
+    } else {
+      const a = items[idx];
+      const b = items[swapIdx];
+      await Promise.all([patchIss(a.id, { sort_order: b.sort_order }), patchIss(b.id, { sort_order: a.sort_order })]);
+    }
+    await loadIssListAndRenderChips();
+    loadIssManager();
+  } catch(e) { showToast('Sıralama hatası: ' + e.message, 'err'); }
 }
 
 async function renameIssInList(id, oldName) {
@@ -2622,7 +2677,7 @@ function toggleAllISSChips() {
   const chips = document.querySelectorAll('#issChips .chip-iss');
   const allOn = [...chips].every(c => c.classList.contains('on'));
   chips.forEach(chip => {
-    const name = canonicalIssName(chip.dataset.iss || '');
+    const name = chip.dataset.iss || '';
     if (!name) return;
     if (allOn) { chip.classList.remove('on'); activeISSFilters.delete(name); }
     else { chip.classList.add('on'); activeISSFilters.add(name); }
