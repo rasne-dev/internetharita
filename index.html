@@ -977,7 +977,34 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
         <div id="issManagerList"><div class="loading-dots">Yükleniyor</div></div>
       </div>
 
-    </div><!-- /modTab-issManager -->
+      <!-- Hız Sıralaması Düzenle -->
+      <div class="mod-section" style="margin-top:16px;">
+        <div class="mod-section-title">⚡ En Hızlı Lokasyonlar — Moderatör Görünümü</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">
+          Otomatik sıralama yalnızca yerleşik hız testi yapılmış pinleri içerir. Aşağıdaki pinlerin <b style="color:var(--success)">speed_test_verified</b> durumunu değiştirebilirsiniz.
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+          <input type="text" class="fi" id="speedRankSearch" placeholder="İl veya ilçe ara..." style="flex:1;min-width:140px;" oninput="loadSpeedRankEditor(this.value)">
+          <button class="btn-ghost" onclick="loadSpeedRankEditor('')">🔄 Tümünü Getir</button>
+        </div>
+        <div class="mod-table-wrap">
+          <table class="mod-table">
+            <thead>
+              <tr>
+                <th>Lokasyon</th>
+                <th>İSS</th>
+                <th>↓ DL</th>
+                <th>↑ UL</th>
+                <th>Hız Testi</th>
+                <th>İşlem</th>
+              </tr>
+            </thead>
+            <tbody id="speedRankEditorBody">
+              <tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px;">Aramak için filtreleyin</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
   </div>
 </div>
@@ -1060,6 +1087,9 @@ const SB_URL = 'https://vpnaxxxoiomorcvloend.supabase.co';
 const SB_KEY = 'sb_publishable_4LErt91-jMdX3WiaDyBPcw_KMQ0sU-r';
 const { createClient } = supabase;
 const sbc = createClient(SB_URL, SB_KEY);
+/* ── DB MİGRASYON (Supabase SQL Editor'da bir kez çalıştır) ──────────────────
+   ALTER TABLE pins ADD COLUMN IF NOT EXISTS speed_test_verified boolean DEFAULT null;
+   ──────────────────────────────────────────────────────────────────────────── */
 
 let isMaintenanceMode = false;
 let browserFingerprint = null;
@@ -1597,8 +1627,8 @@ async function renderStats() {
     .map((x,i) => `<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${displayIssName(x.iss)}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.s)}">${x.s}</div></div>`)
     .join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok (min. 3 farklı kullanıcı gerekli)</div>';
   
-  // EN HIZLI LOKASYONLAR: sadece hız testi yapılmış pinler (gercek_ul > 0 = hız testi var)
-  const testedPins = pins.filter(p => p.gercek_ul > 0);
+  // EN HIZLI LOKASYONLAR: speed_test_verified=true olanlar, yoksa gercek_ul>0 fallback
+  const testedPins = pins.filter(p => p.speed_test_verified === true || (p.speed_test_verified == null && p.gercek_ul > 0));
   const lm = {};
   testedPins.forEach(p => {
     // il+ilce bazında grupla (mahalle farklılıkları aynı yeri böldüğü için dahil etme)
@@ -1816,7 +1846,7 @@ function toggleManualAddress() {
 
 function populateIlSelect() {
   const sel = document.getElementById('manualIl');
-  const iller = Object.keys(IL_COORDS).sort();
+  const iller = Object.keys(IL_COORDS).sort((a,b) => a.localeCompare(b,'tr'));
   sel.innerHTML = '<option value="">İl seçin...</option>' + iller.map(il => `<option value="${il}">${il}</option>`).join('');
 }
 
@@ -1967,7 +1997,7 @@ async function submitPin() {
   const f = fuzzy(pinLat, pinLng);
   btn.textContent='Gönderiliyor...';
   try {
-    await addPin({ lat:f.lat, lng:f.lng, il:document.getElementById('ilInput').value||null, ilce:document.getElementById('ilceInput').value||null, mahalle:document.getElementById('mahalleInput').value||null, iss: finalIss, baglanti_turu:selConnVal, altyapi_sahibi:document.getElementById('infraSelect').value||null, paket_hizi:parseInt(document.getElementById('packageSpeed').value)||null, gercek_dl:dl, gercek_ul:ul, puan:selScoreVal, yorum:document.getElementById('commentInput').value||null, browser_fp: browserFingerprint || null, ip_hash: browserFingerprint ? 'fp_' + browserFingerprint.slice(0,8) : null, gorunur: !quarantine, sikayet_sayisi: 0, is_quarantine: quarantine, custom_iss: isCustomIss ? true : null });
+    await addPin({ lat:f.lat, lng:f.lng, il:document.getElementById('ilInput').value||null, ilce:document.getElementById('ilceInput').value||null, mahalle:document.getElementById('mahalleInput').value||null, iss: finalIss, baglanti_turu:selConnVal, altyapi_sahibi:document.getElementById('infraSelect').value||null, paket_hizi:parseInt(document.getElementById('packageSpeed').value)||null, gercek_dl:dl, gercek_ul:ul, puan:selScoreVal, yorum:document.getElementById('commentInput').value||null, browser_fp: browserFingerprint || null, ip_hash: browserFingerprint ? 'fp_' + browserFingerprint.slice(0,8) : null, gorunur: !quarantine, sikayet_sayisi: 0, is_quarantine: quarantine, custom_iss: isCustomIss ? true : null, speed_test_verified: true });
     markSubmit(); 
     if (quarantine) {
       const reason = outlier ? '⚠ Bölge ortalamasından sapma' : rateQuarantine ? '⚠ Hızlı giriş algılandı' : '⚠ Verini aldık';
@@ -2271,11 +2301,13 @@ function issDragEnd(e) {
 async function issDrop(e, targetId) {
   e.preventDefault();
   e.currentTarget.classList.remove('drag-over');
-  if (_dragSrcId === null || _dragSrcId === targetId) return;
+  const srcId = parseInt(_dragSrcId);
+  const tgtId = parseInt(targetId);
+  if (!srcId || !tgtId || srcId === tgtId) return;
   try {
     const items = await getIssList() || [];
-    const srcIdx = items.findIndex(i => i.id === _dragSrcId);
-    const tgtIdx = items.findIndex(i => i.id === targetId);
+    const srcIdx = items.findIndex(i => i.id === srcId);
+    const tgtIdx = items.findIndex(i => i.id === tgtId);
     if (srcIdx === -1 || tgtIdx === -1) return;
     // sort_order null ise önce tüm listeye sıralı değer ata
     const needsInit = items.some(i => i.sort_order == null);
@@ -2289,13 +2321,60 @@ async function issDrop(e, targetId) {
     const srcOrder = fresh[srcIdx].sort_order;
     const tgtOrder = fresh[tgtIdx].sort_order;
     await Promise.all([
-      patchIss(_dragSrcId, { sort_order: tgtOrder }),
-      patchIss(targetId, { sort_order: srcOrder })
+      patchIss(srcId, { sort_order: tgtOrder }),
+      patchIss(tgtId, { sort_order: srcOrder })
     ]);
     _dragSrcId = null;
     await loadIssListAndRenderChips();
     loadIssManager();
   } catch(e) { showToast('Sıralama hatası: ' + e.message, 'err'); }
+}
+
+async function loadSpeedRankEditor(search) {
+  const tbody = document.getElementById('speedRankEditorBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" class="loading-dots">Yükleniyor</td></tr>';
+  try {
+    const pins = await getAllPinsAdmin() || [];
+    let filtered = pins.filter(p => p.gorunur !== false && !p.is_quarantine);
+    if (search) {
+      const s = search.toLowerCase();
+      filtered = filtered.filter(p => (p.il||'').toLowerCase().includes(s) || (p.ilce||'').toLowerCase().includes(s));
+    }
+    filtered = filtered.sort((a,b) => (b.gercek_dl||0) - (a.gercek_dl||0)).slice(0, 50);
+    tbody.innerHTML = filtered.map(p => {
+      const loc = [p.il, p.ilce].filter(Boolean).join(' / ') || 'Bilinmiyor';
+      const isVerified = p.speed_test_verified === true || (p.speed_test_verified == null && (p.gercek_ul||0) > 0);
+      const verifiedBadge = isVerified
+        ? `<span style="color:var(--success);font-family:var(--font-mono);font-size:9px;font-weight:700;">✅ Doğrulanmış</span>`
+        : `<span style="color:var(--danger);font-family:var(--font-mono);font-size:9px;font-weight:700;">❌ Manuel Giriş</span>`;
+      return `<tr>
+        <td>${loc}</td>
+        <td style="font-size:11px;">${p.iss||'—'}</td>
+        <td style="color:${speedColor(p.gercek_dl)};font-family:var(--font-mono);">${p.gercek_dl}</td>
+        <td style="color:var(--text3);font-family:var(--font-mono);">${p.gercek_ul||0}</td>
+        <td>${verifiedBadge}</td>
+        <td style="display:flex;gap:4px;">
+          ${isVerified
+            ? `<button class="btn-del" style="padding:3px 8px;font-size:10px;" onclick="toggleSpeedTestVerified('${p.id}',false)" title="Doğrulamayı kaldır">✕</button>`
+            : `<button class="btn-approve" style="padding:3px 8px;font-size:10px;" onclick="toggleSpeedTestVerified('${p.id}',true)" title="Doğrulanmış işaretle">✓</button>`
+          }
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:16px;">Sonuç yok</td></tr>';
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger);">Hata: ${e.message}</td></tr>`;
+  }
+}
+
+async function toggleSpeedTestVerified(id, verified) {
+  try {
+    await patchPin(id, { speed_test_verified: verified });
+    showToast(verified ? '✅ Doğrulanmış işaretlendi' : '❌ Doğrulama kaldırıldı');
+    loadSpeedRankEditor(document.getElementById('speedRankSearch')?.value || '');
+    // İstatistikleri yenile
+    if (cleanPinsData.length) renderStats();
+  } catch(e) { showToast('Hata: ' + e.message, 'err'); }
 }
 
 async function renameIssInList(id, oldName) {
