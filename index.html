@@ -346,6 +346,7 @@ html.light .map-info-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15
 .speedtest-btn.use:hover { background:rgba(34,197,94,.25); }
 .btn-run-speedtest { display:flex; align-items:center; justify-content:center; gap:6px; padding:9px 14px; background:rgba(0,212,255,.08); border:1px solid rgba(0,212,255,.3); color:var(--accent); border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; font-family:var(--font-body); transition:all .2s; width:100%; margin-bottom:6px; }
 .btn-run-speedtest:hover { background:rgba(0,212,255,.15); }
+.btn-run-speedtest:disabled { opacity:.45; cursor:not-allowed; box-shadow:none; }
 .verified-badge { display:none; align-items:center; gap:5px; font-size:10px; color:var(--success); font-family:var(--font-mono); font-weight:700; margin-top:4px; }
 .verified-badge.show { display:flex; }
 .verified-tick { width:14px; height:14px; border-radius:50%; background:var(--success); color:#fff; display:flex; align-items:center; justify-content:center; font-size:8px; flex-shrink:0; }
@@ -401,6 +402,16 @@ html.light .sr-ping { background:#f5f7fa; }
 .hex-pin-iss { font-weight:700; font-family:var(--font-mono); font-size:10px; }
 .hex-pin-date { font-size:9px; color:var(--text3); }
 .hex-pin-speeds { font-family:var(--font-mono); font-size:10px; color:var(--text2); }
+.hex-pin-item.own { border-color: var(--accent); background: rgba(0, 212, 255, 0.04); }
+.own-pin-badge { font-size: 8px; font-weight: bold; background: var(--accent); color: #000; padding: 1px 4px; border-radius: 4px; font-family: var(--font-mono); text-transform: uppercase; margin-left: 6px; }
+.user-pin-actions { display: flex; gap: 8px; margin-top: 6px; padding-top: 5px; border-top: 1px dashed var(--border); }
+.user-pin-action { font-size: 9px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-family: var(--font-mono); display: inline-flex; align-items: center; }
+.user-pin-action.edit { color: var(--accent); }
+.user-pin-action.edit:hover { text-decoration: underline; }
+.user-pin-action.del { color: var(--danger); }
+.user-pin-action.del:hover { text-decoration: underline; }
+.user-pin-action.report { color: var(--text3); }
+.user-pin-action.report:hover { color: var(--warn); text-decoration: underline; }
 .hex-pins-toggle { width:100%; padding:6px; margin-top:6px; background:none; border:1px solid var(--border); border-radius:7px; color:var(--text3); font-size:10px; cursor:pointer; transition:all .2s; font-family:var(--font-body); }
 .hex-pins-toggle:hover { border-color:var(--accent); color:var(--accent); }
 /* ===== TREND CHART (yatay) ===== */
@@ -831,8 +842,8 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
         <button class="btn-run-speedtest" onclick="openSpeedTestModal()">⚡ Hız Testi Yap — Otomatik Doldur</button>
         <div style="font-size:9px;color:var(--text3);text-align:center;margin-top:-2px;">📡 Kablolu veya 5 GHz Wi-Fi bağlantısı daha doğru sonuç verir</div>
         <div class="speed-row">
-          <div class="fiu"><input type="number" placeholder="—" id="dlSpeed" readonly><span class="fiu-unit">↓ DL</span></div>
-          <div class="fiu"><input type="number" placeholder="—" id="ulSpeed" readonly><span class="fiu-unit">↑ UL</span></div>
+          <div class="fiu"><input type="number" placeholder="—" id="dlSpeed" readonly min="0" step="1"><span class="fiu-unit">↓ DL</span></div>
+          <div class="fiu"><input type="number" placeholder="—" id="ulSpeed" readonly min="0" step="1"><span class="fiu-unit">↑ UL</span></div>
         </div>
         <div class="verified-badge" id="speedVerifiedBadge"><div class="verified-tick">✓</div><span>Sayfa içi test ile ölçüldü — Doğrulanmış</span></div>
         <div style="font-size:9px;color:var(--text3);margin-top:3px;font-family:var(--font-body);">Hız testi yapılmadan form gönderilemez. Verinin güvenilirliği için zorunludur.</div>
@@ -981,11 +992,14 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
       <div class="mod-section" style="margin-top:16px;">
         <div class="mod-section-title">⚡ En Hızlı Lokasyonlar — Moderatör Görünümü</div>
         <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">
-          Otomatik sıralama yalnızca yerleşik hız testi yapılmış pinleri içerir. Aşağıdaki pinlerin <b style="color:var(--success)">speed_test_verified</b> durumunu değiştirebilirsiniz.
+          İstatistikler sayfasındaki "En Hızlı Lokasyonlar" listesini buradan yönetin.<br>
+          <b style="color:var(--accent)">✓ Ekle</b> basılan pinler sıralamaya girer · <b style="color:var(--danger)">✕ Çıkar</b> ile sıralamadan çıkarılır.<br>
+          <span style="color:var(--text3);">Yerleşik hız testi kullanan pinler otomatik olarak sıralamaya eklenir. Diğerleri için manuel olarak işaretleyebilirsiniz.</span>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
           <input type="text" class="fi" id="speedRankSearch" placeholder="İl veya ilçe ara..." style="flex:1;min-width:140px;" oninput="loadSpeedRankEditor(this.value)">
-          <button class="btn-ghost" onclick="loadSpeedRankEditor('')">🔄 Tümünü Getir</button>
+          <button class="btn-ghost" onclick="loadSpeedRankEditor(document.getElementById('speedRankSearch').value||'')">🔄 Yenile</button>
+          <button class="btn-approve" style="padding:5px 12px;" onclick="document.getElementById('speedRankSearch').value='';loadSpeedRankEditor('')">Tümünü Getir</button>
         </div>
         <div class="mod-table-wrap">
           <table class="mod-table">
@@ -1008,8 +1022,9 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
 
   </div>
 </div>
+</div>
 
-<div class="modal-bg" id="reportModal">
+<div class="modal-bg" id="reportModal" onclick="if(event.target===this)closeReportModal()">
   <div class="modal">
     <span class="modal-close" onclick="closeReportModal()">×</span>
     <div class="modal-title">🚩 Bölge/Veri Bildir</div>
@@ -1019,7 +1034,7 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
     <input type="hidden" id="reportPinId"><input type="hidden" id="reportHexId"><input type="hidden" id="reportBolge">
     <div class="fg" style="margin-bottom:10px;">
       <div class="fl">Bildirim Türü</div>
-      <select class="fs" id="reportType"><option value="yanlis_hiz">Hız verisi yanlış</option><option value="yanlis_konum">Konum yanlış</option><option value="yanlis_iss">İSS bilgisi yanlış</option><option value="spam">Spam / sahte veri</option><option value="diger">Diğer</option></select>
+      <select class="fs" id="reportType"><option value="yanlis_hiz">Hız verisi yanlış</option><option value="yanlis_konum">Konum yanlış</option><option value="yanlis_iss">İSS bilgisi yanlış</option><option value="spam">Spam / sahte veri</option><option value="guncelleme">Altyapı değişti / Bilgi güncelleme (örn. Fiber geldi)</option><option value="diger">Diğer</option></select>
     </div>
     <div class="fg" style="margin-bottom:16px;"><div class="fl">Açıklama (opsiyonel)</div><textarea class="fta" id="reportText" placeholder="Neyin yanlış olduğunu açıklayın..."></textarea></div>
     <button class="btn-primary" style="width:100%;padding:11px;" onclick="submitReport()">Bildirimi Gönder</button>
@@ -1063,6 +1078,54 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
   </div>
 </div>
 
+<div class="modal-bg" id="userEditModal">
+  <div class="modal" style="max-width:440px;">
+    <span class="modal-close" onclick="closeUserEditModal()">×</span>
+    <div class="modal-title">✏️ Ölçümümü Güncelle</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">Ölçüm verilerinizi güncelleyin. Altyapı değişikliklerini (örneğin Fiber'e geçiş) buradan yansıtabilirsiniz.</div>
+    <input type="hidden" id="userEditPinId">
+    
+    <div class="fg" style="margin-bottom:10px;">
+      <div class="fl">Bağlantı Türü</div>
+      <div class="cbtns" id="userEditConnWrap">
+        <div class="cbtn fiber" id="userEditConn-fiber" onclick="selConnUserEdit(this,'fiber')">Fiber</div>
+        <div class="cbtn vdsl" id="userEditConn-vdsl" onclick="selConnUserEdit(this,'vdsl')">VDSL</div>
+        <div class="cbtn adsl" id="userEditConn-adsl" onclick="selConnUserEdit(this,'adsl')">ADSL</div>
+      </div>
+    </div>
+    
+    <div class="fg" style="margin-bottom:10px;">
+      <div class="fl">Paket Hızı (Mbps)</div>
+      <div class="fiu"><input type="number" placeholder="100" id="userEditPkg"><span class="fiu-unit">Mbps</span></div>
+    </div>
+    
+    <div class="fg" style="margin-bottom:10px;">
+      <div class="fl">Gerçek Hız (Ölçülen)</div>
+      <button class="btn-run-speedtest" onclick="openSpeedTestForUserEdit()">⚡ Yeni Hız Testi Yap</button>
+      <div class="speed-row" style="margin-top:6px;">
+        <div class="fiu"><input type="number" placeholder="—" id="userEditDL" readonly min="0"><span class="fiu-unit">↓ DL</span></div>
+        <div class="fiu"><input type="number" placeholder="—" id="userEditUL" readonly min="0"><span class="fiu-unit">↑ UL</span></div>
+      </div>
+      <div class="verified-badge" id="userEditSpeedVerifiedBadge"><div class="verified-tick">✓</div><span>Sayfa içi test ile ölçüldü — Doğrulanmış</span></div>
+    </div>
+    
+    <div class="fg" style="margin-bottom:10px;">
+      <div class="fl">Memnuniyet Puanı (1–10)</div>
+      <div class="score-row" id="userEditScoreRow"></div>
+    </div>
+    
+    <div class="fg" style="margin-bottom:16px;">
+      <div class="fl">Kısa Yorum (opsiyonel)</div>
+      <textarea class="fta" placeholder="Fiber'e geçişten sonra çok iyi oldu..." id="userEditComment"></textarea>
+    </div>
+    
+    <div style="display:flex;gap:8px;">
+      <button class="btn-primary" style="flex:1;padding:11px;" onclick="saveUserEdit()">💾 Güncelle</button>
+      <button class="btn-ghost" style="padding:11px 16px;" onclick="closeUserEditModal()">İptal</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="addIssModal">
   <div class="modal" style="max-width:340px;">
     <span class="modal-close" onclick="closeAddIssModal()">×</span>
@@ -1088,7 +1151,8 @@ const SB_KEY = 'sb_publishable_4LErt91-jMdX3WiaDyBPcw_KMQ0sU-r';
 const { createClient } = supabase;
 const sbc = createClient(SB_URL, SB_KEY);
 /* ── DB MİGRASYON (Supabase SQL Editor'da bir kez çalıştır) ──────────────────
-   ALTER TABLE pins ADD COLUMN IF NOT EXISTS speed_test_verified boolean DEFAULT null;
+   ALTER TABLE pins ADD COLUMN IF NOT EXISTS speed_test_verified boolean DEFAULT false;
+   CREATE INDEX IF NOT EXISTS idx_pins_speed_test_verified ON pins (speed_test_verified) WHERE deleted_at IS NULL;
    ──────────────────────────────────────────────────────────────────────────── */
 
 let isMaintenanceMode = false;
@@ -1119,7 +1183,8 @@ async function sbRest(path, opts = {}) {
     'apikey': SB_KEY,
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
-    'Prefer': opts.prefer || 'return=representation'
+    'Prefer': opts.prefer || 'return=representation',
+    'X-Browser-FP': browserFingerprint || ''
   };
   const r = await fetch(`${SB_URL}/rest/v1/${path}`, { headers, method: opts.method || 'GET', body: opts.body });
   if (opts.method === 'DELETE' || (opts.method === 'PATCH' && opts.prefer?.includes('minimal'))) {
@@ -1138,7 +1203,7 @@ const getPinById = async id => { const res = await sbRest(`pins?id=eq.${id}&sele
 const addPin = d => sbRest('pins', { method:'POST', body:JSON.stringify(d) });
 const patchPin = (id,d) => sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
 const delPin = id => sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body: JSON.stringify({ deleted_at: new Date().toISOString() }) });
-const hardDelPin = id => sbRest(`pins?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' });
+const hardDelPin = id => delPin(id); // Kullanıcı verisini koru: kalıcı silme yerine soft delete.
 const getRaporlar = () => sbRest('raporlar?select=*&durum=eq.bekleyen&order=created_at.desc&limit=100');
 const addRapor = d => sbRest('raporlar', { method:'POST', body:JSON.stringify(d) });
 const patchRapor = (id,d) => sbRest(`raporlar?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
@@ -1520,7 +1585,7 @@ function renderModPins() {
           ${p.yorum ? `<div class="user-comment-box">${p.yorum}</div>` : ''}
           ${p.mod_notu ? `<div class="mod-note-box">${p.mod_notu}</div>` : ''}
         </div>
-        <div class="popup-actions"><div class="popup-btn btn-edit" onclick="openEditModal('${p.id}')">✏️ Düzenle</div><div class="popup-btn popup-del" onclick="modDeletePin('${p.id}')">🗑 Sil</div></div>
+        <div class="popup-actions"><div class="popup-btn btn-edit" onclick="openEditModal('${p.id}')">✏️ Düzenle</div><div class="popup-btn popup-report" onclick="openReportModal('${p.id}','${(p.il||'')+(p.ilce?' › '+p.ilce:'')}')">🚩 Bildir</div><div class="popup-btn popup-del" onclick="modDeletePin('${p.id}')">🗑 Sil</div></div>
       </div>`, {maxWidth:280});
     pinMarkerLayers.push(m);
   });
@@ -1563,9 +1628,24 @@ function toggleHexPinsList() {
           const c = ic(p.iss);
           const dlBand = p.gercek_dl >= 500 ? '500+' : p.gercek_dl >= 200 ? '200–500' : p.gercek_dl >= 100 ? '100–200' : p.gercek_dl >= 25 ? '25–100' : '<25';
           const ulText = p.gercek_ul > 0 ? `↑ ${p.gercek_ul} Mbps` : '';
-          return `<div class="hex-pin-item">
+          
+          const isOwnPin = browserFingerprint && p.browser_fp === browserFingerprint;
+          const ownPinBadge = isOwnPin ? `<span class="own-pin-badge">Senin Ölçümün</span>` : '';
+          const actions = isOwnPin ? `
+            <div class="user-pin-actions">
+              <span class="user-pin-action edit" onclick="event.stopPropagation(); openUserEditModal('${p.id}')">✏️ Düzenle</span>
+              <span class="user-pin-action del" onclick="event.stopPropagation(); deleteUserPin('${p.id}')">🗑 Sil</span>
+            </div>
+          ` : `
+            <div class="user-pin-actions">
+              <span class="user-pin-action report" onclick="event.stopPropagation(); openReportModal('${p.id}', '${p.iss} - ${(p.baglanti_turu||'').toUpperCase()} (${dlBand} Mbps)')">🚩 Bildir</span>
+            </div>
+          `;
+          
+          return `<div class="hex-pin-item ${isOwnPin ? 'own' : ''}">
             <div class="hex-pin-header">
               <span class="hex-pin-iss" style="color:${c}">● ${p.iss}</span>
+              ${ownPinBadge}
               <span style="font-size:9px;color:var(--text3)">${(p.baglanti_turu||'').toUpperCase()}</span>
             </div>
             <div class="hex-pin-speeds">
@@ -1573,6 +1653,7 @@ function toggleHexPinsList() {
               ${ulText ? `· <span style="color:var(--text3)">${ulText}</span>` : ''}
               · <span style="color:${memColor(p.puan)}">${p.puan}/10</span>
             </div>
+            ${actions}
           </div>`;
         }).join('');
     }
@@ -1627,8 +1708,8 @@ async function renderStats() {
     .map((x,i) => `<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${displayIssName(x.iss)}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.s)}">${x.s}</div></div>`)
     .join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok (min. 3 farklı kullanıcı gerekli)</div>';
   
-  // EN HIZLI LOKASYONLAR: speed_test_verified=true olanlar, yoksa gercek_ul>0 fallback
-  const testedPins = pins.filter(p => p.speed_test_verified === true || (p.speed_test_verified == null && p.gercek_ul > 0));
+  // EN HIZLI LOKASYONLAR: sadece yerleşik hız testiyle doğrulanmış ölçümler
+  const testedPins = pins.filter(p => p.speed_test_verified === true);
   const lm = {};
   testedPins.forEach(p => {
     // il+ilce bazında grupla (mahalle farklılıkları aynı yeri böldüğü için dahil etme)
@@ -1718,11 +1799,99 @@ function initPinMap() {
     if(container) ro.observe(container);
   }
 }
+function normalizeTurkish(str) {
+  if (!str) return '';
+  return str.toString().toLowerCase()
+    .replace(/ı/g, 'i')
+    .replace(/ş/g, 's')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c')
+    .trim();
+}
+
+function findProvince(a) {
+  const fields = [a.province, a.state, a.city, a.region, a.county];
+  for (const val of fields) {
+    if (!val) continue;
+    const clean = val.replace(/il[iı]?$/i, '').replace(/\s+province$/i, '').trim();
+    const norm = normalizeTurkish(clean);
+    for (const prov of Object.keys(IL_COORDS)) {
+      const normProv = normalizeTurkish(prov);
+      if (norm === normProv) return prov;
+      if (prov === 'İçel (Mersin)' && (norm === 'mersin' || norm === 'icel')) return prov;
+      if (prov === 'Afyonkarahisar' && norm === 'afyon') return prov;
+    }
+  }
+  return a.province || a.state || a.city || '';
+}
+
+function findDistrict(a, matchedIl) {
+  const candidates = [
+    a.county,
+    a.district,
+    a.city_district,
+    a.town,
+    a.city,
+    a.suburb,
+    a.borough,
+    a.neighbourhood
+  ].filter(Boolean);
+  
+  if (matchedIl && ILCE_MAP[matchedIl]) {
+    const districts = ILCE_MAP[matchedIl];
+    for (const cand of candidates) {
+      const cleanCand = cand.replace(/ilçe[sş]i$/i, '').replace(/\s+district$/i, '').trim();
+      const normCand = normalizeTurkish(cleanCand);
+      for (const dist of districts) {
+        if (normalizeTurkish(dist) === normCand) {
+          return dist;
+        }
+      }
+    }
+  }
+  
+  for (const cand of candidates) {
+    const cleanCand = cand.replace(/ilçe[sş]i$/i, '').replace(/\s+district$/i, '').trim();
+    if (cleanCand) return cleanCand;
+  }
+  return '';
+}
+
+function findNeighbourhood(a, matchedIlce) {
+  const candidates = [
+    a.neighbourhood,
+    a.suburb,
+    a.village,
+    a.hamlet,
+    a.quarter
+  ].filter(Boolean);
+  
+  const normIlce = matchedIlce ? normalizeTurkish(matchedIlce) : '';
+  for (const cand of candidates) {
+    const normCand = normalizeTurkish(cand);
+    if (normCand === normIlce) continue;
+    return cand.trim();
+  }
+  return '';
+}
+
 async function setLocation(lat, lng) {
   pinLat=lat; pinLng=lng; if(pinMarker) maps.pin.removeLayer(pinMarker);
   pinMarker = L.circle([lat,lng],{radius:100,color:'#00d4ff',fillColor:'#00d4ff',fillOpacity:.12,weight:2}).addTo(maps.pin);
   document.getElementById('locDot').classList.add('set'); document.getElementById('locText').textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-  try { const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=tr`); const d = await r.json(); const a = d.address||{}; document.getElementById('ilInput').value = a.province||a.state||a.city||''; document.getElementById('ilceInput').value = a.county||a.district||a.town||''; document.getElementById('mahalleInput').value = a.suburb||a.neighbourhood||a.village||''; } catch(e) {}
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=tr`);
+    const d = await r.json();
+    const a = d.address||{};
+    const resolvedIl = findProvince(a);
+    const resolvedIlce = findDistrict(a, resolvedIl);
+    const resolvedMahalle = findNeighbourhood(a, resolvedIlce);
+    document.getElementById('ilInput').value = resolvedIl;
+    document.getElementById('ilceInput').value = resolvedIlce;
+    document.getElementById('mahalleInput').value = resolvedMahalle;
+  } catch(e) {}
 }
 function autoLocate() { if (!navigator.geolocation) return showToast('Konum desteklenmiyor','err'); showToast('Konum alınıyor...','warn'); navigator.geolocation.getCurrentPosition(pos => { maps.pin.setView([pos.coords.latitude,pos.coords.longitude],15); setLocation(pos.coords.latitude,pos.coords.longitude); }, err => showToast('Konum alınamadı: '+err.message,'err'), { enableHighAccuracy:true, timeout:10000 }); }
 
@@ -1963,8 +2132,9 @@ async function submitPin() {
   if (!selConnVal) return showToast('Bağlantı türü seçin','err');
   const dl = parseInt(document.getElementById('dlSpeed').value);
   const ul = parseInt(document.getElementById('ulSpeed').value) || 0;
+  const speedVerified = document.getElementById('speedVerifiedBadge').classList.contains('show');
   if (!dl) return showToast('Önce hız testi yapın — "⚡ Hız Testi Yap" butonuna basın','err');
-  if (!document.getElementById('speedVerifiedBadge').classList.contains('show')) return showToast('Hız testi tamamlanmadan veri gönderilemez','err');
+  if (!speedVerified) return showToast('Hız testi tamamlanmadan veri gönderilemez','err');
   if (dl < 0.5 || dl > 1500) return showToast('Geçersiz download hızı (0.5–1500 Mbps)','err');
   if (ul > 1000) return showToast('Geçersiz upload hızı (max 1000 Mbps)','err');
   if (ul > dl * 2) return showToast('Upload hızı download hızının 2 katından fazla olamaz','err');
@@ -1996,8 +2166,9 @@ async function submitPin() {
   }
   const f = fuzzy(pinLat, pinLng);
   btn.textContent='Gönderiliyor...';
+  const pinPayload = { lat:f.lat, lng:f.lng, il:document.getElementById('ilInput').value||null, ilce:document.getElementById('ilceInput').value||null, mahalle:document.getElementById('mahalleInput').value||null, iss: finalIss, baglanti_turu:selConnVal, altyapi_sahibi:document.getElementById('infraSelect').value||null, paket_hizi:parseInt(document.getElementById('packageSpeed').value)||null, gercek_dl:dl, gercek_ul:ul, puan:selScoreVal, yorum:document.getElementById('commentInput').value||null, browser_fp: browserFingerprint || null, ip_hash: browserFingerprint ? 'fp_' + browserFingerprint.slice(0,8) : null, gorunur: !quarantine, sikayet_sayisi: 0, is_quarantine: quarantine, custom_iss: isCustomIss ? true : null, speed_test_verified: speedVerified };
   try {
-    await addPin({ lat:f.lat, lng:f.lng, il:document.getElementById('ilInput').value||null, ilce:document.getElementById('ilceInput').value||null, mahalle:document.getElementById('mahalleInput').value||null, iss: finalIss, baglanti_turu:selConnVal, altyapi_sahibi:document.getElementById('infraSelect').value||null, paket_hizi:parseInt(document.getElementById('packageSpeed').value)||null, gercek_dl:dl, gercek_ul:ul, puan:selScoreVal, yorum:document.getElementById('commentInput').value||null, browser_fp: browserFingerprint || null, ip_hash: browserFingerprint ? 'fp_' + browserFingerprint.slice(0,8) : null, gorunur: !quarantine, sikayet_sayisi: 0, is_quarantine: quarantine, custom_iss: isCustomIss ? true : null, speed_test_verified: true });
+    await addPin(pinPayload);
     markSubmit(); 
     if (quarantine) {
       const reason = outlier ? '⚠ Bölge ortalamasından sapma' : rateQuarantine ? '⚠ Hızlı giriş algılandı' : '⚠ Verini aldık';
@@ -2008,10 +2179,14 @@ async function submitPin() {
     }
     resetPinForm(); loadPins();
   } catch(e) {
-    if(e.message.includes("does not exist") || e.message.includes("schema cache")) showToast("Supabase Schema Cache yenileniyor. Lütfen 1-2 dk bekleyin.", "warn");
-    else if(e.message.includes("custom_iss")) {
-      // custom_iss kolonu yoksa tekrar dene, onu çıkararak
-      try { await addPin({ lat:f.lat, lng:f.lng, il:document.getElementById('ilInput').value||null, ilce:document.getElementById('ilceInput').value||null, mahalle:document.getElementById('mahalleInput').value||null, iss: finalIss, baglanti_turu:selConnVal, altyapi_sahibi:document.getElementById('infraSelect').value||null, paket_hizi:parseInt(document.getElementById('packageSpeed').value)||null, gercek_dl:dl, gercek_ul:ul, puan:selScoreVal, yorum:document.getElementById('commentInput').value||null, browser_fp: browserFingerprint || null, ip_hash: browserFingerprint ? 'fp_' + browserFingerprint.slice(0,8) : null, gorunur: false, sikayet_sayisi: 0, is_quarantine: true }); markSubmit(); showToast('⚠ Verini aldık — incelemeye alındı','warn'); resetPinForm(); loadPins(); } catch(e2) { showToast('Hata: '+e2.message,'err'); }
+    if(e.message.includes("custom_iss") || e.message.includes("speed_test_verified")) {
+      // Eksik kolon varsa veri kaybı yaratmadan temel payload ile tekrar dene.
+      const fallbackPayload = { ...pinPayload, gorunur:false, is_quarantine:true };
+      delete fallbackPayload.custom_iss;
+      delete fallbackPayload.speed_test_verified;
+      try { await addPin(fallbackPayload); markSubmit(); showToast('⚠ Verini aldık — DB şeması güncellenene kadar incelemeye alındı','warn'); resetPinForm(); loadPins(); } catch(e2) { showToast('Hata: '+e2.message,'err'); }
+    } else if(e.message.includes("does not exist") || e.message.includes("schema cache")) {
+      showToast("Supabase Schema Cache yenileniyor. Lütfen 1-2 dk bekleyin.", "warn");
     } else showToast('Hata: '+e.message,'err');
   }
   btn.disabled=false; btn.textContent='📍 Veriyi Paylaş';
@@ -2034,10 +2209,162 @@ function clearPinLocation() {
   showToast('Konum temizlendi', 'warn');
 }
 
-function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeed','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; document.getElementById('speedVerifiedBadge')?.classList.remove('show'); const kvkkCheck = document.getElementById('kvkkCheck'); if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; } }
+let speedTestTarget = 'form'; // can be 'form' or 'userEdit'
+let selConnValUserEdit = '';
+let selScoreValUserEdit = 0;
 
-function openReportModal(pinId) { document.getElementById('reportPinId').value = pinId; document.getElementById('reportLocationInfo').style.display = 'none'; document.getElementById('reportModal').classList.add('open'); }
-function openHexReport() { document.getElementById('reportPinId').value = ''; document.getElementById('reportLocationText').textContent = document.getElementById('reportBolge').value||'—'; document.getElementById('reportLocationInfo').style.display = 'block'; document.getElementById('reportText').value = ''; document.getElementById('reportModal').classList.add('open'); }
+function selConnUserEdit(el, type) {
+  document.querySelectorAll('#userEditConnWrap .cbtn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+  selConnValUserEdit = type;
+}
+
+function selScoreUserEdit(el, val) {
+  document.querySelectorAll('#userEditScoreRow .sbtn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+  selScoreValUserEdit = val;
+}
+
+function buildUserEditScoreRow() {
+  const row = document.getElementById('userEditScoreRow');
+  if (!row) return;
+  row.innerHTML = '';
+  for (let i = 1; i <= 10; i++) {
+    const b = document.createElement('div');
+    b.className = 'sbtn';
+    b.textContent = i;
+    b.onclick = () => selScoreUserEdit(b, i);
+    row.appendChild(b);
+  }
+}
+
+function openUserEditModal(pinId) {
+  const pin = pinsData.find(p => p.id === pinId);
+  if (!pin) return showToast('Veri bulunamadı', 'err');
+  
+  document.getElementById('userEditPinId').value = pinId;
+  selConnValUserEdit = pin.baglanti_turu || '';
+  document.querySelectorAll('#userEditConnWrap .cbtn').forEach(b => {
+    b.classList.toggle('sel', b.id === `userEditConn-${pin.baglanti_turu}`);
+  });
+  
+  document.getElementById('userEditPkg').value = pin.paket_hizi || '';
+  document.getElementById('userEditDL').value = pin.gercek_dl || '';
+  document.getElementById('userEditUL').value = pin.gercek_ul || '';
+  document.getElementById('userEditComment').value = pin.yorum || '';
+  
+  if (pin.speed_test_verified) {
+    document.getElementById('userEditSpeedVerifiedBadge').classList.add('show');
+  } else {
+    document.getElementById('userEditSpeedVerifiedBadge').classList.remove('show');
+  }
+  
+  buildUserEditScoreRow();
+  selScoreValUserEdit = pin.puan || 0;
+  if (selScoreValUserEdit > 0) {
+    const scoreBtns = document.querySelectorAll('#userEditScoreRow .sbtn');
+    if (scoreBtns[selScoreValUserEdit - 1]) {
+      scoreBtns[selScoreValUserEdit - 1].classList.add('sel');
+    }
+  }
+  
+  document.getElementById('userEditModal').classList.add('open');
+}
+
+function closeUserEditModal() {
+  document.getElementById('userEditModal').classList.remove('open');
+}
+
+function openSpeedTestForUserEdit() {
+  speedTestTarget = 'userEdit';
+  openSpeedTestModal();
+}
+
+async function saveUserEdit() {
+  const pinId = document.getElementById('userEditPinId').value;
+  const dl = parseInt(document.getElementById('userEditDL').value);
+  const ul = parseInt(document.getElementById('userEditUL').value) || 0;
+  const pkg = parseInt(document.getElementById('userEditPkg').value) || null;
+  const comment = document.getElementById('userEditComment').value || null;
+  const connType = selConnValUserEdit;
+  const score = selScoreValUserEdit;
+  const speedVerified = document.getElementById('userEditSpeedVerifiedBadge').classList.contains('show');
+  
+  if (!connType) return showToast('Lütfen bağlantı türü seçin', 'err');
+  if (!dl) return showToast('Hız verisi boş olamaz', 'err');
+  if (!score) return showToast('Lütfen memnuniyet puanı verin', 'err');
+  
+  const payload = {
+    baglanti_turu: connType,
+    paket_hizi: pkg,
+    gercek_dl: dl,
+    gercek_ul: ul,
+    puan: score,
+    yorum: comment,
+    speed_test_verified: speedVerified,
+    updated_at: new Date().toISOString()
+  };
+  
+  const pin = pinsData.find(p => p.id === pinId);
+  if (pin && (pin.gercek_dl !== dl || pin.gercek_ul !== ul)) {
+    const outlier = isOutlier(dl, pin.lat, pin.lng);
+    if (outlier) {
+      payload.gorunur = false;
+      payload.is_quarantine = true;
+    }
+  }
+  
+  try {
+    await patchPin(pinId, payload);
+    showToast('✅ Ölçümünüz başarıyla güncellendi!');
+    closeUserEditModal();
+    document.getElementById('mapInfo').classList.remove('visible');
+    await loadPins();
+  } catch(e) {
+    showToast('Güncelleme sırasında hata oluştu: ' + e.message, 'err');
+  }
+}
+
+async function deleteUserPin(pinId) {
+  if (!confirm('Bu ölçüm verinizi silmek istediğinize emin misiniz?')) return;
+  try {
+    await delPin(pinId);
+    showToast('🗑 Ölçümünüz silindi.');
+    document.getElementById('mapInfo').classList.remove('visible');
+    await loadPins();
+  } catch(e) {
+    showToast('Silme işlemi sırasında hata oluştu: ' + e.message, 'err');
+  }
+}
+
+function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeed','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); const kvkkCheck = document.getElementById('kvkkCheck'); if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; } }
+
+function openReportModal(pinId, locStr) {
+  document.getElementById('reportPinId').value = pinId || '';
+  document.getElementById('reportHexId').value = '';
+  document.getElementById('reportBolge').value = locStr || '';
+  if (locStr) {
+    document.getElementById('reportLocationText').textContent = locStr;
+    document.getElementById('reportLocationInfo').style.display = 'block';
+  } else {
+    document.getElementById('reportLocationInfo').style.display = 'none';
+  }
+  document.getElementById('reportType').value = 'yanlis_hiz';
+  document.getElementById('reportText').value = '';
+  document.getElementById('reportModal').classList.add('open');
+}
+function openHexReport() {
+  const locText = document.getElementById('infoTitle')?.textContent || document.getElementById('reportBolge').value || 'Seçili bölge';
+  if (!activeHexPins || !activeHexPins.length) return showToast('Önce haritada bir bölge seçin','warn');
+  // Harita sayfasında değilsek bildirim modal'ını yine de aç (sayfa değiştirme)
+  document.getElementById('reportPinId').value = '';
+  document.getElementById('reportBolge').value = locText;
+  document.getElementById('reportLocationText').textContent = locText;
+  document.getElementById('reportLocationInfo').style.display = 'block';
+  document.getElementById('reportType').value = 'yanlis_hiz';
+  document.getElementById('reportText').value = '';
+  document.getElementById('reportModal').classList.add('open');
+}
 function closeReportModal() { document.getElementById('reportModal').classList.remove('open'); }
 
 // HATA ÖNLEYİCİ GÜNCELLEME (SCHEMA CACHE FALLBACK)
@@ -2336,32 +2663,38 @@ async function loadSpeedRankEditor(search) {
   tbody.innerHTML = '<tr><td colspan="6" class="loading-dots">Yükleniyor</td></tr>';
   try {
     const pins = await getAllPinsAdmin() || [];
-    let filtered = pins.filter(p => p.gorunur !== false && !p.is_quarantine);
+    // Tüm görünür ve onaylı pinleri göster — moderatör istediğini verified yapabilsin
+    let filtered = pins.filter(p => p.gorunur !== false && !isSpam(p));
     if (search) {
-      const s = search.toLowerCase();
-      filtered = filtered.filter(p => (p.il||'').toLowerCase().includes(s) || (p.ilce||'').toLowerCase().includes(s));
+      const s = search.toLocaleLowerCase('tr-TR');
+      filtered = filtered.filter(p => (p.il||'').toLocaleLowerCase('tr-TR').includes(s) || (p.ilce||'').toLocaleLowerCase('tr-TR').includes(s));
     }
-    filtered = filtered.sort((a,b) => (b.gercek_dl||0) - (a.gercek_dl||0)).slice(0, 50);
+    filtered = filtered.sort((a,b) => (b.gercek_dl||0) - (a.gercek_dl||0)).slice(0, 100);
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px;">Sonuç yok — arama terimini değiştirin</td></tr>';
+      return;
+    }
     tbody.innerHTML = filtered.map(p => {
       const loc = [p.il, p.ilce].filter(Boolean).join(' / ') || 'Bilinmiyor';
-      const isVerified = p.speed_test_verified === true || (p.speed_test_verified == null && (p.gercek_ul||0) > 0);
+      const isVerified = p.speed_test_verified === true;
       const verifiedBadge = isVerified
-        ? `<span style="color:var(--success);font-family:var(--font-mono);font-size:9px;font-weight:700;">✅ Doğrulanmış</span>`
-        : `<span style="color:var(--danger);font-family:var(--font-mono);font-size:9px;font-weight:700;">❌ Manuel Giriş</span>`;
-      return `<tr>
-        <td>${loc}</td>
+        ? `<span style="color:var(--success);font-family:var(--font-mono);font-size:9px;font-weight:700;">✅ Sıralamada</span>`
+        : `<span style="color:var(--text3);font-family:var(--font-mono);font-size:9px;font-weight:700;">— Dışarıda</span>`;
+      const quarBadge = p.is_quarantine ? `<span style="font-size:8px;color:var(--warn);margin-left:4px;">🔒</span>` : '';
+      return `<tr id="srrow_${p.id}">
+        <td>${loc}${quarBadge}</td>
         <td style="font-size:11px;">${p.iss||'—'}</td>
         <td style="color:${speedColor(p.gercek_dl)};font-family:var(--font-mono);">${p.gercek_dl}</td>
         <td style="color:var(--text3);font-family:var(--font-mono);">${p.gercek_ul||0}</td>
         <td>${verifiedBadge}</td>
         <td style="display:flex;gap:4px;">
           ${isVerified
-            ? `<button class="btn-del" style="padding:3px 8px;font-size:10px;" onclick="toggleSpeedTestVerified('${p.id}',false)" title="Doğrulamayı kaldır">✕</button>`
-            : `<button class="btn-approve" style="padding:3px 8px;font-size:10px;" onclick="toggleSpeedTestVerified('${p.id}',true)" title="Doğrulanmış işaretle">✓</button>`
+            ? `<button class="btn-del" style="padding:3px 8px;font-size:10px;" onclick="toggleSpeedTestVerified('${p.id}',false)" title="Sıralamadan çıkar">✕ Çıkar</button>`
+            : `<button class="btn-approve" style="padding:3px 8px;font-size:10px;" onclick="toggleSpeedTestVerified('${p.id}',true)" title="Sıralamaya ekle">✓ Ekle</button>`
           }
         </td>
       </tr>`;
-    }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:16px;">Sonuç yok</td></tr>';
+    }).join('');
   } catch(e) {
     tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger);">Hata: ${e.message}</td></tr>`;
   }
@@ -2370,9 +2703,20 @@ async function loadSpeedRankEditor(search) {
 async function toggleSpeedTestVerified(id, verified) {
   try {
     await patchPin(id, { speed_test_verified: verified });
-    showToast(verified ? '✅ Doğrulanmış işaretlendi' : '❌ Doğrulama kaldırıldı');
-    loadSpeedRankEditor(document.getElementById('speedRankSearch')?.value || '');
-    // İstatistikleri yenile
+    showToast(verified ? '✅ Sıralamaya eklendi' : '❌ Sıralamadan çıkarıldı');
+    // Satırı inline güncelle (tam yenileme yerine)
+    const row = document.getElementById('srrow_' + id);
+    if (row) {
+      const badgeCell = row.cells[4];
+      const actionCell = row.cells[5];
+      if (badgeCell) badgeCell.innerHTML = verified
+        ? `<span style="color:var(--success);font-family:var(--font-mono);font-size:9px;font-weight:700;">✅ Sıralamada</span>`
+        : `<span style="color:var(--text3);font-family:var(--font-mono);font-size:9px;font-weight:700;">— Dışarıda</span>`;
+      if (actionCell) actionCell.innerHTML = verified
+        ? `<button class="btn-del" style="padding:3px 8px;font-size:10px;" onclick="toggleSpeedTestVerified('${id}',false)" title="Sıralamadan çıkar">✕ Çıkar</button>`
+        : `<button class="btn-approve" style="padding:3px 8px;font-size:10px;" onclick="toggleSpeedTestVerified('${id}',true)" title="Sıralamaya ekle">✓ Ekle</button>`;
+    }
+    // İstatistikleri arka planda yenile
     if (cleanPinsData.length) renderStats();
   } catch(e) { showToast('Hata: ' + e.message, 'err'); }
 }
@@ -2584,7 +2928,7 @@ async function loadRaporlar() {
   const list = document.getElementById('bekleyenList'); list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
   try {
     const raporlar = await getRaporlar()||[]; if (!raporlar.length) return list.innerHTML='<div class="empty-state">Bekleyen rapor yok ✅</div>';
-    const tipLabels = { yanlis_hiz:'Yanlış hız', yanlis_konum:'Yanlış konum', yanlis_iss:'Yanlış ISS', spam:'Spam', diger:'Diğer' };
+    const tipLabels = { yanlis_hiz:'Yanlış hız', yanlis_konum:'Yanlış konum', yanlis_iss:'Yanlış ISS', spam:'Spam', guncelleme:'Bilgi Güncelleme', diger:'Diğer' };
     list.innerHTML = raporlar.map(r => {
       const tarihStr = new Date(r.created_at).toLocaleString('tr-TR');
       return `<div class="report-card">
@@ -2994,6 +3338,7 @@ function openSpeedTestModal() {
 function closeSpeedTestModal() {
   if (stRunning) return;
   document.getElementById('speedTestModal').classList.remove('open');
+  speedTestTarget = 'form';
 }
 function resetSpeedTestUI() {
   stResults = null; stRunning = false;
@@ -3282,11 +3627,19 @@ function applySpeedResults() {
   if (!stResults || !stResults.dl || !stResults.ul) {
     return showToast('Hız testi tamamlanmadan sonuç kullanılamaz','err');
   }
-  document.getElementById('dlSpeed').value = stResults.dl;
-  document.getElementById('ulSpeed').value = stResults.ul;
-  document.getElementById('speedVerifiedBadge').classList.add('show');
+  if (speedTestTarget === 'userEdit') {
+    document.getElementById('userEditDL').value = stResults.dl;
+    document.getElementById('userEditUL').value = stResults.ul;
+    document.getElementById('userEditSpeedVerifiedBadge').classList.add('show');
+    showToast(`✅ ↓${stResults.dl} Mbps · ↑${stResults.ul} Mbps — düzenleme formuna yazıldı`);
+  } else {
+    setSpeedEntryMode('builtin');
+    document.getElementById('dlSpeed').value = stResults.dl;
+    document.getElementById('ulSpeed').value = stResults.ul;
+    document.getElementById('speedVerifiedBadge').classList.add('show');
+    showToast(`✅ ↓${stResults.dl} Mbps · ↑${stResults.ul} Mbps — forma yazıldı`);
+  }
   closeSpeedTestModal();
-  showToast(`✅ ↓${stResults.dl} Mbps · ↑${stResults.ul} Mbps — forma yazıldı`);
 }
 </script>
 </body>
