@@ -3582,61 +3582,94 @@ function uploadOnce(bytes, onLive) {
 }
 
 async function measureUpload(onLive) {
-  // CORS modu: Cloudflare __up CORS destekliyor; cors modunda response alınır,
-  // sunucunun gerçekten veriyi aldığı doğrulanır ve timing güvenilir olur.
-  // no-cors modunda tarayıcı CDN buffer'ını "upload tamamlandı" sanarak erken
-  // resolve ediyordu — bu upload hızının normalden çok düşük ölçülmesine yol açıyordu.
-  const CHUNK_SIZE = 8 * 1024 * 1024; // 8 MB — yüksek hızlı bağlantılarda gürültüyü azaltır
-  const WARMUP_SIZE = 1 * 1024 * 1024; // 1 MB warmup (her stream için)
-  const MEASURE_MS = 9000;
+  // Download ölçümüyle aynı mantık: tüm parallel streamlerin
+  // gönderdiği byte'lar tek bir sayaca eklenir, hız buradan hesaplanır.
+  // Eski hatada: her stream bağımsız ölçülüp average alınıyordu.
+  // 3 stream × 6.7 Mbps = 20 Mbps toplam, ama average = 6.7 Mbps çıkıyordu.
+  const CHUNK_SIZE  = 16 * 1024 * 1024; // 16 MB — her chunk ~6.4 sn @ 20 Mbps
+  const WARMUP_SIZE = 512 * 1024;
+  const MEASURE_MS  = 9000;
   const PARALLEL_STREAMS = 3;
   const stopAt = performance.now() + MEASURE_MS;
   const samples = [];
 
-  // Paralel warmup — tüm streamler için TCP bağlantısı kur, sonuçlarını sayma
-  try {
-    await Promise.all(
-      Array.from({ length: PARALLEL_STREAMS }, (_, n) =>
-        fetch(`${SPEED_UPLOAD_URL}?t=wu_${n}_${Date.now()}`, {
-          method: 'POST', mode: 'cors', cache: 'no-store',
-          body: makeUploadBlob(WARMUP_SIZE)
-        }).catch(() => {})
-      )
-    );
-  } catch(e) {}
+  // Ortak byte sayacı
+  let totalSent   = 0;
+  let lastSent    = 0;
+  let lastSentAt  = performance.now();
 
-  async function uploadStream(n) {
-    while (performance.now() < stopAt) {
-      const url = `${SPEED_UPLOAD_URL}?t=${Date.now()}_${n}_${Math.random()}`;
-      const blob = makeUploadBlob(CHUNK_SIZE);
-      const t0 = performance.now();
-      try {
-        // cors modu: sunucudan 200 OK alındığında gerçekten upload tamamlanmıştır
-        const r = await fetch(url, { method: 'POST', mode: 'cors', cache: 'no-store', body: blob });
-        const elapsed = (performance.now() - t0) / 1000;
-        if (!r.ok) break; // sunucu hata döndürdü, bu stream'i durdur
-        if (elapsed > 0.2) { // çok kısa = güvenilmez (TCP ramp-up gürültüsü)
-          const mbps = Math.round((CHUNK_SIZE * 8) / elapsed / 1e6);
-          // Makul sınır: 0 < mbps < 2500 ve download'un 2 katını geçmesin
-          if (mbps > 0 && mbps < 2500) {
-            samples.push(mbps);
-            if (onLive) onLive(mbps);
-          }
-        }
-      } catch(e) { break; }
+  // Periyodik hız örnekleyici (download'daki onLive callback ile aynı fikir)
+  const reportInterval = setInterval(() => {
+    const now     = performance.now();
+    const elapsed = (now - lastSentAt) / 1000;
+    const delta   = totalSent - lastSent;
+    if (elapsed >= 0.35 && delta > 0) {
+      const mbps = Math.round((delta * 8) / elapsed / 1e6);
+      if (mbps > 0 && mbps < 2500) {
+        samples.push(mbps);
+        if (onLive) onLive(mbps);
+      }
+      lastSent   = totalSent;
+      lastSentAt = now;
     }
+  }, 300);
+
+  // Paralel warmup
+  await Promise.all(
+    Array.from({ length: PARALLEL_STREAMS }, (_, n) =>
+      new Promise(res => {
+        const x = new XMLHttpRequest();
+        x.open('POST', `${SPEED_UPLOAD_URL}?t=wu_${n}_${Date.now()}`);
+        x.timeout = 10000;
+        x.onload = x.onerror = x.ontimeout = res;
+        x.send(makeUploadBlob(WARMUP_SIZE));
+      })
+    )
+  );
+
+  // Her stream: onprogress'te gelen byte delta'sını ortak sayaca yaz
+  function xhrStream(n) {
+    return new Promise(resolve => {
+      function sendChunk() {
+        if (performance.now() >= stopAt) { resolve(); return; }
+        const x = new XMLHttpRequest();
+        let prevLoaded = 0;
+        x.upload.onprogress = e => {
+          const delta = e.loaded - prevLoaded;
+          if (delta > 0) totalSent += delta;
+          prevLoaded = e.loaded;
+          if (performance.now() >= stopAt) x.abort();
+        };
+        x.onload    = () => sendChunk();     // chunk bitti, bir sonrakini başlat
+        x.onerror   = () => resolve();
+        x.ontimeout = () => resolve();
+        x.onabort   = () => resolve();
+        x.timeout   = 30000;
+        x.open('POST', `${SPEED_UPLOAD_URL}?t=${Date.now()}_${n}_${Math.random()}`);
+        x.send(makeUploadBlob(CHUNK_SIZE));
+      }
+      sendChunk();
+    });
   }
 
-  try {
-    await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => uploadStream(i)));
-    if (!samples.length) return null;
-    // En yüksek ve en düşük %20'yi at — outlier temizleme
-    samples.sort((a, b) => a - b);
-    const trim = Math.max(1, Math.floor(samples.length * 0.20));
-    const trimmed = samples.slice(trim, samples.length - trim);
-    const arr = trimmed.length ? trimmed : samples;
-    return Math.round(arr.reduce((a, b) => a + b, 0) / arr.length);
-  } catch(e) { return null; }
+  await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => xhrStream(i)));
+  clearInterval(reportInterval);
+
+  // Son kırpılmamış window'u da ekle
+  const now = performance.now();
+  const elapsed = (now - lastSentAt) / 1000;
+  const delta = totalSent - lastSent;
+  if (elapsed > 0.1 && delta > 0) {
+    const mbps = Math.round((delta * 8) / elapsed / 1e6);
+    if (mbps > 0 && mbps < 2500) samples.push(mbps);
+  }
+
+  if (!samples.length) return null;
+  samples.sort((a, b) => a - b);
+  const trim = Math.max(1, Math.floor(samples.length * 0.20));
+  const trimmed = samples.slice(trim, samples.length - trim);
+  const arr = trimmed.length ? trimmed : samples;
+  return Math.round(arr.reduce((a, b) => a + b, 0) / arr.length);
 }
 
 // 3. UI GÜNCELLEYİCİ: runSpeedTest (Ortalama Değerlerin Bastırılması)
