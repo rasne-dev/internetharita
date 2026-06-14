@@ -1299,6 +1299,13 @@ async function sbRest(path, opts = {}) {
 
 function toggleMyPinsUI() {
   if (!maps.main) return;
+  
+  const myPinsCount = pinsData.filter(p => p.browser_fp === browserFingerprint).length;
+  
+  if (!isMyPinsVisible && myPinsCount === 0) {
+    return showToast('Henüz bu cihazdan yapılmış bir ölçümünüz bulunmuyor.', 'warn');
+  }
+
   isMyPinsVisible = !isMyPinsVisible;
   const btn = document.getElementById('myPinsToggle');
   if (btn) btn.classList.toggle('active', isMyPinsVisible);
