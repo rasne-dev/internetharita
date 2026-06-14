@@ -836,7 +836,13 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
         <div class="fl">Bağlantı Türü</div>
         <div class="cbtns"><div class="cbtn fiber" onclick="selConn(this,'fiber')">Fiber</div><div class="cbtn vdsl" onclick="selConn(this,'vdsl')">VDSL</div><div class="cbtn adsl" onclick="selConn(this,'adsl')">ADSL</div></div>
       </div>
-      <div class="fg"><div class="fl">Paket Hızı</div><div class="fiu"><input type="number" placeholder="100" id="packageSpeed"><span class="fiu-unit">Mbps</span></div></div>
+      <div class="fg">
+        <div class="fl">Paket Hızı (Abonelik / Taahhüt)</div>
+        <div class="speed-row">
+          <div class="fiu"><input type="number" placeholder="100" id="packageSpeedDL" min="0" step="1"><span class="fiu-unit">↓ DL</span></div>
+          <div class="fiu"><input type="number" placeholder="20" id="packageSpeedUL" min="0" step="1"><span class="fiu-unit">↑ UL</span></div>
+        </div>
+      </div>
       <div class="fg">
         <div class="fl">Gerçek Hız (Ölçülen)</div>
         <button class="btn-run-speedtest" onclick="openSpeedTestModal()">⚡ Hız Testi Yap — Otomatik Doldur</button>
@@ -1066,7 +1072,8 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
       <div class="fg"><div class="fl">Bağlantı Türü</div><select class="fs" id="editConn"><option value="fiber">Fiber</option><option value="vdsl">VDSL</option><option value="adsl">ADSL</option></select></div>
       <div class="fg"><div class="fl">DL Hızı (Mbps)</div><input class="fi" type="number" id="editDL" placeholder="100"></div>
       <div class="fg"><div class="fl">UL Hızı (Mbps)</div><input class="fi" type="number" id="editUL" placeholder="50"></div>
-      <div class="fg"><div class="fl">Paket Hızı (Mbps)</div><input class="fi" type="number" id="editPkg" placeholder="opsiyonel"></div>
+      <div class="fg"><div class="fl">Paket Hızı DL (Mbps)</div><input class="fi" type="number" id="editPkgDL" placeholder="opsiyonel"></div>
+      <div class="fg"><div class="fl">Paket Hızı UL (Mbps)</div><input class="fi" type="number" id="editPkgUL" placeholder="opsiyonel"></div>
       <div class="fg"><div class="fl">Memnuniyet Puanı (1–10)</div><input class="fi" type="number" min="1" max="10" id="editPuan" placeholder="8"></div>
     </div>
     <div class="fg" style="margin-bottom:10px;">
@@ -1102,8 +1109,11 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
     </div>
     
     <div class="fg" style="margin-bottom:10px;">
-      <div class="fl">Paket Hızı (Mbps)</div>
-      <div class="fiu"><input type="number" placeholder="100" id="userEditPkg"><span class="fiu-unit">Mbps</span></div>
+      <div class="fl">Paket Hızı (Abonelik / Taahhüt)</div>
+      <div class="speed-row">
+        <div class="fiu"><input type="number" placeholder="100" id="userEditPkgDL" min="0" step="1"><span class="fiu-unit">↓ DL</span></div>
+        <div class="fiu"><input type="number" placeholder="20" id="userEditPkgUL" min="0" step="1"><span class="fiu-unit">↑ UL</span></div>
+      </div>
     </div>
     
     <div class="fg" style="margin-bottom:10px;">
@@ -1589,7 +1599,7 @@ function renderModPins() {
         <div class="popup-title">${isSpamPin ? '<span style="color:#ef4444;font-size:9px;font-family:var(--font-mono);">⚠ SPAM/ŞÜPHELİ</span><br>' : ''}${p.iss} <span class="popup-badge" style="background:${cc(p.baglanti_turu)}22;color:${cc(p.baglanti_turu)};border:1px solid ${cc(p.baglanti_turu)}">${(p.baglanti_turu||'').toUpperCase()}</span></div>
         <div class="popup-row"><span class="popup-key">Download</span><span class="popup-val" style="color:${speedColor(p.gercek_dl)}">${p.gercek_dl} Mbps</span></div>
         <div class="popup-row"><span class="popup-key">Upload</span><span class="popup-val">${p.gercek_ul||0} Mbps</span></div>
-        <div class="popup-row"><span class="popup-key">Paket Hızı</span><span class="popup-val">${p.paket_hizi ? p.paket_hizi+' Mbps' : '—'}</span></div>
+        <div class="popup-row"><span class="popup-key">Paket Hızı</span><span class="popup-val">${(p.paket_hizi_dl||p.paket_hizi) ? `↓${p.paket_hizi_dl||p.paket_hizi}${p.paket_hizi_ul?` / ↑${p.paket_hizi_ul}`:''} Mbps` : '—'}</span></div>
         <div class="popup-row"><span class="popup-key">Altyapı</span><span class="popup-val" style="font-size:10px">${p.altyapi_sahibi || '—'}</span></div>
         <div class="popup-row"><span class="popup-key">Puan</span><span class="popup-val" style="color:${memColor(p.puan)}">${p.puan}/10</span></div>
         <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
@@ -2212,8 +2222,11 @@ async function submitPin() {
     return showToast(`⚠ Bu bölge için son 24 saat içinde veri girdiniz (↓${nearbyRecent.gercek_dl} Mbps). Lütfen farklı bir konumdan giriş yapın.`, 'warn');
   }
   const f = fuzzy(pinLat, pinLng);
+  lastSubmittedLatLng = { lat: f.lat, lng: f.lng };
   btn.textContent='Gönderiliyor...';
-  const pinPayload = { lat:f.lat, lng:f.lng, il:document.getElementById('ilInput').value||null, ilce:document.getElementById('ilceInput').value||null, mahalle:document.getElementById('mahalleInput').value||null, iss: finalIss, baglanti_turu:selConnVal, altyapi_sahibi:document.getElementById('infraSelect').value||null, paket_hizi:parseInt(document.getElementById('packageSpeed').value)||null, gercek_dl:dl, gercek_ul:ul, puan:selScoreVal, yorum:document.getElementById('commentInput').value||null, browser_fp: browserFingerprint || null, ip_hash: browserFingerprint ? 'fp_' + browserFingerprint.slice(0,8) : null, gorunur: !quarantine, sikayet_sayisi: 0, is_quarantine: quarantine, custom_iss: isCustomIss ? true : null, speed_test_verified: speedVerified };
+  const pkgDL = parseInt(document.getElementById('packageSpeedDL').value)||null;
+  const pkgUL = parseInt(document.getElementById('packageSpeedUL').value)||null;
+  const pinPayload = { lat:f.lat, lng:f.lng, il:document.getElementById('ilInput').value||null, ilce:document.getElementById('ilceInput').value||null, mahalle:document.getElementById('mahalleInput').value||null, iss: finalIss, baglanti_turu:selConnVal, altyapi_sahibi:document.getElementById('infraSelect').value||null, paket_hizi: pkgDL, paket_hizi_dl: pkgDL, paket_hizi_ul: pkgUL, gercek_dl:dl, gercek_ul:ul, puan:selScoreVal, yorum:document.getElementById('commentInput').value||null, browser_fp: browserFingerprint || null, ip_hash: browserFingerprint ? 'fp_' + browserFingerprint.slice(0,8) : null, gorunur: !quarantine, sikayet_sayisi: 0, is_quarantine: quarantine, custom_iss: isCustomIss ? true : null, speed_test_verified: speedVerified };
   try {
     await addPin(pinPayload);
     markSubmit(); 
@@ -2226,11 +2239,13 @@ async function submitPin() {
     }
     resetPinForm(); loadPins();
   } catch(e) {
-    if(e.message.includes("custom_iss") || e.message.includes("speed_test_verified")) {
+    if(e.message.includes("custom_iss") || e.message.includes("speed_test_verified") || e.message.includes("paket_hizi_dl") || e.message.includes("paket_hizi_ul")) {
       // Eksik kolon varsa veri kaybı yaratmadan temel payload ile tekrar dene.
       const fallbackPayload = { ...pinPayload, gorunur:false, is_quarantine:true };
       delete fallbackPayload.custom_iss;
       delete fallbackPayload.speed_test_verified;
+      delete fallbackPayload.paket_hizi_dl;
+      delete fallbackPayload.paket_hizi_ul;
       try { await addPin(fallbackPayload); markSubmit(); showToast('⚠ Verini aldık — DB şeması güncellenene kadar incelemeye alındı','warn'); resetPinForm(); loadPins(); } catch(e2) { showToast('Hata: '+e2.message,'err'); }
     } else if(e.message.includes("does not exist") || e.message.includes("schema cache")) {
       showToast("Supabase Schema Cache yenileniyor. Lütfen 1-2 dk bekleyin.", "warn");
@@ -2295,7 +2310,8 @@ function openUserEditModal(pinId) {
     b.classList.toggle('sel', b.id === `userEditConn-${pin.baglanti_turu}`);
   });
   
-  document.getElementById('userEditPkg').value = pin.paket_hizi || '';
+  document.getElementById('userEditPkgDL').value = pin.paket_hizi_dl || pin.paket_hizi || '';
+  document.getElementById('userEditPkgUL').value = pin.paket_hizi_ul || '';
   document.getElementById('userEditDL').value = pin.gercek_dl || '';
   document.getElementById('userEditUL').value = pin.gercek_ul || '';
   document.getElementById('userEditComment').value = pin.yorum || '';
@@ -2331,7 +2347,8 @@ async function saveUserEdit() {
   const pinId = document.getElementById('userEditPinId').value;
   const dl = parseInt(document.getElementById('userEditDL').value);
   const ul = parseInt(document.getElementById('userEditUL').value) || 0;
-  const pkg = parseInt(document.getElementById('userEditPkg').value) || null;
+  const pkgDL = parseInt(document.getElementById('userEditPkgDL').value) || null;
+  const pkgUL = parseInt(document.getElementById('userEditPkgUL').value) || null;
   const comment = document.getElementById('userEditComment').value || null;
   const connType = selConnValUserEdit;
   const score = selScoreValUserEdit;
@@ -2343,7 +2360,9 @@ async function saveUserEdit() {
   
   const payload = {
     baglanti_turu: connType,
-    paket_hizi: pkg,
+    paket_hizi: pkgDL,
+    paket_hizi_dl: pkgDL,
+    paket_hizi_ul: pkgUL,
     gercek_dl: dl,
     gercek_ul: ul,
     puan: score,
@@ -2368,7 +2387,21 @@ async function saveUserEdit() {
     document.getElementById('mapInfo').classList.remove('visible');
     await loadPins();
   } catch(e) {
-    showToast('Güncelleme sırasında hata oluştu: ' + e.message, 'err');
+    if (e.message.includes("paket_hizi_dl") || e.message.includes("paket_hizi_ul")) {
+      // Eski şema — yeni kolonlar henüz yok, eski paket_hizi ile tekrar dene
+      const fb = { ...payload };
+      delete fb.paket_hizi_dl;
+      delete fb.paket_hizi_ul;
+      try {
+        await patchPin(pinId, fb);
+        showToast('✅ Ölçümünüz güncellendi (DB şeması bekleniyor)');
+        closeUserEditModal();
+        document.getElementById('mapInfo').classList.remove('visible');
+        await loadPins();
+      } catch(e2) { showToast('Güncelleme sırasında hata oluştu: ' + e2.message, 'err'); }
+    } else {
+      showToast('Güncelleme sırasında hata oluştu: ' + e.message, 'err');
+    }
   }
 }
 
@@ -2384,7 +2417,7 @@ async function deleteUserPin(pinId) {
   }
 }
 
-function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeed','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); const kvkkCheck = document.getElementById('kvkkCheck'); if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; } }
+function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); const kvkkCheck = document.getElementById('kvkkCheck'); if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; } }
 
 function openReportModal(pinId, locStr) {
   document.getElementById('reportPinId').value = pinId || '';
@@ -2999,7 +3032,7 @@ function renderAdminTable(pins) {
       <td><input type="checkbox" class="pin-check" value="${p.id}"></td>
       <td style="color:var(--text3);white-space:nowrap;">${tarihStr}<br><span style="font-size:10px;color:var(--accent);font-family:var(--font-mono)">${saatStr}</span></td>
       <td><b style="color:${spam?'var(--danger)':'inherit'}">${p.iss}</b><br><span style="color:var(--text2);font-size:9px">Altyapı: ${p.altyapi_sahibi||'Belirtilmemiş'}</span></td>
-      <td style="font-family:var(--font-mono)"><span style="color:${speedColor(p.gercek_dl)}">${p.gercek_dl}↓</span> / ${p.gercek_ul||0}↑<br><span style="font-size:9px;color:var(--text3)">Paket: ${p.paket_hizi?p.paket_hizi+' Mbps':'—'}</span></td>
+      <td style="font-family:var(--font-mono)"><span style="color:${speedColor(p.gercek_dl)}">${p.gercek_dl}↓</span> / ${p.gercek_ul||0}↑<br><span style="font-size:9px;color:var(--text3)">Paket: ${(p.paket_hizi_dl||p.paket_hizi)?`↓${p.paket_hizi_dl||p.paket_hizi}${p.paket_hizi_ul?'/↑'+p.paket_hizi_ul:''} Mbps`:'—'}</span></td>
       <td class="coord-text">${p.il||'?'} › ${p.ilce||'?'}<br><span style="color:var(--warn);font-size:9px;">Cihaz: ${cihazInfo.slice(0,10)}...</span></td>
       <td style="color:${memColor(p.puan)}">${p.puan}/10</td>
       <td><span style="font-size:10px;font-weight:700;color:${durumColor};font-family:var(--font-mono);">${durumLabel}</span>${modNot}</td>
@@ -3087,7 +3120,7 @@ async function openEditModal(id) {
     if (currentIss && !getAllIss().includes(currentIss)) { const extras = getExtraIss(); extras.push(currentIss); saveExtraIss(extras); }
     buildIssOptions(editIssSel, currentIss);
     checkEditIssValidity();
-    document.getElementById('editConn').value=p.baglanti_turu||'fiber'; document.getElementById('editDL').value=p.gercek_dl||''; document.getElementById('editUL').value=p.gercek_ul||''; document.getElementById('editPkg').value=p.paket_hizi||''; document.getElementById('editPuan').value=p.puan||''; document.getElementById('editGorunur').value=String(p.gorunur!==false); document.getElementById('editModNote').value=p.mod_notu||''; document.getElementById('editModal').classList.add('open');
+    document.getElementById('editConn').value=p.baglanti_turu||'fiber'; document.getElementById('editDL').value=p.gercek_dl||''; document.getElementById('editUL').value=p.gercek_ul||''; document.getElementById('editPkgDL').value=p.paket_hizi_dl||p.paket_hizi||''; document.getElementById('editPkgUL').value=p.paket_hizi_ul||''; document.getElementById('editPuan').value=p.puan||''; document.getElementById('editGorunur').value=String(p.gorunur!==false); document.getElementById('editModNote').value=p.mod_notu||''; document.getElementById('editModal').classList.add('open');
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 
@@ -3110,12 +3143,16 @@ async function saveEdit() {
       issNowApproved = true;
       showToast(`🏷 "${newIss}" İSS listesine otomatik eklendi`,'warn');
     }
+    const editPkgDLVal = parseInt(document.getElementById('editPkgDL').value)||null;
+    const editPkgULVal = parseInt(document.getElementById('editPkgUL').value)||null;
     await patchPin(id, {
       iss: newIss,
       baglanti_turu: document.getElementById('editConn').value,
       gercek_dl: dl,
       gercek_ul: parseInt(document.getElementById('editUL').value)||0,
-      paket_hizi: parseInt(document.getElementById('editPkg').value)||null,
+      paket_hizi: editPkgDLVal,
+      paket_hizi_dl: editPkgDLVal,
+      paket_hizi_ul: editPkgULVal,
       puan,
       gorunur: isGorunur,
       is_quarantine: isGorunur && issNowApproved ? false : true,
@@ -3128,7 +3165,29 @@ async function saveEdit() {
     loadSikayetler();
     refreshModData();
   } catch(e) {
-    if(e.message.includes("does not exist")) showToast("Uyarı: Eksik sütunlar var. DB güncelleyin.", "err");
+    if (e.message.includes("paket_hizi_dl") || e.message.includes("paket_hizi_ul")) {
+      // Eski şema — yeni kolonlar henüz yok, sadece paket_hizi ile tekrar dene
+      try {
+        const editPkgDLVal = parseInt(document.getElementById('editPkgDL').value)||null;
+        await patchPin(id, {
+          iss: newIss,
+          baglanti_turu: document.getElementById('editConn').value,
+          gercek_dl: dl,
+          gercek_ul: parseInt(document.getElementById('editUL').value)||0,
+          paket_hizi: editPkgDLVal,
+          puan,
+          gorunur: isGorunur,
+          is_quarantine: isGorunur && issNowApproved ? false : true,
+          mod_notu: document.getElementById('editModNote').value.trim()||null
+        });
+        showToast('✅ Pin güncellendi (DB şeması bekleniyor — sadece eski Paket Hızı kaydedildi)');
+        closeEditModal();
+        await loadPins();
+        loadAdminTable();
+        loadSikayetler();
+        refreshModData();
+      } catch(e2) { showToast('Hata: '+e2.message,'err'); }
+    } else if(e.message.includes("does not exist")) showToast("Uyarı: Eksik sütunlar var. DB güncelleyin.", "err");
     else showToast('Hata: '+e.message,'err');
   }
 }
@@ -3375,7 +3434,7 @@ self.addEventListener('fetch',e=>{
     <div class="ty-stats" id="tyStatsGrid"></div>
     <div class="ty-share">
       <button class="ty-btn secondary" onclick="closeThankyou()">Kapat</button>
-      <button class="ty-btn primary" onclick="closeThankyou(); showPage('harita')">🗺 Haritada Gör</button>
+      <button class="ty-btn primary" onclick="goToSubmittedLocation()">🗺 Haritada Gör</button>
     </div>
   </div>
 </div>
@@ -3396,6 +3455,30 @@ function showThankyou(data) {
 }
 function closeThankyou() {
   document.getElementById('thankYouModal').classList.remove('open');
+}
+
+// "Haritada Gör" — sayfayı harita görünümüne geçirir ve yeni eklenen pine
+// uçarak yakınlaştırır. Eskiden sadece showPage('harita') çağrılıyordu,
+// bu da haritayı varsayılan Türkiye genel görünümünde bırakıyordu —
+// kullanıcı eklediği bölgeyi görmüyordu.
+function goToSubmittedLocation() {
+  closeThankyou();
+  showPage('harita');
+  if (!lastSubmittedLatLng) return;
+  const target = lastSubmittedLatLng;
+  // showPage haritayı setTimeout(50ms) ile init ediyor; initMainMap içinde
+  // maps.main senkron olarak set edildiği için kısa bir polling ile
+  // hazır olduğu an flyTo çağırıyoruz (maks ~3 sn dene).
+  let attempts = 0;
+  const tryFly = () => {
+    attempts++;
+    if (maps.main) {
+      maps.main.flyTo([target.lat, target.lng], 14, { animate: true, duration: 1.5 });
+    } else if (attempts < 30) {
+      setTimeout(tryFly, 100);
+    }
+  };
+  setTimeout(tryFly, 100);
 }
 </script>
 <div class="speedtest-modal" id="speedTestModal">
@@ -3442,6 +3525,7 @@ function closeThankyou() {
 <script>
 // ===== YENİLENMİŞ HIZ TESTİ MOTORU =====
 let stResults = null, stRunning = false;
+let lastSubmittedLatLng = null; // "Haritada Gör" butonu için son eklenen pinin konumu
 const SPEED_DOWNLOAD_URL = 'https://speed.cloudflare.com/__down';
 const SPEED_UPLOAD_URL = window.SPEED_TEST_UPLOAD_URL || 'https://speed.cloudflare.com/__up';
 
