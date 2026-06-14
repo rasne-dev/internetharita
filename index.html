@@ -460,6 +460,29 @@ html.light .sr-ping { background:#f5f7fa; }
 .loc-actions{display:flex;gap:6px;margin-top:5px;} .btn-loc{ flex:1;padding:8px;border-radius:6px; border:1px solid rgba(0,212,255,.3); background:var(--accent-dim);color:var(--accent); font-size:11px;font-weight:700;cursor:pointer; text-align:center; }
 .btn-submit{ padding:13px;background:var(--accent);color:#000; border:none;border-radius:7px;font-size:13px;font-weight:700; cursor:pointer;letter-spacing:.3px; } .btn-submit:disabled{opacity:.45;cursor:not-allowed;}
 
+/* ===== ALAN HATA VURGUSU ===== */
+.field-error,.field-error .fi,.field-error .fs,.field-error .fta,.field-error .fiu input,.field-error .cbtn,.field-error .sbtn {
+  border-color: var(--danger) !important;
+}
+.field-error {
+  background: rgba(239,68,68,0.05) !important;
+  border-radius: 7px;
+  animation: field-shake 0.35s ease;
+}
+.field-error-input {
+  border-color: var(--danger) !important;
+  background: rgba(239,68,68,0.05) !important;
+  animation: field-shake 0.35s ease;
+}
+@keyframes field-shake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-5px); }
+  40%     { transform: translateX(5px); }
+  60%     { transform: translateX(-3px); }
+  80%     { transform: translateX(3px); }
+}
+
+
 /* ===== MOD PANEL ===== */
 #page-mod{flex-direction:column;overflow-y:auto;padding:20px;gap:14px;}
 .mod-auth{ display:flex;flex-direction:column;align-items:center; justify-content:center;flex:1;gap:14px;min-height:calc(100vh - 56px - 40px); }
@@ -2178,27 +2201,79 @@ function selConn(el,type) { document.querySelectorAll('.cbtn').forEach(b=>b.clas
 function selScore(el,val) { document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); selScoreVal=val; }
 (function buildScoreRow() { const row = document.getElementById('scoreRow'); if(!row) return; for(let i=1;i<=10;i++){const b=document.createElement('div');b.className='sbtn';b.textContent=i;b.onclick=()=>selScore(b,i);row.appendChild(b);} })();
 
+// ===== ALAN HATA VURGUSU =====
+// Boş/geçersiz bir form alanını görsel olarak vurgular:
+// - İlgili container'a .field-error ekler (kırmızı kenarlık + shake animasyonu)
+// - Mobil'de ekranı o alana kaydırır
+// - 2.5 sn sonra otomatik temizler
+function highlightRequired(elementOrId, scrollTo = true) {
+  const el = typeof elementOrId === 'string' ? document.getElementById(elementOrId) : elementOrId;
+  if (!el) return;
+  // .fg wrapper'ını bul (varsa) — yoksa direkt elementi vurgula
+  const target = el.closest('.fg') || el.closest('.kvkk-box') || el.closest('.loc-actions') || el;
+  target.classList.add('field-error');
+  if (scrollTo) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  setTimeout(() => target.classList.remove('field-error'), 2500);
+}
+
 async function submitPin() {
   if (isMaintenanceMode) return showToast('🔧 Bakım modu aktif — şu an veri eklenemiyor','warn');
-  if (!pinLat) return showToast('Lütfen konum seçin','err');
+  if (!pinLat) {
+    highlightRequired('locText');
+    return showToast('Lütfen haritadan konum seçin veya il/ilçe seçeneğini kullanın','err');
+  }
   const issVal = document.getElementById('issSelect').value;
   const customIss = document.getElementById('customIssInput')?.value?.trim();
-  if (issVal === 'Diğer' && !customIss) return showToast('Lütfen özel İSS adını girin','err');
+  if (issVal === 'Diğer' && !customIss) {
+    highlightRequired('customIssInput');
+    return showToast('Lütfen özel İSS adını girin','err');
+  }
   const finalIss = issVal === 'Diğer' ? canonicalIssName(customIss) : canonicalIssName(issVal);
-  if (!finalIss) return showToast('Lütfen ISS seçin','err');
-  if (!selConnVal) return showToast('Bağlantı türü seçin','err');
+  if (!finalIss) {
+    highlightRequired('issSelect');
+    return showToast('Lütfen İSS seçin','err');
+  }
+  if (!selConnVal) {
+    // .cbtns container'ını vurgula
+    const cbtnsEl = document.querySelector('#page-pin .cbtns');
+    if (cbtnsEl) {
+      const wrap = cbtnsEl.closest('.fg') || cbtnsEl;
+      wrap.classList.add('field-error');
+      wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => wrap.classList.remove('field-error'), 2500);
+    }
+    return showToast('Bağlantı türü seçin','err');
+  }
   const dl = parseInt(document.getElementById('dlSpeed').value);
   const ul = parseInt(document.getElementById('ulSpeed').value) || 0;
   const speedVerified = document.getElementById('speedVerifiedBadge').classList.contains('show');
-  if (!dl) return showToast('Önce hız testi yapın — "⚡ Hız Testi Yap" butonuna basın','err');
-  if (!speedVerified) return showToast('Hız testi tamamlanmadan veri gönderilemez','err');
+  if (!dl || !speedVerified) {
+    // Hız testi butonunu ve alanları vurgula
+    const speedBtn = document.querySelector('.btn-run-speedtest');
+    if (speedBtn) {
+      speedBtn.classList.add('field-error-input');
+      speedBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => speedBtn.classList.remove('field-error-input'), 2500);
+    }
+    highlightRequired('dlSpeed', false);
+    return showToast(!dl ? 'Önce hız testi yapın — "⚡ Hız Testi Yap" butonuna basın' : 'Hız testi tamamlanmadan veri gönderilemez','err');
+  }
   if (dl < 0.5 || dl > 1500) return showToast('Geçersiz download hızı (0.5–1500 Mbps)','err');
   if (ul > 1000) return showToast('Geçersiz upload hızı (max 1000 Mbps)','err');
   if (ul > dl * 2) return showToast('Upload hızı download hızının 2 katından fazla olamaz','err');
-  if (!selScoreVal) return showToast('Puan verin','err');
+  if (!selScoreVal) {
+    highlightRequired('scoreRow');
+    return showToast('Memnuniyet puanı verin (1–10)','err');
+  }
   const kvkk = document.getElementById('kvkkCheck')?.checked;
-  if (!kvkk) return showToast('Aydınlatma metnini onaylamanız gerekmektedir.','err');
+  if (!kvkk) {
+    highlightRequired('kvkkCheck');
+    return showToast('Aydınlatma metnini onaylamanız gerekmektedir.','err');
+  }
   if (!canSubmit()) return showToast(rateLimitMessage(), 'warn');
+
   
   const btn = document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='Kontrol ediliyor...';
   
@@ -2275,6 +2350,26 @@ let speedTestTarget = 'form'; // can be 'form' or 'userEdit'
 let selConnValUserEdit = '';
 let selScoreValUserEdit = 0;
 
+// ===== KULLANICI PİN DÜZENLEME RATE LİMİTİ =====
+// Aynı kullanıcı aynı pini günde en fazla 5 kez düzenleyebilir.
+// Kötüye kullanımı önler; hız spamını ve sistematik manipülasyonu engeller.
+const USER_EDIT_DAILY_LIMIT = 5;
+function getEditBuckets(pinId) {
+  const dayKey = 'ih_edit_' + pinId + '_' + new Date().toISOString().slice(0, 10);
+  const count = parseInt(localStorage.getItem(dayKey) || '0');
+  return { dayKey, count };
+}
+function canEditPin(pinId) {
+  return getEditBuckets(pinId).count < USER_EDIT_DAILY_LIMIT;
+}
+function getRemainingEdits(pinId) {
+  return Math.max(0, USER_EDIT_DAILY_LIMIT - getEditBuckets(pinId).count);
+}
+function markEditPin(pinId) {
+  const { dayKey, count } = getEditBuckets(pinId);
+  localStorage.setItem(dayKey, String(count + 1));
+}
+
 function selConnUserEdit(el, type) {
   document.querySelectorAll('#userEditConnWrap .cbtn').forEach(b => b.classList.remove('sel'));
   el.classList.add('sel');
@@ -2301,9 +2396,27 @@ function buildUserEditScoreRow() {
 }
 
 function openUserEditModal(pinId) {
-  const pin = pinsData.find(p => p.id === pinId);
-  if (!pin) return showToast('Veri bulunamadı', 'err');
-  
+  // Günlük düzenleme limiti kontrolü
+  if (!canEditPin(pinId)) {
+    return showToast(`⏳ Bu ölçümü bugün ${USER_EDIT_DAILY_LIMIT} kez düzenlediniz. Yarın tekrar deneyin.`, 'warn');
+  }
+
+  // BUG FIX: pinsData sadece gorunur=true pinleri tutar.
+  // Karantinada veya gizlenmiş kendi pini pinsData'da bulunmaz → hata.
+  // Fallback: activeHexPins cache'inden de ara (hex detay panelinde açıksa burada olur).
+  const pin = pinsData.find(p => p.id === pinId)
+           || (activeHexPins || []).find(p => p.id === pinId);
+  if (!pin) {
+    return showToast('Veri bulunamadı. Bu ölçüm karantinada veya gizlenmiş olabilir — moderatör incelemesini bekleyin.', 'err');
+  }
+
+  // Modal başlığını kalan hak ile güncelle
+  const remaining = getRemainingEdits(pinId);
+  const titleEl = document.querySelector('#userEditModal .modal-title');
+  if (titleEl) {
+    titleEl.innerHTML = `✏️ Ölçümümü Güncelle <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);font-weight:400;">(bugün ${USER_EDIT_DAILY_LIMIT - remaining}/${USER_EDIT_DAILY_LIMIT} düzenleme)</span>`;
+  }
+
   document.getElementById('userEditPinId').value = pinId;
   selConnValUserEdit = pin.baglanti_turu || '';
   document.querySelectorAll('#userEditConnWrap .cbtn').forEach(b => {
@@ -2382,7 +2495,13 @@ async function saveUserEdit() {
   
   try {
     await patchPin(pinId, payload);
-    showToast('✅ Ölçümünüz başarıyla güncellendi!');
+    // Başarılı güncelleme → düzenleme sayacını artır
+    markEditPin(pinId);
+    const leftAfter = getRemainingEdits(pinId);
+    const toastMsg = leftAfter > 0
+      ? `✅ Ölçümünüz güncellendi! (bugün ${leftAfter} düzenleme hakkınız kaldı)`
+      : '✅ Ölçümünüz güncellendi! (bugünlük düzenleme hakkınız bitti)';
+    showToast(toastMsg);
     closeUserEditModal();
     document.getElementById('mapInfo').classList.remove('visible');
     await loadPins();
@@ -2394,6 +2513,7 @@ async function saveUserEdit() {
       delete fb.paket_hizi_ul;
       try {
         await patchPin(pinId, fb);
+        markEditPin(pinId);
         showToast('✅ Ölçümünüz güncellendi (DB şeması bekleniyor)');
         closeUserEditModal();
         document.getElementById('mapInfo').classList.remove('visible');
@@ -3694,15 +3814,17 @@ async function measureUpload(onLive) {
   //   A) XHR onprogress  — early-response olmayan ortamda mükemmel
   //   B) fetch() timing  — her chunk için elapsed ölçer, > 0.15s ise sayar
   //
-  // Matematik neden doğru:
-  //   3 XHR + 3 fetch = 6 stream, bant genişliği 6'ya bölünür (örn. 19/6 ≈ 3.2 Mbps)
-  //   totalSent = tüm streamlerin gönderdiği bayt toplamı ≈ 19 Mbps × elapsed
-  //   totalSent / elapsed → her iki yöntem de katkıda bulunsa bile 19 Mbps ✓
+  // Yüksek hız notu (500+ Mbps):
+  //   HTTP/2 ortamında her stream ~100-150 Mbps ile sınırlı olabilir.
+  //   900 Mbps için en az 6-8 paralel stream gerekiyor.
+  //   PARALLEL_STREAMS = 6 → 6 XHR + 6 fetch = 12 stream → ~900-1200 Mbps'e erişilebilir.
+  //   fetchStream chunk 8 MB → round-trip sayısını azaltır, throughput artar.
   // ─────────────────────────────────────────────────────────────────────────
   const MEASURE_MS       = 9000;
-  const PARALLEL_STREAMS = 3;   // her yöntem için ayrı
+  const PARALLEL_STREAMS = 6;   // her yöntem için ayrı — yüksek hız desteği
 
   // 1) Warmup — stopAt hesabına dahil değil
+  //    Warmup stream sayısını ve blob boyutunu artır (yüksek hızda bağlantıyı ısıt)
   await Promise.all(
     Array.from({ length: PARALLEL_STREAMS }, (_, n) =>
       new Promise(res => {
@@ -3710,7 +3832,7 @@ async function measureUpload(onLive) {
         x.open('POST', `${SPEED_UPLOAD_URL}?t=wu_${n}_${Date.now()}`);
         x.timeout = 15000;
         x.onload = x.onerror = x.ontimeout = res;
-        x.send(makeUploadBlob(512 * 1024));
+        x.send(makeUploadBlob(2 * 1024 * 1024)); // 512KB → 2MB (yüksek hız warmup)
       })
     )
   );
@@ -3759,7 +3881,7 @@ async function measureUpload(onLive) {
 
   // 4b) Yöntem B: fetch() + chunk zamanlama (HTTP/2 early-response ortamları)
   async function fetchStream(n) {
-    const CHUNK   = 2 * 1024 * 1024;   // 2 MB
+    const CHUNK   = 8 * 1024 * 1024;   // 2MB → 8MB (yüksek hızda round-trip azaltır)
     let fastCount = 0;
     while (performance.now() < stopAt) {
       if (stopAt - performance.now() < 300) break;
