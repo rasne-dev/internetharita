@@ -3563,20 +3563,42 @@ async function measureDownload(onLive) {
   } catch(e) { return null; }
 }
 
+function uploadOnce(bytes, onLive) {
+  // cors modu: sunucu yanıtını bekler, no-cors'taki CDN buffer timing hatasını önler
+  const url = `${SPEED_UPLOAD_URL}?bytes=${bytes}&t=${Date.now()}_${Math.random()}`;
+  const t0 = performance.now();
+  return fetch(url, {
+    method: 'POST',
+    mode: 'cors',
+    cache: 'no-store',
+    body: makeUploadBlob(bytes)
+  }).then(r => {
+    const elapsed = (performance.now() - t0) / 1000;
+    if (elapsed <= 0.05 || !r.ok) return null;
+    const mbps = Math.round((bytes * 8) / elapsed / 1e6);
+    if (mbps > 0 && onLive) onLive(mbps);
+    return mbps;
+  }).catch(() => null);
+}
+
 async function measureUpload(onLive) {
-  // ── Tasarım notları ────────────────────────────────────────────────────────
-  // fetch() tabanlı yaklaşım denendi fakat Cloudflare __up endpoint'i HTTP/2
-  // üzerinden body tam gelmeden 200 OK gönderiyor → elapsed < birkaç ms →
-  // totalSent hiç artmıyor → null dönüyor ("Yükleme ölçülemedi" hatası).
-  // Çözüm: XHR + upload.onprogress korunuyor (endpoint bağımsız çalışır),
-  // ancak iki kritik hata düzeltildi:
-  //   1) stopAt artık warmup BİTTİKTEN SONRA hesaplanıyor.
-  //   2) Sonuç samples[] ortalaması değil, totalSent/totalElapsed — daha kararlı.
+  // ── Neden hibrit (XHR + fetch) yaklaşım? ────────────────────────────────
+  // Sorun kökü: Cloudflare __up HTTP/2 kullanır ve bazı ortamlarda
+  // istemci body'yi göndermeden önce 200 OK yanıtı gönderir (early response).
+  // Bu durumda Chrome, XHR upload.onprogress'i hiç tetiklemiyor →
+  // totalSent = 0 → samples boş → null → "Yükleme ölçülemedi" hatası.
+  //
+  // Çözüm: İki yöntemi EŞ ZAMANLI çalıştır, hangisi byte üretirse kullan.
+  //   A) XHR onprogress  — early-response olmayan ortamda mükemmel
+  //   B) fetch() timing  — her chunk için elapsed ölçer, > 0.15s ise sayar
+  //
+  // Matematik neden doğru:
+  //   3 XHR + 3 fetch = 6 stream, bant genişliği 6'ya bölünür (örn. 19/6 ≈ 3.2 Mbps)
+  //   totalSent = tüm streamlerin gönderdiği bayt toplamı ≈ 19 Mbps × elapsed
+  //   totalSent / elapsed → her iki yöntem de katkıda bulunsa bile 19 Mbps ✓
   // ─────────────────────────────────────────────────────────────────────────
-  const CHUNK_SIZE      = 8 * 1024 * 1024;   // 8 MB — daha az kesme, daha uzun akış
-  const WARMUP_SIZE     = 512 * 1024;
-  const MEASURE_MS      = 9000;
-  const PARALLEL_STREAMS = 3;
+  const MEASURE_MS       = 9000;
+  const PARALLEL_STREAMS = 3;   // her yöntem için ayrı
 
   // 1) Warmup — stopAt hesabına dahil değil
   await Promise.all(
@@ -3586,29 +3608,29 @@ async function measureUpload(onLive) {
         x.open('POST', `${SPEED_UPLOAD_URL}?t=wu_${n}_${Date.now()}`);
         x.timeout = 15000;
         x.onload = x.onerror = x.ontimeout = res;
-        x.send(makeUploadBlob(WARMUP_SIZE));
+        x.send(makeUploadBlob(512 * 1024));
       })
     )
   );
 
-  // 2) stopAt warmup BİTTİKTEN SONRA belirleniyor (önemli düzeltme)
+  // 2) stopAt warmup BİTTİKTEN SONRA
   const measureStart = performance.now();
   const stopAt       = measureStart + MEASURE_MS;
-  let totalSent = 0;
+  let totalSent = 0;   // her iki yöntem bu sayaca yazar
 
-  // 3) Periyodik live callback: 400 ms'de bir kümülatif ortalama yayınla
-  let liveInterval = null;
+  // 3) Live callback — 500 ms'de bir kümülatif hız yayınla
+  let liveTimer = null;
   if (onLive) {
-    liveInterval = setInterval(() => {
+    liveTimer = setInterval(() => {
       const el = (performance.now() - measureStart) / 1000;
-      if (el > 0.3 && totalSent > 0) {
+      if (el > 0.5 && totalSent > 0) {
         const mbps = Math.round((totalSent * 8) / el / 1e6);
         if (mbps > 0) onLive(mbps);
       }
-    }, 400);
+    }, 500);
   }
 
-  // 4) Paralel XHR stream'leri — onprogress ile paylaşılan totalSent'e yaz
+  // 4a) Yöntem A: XHR + onprogress (early-response olmayan ortamlar)
   function xhrStream(n) {
     return new Promise(resolve => {
       function sendChunk() {
@@ -3621,27 +3643,54 @@ async function measureUpload(onLive) {
           prev = e.loaded;
           if (performance.now() >= stopAt) x.abort();
         };
-        x.onload    = () => sendChunk();   // chunk tamam → sonrakini başlat
+        x.onload    = () => sendChunk();
         x.onerror   = () => resolve();
         x.ontimeout = () => resolve();
-        x.onabort   = () => resolve();     // stopAt'ta abort → stream biter
+        x.onabort   = () => resolve();
         x.timeout   = 60000;
-        x.open('POST', `${SPEED_UPLOAD_URL}?t=${Date.now()}_${n}_${Math.random()}`);
-        x.send(makeUploadBlob(CHUNK_SIZE));
+        x.open('POST', `${SPEED_UPLOAD_URL}?t=${Date.now()}_x${n}`);
+        x.send(makeUploadBlob(8 * 1024 * 1024));   // 8 MB
       }
       sendChunk();
     });
   }
 
-  await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => xhrStream(i)));
-  if (liveInterval) clearInterval(liveInterval);
+  // 4b) Yöntem B: fetch() + chunk zamanlama (HTTP/2 early-response ortamları)
+  async function fetchStream(n) {
+    const CHUNK   = 2 * 1024 * 1024;   // 2 MB
+    let fastCount = 0;
+    while (performance.now() < stopAt) {
+      if (stopAt - performance.now() < 300) break;
+      const t0 = performance.now();
+      try {
+        const r = await fetch(
+          `${SPEED_UPLOAD_URL}?t=${Date.now()}_f${n}`,
+          { method: 'POST', cache: 'no-store', body: makeUploadBlob(CHUNK) }
+        );
+        await r.text().catch(() => null);          // response body tüket
+        const elapsed = (performance.now() - t0) / 1000;
+        if (elapsed >= 0.15) {
+          totalSent += CHUNK;
+          fastCount = 0;
+        } else {
+          // Sunucu body okumadan anında yanıt veriyor → bu chunk güvenilmez
+          if (++fastCount >= 5) break;
+        }
+      } catch (e) { break; }
+    }
+  }
 
-  // 5) Nihai sonuç: kümülatif totalSent / gerçek ölçüm süresi
-  //    samples[]/trim yerine bu yöntem; jitter'dan etkilenmez.
-  //    3 stream × 6.3 Mbps = 18.9 Mbps → totalSent/elapsed ≈ 19 Mbps ✓
-  const totalElapsed = (performance.now() - measureStart) / 1000;
-  if (totalSent < 100_000 || totalElapsed <= 0) return null;
-  return Math.round((totalSent * 8) / totalElapsed / 1e6);
+  // 5) Her iki yöntemi paralel çalıştır
+  await Promise.all([
+    ...Array.from({ length: PARALLEL_STREAMS }, (_, i) => xhrStream(i)),
+    ...Array.from({ length: PARALLEL_STREAMS }, (_, i) => fetchStream(i)),
+  ]);
+  if (liveTimer) clearInterval(liveTimer);
+
+  // 6) Sonuç: totalSent / toplam ölçüm süresi
+  const elapsed = (performance.now() - measureStart) / 1000;
+  if (totalSent < 100_000 || elapsed <= 0) return null;
+  return Math.round((totalSent * 8) / elapsed / 1e6);
 }
 
 // 3. UI GÜNCELLEYİCİ: runSpeedTest (Ortalama Değerlerin Bastırılması)
@@ -3710,7 +3759,7 @@ async function runSpeedTest() {
   // --- UPLOAD ---
   liveLogReset();
   document.getElementById('stPhase').textContent = '↑ YÜKLEME';
-  document.getElementById('stSub').textContent = 'Yükleme hızı ölçülüyor (~11 sn) — bağlantı ısıtma + veri gönderimi...';
+  document.getElementById('stSub').textContent = 'Yükleme hızı ölçülüyor (~10 sn) — sunucuya veri gönderiliyor...';
   document.getElementById('sgFill').style.stroke = 'var(--success)';
   document.getElementById('stVal').textContent = '…';
   
