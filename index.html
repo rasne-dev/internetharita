@@ -629,6 +629,27 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
 
 /* ISS/speed verified CSS artık sidebar bloğu içinde */
 
+/* BENİM ÖLÇÜMLERİM - PULSE EFFECT */
+@keyframes my-pin-ripple {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(3.5); opacity: 0; }
+}
+.my-pin-container { position: relative; width: 14px; height: 14px; }
+.my-pin-core {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--accent); border: 2px solid #fff;
+  box-shadow: 0 0 10px var(--accent-glow);
+  position: relative; z-index: 2;
+}
+.my-pin-ripple {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  border-radius: 50%; background: var(--accent);
+  opacity: 0; z-index: 1;
+  animation: my-pin-ripple 1.8s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+.my-pin-ripple.pending { background: var(--warn); }
+.my-pin-core.pending { background: var(--warn); border-color: #000; }
+
 @media(max-width:768px){
   nav .nav-tabs { display:none; } nav .btn-ghost { display:none; } .mobile-nav { display:flex; } .page { bottom:56px; } .toast { bottom:72px; }
   .map-sidebar { display:none; }
@@ -1294,15 +1315,23 @@ function renderMyPins() {
   const myPins = pinsData.filter(p => p.browser_fp === browserFingerprint);
   
   myPins.forEach(p => {
-    const color = speedColor(p.gercek_dl);
     const isApproved = p.gorunur === true && !p.is_quarantine;
-    const m = L.circleMarker([p.lat, p.lng], {
-      radius: 8,
-      color: isApproved ? '#fff' : 'var(--warn)',
-      fillColor: color,
-      fillOpacity: 0.9,
-      weight: 2,
-      zIndexOffset: 1000
+    const color = speedColor(p.gercek_dl);
+    
+    // YENİ: DivIcon ile her zoomda görünür puls efektli marker
+    const icon = L.divIcon({
+      className: 'my-pin-div-icon',
+      html: `<div class="my-pin-container">
+               <div class="my-pin-ripple ${isApproved?'':'pending'}"></div>
+               <div class="my-pin-core ${isApproved?'':'pending'}" style="background:${color};"></div>
+             </div>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7]
+    });
+
+    const m = L.marker([p.lat, p.lng], {
+      icon: icon,
+      zIndexOffset: 2000
     }).addTo(myPinsLayer);
     
     const dateStr = new Date(p.created_at).toLocaleDateString('tr-TR');
