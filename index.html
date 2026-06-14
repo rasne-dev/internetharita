@@ -3445,6 +3445,24 @@ let stResults = null, stRunning = false;
 const SPEED_DOWNLOAD_URL = 'https://speed.cloudflare.com/__down';
 const SPEED_UPLOAD_URL = window.SPEED_TEST_UPLOAD_URL || 'https://speed.cloudflare.com/__up';
 
+// KRİTİK DÜZELTME: Bu fonksiyon `applySpeedResults()` ve `resetPinForm()`
+// içinde çağrılıyordu ama hiçbir yerde TANIMLI DEĞİLDİ. Bu durum
+// "ReferenceError: setSpeedEntryMode is not defined" hatasına yol açıyordu.
+// applySpeedResults içinde bu satır, dlSpeed/ulSpeed alanlarına değer
+// yazılmasından, badge gösteriminden, toast'tan ve modal kapatmadan ÖNCE
+// çalıştığı için hata sessizce yutuluyor ve "Bu Sonuçları Kullan" butonu
+// kullanıcıya hiçbir şey yapmıyormuş gibi görünüyordu.
+//
+// dlSpeed/ulSpeed alanları `readonly` ve şu an için ayrı bir "manuel giriş"
+// modu UI'da yok, dolayısıyla bu fonksiyon ileride eklenebilecek bir
+// manuel/otomatik giriş modu geçişi için güvenli bir no-op olarak
+// tanımlanıyor — mevcut davranışı bozmadan hatayı ortadan kaldırır.
+function setSpeedEntryMode(mode) {
+  // 'builtin' (varsayılan/otomatik) | 'manual' (ileride eklenebilir)
+  // Şu an alanlar her zaman readonly kalıyor; bu fonksiyon sadece
+  // gelecekteki bir mod geçişi için yer tutucu olarak güvenli şekilde durur.
+}
+
 function openSpeedTestModal() {
   document.getElementById('speedTestModal').classList.add('open');
   resetSpeedTestUI();
