@@ -991,6 +991,24 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
       <div class="mod-section">
         <div class="mod-section-title">🚩 Kullanıcı Bildirimleri</div>
         <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">Kullanıcıların "Bildir" butonu ile gönderdiği raporlar.</div>
+        <!-- RLS Uyarısı: Kullanıcılar "42501 row-level security" hatası alıyorsa bu bloğu göster -->
+        <details style="margin-bottom:12px;">
+          <summary style="font-size:10px;color:var(--warn);cursor:pointer;font-family:var(--font-mono);">⚠ Kullanıcılar bildirim gönderemiyorsa — RLS kurulum rehberi</summary>
+          <div style="margin-top:8px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--text2);">
+            Hata: <code style="color:var(--danger);">42501 – new row violates row-level security policy for table "raporlar"</code><br><br>
+            Supabase SQL Editor'da bir kez çalıştır:
+            <code style="display:block;margin-top:6px;background:rgba(0,0,0,.35);padding:8px 10px;border-radius:6px;font-size:10px;color:var(--accent);white-space:pre-wrap;word-break:break-all;">ALTER TABLE raporlar ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "anon_insert_raporlar" ON raporlar
+  FOR INSERT TO anon WITH CHECK (true);
+
+CREATE POLICY "auth_select_raporlar" ON raporlar
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "auth_update_raporlar" ON raporlar
+  FOR UPDATE TO authenticated USING (true);</code>
+          </div>
+        </details>
         <div id="bekleyenList"><div class="loading-text loading-dots">Yükleniyor</div></div>
       </div>
       <div class="mod-section" style="margin-top:16px;">
@@ -1006,6 +1024,10 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
 
     <!-- SEKME 2: TÜM PİNLER -->
     <div id="modTab-tumPinler">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:var(--font-mono);">
+        <span style="color:var(--success);">✅ Doğrulandı</span> = sayfa içi hız testi &nbsp;·&nbsp;
+        <span style="color:var(--warn);">❌ Dışarıda</span> = test doğrulanmamış (eski veya manuel)
+      </div>
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
         <button class="btn-approve" style="padding:8px 16px;" id="bulkApproveBtn" onclick="bulkApprovePins()">✅ Seçilileri Onayla</button>
         <button class="btn-del" style="padding:8px 16px;" id="bulkDelBtn" onclick="bulkDeletePins()">🗑 Seçilileri Sil</button>
@@ -1024,6 +1046,7 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
               <th>Tarih &amp; Saat</th>
               <th>İSS / Altyapı</th>
               <th>Hız (DL/UL)</th>
+              <th>Hız Testi</th>
               <th>Lokasyon / Cihaz</th>
               <th>Puan</th>
               <th>Durum</th>
@@ -1251,6 +1274,23 @@ const sbc = createClient(SB_URL, SB_KEY);
      WHERE deleted_at IS NULL AND gorunur = true AND is_quarantine = false
        AND gercek_dl BETWEEN 0.5 AND 1500 AND gercek_ul > 0
        AND speed_test_verified IS NOT TRUE;
+
+   ── RAPORLAR TABLOSU RLS ────────────────────────────────────────────────────
+   Aşağıdaki hatayı alıyorsan: "new row violates row-level security policy for table raporlar"
+   Supabase SQL Editor'da çalıştır:
+
+   ALTER TABLE raporlar ENABLE ROW LEVEL SECURITY;
+
+   -- Anonim kullanıcıların rapor eklemesine izin ver
+   CREATE POLICY "anon_insert_raporlar" ON raporlar
+     FOR INSERT TO anon WITH CHECK (true);
+
+   -- Sadece moderatörler (authenticated) okuyabilir ve güncelleyebilir
+   CREATE POLICY "auth_select_raporlar" ON raporlar
+     FOR SELECT TO authenticated USING (true);
+
+   CREATE POLICY "auth_update_raporlar" ON raporlar
+     FOR UPDATE TO authenticated USING (true);
    ──────────────────────────────────────────────────────────────────────────── */
 
 let isMaintenanceMode = false;
@@ -1488,6 +1528,31 @@ function isSpam(p) {
   return false;
 }
 function cleanPins(pins) { return pins.filter(p => !isSpam(p)); }
+function isPinVisibleOnMap(p) {
+  return p.gorunur !== false && !p.is_quarantine && !isSpam(p) && isApprovedPublicIss(p.iss);
+}
+function countPendingCustomIss(pins) {
+  const knownNames = new Set(issListCache.map(i => canonicalIssName(i.name)));
+  const grouped = {};
+  (pins || []).filter(p =>
+    p.is_quarantine && p.iss &&
+    !knownNames.has(canonicalIssName(p.iss)) &&
+    canonicalIssName(p.iss) !== 'diğer'
+  ).forEach(p => { grouped[p.iss] = true; });
+  return Object.keys(grouped).length;
+}
+function updateOnayCountBadge(pins) {
+  const el = document.getElementById('onayCount');
+  if (!el) return;
+  const count = countPendingCustomIss(pins);
+  el.textContent = count > 0 ? count : '';
+}
+function speedTestStatusBadge(p) {
+  if (p.speed_test_verified === true) {
+    return `<span style="color:var(--success);font-family:var(--font-mono);font-size:9px;font-weight:700;white-space:nowrap;">✅ Doğrulandı</span>`;
+  }
+  return `<span style="color:var(--warn);font-family:var(--font-mono);font-size:9px;font-weight:700;white-space:nowrap;">❌ Dışarıda</span>`;
+}
 
 // ===== RATE LIMITING: günlük 10 pin, saatlik 5 pin (cihaz başına) =====
 const DAILY_LIMIT = 10;
@@ -2765,17 +2830,28 @@ async function submitReport() {
   const pinId = document.getElementById('reportPinId').value; const bolge = document.getElementById('reportBolge').value || null; const hexId = document.getElementById('reportHexId').value || null;
   const targets = pinId ?[{pin_id:pinId}] : activeHexPins.slice(0,5).map(p=>({pin_id:p.id}));
   if (!targets.length) return showToast('Bildirilecek veri yok','err');
+  const tip = document.getElementById('reportType').value;
+  const aciklama = document.getElementById('reportText').value || null;
+
+  const fullPayload  = t => ({ pin_id:t.pin_id, tip, aciklama, durum:'bekleyen', browser_fp: browserFingerprint || null, hex_id: hexId, bolge });
+  const basicPayload = t => ({ pin_id:t.pin_id, tip, aciklama, durum:'bekleyen' });
+
   try {
-    await Promise.all(targets.map(t => addRapor({ pin_id:t.pin_id, tip:document.getElementById('reportType').value, aciklama:document.getElementById('reportText').value||null, durum:'bekleyen', browser_fp: browserFingerprint || null, hex_id: hexId, bolge: bolge })));
+    await Promise.all(targets.map(t => addRapor(fullPayload(t))));
     showToast('✅ Bildirim alındı!'); closeReportModal();
   } catch(e) {
-    if(e.message.includes("schema cache") || e.message.includes("does not exist") || e.message.includes("column")) {
+    const msg = e.message || '';
+    if (msg.includes('row-level security') || msg.includes('42501')) {
+      // RLS politikası eksik — Supabase'de anon insert policy eklenmeli
+      showToast('⚠ Bildirim gönderilemedi: Veritabanı izin hatası (RLS). Lütfen yöneticiye bildirin.', 'err');
+      console.error('[internetHarita] raporlar RLS hatası — Supabase SQL Editor\'da "anon_insert_raporlar" politikasını ekleyin. Detay:', msg);
+    } else if (msg.includes('schema cache') || msg.includes('does not exist') || msg.includes('column')) {
       try {
-        await Promise.all(targets.map(t => addRapor({ pin_id:t.pin_id, tip:document.getElementById('reportType').value, aciklama:document.getElementById('reportText').value||null, durum:'bekleyen' })));
-        showToast('✅ Bildirim alındı! (Temel Sürüm)'); closeReportModal();
+        await Promise.all(targets.map(t => addRapor(basicPayload(t))));
+        showToast('✅ Bildirim alındı!'); closeReportModal();
       } catch(e2) { showToast('Hata: '+e2.message,'err'); }
     } else {
-      showToast('Hata: '+e.message,'err');
+      showToast('Hata: '+msg,'err');
     }
   }
 }
@@ -2831,6 +2907,7 @@ async function loadCustomIss() {
     );
     const grouped = {};
     customPins.forEach(p => { if(!grouped[p.iss]) grouped[p.iss]={pins:[],count:0}; grouped[p.iss].pins.push(p); grouped[p.iss].count++; });
+    updateOnayCountBadge(pins);
     if (!Object.keys(grouped).length) { list.innerHTML='<div class="empty-state">Bekleyen özel İSS teklifi yok ✅</div>'; return; }
     list.innerHTML = Object.entries(grouped).sort((a,b)=>b[1].count-a[1].count).map(([iss, data]) => {
       const inputId = 'norm_' + btoa(encodeURIComponent(iss)).replace(/[^a-z0-9]/gi,'').slice(0,10);
@@ -2884,7 +2961,7 @@ async function approveCustomIss(iss, normalizedName, color) {
     showToast(`✅ "${finalName}" listeye eklendi — ${targets.length} pin yayınlandı`);
     // 3. Cache ve UI güncelle
     await loadIssListAndRenderChips();
-    loadCustomIss(); await loadPins();
+    await loadCustomIss(); await loadPins(); loadIssManager();
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 
@@ -2893,7 +2970,8 @@ async function rejectCustomIss(iss) {
     const pins = await getAllPinsAdmin() || [];
     const targets = pins.filter(p => p.iss === iss && p.is_quarantine);
     for (const p of targets) await patchPin(p.id, { gorunur:false, is_quarantine:true });
-    showToast(`👁 "${iss}" için ${targets.length} pin gizlendi`); loadCustomIss();
+    showToast(`👁 "${iss}" için ${targets.length} pin gizlendi`);
+    await loadCustomIss(); loadIssManager();
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 
@@ -2906,10 +2984,11 @@ async function loadIssManager() {
     if (!items.length) { list.innerHTML='<div class="empty-state">Liste boş</div>'; return; }
     // Haritada gözüken ISS isimlerini hesapla (onaylı pinlerden)
     const visibleIssNames = new Set(cleanPinsData.map(p => canonicalIssName(p.iss)));
-    // Tüm pinlerden ISS başına ölçüm sayısı (silinmemiş, gorunur olan)
+    // Haritada görünen pinler — gizli/karantina/spam hariç
     const allPinsForCount = await getAllPinsAdmin() || [];
     const issCountMap = {};
     allPinsForCount.forEach(p => {
+      if (!isPinVisibleOnMap(p)) return;
       const name = canonicalIssName(p.iss);
       if (!name) return;
       issCountMap[name] = (issCountMap[name] || 0) + 1;
@@ -3130,7 +3209,7 @@ async function loadSpeedRankEditor(search) {
     const summary = document.createElement('tr');
     summary.innerHTML = `<td colspan="6" style="padding:8px 12px;font-size:10px;font-family:var(--font-mono);color:var(--text3);background:var(--surface2);">
       Toplam <b style="color:var(--text)">${total}</b> pin · 
-      <b style="color:var(--success)">${verifiedCount} Sıralamada</b> · 
+      <b style="color:var(--success)">${verifiedCount} Doğrulandı</b> · 
       <b style="color:var(--warn)">${unverifiedCount} Dışarıda</b>
       ${unverifiedCount > 0 ? `— <span style="color:var(--warn)">Toplu Onayla butonunu kullanın</span>` : '✅'}
     </td>`;
@@ -3142,13 +3221,9 @@ async function loadSpeedRankEditor(search) {
       const loc = [p.il, p.ilce].filter(Boolean).join(' / ') || 'Bilinmiyor';
       const isVerified = p.speed_test_verified === true;
       const hasUL = p.gercek_ul > 0;
-      const verifiedBadge = isVerified
-        ? `<span style="color:var(--success);font-family:var(--font-mono);font-size:9px;font-weight:700;">✅ Sıralamada</span>`
-        : hasUL
-          ? `<span style="color:var(--warn);font-family:var(--font-mono);font-size:9px;font-weight:700;">— Dışarıda</span>`
-          : `<span style="color:var(--text3);font-family:var(--font-mono);font-size:9px;font-weight:700;">— UL yok</span>`;
+      const verifiedBadge = speedTestStatusBadge(p);
       const quarBadge = p.is_quarantine ? `<span style="font-size:8px;color:var(--warn);margin-left:4px;">🔒</span>` : '';
-      const rowBg = isVerified ? '' : hasUL ? 'background:rgba(245,158,11,.03);' : '';
+      const rowBg = isVerified ? '' : 'background:rgba(245,158,11,.03);';
       return `<tr id="srrow_${p.id}" style="${rowBg}">
         <td>${loc}${quarBadge}</td>
         <td style="font-size:11px;">${p.iss||'—'}</td>
@@ -3179,9 +3254,7 @@ async function toggleSpeedTestVerified(id, verified) {
     if (row) {
       const badgeCell = row.cells[4];
       const actionCell = row.cells[5];
-      if (badgeCell) badgeCell.innerHTML = verified
-        ? `<span style="color:var(--success);font-family:var(--font-mono);font-size:9px;font-weight:700;">✅ Sıralamada</span>`
-        : `<span style="color:var(--text3);font-family:var(--font-mono);font-size:9px;font-weight:700;">— Dışarıda</span>`;
+      if (badgeCell) badgeCell.innerHTML = speedTestStatusBadge({ speed_test_verified: verified });
       if (actionCell) actionCell.innerHTML = verified
         ? `<button class="btn-del" style="padding:3px 8px;font-size:10px;" onclick="toggleSpeedTestVerified('${id}',false)" title="Sıralamadan çıkar">✕ Çıkar</button>`
         : `<button class="btn-approve" style="padding:3px 8px;font-size:10px;" onclick="toggleSpeedTestVerified('${id}',true)" title="Sıralamaya ekle">✓ Ekle</button>`;
@@ -3217,9 +3290,7 @@ async function refreshModData() {
   // Badge sayaçlarını güncelle (arka planda)
   try {
     const pins = await getAllPinsAdmin() || [];
-    const pendingOnay = pins.filter(p => !p.gorunur || p.is_quarantine || isSpam(p)).length;
-    const el = document.getElementById('onayCount');
-    if (el) el.textContent = pendingOnay > 0 ? pendingOnay : '';
+    updateOnayCountBadge(pins);
     const pinCountEl = document.getElementById('pinCount');
     if (pinCountEl) pinCountEl.textContent = pins.length > 0 ? pins.length : '';
     const raporlar = await getRaporlar() || [];
@@ -3319,24 +3390,26 @@ async function groupDelete(idsJson) {
 }
 
 async function loadAdminTable() {
-  const tbody = document.getElementById('adminTableBody'); tbody.innerHTML = '<tr><td colspan="8" class="loading-dots">Yükleniyor</td></tr>';
+  const tbody = document.getElementById('adminTableBody'); tbody.innerHTML = '<tr><td colspan="9" class="loading-dots">Yükleniyor</td></tr>';
   try {
     const pins = await getAllPinsAdmin()||[];
     adminPinsCache = pins;
+    updateOnayCountBadge(pins);
     const sorunlu = pins.filter(p => isSpam(p) || p.is_quarantine || p.gorunur === false || !isApprovedPublicIss(p.iss)).length;
     const badge = document.getElementById('sorunluCount');
     if (badge) badge.textContent = sorunlu > 0 ? sorunlu : '';
     renderAdminTable(pins);
-  } catch(e) { tbody.innerHTML='<tr><td colspan="8">Hata: '+e.message+'</td></tr>'; }
+  } catch(e) { tbody.innerHTML='<tr><td colspan="9">Hata: '+e.message+'</td></tr>'; }
 }
 
 function renderAdminTable(pins) {
   const tbody = document.getElementById('adminTableBody');
-  if (!pins.length) { tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text3);">Sonuç yok</td></tr>'; return; }
+  if (!pins.length) { tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text3);">Sonuç yok</td></tr>'; return; }
   tbody.innerHTML = pins.map(p => {
     const spam = isSpam(p); const tarih = new Date(p.created_at);
     const tarihStr = tarih.toLocaleDateString('tr-TR'); const saatStr = tarih.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const cihazInfo = p.browser_fp || p.ip_hash || 'Bilinmiyor';
+    const hizTestiBadge = speedTestStatusBadge(p);
     // Durum — tek satır, öncelik sırası: spam > karantina > bilinmeyen İSS > gizli > onaylı
     let durumLabel, durumColor, rowBg;
     if (spam) {
@@ -3356,6 +3429,7 @@ function renderAdminTable(pins) {
       <td style="color:var(--text3);white-space:nowrap;">${tarihStr}<br><span style="font-size:10px;color:var(--accent);font-family:var(--font-mono)">${saatStr}</span></td>
       <td><b style="color:${spam?'var(--danger)':'inherit'}">${p.iss}</b><br><span style="color:var(--text2);font-size:9px">Altyapı: ${p.altyapi_sahibi||'Belirtilmemiş'}</span></td>
       <td style="font-family:var(--font-mono)"><span style="color:${speedColor(p.gercek_dl)}">${p.gercek_dl}↓</span> / ${p.gercek_ul||0}↑<br><span style="font-size:9px;color:var(--text3)">Paket: ${(p.paket_hizi_dl||p.paket_hizi)?`↓${p.paket_hizi_dl||p.paket_hizi}${p.paket_hizi_ul?'/↑'+p.paket_hizi_ul:''} Mbps`:'—'}</span></td>
+      <td>${hizTestiBadge}</td>
       <td class="coord-text">${p.il||'?'} › ${p.ilce||'?'}<br><span style="color:var(--warn);font-size:9px;">Cihaz: ${cihazInfo.slice(0,10)}...</span></td>
       <td style="color:${memColor(p.puan)}">${p.puan}/10</td>
       <td><span style="font-size:10px;font-weight:700;color:${durumColor};font-family:var(--font-mono);">${durumLabel}</span>${modNot}</td>
