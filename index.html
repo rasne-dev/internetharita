@@ -553,7 +553,7 @@ html.light .sr-ping { background:#f5f7fa; }
 .mod-popup-row{display:flex;gap:6px;font-size:10px;margin-bottom:3px;color:var(--text2);} .mod-popup-key{color:var(--text3);min-width:65px;} .mod-popup-val{font-family:var(--font-mono);word-break:break-all;}
 
 /* ===== TOAST & MODAL ===== */
-.toast{ position:fixed;bottom:80px;left:50%; transform:translateX(-50%) translateY(80px); background:var(--surface2);border:1px solid var(--accent);color:var(--accent); padding:10px 20px;border-radius:8px; font-size:12px;font-weight:600;font-family:var(--font-body); z-index:9999;transition:transform .3s; pointer-events:none; }
+.toast{ position:fixed;bottom:80px;left:50%; transform:translateX(-50%) translateY(80px); background:var(--surface2);border:1px solid var(--accent);color:var(--accent); padding:10px 20px;border-radius:8px; font-size:12px;font-weight:600;font-family:var(--font-body); z-index:9999;transition:transform .3s; pointer-events:none; max-width:90vw; text-align:center; word-break:break-word; }
 .toast.show{transform:translateX(-50%) translateY(0);}
 .toast.err{border-color:var(--danger);color:var(--danger);} .toast.warn{border-color:var(--warn);color:var(--warn);}
 
@@ -2378,7 +2378,19 @@ async function setLocation(lat, lng) {
     document.getElementById('mahalleInput').value = resolvedMahalle;
   } catch(e) {}
 }
-function autoLocate() { if (!navigator.geolocation) return showToast('Konum desteklenmiyor','err'); showToast('Konum alınıyor...','warn'); navigator.geolocation.getCurrentPosition(pos => { maps.pin.setView([pos.coords.latitude,pos.coords.longitude],15); setLocation(pos.coords.latitude,pos.coords.longitude); }, err => showToast('Konum alınamadı: '+err.message,'err'), { enableHighAccuracy:true, timeout:10000 }); }
+function autoLocate() {
+  if (!navigator.geolocation) return showToast('Konum desteklenmiyor', 'err');
+  showToast('Konum alınıyor...', 'warn');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      maps.pin.setView([pos.coords.latitude, pos.coords.longitude], 15);
+      setLocation(pos.coords.latitude, pos.coords.longitude);
+      showToast('📍 Konum bulundu', '');
+    },
+    err => showToast('Konum alınamadı: ' + err.message, 'err'),
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
 
 // ===== MANUEL ADRES =====
 // İl koordinatları (merkezi)
@@ -2714,7 +2726,7 @@ async function submitPin() {
   
   const submissionToken = btoa(Date.now() + '-' + Math.random());
   
-  const isCustomIss = issVal === 'Diğer' && !!customIss;
+  const isCustomIss = !isAltyapiYok && issVal === 'Diğer' && !!customIss;
   const outlier = !isAltyapiYok && isOutlier(dl, pinLat, pinLng);
   const rateQuarantine = shouldQuarantine();
   const quarantine = !!(outlier || isCustomIss || rateQuarantine || isAltyapiYok);
@@ -2761,7 +2773,7 @@ async function submitPin() {
     gorunur: !quarantine, 
     sikayet_sayisi: 0, 
     is_quarantine: quarantine, 
-    custom_iss: isCustomIss ? true : null, 
+    custom_iss: (!isAltyapiYok && isCustomIss) ? true : null, 
     speed_test_verified: isAltyapiYok ? false : speedVerified,
     is_altyapi_yok: isAltyapiYok,
     client_metadata: clientMetadata
@@ -3002,7 +3014,11 @@ async function deleteUserPin(pinId) {
   }
 }
 
-function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); const kvkkCheck = document.getElementById('kvkkCheck'); if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; } }
+function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); const kvkkCheck = document.getElementById('kvkkCheck');
+  if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; }
+  const noInfraCheck = document.getElementById('noInfraCheck');
+  if (noInfraCheck && noInfraCheck.checked) { noInfraCheck.checked = false; onNoInfraChange(false); }
+}
 
 function openReportModal(pinId, locStr) {
   document.getElementById('reportPinId').value = pinId || '';
@@ -3902,7 +3918,17 @@ async function saveStatEdit(id) {
   try { await patchPin(id, { gercek_dl:dl, gercek_ul:ul, puan, gorunur }); showToast('✅ Güncellendi'); await loadPins(); } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 
-function showToast(msg, type='') { const t=document.getElementById('toast'); t.textContent=msg; t.className='toast'+(type?' '+type:''); t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3200); }
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (type ? ' ' + type : '');
+  t.classList.add('show');
+  if (window._toastTimer) clearTimeout(window._toastTimer);
+  // Kalıcı mesajlar (warn türü konum bildirimi gibi) için
+  // kullanıcı bir sonraki işlem yapana kadar bekle ama max 5sn
+  const duration = type === 'warn' ? 4000 : 3200;
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), duration);
+}
 
 async function checkSession() {
   try {
