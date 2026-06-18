@@ -1433,7 +1433,7 @@ const getPinById = async id => { const res = await sbRest(`pins?id=eq.${id}&sele
 
 const addPin = d => sbRest('pins', { method:'POST', body:JSON.stringify(d) });
 const patchPin = (id,d) => sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
-const delPin = id => sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body: JSON.stringify({ deleted_at: new Date().toISOString() }) });
+const delPin = id => sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false }) });
 const hardDelPin = id => delPin(id); // Kullanıcı verisini koru: kalıcı silme yerine soft delete.
 const getRaporlar = () => sbRest('raporlar?select=*&durum=eq.bekleyen&order=created_at.desc&limit=100');
 const addRapor = d => sbRest('raporlar', { method:'POST', body:JSON.stringify(d) });
@@ -1944,7 +1944,7 @@ async function loadPins() {
     // Kamu verileri + kullanıcının kendi verilerini (onay bekleyenler dahil) çek
     const [publicRes, myRes] = await Promise.all([
       getPins(),
-      browserFingerprint ? sbRest(`pins?select=*&browser_fp=eq.${browserFingerprint}&order=created_at.desc&limit=20`) : Promise.resolve([])
+      browserFingerprint ? sbRest(`pins?select=*&browser_fp=eq.${browserFingerprint}&deleted_at=is.null&order=created_at.desc&limit=20`) : Promise.resolve([])
     ]);
     
     const all = publicRes || [];
@@ -3006,9 +3006,13 @@ async function deleteUserPin(pinId) {
   if (!confirm('Bu ölçüm verinizi silmek istediğinize emin misiniz?')) return;
   try {
     await delPin(pinId);
+    // Ağ gecikmesi olmadan anında haritadan kaldır
+    pinsData = pinsData.filter(p => p.id !== pinId);
+    cleanPinsData = publicCleanPins(pinsData);
+    renderHex();
     showToast('🗑 Ölçümünüz silindi.');
     document.getElementById('mapInfo').classList.remove('visible');
-    await loadPins();
+    await loadPins(); // sunucu verisini de senkronize et
   } catch(e) {
     showToast('Silme işlemi sırasında hata oluştu: ' + e.message, 'err');
   }
