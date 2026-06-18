@@ -833,7 +833,11 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
   <div class="stats-top" id="sumGrid"></div>
   <div class="stats-grid">
     <div class="stat-card"><div class="stat-title">ISS Memnuniyet Sıralaması</div><div id="issRankList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
-    <div class="stat-card"><div class="stat-title">En Hızlı Lokasyonlar <span style="font-size:9px;color:var(--success);font-family:var(--font-mono);font-weight:700;margin-left:4px;">✅ Doğrulanmış</span></div><div id="speedRankList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="stat-card"><div class="stat-title">En Hızlı Lokasyonlar <span style="font-size:9px;color:var(--success);font-family:var(--font-mono);font-weight:700;margin-left:4px;">✅ Doğrulanmış</span></div><div id="speedRankList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
+      <div class="stat-card"><div class="stat-title">Hız Bandı Dağılımı</div><div id="speedBandChart"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
+      <div class="stat-card"><div class="stat-title">En Aktif İller</div><div id="activeIlList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
+    </div>
     <div class="stat-card" style="grid-column:1/-1"><div class="stat-title">Bağlantı Türü Dağılımı</div><div id="connChart"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
     <div class="stat-card" style="grid-column:1/-1"><div id="issSpeedTrend" class="trend-section"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
   </div>
@@ -2268,6 +2272,68 @@ async function renderStats() {
     }).join('');
     trendEl.innerHTML = '<div class="trend-title">İSS Başına Ort. İndirme Hızı</div>'
       + '<div class="trend-chart">' + rows + '</div>';
+  }
+
+  // HIZ BANDI DAĞILIMI
+  const bands = [
+    { label:'500+ Mbps', color:'#00d4ff', min:500, max:Infinity },
+    { label:'200–500',   color:'#22c55e', min:200, max:500 },
+    { label:'100–200',   color:'#84cc16', min:100, max:200 },
+    { label:'25–100',    color:'#f59e0b', min:25,  max:100 },
+    { label:'<25 Mbps',  color:'#ef4444', min:0,   max:25  },
+  ];
+  const bandCounts = bands.map(b => ({
+    ...b,
+    count: pins.filter(p => p.gercek_dl >= b.min && p.gercek_dl < b.max).length
+  }));
+  const maxBand = Math.max(...bandCounts.map(b => b.count), 1);
+  const bandEl = document.getElementById('speedBandChart');
+  if (bandEl) {
+    bandEl.innerHTML = bandCounts.map(b => {
+      const pct = Math.round((b.count / maxBand) * 100);
+      const ratio = pins.length ? Math.round((b.count / pins.length) * 100) : 0;
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+        <div style="width:70px;font-size:10px;font-family:var(--font-mono);color:var(--text2);flex-shrink:0;">${b.label}</div>
+        <div style="flex:1;background:var(--surface2);border-radius:3px;height:8px;overflow:hidden;">
+          <div style="width:${pct}%;height:100%;background:${b.color};border-radius:3px;transition:width .4s;"></div>
+        </div>
+        <div style="width:40px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--text3);">${ratio}%</div>
+        <div style="width:28px;text-align:right;font-size:10px;color:var(--text3);">${b.count}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // EN AKTİF İLLER
+  const ilMap = {};
+  pins.forEach(p => {
+    const il = p.il || 'Bilinmeyen';
+    if (!ilMap[il]) ilMap[il] = { count:0, totalDL:0 };
+    ilMap[il].count++;
+    ilMap[il].totalDL += p.gercek_dl;
+  });
+  const topIller = Object.entries(ilMap)
+    .map(([il, d]) => ({ il, count: d.count, avgDL: Math.round(d.totalDL / d.count) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+  const maxIlCount = Math.max(...topIller.map(x => x.count), 1);
+  const ilEl = document.getElementById('activeIlList');
+  if (ilEl) {
+    ilEl.innerHTML = topIller.map((x, i) => {
+      const pct = Math.round((x.count / maxIlCount) * 100);
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <div style="width:14px;font-size:10px;color:var(--text3);font-family:var(--font-mono);flex-shrink:0;">${i+1}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${x.il}</div>
+          <div style="background:var(--surface2);border-radius:3px;height:5px;margin-top:3px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:var(--accent);border-radius:3px;opacity:0.7;transition:width .4s;"></div>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--text2);font-weight:600;">${x.count} <span style="color:var(--text3);font-weight:400;font-size:9px;">ölçüm</span></div>
+          <div style="font-size:9px;color:${speedColor(x.avgDL)};font-family:var(--font-mono);">ort. ${x.avgDL} Mbps</div>
+        </div>
+      </div>`;
+    }).join('');
   }
 }
 
