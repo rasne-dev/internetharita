@@ -446,13 +446,14 @@ html.light .sr-ping { background:#f5f7fa; }
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;} .stat-title{font-family:var(--font-mono);font-size:9px;font-weight:700;color:var(--text3);letter-spacing:1.5px;margin-bottom:14px;text-transform:uppercase;}
 .speed-spotlight{background:linear-gradient(135deg,rgba(0,212,255,.10),rgba(34,197,94,.05));border:1px solid rgba(0,212,255,.25);border-radius:10px;padding:14px 16px;margin-bottom:12px;position:relative;overflow:hidden;}
-.speed-spotlight::after{content:'🏆';position:absolute;right:10px;top:6px;font-size:32px;opacity:.12;pointer-events:none;}
-.spotlight-label{font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.speed-spotlight::after{content:'🏆';position:absolute;right:-4px;top:-8px;font-size:46px;opacity:.10;pointer-events:none;}
+.spotlight-label{font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;position:relative;z-index:1;}
 .spotlight-name{font-size:17px;font-weight:800;color:var(--text);margin-bottom:9px;line-height:1.25;position:relative;z-index:1;}
 .spotlight-stats{display:flex;gap:20px;align-items:baseline;position:relative;z-index:1;}
 .spotlight-val{font-size:21px;font-weight:800;font-family:var(--font-mono);}
 .spotlight-unit{font-size:10px;color:var(--text3);margin-left:3px;font-weight:600;}
 .spotlight-sub{font-size:10px;color:var(--text3);margin-top:7px;position:relative;z-index:1;}
+.spotlight-delta{font-size:10px;color:var(--success);margin-top:5px;font-weight:700;position:relative;z-index:1;display:flex;align-items:center;gap:4px;}
 .rank-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
 .rank-num{font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--border2);width:22px;} .rank-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
 .rank-name{flex:1;font-size:13px;font-weight:600;} .rank-val{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--accent);}
@@ -1733,7 +1734,7 @@ function shouldQuarantine() {
 function isOutlier(dl, lat, lng) {
   if (!lat || !lng || !cleanPinsData.length) return false;    
   // Yakın pin: ~50km içindeki pinleri al (0.45 derece ≈ 50km)
-  const nearby = cleanPinsData.filter(p => p.lat && Math.abs(p.lat - lat) < 0.45 && Math.abs(p.lng - lng) < 0.45);
+  const nearby = cleanPinsData.filter(p => p.lat && !p.is_altyapi_yok && Math.abs(p.lat - lat) < 0.45 && Math.abs(p.lng - lng) < 0.45);
 
   // En az 5 veri yoksa sapma hesabı yapma (Az veri riskini engeller)
   if (nearby.length < 5) return false; 
@@ -2146,10 +2147,14 @@ function sortRegions(mode) { regionSortMode = mode;['sortDL','sortMem','sortCoun
 async function renderStats() {
   let pins = cleanPinsData;
   if (!pins.length) {['issRankList','speedRankList','connChart','speedBandChart','activeIlList'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = '<div class="loading-text">Henüz veri yok</div>'; }); return; }
-  const avgDL = Math.round(pins.reduce((a,p)=>a+p.gercek_dl,0)/Math.max(1,pins.length));
-  const ulPins = pins.filter(p=>p.gercek_ul>0); const avgUL = ulPins.length ? Math.round(ulPins.reduce((a,p)=>a+p.gercek_ul,0)/ulPins.length) : 0;
+  // "Altyapı Yok" bildirimleri gercek_dl/gercek_ul=0 olarak kayıtlıdır; bunlar gerçek bir hız ölçümü
+  // değildir ve hız istatistiklerine (ortalama, bant dağılımı, en hızlı lokasyon vb.) dahil edilirse
+  // ortalamaları yanlış şekilde aşağı çeker. Bu yüzden tüm hız hesaplarında speedPins kullanılır.
+  const speedPins = pins.filter(p => !p.is_altyapi_yok);
+  const avgDL = Math.round(speedPins.reduce((a,p)=>a+p.gercek_dl,0)/Math.max(1,speedPins.length));
+  const ulPins = speedPins.filter(p=>p.gercek_ul>0); const avgUL = ulPins.length ? Math.round(ulPins.reduce((a,p)=>a+p.gercek_ul,0)/ulPins.length) : 0;
   const avgS = pins.length ? (pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1) : '—';
-  document.getElementById('sumGrid').innerHTML = `<div class="sum-card"><div class="sum-val">${pins.length}</div><div class="sum-label">Onaylı Ölçüm</div></div><div class="sum-card"><div class="sum-val" style="color:${speedColor(avgDL)}">${avgDL}</div><div class="sum-label">Ort. İndirme (↓ Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgUL?speedColor(avgUL):'var(--text3)'}">${avgUL||'—'}</div><div class="sum-label">Ort. Yükleme (↑ Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgS!=='—'?memColor(avgS):'var(--text3)'}">${avgS}</div><div class="sum-label">Ort. Memnuniyet</div></div>`;
+  document.getElementById('sumGrid').innerHTML = `<div class="sum-card"><div class="sum-val">${speedPins.length}</div><div class="sum-label">Onaylı Ölçüm</div></div><div class="sum-card"><div class="sum-val" style="color:${speedColor(avgDL)}">${avgDL}</div><div class="sum-label">Ort. İndirme (↓ Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgUL?speedColor(avgUL):'var(--text3)'}">${avgUL||'—'}</div><div class="sum-label">Ort. Yükleme (↑ Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgS!=='—'?memColor(avgS):'var(--text3)'}">${avgS}</div><div class="sum-label">Ort. Memnuniyet</div></div>`;
 
   // issListCache (Supabase) + getAllIss() (BASE_ISS + localStorage) birleşimi — hiçbir onaylı ISS atlanmasın
   const knownFromCache = issListCache.map(i => canonicalIssName(i.name));
@@ -2173,10 +2178,13 @@ async function renderStats() {
     .join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok (min. 3 farklı kullanıcı gerekli)</div>';
   
   // EN HIZLI LOKASYONLAR
+  // "Altyapı Yok" bildirimleri gercek_dl=0 ile kayıtlı olduğundan hız istatistiklerine asla dahil edilmemeli
+  // (aksi halde ortalamaları ve "en hızlı konum" listesini yanlış şekilde aşağı çeker).
+  const speedEligiblePins = pins.filter(p => !p.is_altyapi_yok);
   // Katman 1: speed_test_verified=true — yerleşik testle doğrulanmış, güvenilir veriler
-  const testedPins = pins.filter(p => p.speed_test_verified === true);
+  const testedPins = speedEligiblePins.filter(p => p.speed_test_verified === true);
   // Katman 2: doğrulanmış yoksa tüm temiz pinlerden referans gösterimi
-  const fallbackPins = pins; // cleanPinsData zaten geçerli pinler
+  const fallbackPins = speedEligiblePins;
 
   function buildLocationMap(srcPins) {
     const lm = {};
@@ -2190,11 +2198,19 @@ async function renderStats() {
     return lm;
   }
 
+  // İndirme + yükleme ortalamasından tek bir karşılaştırma skoru üretir.
+  // Böylece "1000↓/50↑" gibi tek yönlü yüksek bir değer, "999↓/999↑" gibi
+  // dengeli ve gerçekte daha güçlü bir bağlantıyı haksız yere geride bırakmaz.
+  function withScore(d) {
+    const dl = Math.round(d.t / d.c), ul = Math.round(d.tul / d.c);
+    return { ...d, dl, ul, score: Math.round((dl + ul) / 2) };
+  }
+
   const speedRankEl = document.getElementById('speedRankList');
   const verifiedLm = buildLocationMap(testedPins);
   const verifiedEntries = Object.entries(verifiedLm)
-    .map(([k,d]) => ({ ...d, dl: Math.round(d.t/d.c), ul: Math.round(d.tul/d.c) }))
-    .sort((a,b) => b.dl - a.dl)
+    .map(([k,d]) => withScore(d))
+    .sort((a,b) => b.score - a.score)
     .slice(0, 8);
 
   function renderLocEntry(x, i, badge) {
@@ -2212,13 +2228,18 @@ async function renderStats() {
     </div>`;
   }
 
-  function renderSpotlight(top, verified) {
+  function renderSpotlight(top, verified, second) {
     const parts = [top.il, top.ilce, top.mahalle].filter(Boolean);
     const title = parts.length ? parts.join(' / ') : 'Bilinmeyen';
     const badgeColor = verified ? 'var(--success)' : 'var(--warn)';
     const badgeBg = verified ? 'rgba(34,197,94,.15)' : 'rgba(245,158,11,.15)';
     const badgeBorder = verified ? 'var(--success)' : 'rgba(245,158,11,.4)';
     const badgeText = verified ? '✅ DOĞRULANMIŞ' : '📊 REFERANS';
+    const diff = second ? Math.max(top.score - second.score, 0) : 0;
+    const secondTitle = second ? ([second.il, second.ilce, second.mahalle].filter(Boolean).join(' / ') || 'Bilinmeyen') : '';
+    const deltaHtml = (second && diff > 0)
+      ? `<div class="spotlight-delta">▲ 2. sıradaki ${secondTitle} konumundan ortalama ${diff} Mbps önde</div>`
+      : '';
     return `<div class="speed-spotlight">
       <div class="spotlight-label">
         <span style="color:var(--text3);">🏆 EN HIZLI KONUM</span>
@@ -2230,6 +2251,7 @@ async function renderStats() {
         <div><span class="spotlight-val" style="color:var(--text2);font-size:16px;">${top.ul}</span><span class="spotlight-unit">Mbps ↑</span></div>
       </div>
       <div class="spotlight-sub">${top.c} ölçüm${verified ? ' · yerleşik hız testi ile doğrulanmış' : ''}</div>
+      ${deltaHtml}
     </div>`;
   }
 
@@ -2237,21 +2259,21 @@ async function renderStats() {
     // Doğrulanmış veri var — #1 spotlight, #2+ liste
     const [top, ...rest] = verifiedEntries;
     speedRankEl.innerHTML =
-      renderSpotlight(top, true) +
+      renderSpotlight(top, true, rest[0]) +
       rest.map((x, i) => renderLocEntry(x, i + 1, '')).join('');
   } else {
     // Doğrulanmış veri yok — tüm ölçümlerden referans göster + bilgi notu
     const allLm = buildLocationMap(fallbackPins);
     const allEntries = Object.entries(allLm)
-      .map(([k,d]) => ({ ...d, dl: Math.round(d.t/d.c), ul: Math.round(d.tul/d.c) }))
-      .sort((a,b) => b.dl - a.dl)
+      .map(([k,d]) => withScore(d))
+      .sort((a,b) => b.score - a.score)
       .slice(0, 8);
     if (!allEntries.length) {
       speedRankEl.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz veri yok</div>';
     } else {
       const [top, ...rest] = allEntries;
       speedRankEl.innerHTML =
-        renderSpotlight(top, false) +
+        renderSpotlight(top, false, rest[0]) +
         `<div style="font-size:10px;color:var(--text3);margin-bottom:8px;line-height:1.5;">
           Yerleşik hız testi doğrulaması henüz yok. Mod paneli → İSS Yönetimi → <b>Toplu Onayla</b> ile eski pinleri doğrulayın.
         </div>` +
@@ -2269,7 +2291,7 @@ async function renderStats() {
 
   // ISS BAŞINA ORTALAMA HIZ TREND CHART
   const issSpeedMap = {};
-  pins.forEach(p => {
+  speedPins.forEach(p => {
     const iss = canonicalIssName(p.iss);
     if (!iss) return;
     if (!issSpeedMap[iss]) issSpeedMap[iss] = { total:0, count:0 };
@@ -2317,14 +2339,14 @@ async function renderStats() {
   ];
   const bandCounts = bands.map(b => ({
     ...b,
-    count: pins.filter(p => p.gercek_dl >= b.min && p.gercek_dl < b.max).length
+    count: speedPins.filter(p => p.gercek_dl >= b.min && p.gercek_dl < b.max).length
   }));
   const maxBand = Math.max(...bandCounts.map(b => b.count), 1);
   const bandEl = document.getElementById('speedBandChart');
   if (bandEl) {
     bandEl.innerHTML = bandCounts.map(b => {
       const pct = Math.round((b.count / maxBand) * 100);
-      const ratio = pins.length ? Math.round((b.count / pins.length) * 100) : 0;
+      const ratio = speedPins.length ? Math.round((b.count / speedPins.length) * 100) : 0;
       return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
         <div style="width:70px;font-size:10px;font-family:var(--font-mono);color:var(--text2);flex-shrink:0;">${b.label}</div>
         <div style="flex:1;background:var(--surface2);border-radius:3px;height:8px;overflow:hidden;">
@@ -2340,12 +2362,12 @@ async function renderStats() {
   const ilMap = {};
   pins.forEach(p => {
     const il = p.il || 'Bilinmeyen';
-    if (!ilMap[il]) ilMap[il] = { count:0, totalDL:0 };
+    if (!ilMap[il]) ilMap[il] = { count:0, totalDL:0, dlCount:0 };
     ilMap[il].count++;
-    ilMap[il].totalDL += p.gercek_dl;
+    if (!p.is_altyapi_yok) { ilMap[il].totalDL += p.gercek_dl; ilMap[il].dlCount++; }
   });
   const topIller = Object.entries(ilMap)
-    .map(([il, d]) => ({ il, count: d.count, avgDL: Math.round(d.totalDL / d.count) }))
+    .map(([il, d]) => ({ il, count: d.count, dlCount: d.dlCount, avgDL: d.dlCount ? Math.round(d.totalDL / d.dlCount) : 0 }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 6);
   const maxIlCount = Math.max(...topIller.map(x => x.count), 1);
@@ -2363,7 +2385,7 @@ async function renderStats() {
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-size:11px;font-family:var(--font-mono);color:var(--text2);font-weight:600;">${x.count} <span style="color:var(--text3);font-weight:400;font-size:9px;">ölçüm</span></div>
-          <div style="font-size:9px;color:${speedColor(x.avgDL)};font-family:var(--font-mono);">ort. ${x.avgDL} Mbps</div>
+          <div style="font-size:9px;color:${x.dlCount?speedColor(x.avgDL):'var(--text3)'};font-family:var(--font-mono);">${x.dlCount ? 'ort. '+x.avgDL+' Mbps' : 'sadece altyapı bildirimi'}</div>
         </div>
       </div>`;
     }).join('');
