@@ -451,7 +451,7 @@ html.light .sr-ping { background:#f5f7fa; }
 
 /* En Hızlı Lokasyonlar Özelleştirilmiş Tasarım */
 .speed-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
-.speed-name{font-size:14px;font-weight:700;color:var(--text);}
+.speed-name{font-size:14px;font-weight:700;color:var(--text);line-height:1.3;}
 .speed-loc{font-size:11px;color:var(--text3);margin-top:3px;}
 .speed-val{font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--s3);}
 
@@ -1686,8 +1686,8 @@ function onNoInfraChange(checked) {
   if (checked) {
     // Hız bölümlerini etkisizleştir
     if (speedBtn) speedBtn.disabled = true;
-    document.getElementById('dlSpeed').value = '0';
-    document.getElementById('ulSpeed').value = '0';
+    document.getElementById('dlSpeed').value = '';
+    document.getElementById('ulSpeed').value = '';
     document.getElementById('packageSpeedDL').value = '';
     document.getElementById('packageSpeedUL').value = '';
     document.getElementById('speedVerifiedBadge').classList.remove('show');
@@ -2137,7 +2137,7 @@ function sortRegions(mode) { regionSortMode = mode;['sortDL','sortMem','sortCoun
 
 async function renderStats() {
   let pins = cleanPinsData;
-  if (!pins.length) {['issRankList','speedRankList','connChart'].forEach(id => document.getElementById(id).innerHTML = '<div class="loading-text">Henüz veri yok</div>'); return; }
+  if (!pins.length) {['issRankList','speedRankList','connChart','speedBandChart','activeIlList'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = '<div class="loading-text">Henüz veri yok</div>'; }); return; }
   const avgDL = Math.round(pins.reduce((a,p)=>a+p.gercek_dl,0)/Math.max(1,pins.length));
   const ulPins = pins.filter(p=>p.gercek_ul>0); const avgUL = ulPins.length ? Math.round(ulPins.reduce((a,p)=>a+p.gercek_ul,0)/ulPins.length) : 0;
   const avgS = pins.length ? (pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1) : '—';
@@ -2173,8 +2173,8 @@ async function renderStats() {
   function buildLocationMap(srcPins) {
     const lm = {};
     srcPins.forEach(p => {
-      const k = [p.il||'?', p.ilce||'?'].join('_');
-      if (!lm[k]) lm[k] = { t:0, tul:0, c:0, il:p.il, ilce:p.ilce };
+      const k = [p.il||'?', p.ilce||'?', p.mahalle||'?'].join('_');
+      if (!lm[k]) lm[k] = { t:0, tul:0, c:0, il:p.il, ilce:p.ilce, mahalle:p.mahalle };
       lm[k].t += p.gercek_dl;
       lm[k].tul += p.gercek_ul || 0;
       lm[k].c++;
@@ -2190,7 +2190,8 @@ async function renderStats() {
     .slice(0, 8);
 
   function renderLocEntry(x, i, badge) {
-    const title = (x.il && x.ilce) ? `${x.il} / ${x.ilce}` : x.il || x.ilce || 'Bilinmeyen';
+    const parts = [x.il, x.ilce, x.mahalle].filter(Boolean);
+    const title = parts.length ? parts.join(' / ') : 'Bilinmeyen';
     return `<div class="speed-item">
       <div>
         <div class="speed-name"><span style="color:var(--text3);font-size:11px;margin-right:4px;">${i+1}.</span>${title}</div>
@@ -2231,8 +2232,13 @@ async function renderStats() {
     }
   }
   
-  const cm={fiber:0,vdsl:0,adsl:0}; pins.forEach(p=>{if(cm[p.baglanti_turu]!==undefined) cm[p.baglanti_turu]++;});
-  document.getElementById('connChart').innerHTML =[{l:'Fiber',v:cm.fiber,c:'#00d4ff'},{l:'VDSL',v:cm.vdsl,c:'#FB8C00'},{l:'ADSL',v:cm.adsl,c:'#E53935'}].map(t=>`<div class="ct-row"><div class="ct-label">${t.l}</div><div class="ct-track"><div class="ct-fill" style="width:${pins.length?(t.v/pins.length*100).toFixed(0):0}%;background:${t.c}"></div></div><div class="ct-pct">${pins.length?(t.v/pins.length*100).toFixed(0):0}%</div></div>`).join('');
+  const cm={fiber:0,vdsl:0,adsl:0,yok:0}; pins.forEach(p=>{if(cm[p.baglanti_turu]!==undefined) cm[p.baglanti_turu]++;});
+  document.getElementById('connChart').innerHTML =[
+    {l:'Fiber',v:cm.fiber,c:'#00d4ff'},
+    {l:'VDSL',v:cm.vdsl,c:'#FB8C00'},
+    {l:'ADSL',v:cm.adsl,c:'#E53935'},
+    ...(cm.yok > 0 ? [{l:'Altyapı Yok',v:cm.yok,c:'#6b7280'}] : [])
+  ].map(t=>`<div class="ct-row"><div class="ct-label">${t.l}</div><div class="ct-track"><div class="ct-fill" style="width:${pins.length?(t.v/pins.length*100).toFixed(0):0}%;background:${t.c}"></div></div><div class="ct-pct">${pins.length?(t.v/pins.length*100).toFixed(0):0}%</div></div>`).join('');
 
   // ISS BAŞINA ORTALAMA HIZ TREND CHART
   const issSpeedMap = {};
@@ -2428,21 +2434,26 @@ function findNeighbourhood(a, matchedIlce) {
   return '';
 }
 
-async function setLocation(lat, lng) {
+let _nominatimTimer = null;
+function setLocation(lat, lng) {
   pinLat=lat; pinLng=lng; if(pinMarker) maps.pin.removeLayer(pinMarker);
   pinMarker = L.circle([lat,lng],{radius:100,color:'#00d4ff',fillColor:'#00d4ff',fillOpacity:.12,weight:2}).addTo(maps.pin);
   document.getElementById('locDot').classList.add('set'); document.getElementById('locText').textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-  try {
-    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=tr`);
-    const d = await r.json();
-    const a = d.address||{};
-    const resolvedIl = findProvince(a);
-    const resolvedIlce = findDistrict(a, resolvedIl);
-    const resolvedMahalle = findNeighbourhood(a, resolvedIlce);
-    document.getElementById('ilInput').value = resolvedIl;
-    document.getElementById('ilceInput').value = resolvedIlce;
-    document.getElementById('mahalleInput').value = resolvedMahalle;
-  } catch(e) {}
+  // Nominatim'e debounce ile git — hızlı tıklamalarda önceki isteği iptal et
+  if (_nominatimTimer) clearTimeout(_nominatimTimer);
+  _nominatimTimer = setTimeout(async () => {
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=tr`);
+      const d = await r.json();
+      const a = d.address||{};
+      const resolvedIl = findProvince(a);
+      const resolvedIlce = findDistrict(a, resolvedIl);
+      const resolvedMahalle = findNeighbourhood(a, resolvedIlce);
+      document.getElementById('ilInput').value = resolvedIl;
+      document.getElementById('ilceInput').value = resolvedIlce;
+      document.getElementById('mahalleInput').value = resolvedMahalle;
+    } catch(e) {}
+  }, 600);
 }
 function autoLocate() {
   if (!navigator.geolocation) return showToast('Konum desteklenmiyor', 'err');
@@ -4123,6 +4134,13 @@ function flyToResult(lat, lng) {
 }
 document.addEventListener('click', e => {
   if (!e.target.closest('.search-wrap')) document.getElementById('searchResults')?.classList.remove('open');
+  // mapInfo popup: harita alanına tıklanınca kapat (pin/marker tıklamaları hariç)
+  const info = document.getElementById('mapInfo');
+  if (info && info.classList.contains('visible')) {
+    if (!e.target.closest('#mapInfo') && !e.target.closest('.leaflet-marker-icon') && !e.target.closest('path')) {
+      info.classList.remove('visible');
+    }
+  }
 });
 
 // ===== PWA SERVİS ÇALIŞANI =====
