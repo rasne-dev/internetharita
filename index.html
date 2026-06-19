@@ -445,6 +445,14 @@ html.light .sr-ping { background:#f5f7fa; }
 .sum-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;} .sum-val{font-family:var(--font-mono);font-size:26px;font-weight:700;color:var(--accent);} .sum-label{font-size:10px;color:var(--text3);margin-top:4px;}
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;} .stat-title{font-family:var(--font-mono);font-size:9px;font-weight:700;color:var(--text3);letter-spacing:1.5px;margin-bottom:14px;text-transform:uppercase;}
+.speed-spotlight{background:linear-gradient(135deg,rgba(0,212,255,.10),rgba(34,197,94,.05));border:1px solid rgba(0,212,255,.25);border-radius:10px;padding:14px 16px;margin-bottom:12px;position:relative;overflow:hidden;}
+.speed-spotlight::after{content:'🏆';position:absolute;right:10px;top:6px;font-size:32px;opacity:.12;pointer-events:none;}
+.spotlight-label{font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.spotlight-name{font-size:17px;font-weight:800;color:var(--text);margin-bottom:9px;line-height:1.25;position:relative;z-index:1;}
+.spotlight-stats{display:flex;gap:20px;align-items:baseline;position:relative;z-index:1;}
+.spotlight-val{font-size:21px;font-weight:800;font-family:var(--font-mono);}
+.spotlight-unit{font-size:10px;color:var(--text3);margin-left:3px;font-weight:600;}
+.spotlight-sub{font-size:10px;color:var(--text3);margin-top:7px;position:relative;z-index:1;}
 .rank-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
 .rank-num{font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--border2);width:22px;} .rank-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
 .rank-name{flex:1;font-size:13px;font-weight:600;} .rank-val{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--accent);}
@@ -834,7 +842,7 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
   <div class="stats-grid">
     <div class="stat-card"><div class="stat-title">ISS Memnuniyet Sıralaması</div><div id="issRankList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
     <div style="display:flex;flex-direction:column;gap:14px;">
-      <div class="stat-card"><div class="stat-title">En Hızlı Lokasyonlar <span style="font-size:9px;color:var(--success);font-family:var(--font-mono);font-weight:700;margin-left:4px;">✅ Doğrulanmış</span></div><div id="speedRankList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
+      <div class="stat-card"><div class="stat-title">En Hızlı Lokasyonlar</div><div id="speedRankList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
       <div class="stat-card"><div class="stat-title">Hız Bandı Dağılımı</div><div id="speedBandChart"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
       <div class="stat-card"><div class="stat-title">En Aktif İller</div><div id="activeIlList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
     </div>
@@ -2204,14 +2212,33 @@ async function renderStats() {
     </div>`;
   }
 
+  function renderSpotlight(top, verified) {
+    const parts = [top.il, top.ilce, top.mahalle].filter(Boolean);
+    const title = parts.length ? parts.join(' / ') : 'Bilinmeyen';
+    const badgeColor = verified ? 'var(--success)' : 'var(--warn)';
+    const badgeBg = verified ? 'rgba(34,197,94,.15)' : 'rgba(245,158,11,.15)';
+    const badgeBorder = verified ? 'var(--success)' : 'rgba(245,158,11,.4)';
+    const badgeText = verified ? '✅ DOĞRULANMIŞ' : '📊 REFERANS';
+    return `<div class="speed-spotlight">
+      <div class="spotlight-label">
+        <span style="color:var(--text3);">🏆 EN HIZLI KONUM</span>
+        <span style="background:${badgeBg};border:1px solid ${badgeBorder};color:${badgeColor};padding:1px 7px;border-radius:4px;">${badgeText}</span>
+      </div>
+      <div class="spotlight-name">${title}</div>
+      <div class="spotlight-stats">
+        <div><span class="spotlight-val" style="color:${speedColor(top.dl)}">${top.dl}</span><span class="spotlight-unit">Mbps ↓</span></div>
+        <div><span class="spotlight-val" style="color:var(--text2);font-size:16px;">${top.ul}</span><span class="spotlight-unit">Mbps ↑</span></div>
+      </div>
+      <div class="spotlight-sub">${top.c} ölçüm${verified ? ' · yerleşik hız testi ile doğrulanmış' : ''}</div>
+    </div>`;
+  }
+
   if (verifiedEntries.length) {
-    // Doğrulanmış veri var — sadece bunları göster
+    // Doğrulanmış veri var — #1 spotlight, #2+ liste
+    const [top, ...rest] = verifiedEntries;
     speedRankEl.innerHTML =
-      `<div style="font-size:9px;color:var(--success);font-family:var(--font-mono);font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:5px;">
-        <span style="background:rgba(34,197,94,.15);border:1px solid var(--success);padding:1px 7px;border-radius:4px;">✅ DOĞRULANMIŞ</span>
-        <span style="color:var(--text3);font-weight:400;">— Yerleşik hız testi ile ölçülmüş</span>
-      </div>` +
-      verifiedEntries.map((x, i) => renderLocEntry(x, i, '')).join('');
+      renderSpotlight(top, true) +
+      rest.map((x, i) => renderLocEntry(x, i + 1, '')).join('');
   } else {
     // Doğrulanmış veri yok — tüm ölçümlerden referans göster + bilgi notu
     const allLm = buildLocationMap(fallbackPins);
@@ -2222,13 +2249,13 @@ async function renderStats() {
     if (!allEntries.length) {
       speedRankEl.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz veri yok</div>';
     } else {
+      const [top, ...rest] = allEntries;
       speedRankEl.innerHTML =
-        `<div style="font-size:9px;color:var(--warn);font-family:var(--font-mono);margin-bottom:8px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:6px;padding:6px 9px;line-height:1.5;">
-          📊 <b>Tüm Ölçümler (Referans)</b><br>
-          <span style="font-weight:400;color:var(--text3);">Yerleşik hız testi doğrulaması henüz yok.
-          Mod paneli → İSS Yönetimi → <b>Toplu Onayla</b> ile eski pinleri doğrulayın.</span>
+        renderSpotlight(top, false) +
+        `<div style="font-size:10px;color:var(--text3);margin-bottom:8px;line-height:1.5;">
+          Yerleşik hız testi doğrulaması henüz yok. Mod paneli → İSS Yönetimi → <b>Toplu Onayla</b> ile eski pinleri doğrulayın.
         </div>` +
-        allEntries.map((x, i) => renderLocEntry(x, i, '')).join('');
+        rest.map((x, i) => renderLocEntry(x, i + 1, '')).join('');
     }
   }
   
