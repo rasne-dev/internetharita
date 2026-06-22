@@ -941,7 +941,7 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
       <div class="fg">
         <div class="fl">Bağlantı Türü</div>
         <div class="cbtns"><div class="cbtn fiber" onclick="selConn(this,'fiber')">Fiber</div><div class="cbtn vdsl" onclick="selConn(this,'vdsl')">VDSL</div><div class="cbtn adsl" onclick="selConn(this,'adsl')">ADSL</div><div class="cbtn docsis" onclick="selConn(this,'docsis')">DOCSIS</div></div>
-        <div style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">DOCSIS, Türksat'ın TV kablosu (coaxial) üzerinden verdiği internet türüdür. Türksat'tan fiber veya VDSL hizmeti alıyorsanız DOCSIS'i değil, "Fiber" veya "VDSL"yi seçin — DOCSIS sadece kablo TV hattından gelen Türksat bağlantıları içindir.</div>
+        <div id="docsisNote" style="display:none;font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">DOCSIS, Türksat'ın TV kablosu (coaxial) üzerinden verdiği internet türüdür. Türksat'tan fiber veya VDSL hizmeti alıyorsanız DOCSIS'i değil, "Fiber" veya "VDSL"yi seçin — DOCSIS sadece kablo TV hattından gelen Türksat bağlantıları içindir.</div>
       </div>
       <div class="fg">
         <div class="fl">Paket Hızı</div>
@@ -2840,6 +2840,8 @@ function selConn(el,type) {
   selConnVal=type;
   const issSel = document.getElementById('issSelect');
   const infraSel = document.getElementById('infraSelect');
+  const docsisNote = document.getElementById('docsisNote');
+  if (docsisNote) docsisNote.style.display = (type === 'docsis') ? 'block' : 'none';
   if (type === 'docsis') {
     // DOCSIS yalnızca Türksat altyapısı üzerinden veriliyor — İSS ve Altyapı Sahibi otomatik sabitlenir, değiştirilemez
     if (issSel) { issSel.value = 'Türksat Kablonet'; issSel.disabled = true; toggleCustomIss('Türksat Kablonet'); }
@@ -3256,7 +3258,7 @@ async function deleteUserPin(pinId) {
   }
 }
 
-function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); const kvkkCheck = document.getElementById('kvkkCheck');
+function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); const kvkkCheck = document.getElementById('kvkkCheck');
   if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; }
   const noInfraCheck = document.getElementById('noInfraCheck');
   if (noInfraCheck && noInfraCheck.checked) { noInfraCheck.checked = false; onNoInfraChange(false); }
