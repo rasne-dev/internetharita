@@ -223,6 +223,8 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
 .chip-vdsl.on { background: rgba(251,140,0,0.1); border-color: var(--s4); }
 .chip-adsl { color: var(--s5); border-color: rgba(229,57,53,0.4); }
 .chip-adsl.on { background: rgba(229,57,53,0.1); border-color: var(--s5); }
+.chip-docsis { color: #b388ff; border-color: rgba(124,77,255,0.4); }
+.chip-docsis.on { background: rgba(124,77,255,0.12); border-color: #7c4dff; }
 .chip-iss { background: none; }
 .chip-iss.on { background: rgba(255,255,255,0.05); }
 
@@ -270,6 +272,8 @@ html.light .chip-vdsl { color: #e65100; border-color: rgba(230,81,0,0.5); }
 html.light .chip-vdsl.on { background: rgba(230,81,0,0.08); border-color: #e65100; }
 html.light .chip-adsl { color: #c62828; border-color: rgba(198,40,40,0.5); }
 html.light .chip-adsl.on { background: rgba(198,40,40,0.08); border-color: #c62828; }
+html.light .chip-docsis { color: #5e35b1; border-color: rgba(94,53,177,0.5); }
+html.light .chip-docsis.on { background: rgba(94,53,177,0.08); border-color: #5e35b1; }
 html.light .chip-iss { opacity: 0.45; }
 html.light .chip-iss.on { opacity: 1; background: rgba(0,0,0,0.05); }
 html.light .map-sidebar-toggle { background: rgba(255,255,255,0.97); border-color: rgba(0,0,0,0.12); color: #0077cc; }
@@ -478,7 +482,7 @@ html.light .sr-ping { background:#f5f7fa; }
 .fiu{position:relative;} .fiu input{ width:100%;padding:9px 44px 9px 12px; background:var(--surface2);border:1px solid var(--border); color:var(--text);border-radius:7px;font-size:12px; outline:none;} .fiu input:focus{border-color:var(--accent);} .fiu-unit{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--text3);font-family:var(--font-mono);pointer-events:none;}
 .speed-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;} .score-row{display:flex;gap:3px;flex-wrap:wrap;}
 .sbtn{ flex:1;min-width:28px;padding:6px 2px;border-radius:5px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:10px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center; } .sbtn.sel{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
-.cbtns{display:flex;gap:6px;} .cbtn{ flex:1;padding:8px;border-radius:6px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:11px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center; } .cbtn.fiber.sel{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);} .cbtn.vdsl.sel{background:rgba(251,140,0,.12);border-color:var(--s4);color:var(--s4);} .cbtn.adsl.sel{background:rgba(229,57,53,.12);border-color:var(--s5);color:var(--s5);}
+.cbtns{display:flex;gap:6px;} .cbtn{ flex:1;padding:8px;border-radius:6px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:11px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center; } .cbtn.fiber.sel{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);} .cbtn.vdsl.sel{background:rgba(251,140,0,.12);border-color:var(--s4);color:var(--s4);} .cbtn.adsl.sel{background:rgba(229,57,53,.12);border-color:var(--s5);color:var(--s5);} .cbtn.docsis.sel{background:rgba(124,77,255,.12);border-color:#7c4dff;color:#b388ff;} .cbtn.docsis:disabled,.fs:disabled{opacity:.55;cursor:not-allowed;}
 .loc-box{ background:var(--surface2);border:1px solid var(--border); border-radius:7px;padding:9px 12px;font-size:11px; color:var(--text3);display:flex;align-items:center;gap:8px; }
 .loc-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);flex-shrink:0;} .loc-dot.set{background:var(--success);box-shadow:0 0 8px var(--success);}
 .loc-actions{display:flex;gap:6px;margin-top:5px;} .btn-loc{ flex:1;padding:8px;border-radius:6px; border:1px solid rgba(0,212,255,.3); background:var(--accent-dim);color:var(--accent); font-size:11px;font-weight:700;cursor:pointer; text-align:center; }
@@ -788,6 +792,7 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
             <div class="chip chip-fiber on" onclick="toggleChip(this,'fiber')">Fiber</div>
             <div class="chip chip-vdsl on" onclick="toggleChip(this,'vdsl')">VDSL</div>
             <div class="chip chip-adsl on" onclick="toggleChip(this,'adsl')">ADSL</div>
+            <div class="chip chip-docsis on" onclick="toggleChip(this,'docsis')">DOCSIS</div>
           </div>
         </div>
 
@@ -878,7 +883,7 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
         <div class="loc-actions">
           <div class="btn-loc" onclick="autoLocate()">📍 Konumumu Bul</div>
           <div class="btn-loc" onclick="showToast('Haritaya tıklayarak konum seçin','warn')">🗺 Haritadan Seç</div>
-          <div class="btn-loc" style="background:var(--surface2);border-color:var(--border2);color:var(--text2);" onclick="toggleManualAddress()">📋 Elle Adres Gir</div>
+          <div class="btn-loc" style="background:var(--surface2);border-color:var(--border2);color:var(--text2);" onclick="toggleManualAddress()">📋 İl/İlçe/Mahalle Yanlışsa Düzelt</div>
         </div>
         <div class="loc-actions" style="margin-top:4px;">
           <div class="btn-loc" style="flex:1;background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.35);color:var(--danger);" onclick="clearPinLocation()">✕ Konumu Temizle</div>
@@ -897,7 +902,7 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
 
       <!-- MANUEL ADRES GİRİŞİ (gizli, toggle ile açılır) -->
       <div id="manualAddressWrap" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;gap:10px;flex-direction:column;">
-        <div style="font-size:9px;color:var(--warn);font-family:var(--font-mono);font-weight:700;">⚠ MANUEL ADRES — Konum GPS olmadan kaydedilir, haritada merkezi koordinat kullanılır</div>
+        <div style="font-size:9px;color:var(--warn);font-family:var(--font-mono);font-weight:700;">⚠ Konumunuz zaten haritada işaretliyse buradan seçtiğiniz İl/İlçe/Mahalle sadece etiketi düzeltir, pin'i taşımaz. Henüz konum işaretlemediyseniz, seçtiğiniz ilin yaklaşık merkezi kullanılır.</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <div class="fg">
             <div class="fl">İl</div>
@@ -935,7 +940,8 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
       </div>
       <div class="fg">
         <div class="fl">Bağlantı Türü</div>
-        <div class="cbtns"><div class="cbtn fiber" onclick="selConn(this,'fiber')">Fiber</div><div class="cbtn vdsl" onclick="selConn(this,'vdsl')">VDSL</div><div class="cbtn adsl" onclick="selConn(this,'adsl')">ADSL</div></div>
+        <div class="cbtns"><div class="cbtn fiber" onclick="selConn(this,'fiber')">Fiber</div><div class="cbtn vdsl" onclick="selConn(this,'vdsl')">VDSL</div><div class="cbtn adsl" onclick="selConn(this,'adsl')">ADSL</div><div class="cbtn docsis" onclick="selConn(this,'docsis')">DOCSIS</div></div>
+        <div style="font-size:9px;color:var(--text3);margin-top:4px;">DOCSIS yalnızca Türksat (Kablonet) altyapısı içindir.</div>
       </div>
       <div class="fg">
         <div class="fl">Paket Hızı</div>
@@ -959,7 +965,7 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
       <div class="fg"><div class="fl">Kısa Yorum (opsiyonel)</div><textarea class="fta" placeholder="Fiber'e geçişten sonra çok iyi oldu..." id="commentInput"></textarea></div>
       <div class="fg">
         <div class="fl">Altyapı Sahibi (biliyorsanız)</div>
-        <select class="fs" id="infraSelect"><option value="">Bilmiyorum</option><option>Türk Telekom (kiralık port)</option><option>TurkNet öz altyapı</option><option>Superonline öz altyapı</option><option>Diğer öz altyapı</option></select>
+        <select class="fs" id="infraSelect"><option value="">Bilmiyorum</option><option>Türk Telekom (kiralık port)</option><option>TurkNet öz altyapı</option><option>Superonline öz altyapı</option><option>Türksat öz altyapı</option><option>Diğer öz altyapı</option></select>
       </div>
       <div class="flag-note"><span>🚩</span><span>Yanlış veriler topluluk tarafından bildirilebilir ve moderatörler kaldırabilir.</span></div>
       
@@ -1195,7 +1201,7 @@ CREATE POLICY "auth_update_raporlar" ON raporlar
         <select class="fs" id="editIss" onchange="checkEditIssValidity()"></select>
         <div id="editIssWarning" style="display:none;font-size:9px;color:var(--warn);font-family:var(--font-mono);margin-top:3px;">⚠ Bu İSS onaylı listede değil — kaydetmek pini haritada göstermez</div>
       </div>
-      <div class="fg"><div class="fl">Bağlantı Türü</div><select class="fs" id="editConn"><option value="fiber">Fiber</option><option value="vdsl">VDSL</option><option value="adsl">ADSL</option></select></div>
+      <div class="fg"><div class="fl">Bağlantı Türü</div><select class="fs" id="editConn"><option value="fiber">Fiber</option><option value="vdsl">VDSL</option><option value="adsl">ADSL</option><option value="docsis">DOCSIS</option></select></div>
       <div class="fg"><div class="fl">DL Hızı (Mbps)</div><input class="fi" type="number" id="editDL" placeholder="100"></div>
       <div class="fg"><div class="fl">UL Hızı (Mbps)</div><input class="fi" type="number" id="editUL" placeholder="50"></div>
       <div class="fg"><div class="fl">Paket Hızı DL (Mbps)</div><input class="fi" type="number" id="editPkgDL" placeholder="opsiyonel"></div>
@@ -1231,6 +1237,7 @@ CREATE POLICY "auth_update_raporlar" ON raporlar
         <div class="cbtn fiber" id="userEditConn-fiber" onclick="selConnUserEdit(this,'fiber')">Fiber</div>
         <div class="cbtn vdsl" id="userEditConn-vdsl" onclick="selConnUserEdit(this,'vdsl')">VDSL</div>
         <div class="cbtn adsl" id="userEditConn-adsl" onclick="selConnUserEdit(this,'adsl')">ADSL</div>
+        <div class="cbtn docsis" id="userEditConn-docsis" onclick="selConnUserEdit(this,'docsis')">DOCSIS</div>
       </div>
     </div>
     
@@ -1453,6 +1460,13 @@ const getPinById = async id => { const res = await sbRest(`pins?id=eq.${id}&sele
 
 const addPin = d => sbRest('pins', { method:'POST', body:JSON.stringify(d) });
 const patchPin = (id,d) => sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
+// Kullanıcının "kendi ölçümünü düzenle" akışı için: RLS eşleşmezse (browser_fp uyuşmazsa)
+// sessizce 0 satır güncellenip "başarılı" gösterilmesin — gerçekten güncellenen satırı doğrula.
+async function patchPinOwn(id, d) {
+  const result = await sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=representation', body:JSON.stringify(d) });
+  if (!result || result.length === 0) throw new Error('Bu ölçüm güncellenemedi (cihaz kimliğiniz değişmiş olabilir veya ölçüm artık mevcut değil).');
+  return result;
+}
 const delPin = id => sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false }) });
 const hardDelPin = id => delPin(id); // Kullanıcı verisini koru: kalıcı silme yerine soft delete.
 const getRaporlar = () => sbRest('raporlar?select=*&durum=eq.bekleyen&order=created_at.desc&limit=100');
@@ -1616,6 +1630,7 @@ function getSpamReason(p) {
   const conn = (p.baglanti_turu || '').toLowerCase();
   if (conn === 'adsl' && p.gercek_dl > 32) return `ADSL Sınırı Aşıldı (${p.gercek_dl} Mbps)`;
   if (conn === 'vdsl' && p.gercek_dl > 250) return `VDSL Sınırı Aşıldı (${p.gercek_dl} Mbps)`;
+  if (conn === 'docsis' && p.gercek_dl > 1200) return `DOCSIS Sınırı Aşıldı (${p.gercek_dl} Mbps)`;
   if (p.gercek_ul > p.gercek_dl * 3 && p.gercek_dl > 10) return "Şüpheli Simetrik Hız (UL > DL*3)";
   
   // Outlier kontrolü
@@ -1859,11 +1874,11 @@ const IC = {
   'Diğer': '#6b7280', 
   'Altyapı Yok': '#3f3f3f' 
 };
-const ic = iss => { const canonical = canonicalIssName(iss); const item = issListCache.find(i=>canonicalIssName(i.name)===canonical); return (item && item.color) ? item.color : (IC[canonical] || issHashColor(canonical)); }; const cc = t => t==='fiber'?'#00d4ff':t==='vdsl'?'#FB8C00':t==='adsl'?'#E53935':'#888';
+const ic = iss => { const canonical = canonicalIssName(iss); const item = issListCache.find(i=>canonicalIssName(i.name)===canonical); return (item && item.color) ? item.color : (IC[canonical] || issHashColor(canonical)); }; const cc = t => t==='fiber'?'#00d4ff':t==='vdsl'?'#FB8C00':t==='adsl'?'#E53935':t==='docsis'?'#7c4dff':'#888';
 function speedColor(dl) { if(dl>=500)return'#800080';if(dl>=200)return'#1E88E5';if(dl>=100)return'#43A047';if(dl>=25)return'#FB8C00';return'#E53935'; }
 function memColor(s) { if(s>=8)return'#22c55e';if(s>=6)return'#84cc16';if(s>=4)return'#eab308';return'#ef4444'; }
 
-let maps = {}, pinsData =[], cleanPinsData =[], activeFilters = new Set(['fiber','vdsl','adsl']);
+let maps = {}, pinsData =[], cleanPinsData =[], activeFilters = new Set(['fiber','vdsl','adsl','docsis']);
 let activeISSFilters = new Set(); // iss_list tablosundan doldurulacak
 
 async function loadIssListAndRenderChips() {
@@ -2357,11 +2372,12 @@ async function renderStats() {
   renderSpeedRankList(document.getElementById('speedRankIlFilter')?.value || '');
 
 
-  const cm={fiber:0,vdsl:0,adsl:0,yok:0}; pins.forEach(p=>{if(cm[p.baglanti_turu]!==undefined) cm[p.baglanti_turu]++;});
+  const cm={fiber:0,vdsl:0,adsl:0,yok:0,docsis:0}; pins.forEach(p=>{if(cm[p.baglanti_turu]!==undefined) cm[p.baglanti_turu]++;});
   document.getElementById('connChart').innerHTML =[
     {l:'Fiber',v:cm.fiber,c:'#00d4ff'},
     {l:'VDSL',v:cm.vdsl,c:'#FB8C00'},
     {l:'ADSL',v:cm.adsl,c:'#E53935'},
+    {l:'DOCSIS',v:cm.docsis,c:'#7c4dff'},
     ...(cm.yok > 0 ? [{l:'Altyapı Yok',v:cm.yok,c:'#6b7280'}] : [])
   ].map(t=>`<div class="ct-row"><div class="ct-label">${t.l}</div><div class="ct-track"><div class="ct-fill" style="width:${pins.length?(t.v/pins.length*100).toFixed(0):0}%;background:${t.c}"></div></div><div class="ct-pct">${pins.length?(t.v/pins.length*100).toFixed(0):0}%</div></div>`).join('');
 
@@ -2797,26 +2813,42 @@ function applyManualAddress() {
   const ilce = document.getElementById('manualIlce').value;
   const mahalle = document.getElementById('manualMahalle')?.value || '';
   if (!il) return showToast('İl seçin','err');
-  // İl merkezinin koordinatını kullan
-  const coords = IL_COORDS[il];
-  if (!coords) return showToast('Bu il için koordinat bulunamadı','err');
-  // İlçe varsa küçük offset ekle (aynı koordinata yığılmasın)
-  const lat = coords[0] + (Math.random() - 0.5) * 0.05;
-  const lng = coords[1] + (Math.random() - 0.5) * 0.05;
-  // Konum set et
-  pinLat = lat; pinLng = lng;
   document.getElementById('ilInput').value = il;
   document.getElementById('ilceInput').value = ilce || '';
   document.getElementById('mahalleInput').value = mahalle || '';
-  document.getElementById('locDot').classList.add('set');
-  document.getElementById('locText').textContent = `${il}${ilce?' › '+ilce:''}${mahalle?' · '+mahalle:''} (Manuel)`;
-  // Haritada göster
-  if (maps.pin) maps.pin.setView([lat, lng], 12);
-  // Paneli kapat
+  if (pinLat == null || pinLng == null) {
+    // Konum hiç belirlenmemiş (GPS/harita tıklaması yok) — il merkezini yaklaşık konum olarak kullan
+    const coords = IL_COORDS[il];
+    if (!coords) return showToast('Bu il için koordinat bulunamadı','err');
+    const lat = coords[0] + (Math.random() - 0.5) * 0.05;
+    const lng = coords[1] + (Math.random() - 0.5) * 0.05;
+    pinLat = lat; pinLng = lng;
+    document.getElementById('locDot').classList.add('set');
+    document.getElementById('locText').textContent = `${il}${ilce?' › '+ilce:''}${mahalle?' · '+mahalle:''} (Manuel)`;
+    if (maps.pin) maps.pin.setView([lat, lng], 12);
+    showToast(`✅ Adres ayarlandı: ${il}${ilce?' / '+ilce:''}`, 'warn');
+  } else {
+    // Konum zaten haritadan/GPS'ten doğru biliniyor (örn. otomatik tespit yanlış mahalle yazmış olabilir) —
+    // koordinatı KORU, sadece il/ilçe/mahalle etiketini düzelt.
+    showToast(`✅ Adres bilgisi düzeltildi (konum değişmedi): ${mahalle || ilce || il}`, 'warn');
+  }
   document.getElementById('manualAddressWrap').style.display = 'none';
-  showToast(`✅ Adres ayarlandı: ${il}${ilce?' / '+ilce:''}`, 'warn');
 }
-function selConn(el,type) { document.querySelectorAll('.cbtn').forEach(b=>b.className=b.className.replace(/ sel/g,'')); el.classList.add('sel'); selConnVal=type; }
+function selConn(el,type) {
+  document.querySelectorAll('.cbtn').forEach(b=>b.className=b.className.replace(/ sel/g,''));
+  el.classList.add('sel');
+  selConnVal=type;
+  const issSel = document.getElementById('issSelect');
+  const infraSel = document.getElementById('infraSelect');
+  if (type === 'docsis') {
+    // DOCSIS yalnızca Türksat altyapısı üzerinden veriliyor — İSS ve Altyapı Sahibi otomatik sabitlenir, değiştirilemez
+    if (issSel) { issSel.value = 'Türksat Kablonet'; issSel.disabled = true; toggleCustomIss('Türksat Kablonet'); }
+    if (infraSel) { infraSel.value = 'Türksat öz altyapı'; infraSel.disabled = true; }
+  } else {
+    if (issSel && issSel.disabled) issSel.disabled = false;
+    if (infraSel && infraSel.disabled) infraSel.disabled = false;
+  }
+}
 function selScore(el,val) { document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); selScoreVal=val; }
 (function buildScoreRow() { const row = document.getElementById('scoreRow'); if(!row) return; for(let i=1;i<=10;i++){const b=document.createElement('div');b.className='sbtn';b.textContent=i;b.onclick=()=>selScore(b,i);row.appendChild(b);} })();
 
@@ -3177,7 +3209,7 @@ async function saveUserEdit() {
   }
   
   try {
-    await patchPin(pinId, payload);
+    await patchPinOwn(pinId, payload);
     // Başarılı güncelleme → düzenleme sayacını artır
     markEditPin(pinId);
     const leftAfter = getRemainingEdits(pinId);
@@ -3195,7 +3227,7 @@ async function saveUserEdit() {
       delete fb.paket_hizi_dl;
       delete fb.paket_hizi_ul;
       try {
-        await patchPin(pinId, fb);
+        await patchPinOwn(pinId, fb);
         markEditPin(pinId);
         showToast('✅ Ölçümünüz güncellendi (DB şeması bekleniyor)');
         closeUserEditModal();
@@ -3224,7 +3256,7 @@ async function deleteUserPin(pinId) {
   }
 }
 
-function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); const kvkkCheck = document.getElementById('kvkkCheck');
+function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); const kvkkCheck = document.getElementById('kvkkCheck');
   if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; }
   const noInfraCheck = document.getElementById('noInfraCheck');
   if (noInfraCheck && noInfraCheck.checked) { noInfraCheck.checked = false; onNoInfraChange(false); }
