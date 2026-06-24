@@ -1470,6 +1470,16 @@ async function patchPinOwn(id, d) {
 }
 const delPin = id => sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false }) });
 const hardDelPin = id => delPin(id); // Kullanıcı verisini koru: kalıcı silme yerine soft delete.
+// Kullanıcının "kendi ölçümünü sil" akışı için: patchPinOwn ile AYNI sebepten ötürü
+// (RLS/browser_fp eşleşmezse sessizce 0 satır etkilenip "başarılı" gösterilmesin) —
+// gerçekten silinen satırı doğruluyoruz. Aksi halde: kullanıcı "Sil"e basar, pin
+// ekrandan anında kaybolur, "silindi" mesajı görür, ama arka planda silinmemiştir;
+// sonraki senkronizasyonda (loadPins) pin haritaya GERİ GELİR.
+async function delPinOwn(id) {
+  const result = await sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=representation', body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false }) });
+  if (!result || result.length === 0) throw new Error('Bu ölçüm silinemedi (cihaz kimliğiniz değişmiş olabilir veya ölçüm artık mevcut değil).');
+  return result;
+}
 const getRaporlar = () => sbRest('raporlar?select=*&durum=eq.bekleyen&order=created_at.desc&limit=100');
 const addRapor = d => sbRest('raporlar', { method:'POST', body:JSON.stringify(d) });
 const patchRapor = (id,d) => sbRest(`raporlar?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
@@ -3320,7 +3330,7 @@ async function saveUserEdit() {
 async function deleteUserPin(pinId) {
   if (!confirm('Bu ölçüm verinizi silmek istediğinize emin misiniz?')) return;
   try {
-    await delPin(pinId);
+    await delPinOwn(pinId);
     // Ağ gecikmesi olmadan anında haritadan kaldır
     pinsData = pinsData.filter(p => p.id !== pinId);
     cleanPinsData = publicCleanPins(pinsData);
