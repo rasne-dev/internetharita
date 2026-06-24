@@ -1437,7 +1437,7 @@ function renderMyPins() {
       <div class="popup-inner">
         <div class="popup-title">Senin Ölçümün <span class="own-pin-badge" style="margin-left:0;margin-top:4px;background:${isApproved?'var(--accent)':'var(--warn)'};color:#000;">${statusText}</span></div>
         <div style="font-size:9px;color:var(--text3);margin-bottom:8px;line-height:1.3;">${statusDesc}</div>
-        <div class="popup-row"><span class="popup-key">İSS</span><span class="popup-val">${p.iss}</span></div>
+        <div class="popup-row"><span class="popup-key">İSS</span><span class="popup-val">${escHtml(p.iss)}</span></div>
         <div class="popup-row"><span class="popup-key">Hız</span><span class="popup-val" style="color:${color}">${p.gercek_dl} Mbps ↓</span></div>
         <div class="popup-row"><span class="popup-key">Tarih</span><span class="popup-val">${dateStr}</span></div>
         <div class="popup-actions">
@@ -1505,6 +1505,44 @@ const TYPE_DL_CAP = { adsl: 32, vdsl: 250, docsis: 1200 };
 // ve backend RLS/CHECK kuralı BİREBİR bu sabitleri referans almalı (bkz. SQL migrasyonu).
 const DOCSIS_ISS = 'Türksat Kablonet';
 const DOCSIS_ALTYAPI = 'Türksat öz altyapı';
+
+// ════════════════════════════════════════════════════════════════════════
+// GÜVENLİK: HTML/JS Escape Yardımcıları
+// Bu uygulamada kullanıcı hesabı yok — herkes anonim olarak pin/yorum/özel-İSS-adı
+// gönderebiliyor ve bu veriler hem herkese açık haritada hem de moderatör panelinde
+// innerHTML ile render ediliyor. escHtml() KULLANILMADAN render edilen her kullanıcı
+// metni (yorum, İSS adı, il/ilçe, mod notu, rapor açıklaması) STORED XSS açığıdır:
+// kötü niyetli biri "yorum" veya "Diğer İSS" alanına <script> ya da
+// <img onerror=...> gibi bir payload girip gönderirse, bu pin onaylandığında/
+// görüntülendiğinde payload diğer ziyaretçilerin veya moderatörün tarayıcısında
+// ÇALIŞIR (mod panelinde çalışırsa moderatör oturumu ele geçirilebilir).
+// escHtml(): normal HTML metni/attribute içine güvenle basmak için.
+function escHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+// escAttr(): onclick="fn('${...}')" gibi inline event handler'ların İÇİNE konan
+// string argümanlar için. escHtml() BURADA YETERSİZ KALIR — çünkü onclick attribute'u
+// önce HTML olarak parse edilir (entity'ler decode olur) SONRA JavaScript kodu olarak
+// çalıştırılır; yani &#39; gibi bir entity decode olup gerçek bir ' karakterine
+// dönüşür ve JS string'ini erken kapatabilir. Bu yüzden önce JS string kaçışı
+// (ters slash, tek tırnak) yapılır, SONRA HTML attribute kaçışı (çift tırnak, &) yapılır.
+function escAttr(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\r?\n/g, '\\n')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
 const BASE_ISS = ['Türk Telekom','Superonline (Turkcell)','TurkNet','Vodafone','Millenicom','Netspeed'];
 const ISS_ALIASES = {
   'TTNet': 'Türk Telekom',
@@ -1560,7 +1598,7 @@ function buildIssOptions(selectEl, currentVal) {
   const current = canonicalIssName(currentVal);
   // Pindeki ISS listede yoksa yine de göster (bilinmeyen ISS durumu)
   if (current && !all.includes(current)) all.unshift(current);
-  selectEl.innerHTML = all.map(iss => `<option value="${iss}" ${iss===current?'selected':''}>${iss}</option>`).join('');
+  selectEl.innerHTML = all.map(iss => `<option value="${escHtml(iss)}" ${iss===current?'selected':''}>${escHtml(iss)}</option>`).join('');
 }
 
 function showAddIssModal() { document.getElementById('addIssName').value=''; document.getElementById('addIssModal').classList.add('open'); setTimeout(()=>document.getElementById('addIssName').focus(),100); }
@@ -1933,10 +1971,10 @@ function renderISSChips(list) {
     const c = issColor(item);
     const name = displayIssName(item.name);
     const label = name.replace(' (Turkcell)','').replace(' (Türksat)','');
-    return `<div class="chip chip-iss on" data-iss="${name}"
+    return `<div class="chip chip-iss on" data-iss="${escHtml(name)}"
       style="color:${c};border-color:${c};"
-      onclick="toggleISSChip(this,'${name.replace(/'/g,"\\'")}')">
-      ${label}
+      onclick="toggleISSChip(this,'${escAttr(name)}')">
+      ${escHtml(label)}
     </div>`;
   });
   // "Diğer" chip filtreden kaldırıldı — sadece veri ekleme formunda gösteriliyor
@@ -1946,7 +1984,7 @@ function renderISSChips(list) {
   if (sel) {
     const cur = sel.value;
     sel.innerHTML = '<option value="">Seçin...</option>' +
-      list.map(i => `<option value="${displayIssName(i.name)}">${displayIssName(i.name)}</option>`).join('') +
+      list.map(i => `<option value="${escHtml(displayIssName(i.name))}">${escHtml(displayIssName(i.name))}</option>`).join('') +
       '<option value="Diğer">Diğer (İSS adını girin)</option>';
     if (cur) sel.value = canonicalIssName(cur);
   }
@@ -2111,22 +2149,22 @@ function renderModPins() {
         <div class="popup-title">
           ${isSpamPin ? '<span style="color:#ef4444;font-size:9px;font-family:var(--font-mono);">⚠ SPAM/ŞÜPHELİ</span><br>' : ''}
           ${isHidden ? '<span style="color:var(--warn);font-size:9px;font-family:var(--font-mono);">🔒 GİZLİ/KARANTİNA</span><br>' : ''}
-          ${p.iss} 
+          ${escHtml(p.iss)} 
           <span class="popup-badge" style="background:${cc(p.baglanti_turu)}22;color:${cc(p.baglanti_turu)};border:1px solid ${cc(p.baglanti_turu)}">${(p.baglanti_turu||'').toUpperCase()}</span>
         </div>
         <div class="popup-row"><span class="popup-key">Download</span><span class="popup-val" style="color:${speedColor(p.gercek_dl)}">${p.gercek_dl} Mbps</span></div>
         <div class="popup-row"><span class="popup-key">Upload</span><span class="popup-val">${p.gercek_ul||0} Mbps</span></div>
         <div class="popup-row"><span class="popup-key">Paket Hızı</span><span class="popup-val">${(p.paket_hizi_dl||p.paket_hizi) ? `↓${p.paket_hizi_dl||p.paket_hizi}${p.paket_hizi_ul?` / ↑${p.paket_hizi_ul}`:''} Mbps` : '—'}</span></div>
-        <div class="popup-row"><span class="popup-key">Altyapı</span><span class="popup-val" style="font-size:10px">${p.altyapi_sahibi || '—'}</span></div>
+        <div class="popup-row"><span class="popup-key">Altyapı</span><span class="popup-val" style="font-size:10px">${escHtml(p.altyapi_sahibi) || '—'}</span></div>
         <div class="popup-row"><span class="popup-key">Puan</span><span class="popup-val" style="color:${memColor(p.puan)}">${p.puan}/10</span></div>
         <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
-          <div class="mod-popup-row"><span class="mod-popup-key">Cihaz FP:</span><span class="mod-popup-val" style="color:var(--warn)">${p.browser_fp||p.ip_hash||'Bilinmiyor'}</span></div>
-          <div class="mod-popup-row"><span class="mod-popup-key">Konum:</span><span class="mod-popup-val">${p.il||''} › ${p.ilce||''}</span></div>
+          <div class="mod-popup-row"><span class="mod-popup-key">Cihaz FP:</span><span class="mod-popup-val" style="color:var(--warn)">${escHtml(p.browser_fp||p.ip_hash||'Bilinmiyor')}</span></div>
+          <div class="mod-popup-row"><span class="mod-popup-key">Konum:</span><span class="mod-popup-val">${escHtml(p.il||'')} › ${escHtml(p.ilce||'')}</span></div>
           <div class="mod-popup-row"><span class="mod-popup-key">Zaman:</span><span class="mod-popup-val">${tarihStr}</span></div>
-          ${p.yorum ? `<div class="user-comment-box">${p.yorum}</div>` : ''}
-          ${p.mod_notu ? `<div class="mod-note-box">${p.mod_notu}</div>` : ''}
+          ${p.yorum ? `<div class="user-comment-box">${escHtml(p.yorum)}</div>` : ''}
+          ${p.mod_notu ? `<div class="mod-note-box">${escHtml(p.mod_notu)}</div>` : ''}
         </div>
-        <div class="popup-actions"><div class="popup-btn btn-edit" onclick="openEditModal('${p.id}')">✏️ Düzenle</div><div class="popup-btn popup-report" onclick="openReportModal('${p.id}','${(p.il||'')+(p.ilce?' › '+p.ilce:'')}')">🚩 Bildir</div><div class="popup-btn popup-del" onclick="modDeletePin('${p.id}')">🗑 Sil</div></div>
+        <div class="popup-actions"><div class="popup-btn btn-edit" onclick="openEditModal('${p.id}')">✏️ Düzenle</div><div class="popup-btn popup-report" onclick="openReportModal('${p.id}','${escAttr((p.il||'')+(p.ilce?' › '+p.ilce:''))}')">🚩 Bildir</div><div class="popup-btn popup-del" onclick="modDeletePin('${p.id}')">🗑 Sil</div></div>
       </div>`, {maxWidth:280});
     pinMarkerLayers.push(m);
   });
@@ -2144,7 +2182,7 @@ function showHexInfo(pins, hexId) {
   document.getElementById('infoScore').textContent = avgS+'/10'; document.getElementById('infoScore').style.color = memColor(parseFloat(avgS));
   document.getElementById('infoCount').textContent = pins.length+' ölçüm';
   const im={}; pins.forEach(p=>{ if(!im[p.iss]) im[p.iss]={c:0,t:0}; im[p.iss].c++; im[p.iss].t+=p.puan; });
-  document.getElementById('infoISS').innerHTML = `<div class="panel-title" style="margin-bottom:6px;">ISS Dağılımı</div>`+Object.entries(im).sort((a,b)=>b[1].c-a[1].c).slice(0,4).map(([iss,d])=>`<div class="info-iss-item"><span><span class="iss-dot" style="background:${ic(iss)}"></span>${iss}</span><span style="color:${ic(iss)};font-weight:700;font-family:var(--font-mono)">${(d.t/d.c).toFixed(1)}</span></div>`).join('');
+  document.getElementById('infoISS').innerHTML = `<div class="panel-title" style="margin-bottom:6px;">ISS Dağılımı</div>`+Object.entries(im).sort((a,b)=>b[1].c-a[1].c).slice(0,4).map(([iss,d])=>`<div class="info-iss-item"><span><span class="iss-dot" style="background:${ic(iss)}"></span>${escHtml(iss)}</span><span style="color:${ic(iss)};font-weight:700;font-family:var(--font-mono)">${(d.t/d.c).toFixed(1)}</span></div>`).join('');
   document.getElementById('mapInfo').classList.add('visible');
   const body = document.querySelector('.map-info-body'); if(body) body.scrollTop = 0;
   // Ölçüm listesini sıfırla
@@ -2179,13 +2217,13 @@ function toggleHexPinsList() {
             </div>
           ` : `
             <div class="user-pin-actions">
-              <span class="user-pin-action report" onclick="event.stopPropagation(); openReportModal('${p.id}', '${p.iss} - ${(p.baglanti_turu||'').toUpperCase()} (${dlBand} Mbps)')">🚩 Bildir</span>
+              <span class="user-pin-action report" onclick="event.stopPropagation(); openReportModal('${p.id}', '${escAttr(p.iss + ' - ' + (p.baglanti_turu||'').toUpperCase() + ' (' + dlBand + ' Mbps)')}')">🚩 Bildir</span>
             </div>
           `;
           
           return `<div class="hex-pin-item ${isOwnPin ? 'own' : ''}">
             <div class="hex-pin-header">
-              <span class="hex-pin-iss" style="color:${c}">● ${p.iss}</span>
+              <span class="hex-pin-iss" style="color:${c}">● ${escHtml(p.iss)}</span>
               ${ownPinBadge}
               <span style="font-size:9px;color:var(--text3)">${(p.baglanti_turu||'').toUpperCase()}</span>
             </div>
@@ -2226,7 +2264,7 @@ function populateSpeedRankIlFilter(pins) {
   if (!sel) return;
   const current = sel.value;
   const names = [...new Set(pins.filter(p => !p.is_altyapi_yok && p.il).map(p => p.il))].sort((a,b) => a.localeCompare(b,'tr'));
-  sel.innerHTML = '<option value="">Tüm İller</option>' + names.map(n => `<option value="${n}">${n}</option>`).join('');
+  sel.innerHTML = '<option value="">Tüm İller</option>' + names.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
   if (names.includes(current)) sel.value = current;
 }
 
@@ -2266,7 +2304,7 @@ function renderSpeedRankList(filterIl) {
   // Filtre aktifken İl tekrar tekrar yazılmasın diye başlıkta sadece İlçe/Mahalle gösterilir
   function locTitle(x) {
     const parts = filterIl ? [x.ilce, x.mahalle] : [x.il, x.ilce, x.mahalle];
-    return parts.filter(Boolean).join(' / ') || 'Bilinmeyen';
+    return escHtml(parts.filter(Boolean).join(' / ') || 'Bilinmeyen');
   }
 
   const verifiedLm = buildLocationMap(testedPins);
@@ -2299,7 +2337,7 @@ function renderSpeedRankList(filterIl) {
       : '';
     return `<div class="speed-spotlight">
       <div class="spotlight-label">
-        <span style="color:var(--text3);">🏆 EN HIZLI KONUM${filterIl ? ' · ' + filterIl : ''}</span>
+        <span style="color:var(--text3);">🏆 EN HIZLI KONUM${filterIl ? ' · ' + escHtml(filterIl) : ''}</span>
         <span style="background:${badgeBg};border:1px solid ${badgeBorder};color:${badgeColor};padding:1px 7px;border-radius:4px;">${badgeText}</span>
       </div>
       <div class="spotlight-name">${locTitle(top)}</div>
@@ -2327,7 +2365,7 @@ function renderSpeedRankList(filterIl) {
       .slice(0, 8);
     if (!allEntries.length) {
       speedRankEl.innerHTML = filterIl
-        ? `<div style="color:var(--text3);font-size:11px;padding:8px 0;">${filterIl} için henüz veri yok</div>`
+        ? `<div style="color:var(--text3);font-size:11px;padding:8px 0;">${escHtml(filterIl)} için henüz veri yok</div>`
         : '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz veri yok</div>';
     } else {
       const [top, ...rest] = allEntries;
@@ -2371,7 +2409,7 @@ async function renderStats() {
     .map(([iss,d]) => ({ iss, s:(d.t/d.c).toFixed(1), c:d.c, u:d.fps.size }))
     .filter(x => x.u >= MIN_UNIQUE)
     .sort((a,b) => b.s-a.s)
-    .map((x,i) => `<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${displayIssName(x.iss)}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.s)}">${x.s}</div></div>`)
+    .map((x,i) => `<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${escHtml(displayIssName(x.iss))}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.s)}">${x.s}</div></div>`)
     .join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok (min. 3 farklı kullanıcı gerekli)</div>';
   
   // EN HIZLI LOKASYONLAR (artık ISS filtresiyle de çağrılabilen bağımsız fonksiyon)
@@ -2408,11 +2446,11 @@ async function renderStats() {
     const rows = issSpeedList.map((x, i) => {
       const col = ic(x.iss);
       const pct = Math.round((x.avg / maxAvg) * 100);
-      const label = displayIssName(x.iss)
-        .replace(' (Turkcell)','').replace(' (Türksat)','');
+      const label = escHtml(displayIssName(x.iss)
+        .replace(' (Turkcell)','').replace(' (Türksat)',''));
       const speedLabel = x.avg >= 1000 ? (x.avg/1000).toFixed(1)+'G' : x.avg + ' Mbps';
       return `<div class="trend-row">
-        <div class="trend-label" title="${displayIssName(x.iss)}">
+        <div class="trend-label" title="${escHtml(displayIssName(x.iss))}">
           <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${col};margin-right:5px;vertical-align:middle;flex-shrink:0;"></span>${label}
         </div>
         <div class="trend-track">
@@ -2477,7 +2515,7 @@ async function renderStats() {
       return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <div style="width:14px;font-size:10px;color:var(--text3);font-family:var(--font-mono);flex-shrink:0;">${i+1}</div>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:11px;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${x.il}</div>
+          <div style="font-size:11px;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(x.il)}</div>
           <div style="background:var(--surface2);border-radius:3px;height:5px;margin-top:3px;overflow:hidden;">
             <div style="width:${pct}%;height:100%;background:var(--accent);border-radius:3px;opacity:0.7;transition:width .4s;"></div>
           </div>
@@ -3422,7 +3460,7 @@ async function loadCustomIss() {
       <div class="mod-card" style="margin-bottom:8px;" id="ciss_${inputId}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
           <div style="flex:1">
-            <div class="mod-info" style="font-size:13px;">🏷 "<span style="color:var(--warn)">${iss}</span>"</div>
+            <div class="mod-info" style="font-size:13px;">🏷 "<span style="color:var(--warn)">${escHtml(iss)}</span>"</div>
             <div class="mod-meta">${data.count} kullanıcı · İlk: ${new Date(data.pins[data.pins.length-1].created_at).toLocaleDateString('tr-TR')} · Son: ${new Date(data.pins[0].created_at).toLocaleDateString('tr-TR')}</div>
           </div>
           <div class="mod-badge">${data.count}x</div>
@@ -3430,7 +3468,7 @@ async function loadCustomIss() {
         <div style="margin-bottom:8px;display:flex;flex-direction:column;gap:6px;">
           <div>
             <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-bottom:3px;text-transform:uppercase;letter-spacing:1px;">✏️ Doğru isim</div>
-            <input id="${inputId}" type="text" value="${guess}"
+            <input id="${inputId}" type="text" value="${escHtml(guess)}"
               style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 9px;font-size:12px;font-family:var(--font-body);outline:none;box-sizing:border-box;"
               onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
               placeholder="Düzeltilmiş İSS adı...">
@@ -3443,8 +3481,8 @@ async function loadCustomIss() {
           </div>
         </div>
         <div class="mod-actions">
-          <button class="btn-approve" onclick="approveCustomIss('${iss.replace(/'/g,"\\'")}', document.getElementById('${inputId}').value.trim(), document.getElementById('${colorId}').value)">✅ Düzeltip Listeye Ekle</button>
-          <button class="btn-hide" onclick="rejectCustomIss('${iss.replace(/'/g,"\\'")}')">❌ Tümünü Gizle</button>
+          <button class="btn-approve" onclick="approveCustomIss('${escAttr(iss)}', document.getElementById('${inputId}').value.trim(), document.getElementById('${colorId}').value)">✅ Düzeltip Listeye Ekle</button>
+          <button class="btn-hide" onclick="rejectCustomIss('${escAttr(iss)}')">❌ Tümünü Gizle</button>
         </div>
       </div>`;
     }).join('');
@@ -3520,17 +3558,17 @@ async function loadIssManager() {
         <div style="display:flex;align-items:center;gap:8px;">
           <span class="drag-handle" title="Sıralamak için sürükle">⠿</span>
           <div style="width:10px;height:10px;border-radius:50%;background:${c};flex-shrink:0;"></div>
-          <div style="flex:1;font-size:12px;font-weight:600;color:var(--text);">${item.name}</div>
+          <div style="flex:1;font-size:12px;font-weight:600;color:var(--text);">${escHtml(item.name)}</div>
           <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);">${pinCount} pin</span>
           ${statusBadge}
           <input type="color" value="${c.startsWith('hsl') ? '#6366f1' : c}"
             style="width:28px;height:24px;border:1px solid var(--border);border-radius:4px;background:none;cursor:pointer;padding:1px;flex-shrink:0;"
-            onchange="updateIssColor(${item.id}, this.value, '${item.name.replace(/'/g,"\\'")}')">
+            onchange="updateIssColor(${item.id}, this.value, '${escAttr(item.name)}')">
           <label style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text3);cursor:pointer;flex-shrink:0;">
             <input type="checkbox" ${item.active!==false?'checked':''} onchange="toggleIssActive(${item.id}, this.checked)"> Aktif
           </label>
-          <button class="btn-edit" style="padding:4px 8px;font-size:10px;" onclick="renameIssInList(${item.id},'${item.name.replace(/'/g,"\\'")}')" title="İsim Değiştir">✏️</button>
-          <button class="btn-del" style="padding:4px 8px;font-size:10px;" onclick="removeIssFromList(${item.id},'${item.name.replace(/'/g,"\\'")}')" title="Sil">🗑</button>
+          <button class="btn-edit" style="padding:4px 8px;font-size:10px;" onclick="renameIssInList(${item.id},'${escAttr(item.name)}')" title="İsim Değiştir">✏️</button>
+          <button class="btn-del" style="padding:4px 8px;font-size:10px;" onclick="removeIssFromList(${item.id},'${escAttr(item.name)}')" title="Sil">🗑</button>
         </div>
       </div>`;
     }).join('');
@@ -3725,7 +3763,7 @@ async function loadSpeedRankEditor(search) {
       return;
     }
     tbody.innerHTML = filtered.map(p => {
-      const loc = [p.il, p.ilce].filter(Boolean).join(' / ') || 'Bilinmiyor';
+      const loc = escHtml([p.il, p.ilce].filter(Boolean).join(' / ') || 'Bilinmiyor');
       const isVerified = p.speed_test_verified === true;
       const hasUL = p.gercek_ul > 0;
       const verifiedBadge = speedTestStatusBadge(p);
@@ -3733,7 +3771,7 @@ async function loadSpeedRankEditor(search) {
       const rowBg = isVerified ? '' : 'background:rgba(245,158,11,.03);';
       return `<tr id="srrow_${p.id}" style="${rowBg}">
         <td>${loc}${quarBadge}</td>
-        <td style="font-size:11px;">${p.iss||'—'}</td>
+        <td style="font-size:11px;">${escHtml(p.iss)||'—'}</td>
         <td style="color:${speedColor(p.gercek_dl)};font-family:var(--font-mono);">${p.gercek_dl}</td>
         <td style="color:${hasUL?'var(--text3)':'var(--danger)'};font-family:var(--font-mono);">${p.gercek_ul||'—'}</td>
         <td>${verifiedBadge}</td>
@@ -3847,7 +3885,7 @@ async function loadSikayetler() {
           ? `<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(245,158,11,.12);border:1px solid var(--warn);border-radius:5px;padding:2px 9px;margin-bottom:8px;font-size:9px;font-weight:700;font-family:var(--font-mono);color:var(--warn);">⚠ AYNI CİHAZ — ${gPins.length} PIN</div>`
           : '';
 
-        const locStr = [p.il, p.ilce].filter(Boolean).join(' › ');
+        const locStr = escHtml([p.il, p.ilce].filter(Boolean).join(' › '));
         const allSame = gPins.every(x => x.iss === p.iss && x.baglanti_turu === p.baglanti_turu && x.gercek_dl === p.gercek_dl);
 
         return `<div class="mod-card" id="mc_${p.id}" style="${spam||quarantine?'border-color:rgba(239,68,68,.4);':''}">
@@ -3855,9 +3893,9 @@ async function loadSikayetler() {
             <div style="flex:1">
               ${header}
               ${spam?'<div style="color:var(--danger);font-size:9px;font-family:var(--font-mono);margin-bottom:4px;">⚠ SPAM/ŞÜPHELİ</div>':''}${quarantine?'<div style="color:var(--warn);font-size:9px;font-family:var(--font-mono);margin-bottom:4px;">🔒 KARANTİNA</div>':''}
-              <div class="mod-info">${p.iss} · ${(p.baglanti_turu||'').toUpperCase()} · ${p.gercek_dl}↓ / ${p.gercek_ul||0}↑ Mbps${allSame&&isMulti?' <span style="color:var(--text3);font-size:9px">(tümü aynı)</span>':''}</div>
-              <div class="mod-meta">📍 ${locStr||'?'}<br>🔑 FP: ${fp.slice(0,12)}...<br>${p.gorunur?'👁 Görünür':'🙈 Gizli'} · ${gPins.length} pin</div>
-              ${p.yorum?`<div class="user-comment-box">${p.yorum}</div>`:''}
+              <div class="mod-info">${escHtml(p.iss)} · ${(p.baglanti_turu||'').toUpperCase()} · ${p.gercek_dl}↓ / ${p.gercek_ul||0}↑ Mbps${allSame&&isMulti?' <span style="color:var(--text3);font-size:9px">(tümü aynı)</span>':''}</div>
+              <div class="mod-meta">📍 ${locStr||'?'}<br>🔑 FP: ${escHtml(fp.slice(0,12))}...<br>${p.gorunur?'👁 Görünür':'🙈 Gizli'} · ${gPins.length} pin</div>
+              ${p.yorum?`<div class="user-comment-box">${escHtml(p.yorum)}</div>`:''}
             </div>
             <div class="mod-badge" style="${isMulti?'background:rgba(245,158,11,.2);color:var(--warn);border-color:var(--warn);':''}">🚩 ${gPins.length}</div>
           </div>
@@ -3940,8 +3978,8 @@ function renderAdminTable(pins) {
       durumLabel = '✅ Haritada'; durumColor = 'var(--success)'; rowBg = '';
     }
     
-    const reasonText = reason ? `<div style="font-size:9px;color:var(--danger);margin-top:2px;font-weight:600;">• ${reason}</div>` : '';
-    const modNot = p.mod_notu ? `<div style="font-size:9px;color:var(--accent);margin-top:3px;" title="${p.mod_notu}">📝 ${p.mod_notu.slice(0,30)}${p.mod_notu.length>30?'…':''}</div>` : '';
+    const reasonText = reason ? `<div style="font-size:9px;color:var(--danger);margin-top:2px;font-weight:600;">• ${escHtml(reason)}</div>` : '';
+    const modNot = p.mod_notu ? `<div style="font-size:9px;color:var(--accent);margin-top:3px;" title="${escHtml(p.mod_notu)}">📝 ${escHtml(p.mod_notu.length>30 ? p.mod_notu.slice(0,30)+'…' : p.mod_notu)}</div>` : '';
     
     return `<tr style="background:${rowBg}">
       <td><input type="checkbox" class="pin-check" value="${p.id}"></td>
@@ -3949,13 +3987,13 @@ function renderAdminTable(pins) {
       <td>
         <div style="display:flex;align-items:center;gap:6px;">
           <div style="width:3px;height:12px;background:${brandColor};border-radius:2px;"></div>
-          <b style="color:${brandColor}">${p.iss}</b>
+          <b style="color:${brandColor}">${escHtml(p.iss)}</b>
         </div>
-        <span style="color:var(--text3);font-size:9px;margin-left:9px;">Altyapı: ${p.altyapi_sahibi||'—'}</span>
+        <span style="color:var(--text3);font-size:9px;margin-left:9px;">Altyapı: ${escHtml(p.altyapi_sahibi)||'—'}</span>
       </td>
       <td style="font-family:var(--font-mono)"><span style="color:${speedColor(p.gercek_dl)}">${p.gercek_dl}↓</span> / ${p.gercek_ul||0}↑<br><span style="font-size:9px;color:var(--text3)">Paket: ${(p.paket_hizi_dl||p.paket_hizi)?`↓${p.paket_hizi_dl||p.paket_hizi}${p.paket_hizi_ul?'/↑'+p.paket_hizi_ul:''} Mbps`:'—'}</span></td>
       <td>${hizTestiBadge}</td>
-      <td class="coord-text">${p.il||'?'} › ${p.ilce||'?'}<br><span style="color:var(--text3);font-size:9px;">Cihaz: ${cihazInfo.slice(0,8)}...</span></td>
+      <td class="coord-text">${escHtml(p.il)||'?'} › ${escHtml(p.ilce)||'?'}<br><span style="color:var(--text3);font-size:9px;">Cihaz: ${escHtml(cihazInfo.slice(0,8))}...</span></td>
       <td style="color:${memColor(p.puan)};font-weight:700;">${p.puan}/10</td>
       <td><span style="font-size:10px;font-weight:700;color:${durumColor};font-family:var(--font-mono);">${durumLabel}</span>${reasonText}${modNot}</td>
       <td style="display:flex;gap:4px;flex-wrap:wrap;">
@@ -4007,9 +4045,9 @@ async function loadRaporlar() {
       const pin = adminPinsCache.find(p => p.id === r.pin_id);
       const focusBtn = (pin && pin.lat) ? `<button class="btn-edit" onclick="focusOnMap(${pin.lat}, ${pin.lng})" title="Haritada Odaklan">📍 Harita</button>` : '';
       return `<div class="report-card">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div class="report-type">${tipLabels[r.tip]||r.tip}</div><div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);">${tarihStr}</div></div>
-        <div class="report-text">${r.aciklama||'Açıklama girilmedi'}</div>
-        <div class="report-meta" style="margin-top:5px;line-height:1.8;">${r.bolge?`<span style="display:inline-block;margin-top:4px;padding:2px 8px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:4px;font-size:9px;color:var(--accent);font-family:var(--font-mono);">📍 ${r.bolge}</span><br>`:''}Pin ID: <span style="font-family:var(--font-mono);font-size:9px;">${r.pin_id||'—'}</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div class="report-type">${tipLabels[r.tip]||escHtml(r.tip)}</div><div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);">${tarihStr}</div></div>
+        <div class="report-text">${escHtml(r.aciklama)||'Açıklama girilmedi'}</div>
+        <div class="report-meta" style="margin-top:5px;line-height:1.8;">${r.bolge?`<span style="display:inline-block;margin-top:4px;padding:2px 8px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:4px;font-size:9px;color:var(--accent);font-family:var(--font-mono);">📍 ${escHtml(r.bolge)}</span><br>`:''}Pin ID: <span style="font-family:var(--font-mono);font-size:9px;">${r.pin_id||'—'}</span></div>
         <div class="mod-actions" style="margin-top:8px;">
           <button class="btn-approve" onclick="handleRapor('${r.id}','islendi')">✅ İşlendi</button>
           <button class="btn-hide" onclick="handleRapor('${r.id}','reddedildi')">❌ Reddet</button>
@@ -4192,7 +4230,7 @@ async function loadStatEditTable(search) {
     let pins = await sbRest(query) ||[];
     pins = pins.filter(p => !p.deleted_at);
     if (!pins.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3);">Sonuç yok</td></tr>'; return; }
-    tbody.innerHTML = pins.map(p => `<tr id="se_${p.id}"><td style="font-size:11px;font-weight:700;">${p.iss}</td><td><span style="color:${cc(p.baglanti_turu)};font-family:var(--font-mono);font-size:10px">${(p.baglanti_turu||'').toUpperCase()}</span></td><td><input class="fi" type="number" value="${p.gercek_dl||''}" id="se_dl_${p.id}" style="padding:4px 8px;font-size:11px;width:70px;"></td><td><input class="fi" type="number" value="${p.gercek_ul||''}" id="se_ul_${p.id}" style="padding:4px 8px;font-size:11px;width:70px;"></td><td><input class="fi" type="number" min="1" max="10" value="${p.puan||''}" id="se_puan_${p.id}" style="padding:4px 8px;font-size:11px;width:55px;"></td><td><select class="fs" id="se_gor_${p.id}" style="padding:4px 6px;font-size:10px;width:80px;"><option value="true" ${p.gorunur!==false?'selected':''}>👁 Görünür</option><option value="false" ${p.gorunur===false?'selected':''}>🙈 Gizli</option></select></td><td style="display:flex;gap:4px;"><button class="btn-approve" style="padding:4px 8px;font-size:9px;" onclick="saveStatEdit('${p.id}')">💾</button><button class="btn-del" style="padding:4px 8px;font-size:9px;" onclick="modDeletePin('${p.id}',true)">🗑</button></td></tr>`).join('');
+    tbody.innerHTML = pins.map(p => `<tr id="se_${p.id}"><td style="font-size:11px;font-weight:700;">${escHtml(p.iss)}</td><td><span style="color:${cc(p.baglanti_turu)};font-family:var(--font-mono);font-size:10px">${(p.baglanti_turu||'').toUpperCase()}</span></td><td><input class="fi" type="number" value="${p.gercek_dl||''}" id="se_dl_${p.id}" style="padding:4px 8px;font-size:11px;width:70px;"></td><td><input class="fi" type="number" value="${p.gercek_ul||''}" id="se_ul_${p.id}" style="padding:4px 8px;font-size:11px;width:70px;"></td><td><input class="fi" type="number" min="1" max="10" value="${p.puan||''}" id="se_puan_${p.id}" style="padding:4px 8px;font-size:11px;width:55px;"></td><td><select class="fs" id="se_gor_${p.id}" style="padding:4px 6px;font-size:10px;width:80px;"><option value="true" ${p.gorunur!==false?'selected':''}>👁 Görünür</option><option value="false" ${p.gorunur===false?'selected':''}>🙈 Gizli</option></select></td><td style="display:flex;gap:4px;"><button class="btn-approve" style="padding:4px 8px;font-size:9px;" onclick="saveStatEdit('${p.id}')">💾</button><button class="btn-del" style="padding:4px 8px;font-size:9px;" onclick="modDeletePin('${p.id}',true)">🗑</button></td></tr>`).join('');
   } catch(e) { tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger);padding:10px;">${e.message}</td></tr>`; }
 }
 
