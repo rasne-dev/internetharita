@@ -1239,6 +1239,7 @@ CREATE POLICY "auth_update_raporlar" ON raporlar
         <div class="cbtn adsl" id="userEditConn-adsl" onclick="selConnUserEdit(this,'adsl')">ADSL</div>
         <div class="cbtn docsis" id="userEditConn-docsis" onclick="selConnUserEdit(this,'docsis')">DOCSIS</div>
       </div>
+      <div id="userEditDocsisNote" style="display:none;font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">DOCSIS seçildiğinde İSS ve Altyapı Sahibi otomatik olarak Türksat'a ayarlanır.</div>
     </div>
     
     <div class="fg" style="margin-bottom:10px;">
@@ -1496,6 +1497,14 @@ let issListCache = [];
 const SPAM_DL_MAX = 1500;
 const SPAM_DL_MIN = 0.5;
 const SPAM_UL_MAX = 1000;
+// Bağlantı türüne göre gerçekçi azami DL hızı — submitPin() (karantina tetikleyici) ve
+// getSpamReason() (mod paneli rozet) AYNI sabitleri kullanır, ileride yeni tür eklerken
+// burası güncellenir, başka yer değişmez.
+const TYPE_DL_CAP = { adsl: 32, vdsl: 250, docsis: 1200 };
+// DOCSIS yalnızca Türksat altyapısı üzerinden verilir — formdaki otomatik kilit (selConn)
+// ve backend RLS/CHECK kuralı BİREBİR bu sabitleri referans almalı (bkz. SQL migrasyonu).
+const DOCSIS_ISS = 'Türksat Kablonet';
+const DOCSIS_ALTYAPI = 'Türksat öz altyapı';
 const BASE_ISS = ['Türk Telekom','Superonline (Turkcell)','TurkNet','Vodafone','Millenicom','Netspeed'];
 const ISS_ALIASES = {
   'TTNet': 'Türk Telekom',
@@ -1628,9 +1637,7 @@ function getSpamReason(p) {
   if (p.gercek_ul > SPAM_UL_MAX) return `Aşırı Upload (${p.gercek_ul} Mbps)`;
   
   const conn = (p.baglanti_turu || '').toLowerCase();
-  if (conn === 'adsl' && p.gercek_dl > 32) return `ADSL Sınırı Aşıldı (${p.gercek_dl} Mbps)`;
-  if (conn === 'vdsl' && p.gercek_dl > 250) return `VDSL Sınırı Aşıldı (${p.gercek_dl} Mbps)`;
-  if (conn === 'docsis' && p.gercek_dl > 1200) return `DOCSIS Sınırı Aşıldı (${p.gercek_dl} Mbps)`;
+  if (TYPE_DL_CAP[conn] && p.gercek_dl > TYPE_DL_CAP[conn]) return `${conn.toUpperCase()} Sınırı Aşıldı (${p.gercek_dl} Mbps)`;
   if (p.gercek_ul > p.gercek_dl * 3 && p.gercek_dl > 10) return "Şüpheli Simetrik Hız (UL > DL*3)";
   
   // Outlier kontrolü
@@ -2843,12 +2850,26 @@ function selConn(el,type) {
   const docsisNote = document.getElementById('docsisNote');
   if (docsisNote) docsisNote.style.display = (type === 'docsis') ? 'block' : 'none';
   if (type === 'docsis') {
-    // DOCSIS yalnızca Türksat altyapısı üzerinden veriliyor — İSS ve Altyapı Sahibi otomatik sabitlenir, değiştirilemez
-    if (issSel) { issSel.value = 'Türksat Kablonet'; issSel.disabled = true; toggleCustomIss('Türksat Kablonet'); }
-    if (infraSel) { infraSel.value = 'Türksat öz altyapı'; infraSel.disabled = true; }
+    // DOCSIS yalnızca Türksat altyapısı üzerinden veriliyor — İSS ve Altyapı Sahibi otomatik sabitlenir, değiştirilemez.
+    // NOT: issSel.value'yu DOCSIS_ISS sabitine direkt atamıyoruz — eğer mod panelindeki İSS listesinde
+    // henüz Türksat tabanlı bir kayıt yoksa/adı farklıysa, <select> sessizce boşa düşer ve formdan
+    // boş/yanlış bir İSS gönderilir. Bunun yerine listede gerçekten var olan, canonical adı
+    // DOCSIS_ISS'e eşit olan seçeneği arayıp onu seçiyoruz.
+    const match = issSel ? [...issSel.options].find(o => canonicalIssName(o.value) === DOCSIS_ISS) : null;
+    if (match) {
+      issSel.value = match.value;
+      issSel.disabled = true;
+      toggleCustomIss(match.value);
+      if (infraSel) { infraSel.value = DOCSIS_ALTYAPI; infraSel.disabled = true; }
+    } else {
+      // Listede Türksat tabanlı İSS yok — kilitleme yapma, kullanıcıyı "Diğer" ile elle girmeye yönlendir.
+      if (issSel) issSel.disabled = false;
+      if (infraSel) infraSel.disabled = false;
+      showToast('⚠ İSS listenizde Türksat tabanlı bir sağlayıcı bulunamadı — lütfen İSS alanından "Diğer" seçip elle girin.', 'warn');
+    }
   } else {
-    if (issSel && issSel.disabled) issSel.disabled = false;
-    if (infraSel && infraSel.disabled) infraSel.disabled = false;
+    if (issSel && issSel.disabled) { issSel.disabled = false; issSel.value=''; toggleCustomIss(''); }
+    if (infraSel && infraSel.disabled) { infraSel.disabled = false; infraSel.value=''; }
   }
 }
 function selScore(el,val) { document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); selScoreVal=val; }
@@ -2968,7 +2989,10 @@ async function submitPin() {
   const isCustomIss = !isAltyapiYok && issVal === 'Diğer' && !!customIss;
   const outlier = !isAltyapiYok && isOutlier(dl, pinLat, pinLng);
   const rateQuarantine = shouldQuarantine();
-  const quarantine = !!(outlier || isCustomIss || rateQuarantine || isAltyapiYok);
+  // Tür bazlı gerçekçilik kontrolü — örn. ADSL için 32 Mbps üstü, DOCSIS için 1200 Mbps üstü
+  // beyan edilen download hızı: veri silinmiyor/reddedilmiyor, sadece moderatör incelemesine düşüyor.
+  const capExceeded = !isAltyapiYok && TYPE_DL_CAP[selConnVal] && dl > TYPE_DL_CAP[selConnVal];
+  const quarantine = !!(outlier || isCustomIss || rateQuarantine || isAltyapiYok || capExceeded);
 
   // Konum bazlı tekrar giriş kontrolü — aynı FP, 500m, 24 saat
   const nearbyRecent = cleanPinsData.find(p => {
@@ -3024,7 +3048,7 @@ async function submitPin() {
     if (isAltyapiYok) markSubmitNoInfra();
     
     if (quarantine) {
-      const reason = isAltyapiYok ? '⚠ Altyapı yok bildirimi' : (outlier ? '⚠ Bölge ortalamasından sapma' : (rateQuarantine ? '⚠ Hızlı giriş algılandı' : '⚠ Verini aldık'));
+      const reason = isAltyapiYok ? '⚠ Altyapı yok bildirimi' : (outlier ? '⚠ Bölge ortalamasından sapma' : (capExceeded ? `⚠ ${selConnVal.toUpperCase()} için olağan dışı yüksek hız` : (rateQuarantine ? '⚠ Hızlı giriş algılandı' : '⚠ Verini aldık')));
       showToast(`${reason} — incelemeye alındı`, 'warn');
       showThankyou({ dl, ul, iss: finalIss, il: document.getElementById('ilInput').value, quarantine: true, isAltyapiYok });
     } else {
@@ -3091,6 +3115,8 @@ function selConnUserEdit(el, type) {
   document.querySelectorAll('#userEditConnWrap .cbtn').forEach(b => b.classList.remove('sel'));
   el.classList.add('sel');
   selConnValUserEdit = type;
+  const note = document.getElementById('userEditDocsisNote');
+  if (note) note.style.display = (type === 'docsis') ? 'block' : 'none';
 }
 
 function selScoreUserEdit(el, val) {
@@ -3139,6 +3165,8 @@ function openUserEditModal(pinId) {
   document.querySelectorAll('#userEditConnWrap .cbtn').forEach(b => {
     b.classList.toggle('sel', b.id === `userEditConn-${pin.baglanti_turu}`);
   });
+  const userEditDocsisNote = document.getElementById('userEditDocsisNote');
+  if (userEditDocsisNote) userEditDocsisNote.style.display = (pin.baglanti_turu === 'docsis') ? 'block' : 'none';
   
   document.getElementById('userEditPkgDL').value = pin.paket_hizi_dl || pin.paket_hizi || '';
   document.getElementById('userEditPkgUL').value = pin.paket_hizi_ul || '';
@@ -3200,11 +3228,20 @@ async function saveUserEdit() {
     speed_test_verified: speedVerified,
     updated_at: new Date().toISOString()
   };
+  // Bu panelde İSS seçimi yok — kullanıcı bağlantı türünü DOCSIS yaparsa, ana formdaki
+  // kuralla tutarlı olması için İSS ve Altyapı Sahibi'ni de otomatik Türksat'a sabitliyoruz.
+  // Aksi halde "baglanti_turu=docsis" ama "iss=Türk Telekom" gibi tutarsız bir satır kaydedilir
+  // ve aynı backend kuralına (RLS/CHECK) çarpıp güncelleme sessizce/hata ile başarısız olabilir.
+  if (connType === 'docsis') {
+    payload.iss = DOCSIS_ISS;
+    payload.altyapi_sahibi = DOCSIS_ALTYAPI;
+  }
   
   const pin = pinsData.find(p => p.id === pinId);
   if (pin && (pin.gercek_dl !== dl || pin.gercek_ul !== ul)) {
     const outlier = isOutlier(dl, pin.lat, pin.lng);
-    if (outlier) {
+    const capExceeded = TYPE_DL_CAP[connType] && dl > TYPE_DL_CAP[connType];
+    if (outlier || capExceeded) {
       payload.gorunur = false;
       payload.is_quarantine = true;
     }
