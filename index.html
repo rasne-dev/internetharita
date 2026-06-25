@@ -1201,7 +1201,7 @@ CREATE POLICY "auth_update_raporlar" ON raporlar
         <select class="fs" id="editIss" onchange="checkEditIssValidity()"></select>
         <div id="editIssWarning" style="display:none;font-size:9px;color:var(--warn);font-family:var(--font-mono);margin-top:3px;">⚠ Bu İSS onaylı listede değil — kaydetmek pini haritada göstermez</div>
       </div>
-      <div class="fg"><div class="fl">Bağlantı Türü</div><select class="fs" id="editConn"><option value="fiber">Fiber</option><option value="vdsl">VDSL</option><option value="adsl">ADSL</option><option value="docsis">DOCSIS</option></select></div>
+      <div class="fg"><div class="fl">Bağlantı Türü</div><select class="fs" id="editConn"><option value="fiber">Fiber</option><option value="vdsl">VDSL</option><option value="adsl">ADSL</option><option value="docsis">DOCSIS</option><option value="yok">Altyapı Yok</option></select></div>
       <div class="fg"><div class="fl">DL Hızı (Mbps)</div><input class="fi" type="number" id="editDL" placeholder="100"></div>
       <div class="fg"><div class="fl">UL Hızı (Mbps)</div><input class="fi" type="number" id="editUL" placeholder="50"></div>
       <div class="fg"><div class="fl">Paket Hızı DL (Mbps)</div><input class="fi" type="number" id="editPkgDL" placeholder="opsiyonel"></div>
@@ -2434,7 +2434,15 @@ async function renderStats() {
     {l:'ADSL',v:cm.adsl,c:'#E53935'},
     {l:'DOCSIS',v:cm.docsis,c:'#7c4dff'},
     ...(cm.yok > 0 ? [{l:'Altyapı Yok',v:cm.yok,c:'#6b7280'}] : [])
-  ].map(t=>`<div class="ct-row"><div class="ct-label">${t.l}</div><div class="ct-track"><div class="ct-fill" style="width:${pins.length?(t.v/pins.length*100).toFixed(0):0}%;background:${t.c}"></div></div><div class="ct-pct">${pins.length?(t.v/pins.length*100).toFixed(0):0}%</div></div>`).join('');
+  ].map(t=>{
+    const pct = pins.length ? (t.v/pins.length*100) : 0;
+    // Küçük ama sıfır olmayan oranlar (örn. %0.6) tam sayıya yuvarlanınca "%0" görünüyor ve
+    // çubuk da %0 genişlikte (görünmez) oluyor — sanki o türden hiç veri yokmuş gibi yanıltıyor.
+    // <%1 oranlar ondalıklı gösterilir, çubuğa da en az %1 görünür genişlik verilir.
+    const displayPct = (pct > 0 && pct < 1) ? pct.toFixed(1) : pct.toFixed(0);
+    const barWidth = pct > 0 ? Math.max(pct, 1) : 0;
+    return `<div class="ct-row"><div class="ct-label">${t.l}</div><div class="ct-track"><div class="ct-fill" style="width:${barWidth}%;background:${t.c}"></div></div><div class="ct-pct">${displayPct}%</div></div>`;
+  }).join('');
 
   // ISS BAŞINA ORTALAMA HIZ TREND CHART
   const issSpeedMap = {};
@@ -3923,6 +3931,22 @@ async function loadSikayetler() {
 async function groupAction(idsJson, approve) {
   let ids; try { ids = JSON.parse(idsJson.replace(/&quot;/g,'"')); } catch(e) { return; }
   try {
+    if (approve) {
+      // Onaylanan pinlerin İSS'i onaylı listede değilse (spam'e düşen pinler genelde
+      // tanınmayan/özel İSS adlarıyla gelir) otomatik ekle. Aksi halde gorunur=true
+      // yapılsa da isApprovedPublicIss() kontrolünden geçemediği için pin ne herkese
+      // açık haritada ne de "Tüm Pinler → ✅ Haritada" filtresinde görünür — "onayladım
+      // ama görünmüyor" hissi tam olarak buradan kaynaklanır.
+      const targetPins = await sbRest(`pins?id=in.(${ids.join(',')})&select=id,iss`) || [];
+      const unapprovedIss = [...new Set(targetPins.map(p => p.iss).filter(iss => iss && !isApprovedPublicIss(iss)))];
+      for (const iss of unapprovedIss) {
+        await addIssToList({ name: iss, color: issHashColor(iss), active: true, sort_order: 99 });
+      }
+      if (unapprovedIss.length) {
+        await loadIssListAndRenderChips();
+        showToast(`🏷 ${unapprovedIss.length} yeni İSS listeye otomatik eklendi`, 'warn');
+      }
+    }
     await Promise.all(ids.map(id => patchPin(id, { gorunur: approve, sikayet_sayisi: approve ? 0 : 99, is_quarantine: approve ? false : true })));
     ids.forEach(id => document.getElementById('mc_'+id)?.remove());
     showToast(approve ? `✅ ${ids.length} pin onaylandı` : `👁 ${ids.length} pin gizlendi`);
@@ -4101,7 +4125,7 @@ async function openEditModal(id) {
     if (currentIss && !getAllIss().includes(currentIss)) { const extras = getExtraIss(); extras.push(currentIss); saveExtraIss(extras); }
     buildIssOptions(editIssSel, currentIss);
     checkEditIssValidity();
-    document.getElementById('editConn').value=p.baglanti_turu||'fiber'; document.getElementById('editDL').value=p.gercek_dl||''; document.getElementById('editUL').value=p.gercek_ul||''; document.getElementById('editPkgDL').value=p.paket_hizi_dl||p.paket_hizi||''; document.getElementById('editPkgUL').value=p.paket_hizi_ul||''; document.getElementById('editPuan').value=p.puan||''; document.getElementById('editGorunur').value=String(p.gorunur!==false); document.getElementById('editModNote').value=p.mod_notu||''; document.getElementById('editModal').classList.add('open');
+    document.getElementById('editConn').value=['fiber','vdsl','adsl','docsis','yok'].includes(p.baglanti_turu) ? p.baglanti_turu : 'fiber'; document.getElementById('editDL').value=p.gercek_dl||''; document.getElementById('editUL').value=p.gercek_ul||''; document.getElementById('editPkgDL').value=p.paket_hizi_dl||p.paket_hizi||''; document.getElementById('editPkgUL').value=p.paket_hizi_ul||''; document.getElementById('editPuan').value=p.puan||''; document.getElementById('editGorunur').value=String(p.gorunur!==false); document.getElementById('editModNote').value=p.mod_notu||''; document.getElementById('editModal').classList.add('open');
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 
