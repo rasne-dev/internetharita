@@ -1045,6 +1045,12 @@ CREATE POLICY "auth_update_raporlar" ON raporlar
           </div>
         </details>
         <div id="bekleyenList"><div class="loading-text loading-dots">Yükleniyor</div></div>
+        <div style="margin-top:14px;">
+          <button class="btn-edit" style="padding:6px 12px;font-size:10px;" onclick="toggleGecmisRaporlar()" id="gecmisToggleBtn">🕘 Geçmiş Bildirimler</button>
+          <div id="gecmisRaporWrap" style="display:none;margin-top:10px;">
+            <div id="gecmisRaporList"><div class="loading-text loading-dots">Yükleniyor</div></div>
+          </div>
+        </div>
       </div>
       <div class="mod-section" style="margin-top:16px;">
         <div class="mod-section-title">🔒 İnceleme Gerektiren Pinler</div>
@@ -1481,6 +1487,7 @@ async function delPinOwn(id) {
   return result;
 }
 const getRaporlar = () => sbRest('raporlar?select=*&durum=eq.bekleyen&order=created_at.desc&limit=100');
+const getGecmisRaporlar = () => sbRest('raporlar?select=*&durum=neq.bekleyen&order=created_at.desc&limit=100');
 const addRapor = d => sbRest('raporlar', { method:'POST', body:JSON.stringify(d) });
 const patchRapor = (id,d) => sbRest(`raporlar?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
 
@@ -2104,8 +2111,10 @@ async function loadPins() {
 function renderHex() {
   if (!maps.main || !h3) return; hexLayers.forEach(l => maps.main.removeLayer(l)); hexLayers =[];
   const z = maps.main.getZoom();
-  // ALTIGEN BOYUTLARI KÜÇÜLTÜLDÜ (Daha detaylı çözünürlük kullanılıyor)
-  const res = z<=5 ? 4 : z<=7 ? 5 : z<=9 ? 6 : z<=11 ? 7 : z<=13 ? 8 : z<=15 ? 9 : 10; 
+  // ALTIGEN ÇÖZÜNÜRLÜĞÜ: H3 res'i 1 arttıkça hücre kenarı ~2.6x küçülür. Uzak zoom'da
+  // (ülke geneli görünüm) önceki ayar (z<=5 → res 4, ~22.6km) altıgenleri ekranda
+  // nokta gibi gösteriyordu. Tüm kademe bir adım büyütüldü — aynı mantık/eşikler korunuyor.
+  const res = z<=5 ? 3 : z<=7 ? 4 : z<=9 ? 5 : z<=11 ? 6 : z<=13 ? 7 : z<=15 ? 8 : 9;
   const hexMap = {};
   cleanPinsData.forEach(p => { if (!p.lat || !activeFilters.has(p.baglanti_turu)) return; const canonicalIss = canonicalIssName(p.iss); if (!isApprovedPublicIss(canonicalIss) || !activeISSFilters.has(canonicalIss)) return; try { const h = h3.latLngToCell(p.lat, p.lng, res); if (!hexMap[h]) hexMap[h]=[]; hexMap[h].push(p); } catch(e) {} });
   Object.entries(hexMap).forEach(([hex, pins]) => {
@@ -4069,17 +4078,18 @@ function filterAdminTable(search) {
   renderAdminTable(filtered);
 }
 
+const RAPOR_TIP_LABELS = { yanlis_hiz:'Yanlış hız', yanlis_konum:'Yanlış konum', yanlis_iss:'Yanlış ISS', spam:'Spam', guncelleme:'Bilgi Güncelleme', diger:'Diğer' };
+
 async function loadRaporlar() {
   const list = document.getElementById('bekleyenList'); list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
   try {
     const raporlar = await getRaporlar()||[]; if (!raporlar.length) return list.innerHTML='<div class="empty-state">Bekleyen rapor yok ✅</div>';
-    const tipLabels = { yanlis_hiz:'Yanlış hız', yanlis_konum:'Yanlış konum', yanlis_iss:'Yanlış ISS', spam:'Spam', guncelleme:'Bilgi Güncelleme', diger:'Diğer' };
     list.innerHTML = raporlar.map(r => {
       const tarihStr = new Date(r.created_at).toLocaleString('tr-TR');
       const pin = adminPinsCache.find(p => p.id === r.pin_id);
       const focusBtn = (pin && pin.lat) ? `<button class="btn-edit" onclick="focusOnMap(${pin.lat}, ${pin.lng})" title="Haritada Odaklan">📍 Harita</button>` : '';
       return `<div class="report-card">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div class="report-type">${tipLabels[r.tip]||escHtml(r.tip)}</div><div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);">${tarihStr}</div></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div class="report-type">${RAPOR_TIP_LABELS[r.tip]||escHtml(r.tip)}</div><div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);">${tarihStr}</div></div>
         <div class="report-text">${escHtml(r.aciklama)||'Açıklama girilmedi'}</div>
         <div class="report-meta" style="margin-top:5px;line-height:1.8;">${r.bolge?`<span style="display:inline-block;margin-top:4px;padding:2px 8px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:4px;font-size:9px;color:var(--accent);font-family:var(--font-mono);">📍 ${escHtml(r.bolge)}</span><br>`:''}Pin ID: <span style="font-family:var(--font-mono);font-size:9px;">${r.pin_id||'—'}</span></div>
         <div class="mod-actions" style="margin-top:8px;">
@@ -4093,7 +4103,53 @@ async function loadRaporlar() {
   } catch(e) { list.innerHTML='Hata: '+e.message; }
 }
 
-async function handleRapor(id, durum) { try { await patchRapor(id,{durum}); showToast('✅ Rapor güncellendi'); loadRaporlar(); } catch(e) { showToast('Hata: '+e.message,'err'); } }
+// GEÇMİŞ BİLDİRİMLER: durum 'islendi' veya 'reddedildi' olan raporları gösterir.
+// Veri her zaman veritabanında duruyordu (silinmiyordu) — sadece görüntüleme arayüzü
+// eksikti. "Geri Al" ile yanlışlıkla işlenen/reddedilen bir rapor tekrar bekleyene alınabilir.
+let gecmisRaporlarYuklendi = false;
+function toggleGecmisRaporlar() {
+  const wrap = document.getElementById('gecmisRaporWrap');
+  const btn = document.getElementById('gecmisToggleBtn');
+  const opening = wrap.style.display === 'none';
+  wrap.style.display = opening ? 'block' : 'none';
+  if (btn) btn.textContent = opening ? '🕘 Geçmiş Bildirimleri Gizle' : '🕘 Geçmiş Bildirimler';
+  if (opening && !gecmisRaporlarYuklendi) { loadGecmisRaporlar(); gecmisRaporlarYuklendi = true; }
+}
+
+async function loadGecmisRaporlar() {
+  const list = document.getElementById('gecmisRaporList'); list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
+  try {
+    const raporlar = await getGecmisRaporlar()||[]; if (!raporlar.length) return list.innerHTML='<div class="empty-state">Henüz işlenmiş rapor yok</div>';
+    const durumBadge = { islendi:'<span style="color:var(--success);font-weight:700;">✅ İşlendi</span>', reddedildi:'<span style="color:var(--danger);font-weight:700;">❌ Reddedildi</span>' };
+    list.innerHTML = raporlar.map(r => {
+      const tarihStr = new Date(r.created_at).toLocaleString('tr-TR');
+      const pin = adminPinsCache.find(p => p.id === r.pin_id);
+      const focusBtn = (pin && pin.lat) ? `<button class="btn-edit" onclick="focusOnMap(${pin.lat}, ${pin.lng})" title="Haritada Odaklan">📍 Harita</button>` : '';
+      return `<div class="report-card" style="opacity:.75;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div class="report-type">${RAPOR_TIP_LABELS[r.tip]||escHtml(r.tip)}</div><div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);">${tarihStr}</div></div>
+        <div style="margin-bottom:5px;font-size:11px;">${durumBadge[r.durum]||escHtml(r.durum)}</div>
+        <div class="report-text">${escHtml(r.aciklama)||'Açıklama girilmedi'}</div>
+        <div class="report-meta" style="margin-top:5px;line-height:1.8;">${r.bolge?`<span style="display:inline-block;margin-top:4px;padding:2px 8px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:4px;font-size:9px;color:var(--accent);font-family:var(--font-mono);">📍 ${escHtml(r.bolge)}</span><br>`:''}Pin ID: <span style="font-family:var(--font-mono);font-size:9px;">${r.pin_id||'—'}</span></div>
+        <div class="mod-actions" style="margin-top:8px;">
+          <button class="btn-edit" onclick="undoRapor('${r.id}')">↩️ Geri Al (Bekleyene Taşı)</button>
+          ${focusBtn}
+          ${r.pin_id?`<button class="btn-edit" onclick="openEditModal('${r.pin_id}')">✏️ Düzenle</button>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { list.innerHTML='Hata: '+e.message; }
+}
+
+async function undoRapor(id) {
+  try {
+    await patchRapor(id, { durum:'bekleyen' });
+    showToast('↩️ Rapor bekleyene geri alındı');
+    gecmisRaporlarYuklendi = false;
+    loadGecmisRaporlar(); loadRaporlar();
+  } catch(e) { showToast('Hata: '+e.message,'err'); }
+}
+
+async function handleRapor(id, durum) { try { await patchRapor(id,{durum}); showToast('✅ Rapor güncellendi'); loadRaporlar(); if (gecmisRaporlarYuklendi) loadGecmisRaporlar(); } catch(e) { showToast('Hata: '+e.message,'err'); } }
 async function modAction(id, approve) { 
   try { 
     await patchPin(id, { gorunur: approve, sikayet_sayisi: approve ? 0 : 99, is_quarantine: approve ? false : true }); 
