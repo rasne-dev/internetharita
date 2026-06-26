@@ -2114,7 +2114,12 @@ function renderHex() {
   // ALTIGEN ÇÖZÜNÜRLÜĞÜ: H3 res'i 1 arttıkça hücre kenarı ~2.6x küçülür. Uzak zoom'da
   // (ülke geneli görünüm) önceki ayar (z<=5 → res 4, ~22.6km) altıgenleri ekranda
   // nokta gibi gösteriyordu. Tüm kademe bir adım büyütüldü — aynı mantık/eşikler korunuyor.
-  const res = z<=5 ? 3 : z<=7 ? 4 : z<=9 ? 5 : z<=11 ? 6 : z<=13 ? 7 : z<=15 ? 8 : 9;
+  // ALTIGEN ÇÖZÜNÜRLÜĞÜ: önceki denemede TÜM kademeler bir basamak büyütülmüştü, ama
+  // şikayet sadece en uzak "Türkiye geneli" görünümle ilgiliydi (altıgenler nokta gibiydi).
+  // "İl bazlı" ve sonraki kademelerde büyütme gereksiz/fazla oldu (komşu şehirler birbirine
+  // karışıyor) — bu yüzden SADECE ilk kademe (z<=5) büyütülmüş kalıyor, diğerleri orijinal
+  // (daha ince) değerlerine geri alındı.
+  const res = z<=5 ? 3 : z<=7 ? 5 : z<=9 ? 6 : z<=11 ? 7 : z<=13 ? 8 : z<=15 ? 9 : 10;
   const hexMap = {};
   cleanPinsData.forEach(p => { if (!p.lat || !activeFilters.has(p.baglanti_turu)) return; const canonicalIss = canonicalIssName(p.iss); if (!isApprovedPublicIss(canonicalIss) || !activeISSFilters.has(canonicalIss)) return; try { const h = h3.latLngToCell(p.lat, p.lng, res); if (!hexMap[h]) hexMap[h]=[]; hexMap[h].push(p); } catch(e) {} });
   Object.entries(hexMap).forEach(([hex, pins]) => {
