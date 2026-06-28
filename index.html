@@ -2145,7 +2145,7 @@ function renderHex() {
   // "İl bazlı" ve sonraki kademelerde büyütme gereksiz/fazla oldu (komşu şehirler birbirine
   // karışıyor) — bu yüzden SADECE ilk kademe (z<=5) büyütülmüş kalıyor, diğerleri orijinal
   // (daha ince) değerlerine geri alındı.
-  const res = z<=5 ? 3 : z<=7 ? 5 : z<=9 ? 6 : z<=11 ? 7 : z<=13 ? 8 : z<=15 ? 9 : 10;
+  const res = z<=5 ? 3 : z<=6 ? 4 : z<=7 ? 5 : z<=9 ? 6 : z<=11 ? 7 : z<=13 ? 8 : z<=15 ? 9 : 10;
   const hexMap = {};
   cleanPinsData.forEach(p => { if (!p.lat || !activeFilters.has(p.baglanti_turu)) return; const canonicalIss = canonicalIssName(p.iss); if (!isApprovedPublicIss(canonicalIss) || !activeISSFilters.has(canonicalIss)) return; try { const h = h3.latLngToCell(p.lat, p.lng, res); if (!hexMap[h]) hexMap[h]=[]; hexMap[h].push(p); } catch(e) {} });
   Object.entries(hexMap).forEach(([hex, pins]) => {
@@ -2156,8 +2156,10 @@ function renderHex() {
       // FIX: fillOpacity zoom'a gore dinamik.
       // Uzak zoom'da (buyuk altigenler) daha opak: harita rengi okumasi daha net.
       // Yakin zoom'da (kucuk altigenler) daha seffaf: harita altyapisi okunabilir.
-      const _fillOp   = hasData ? (z <= 6 ? 0.55 : z <= 8 ? 0.42 : 0.28) : 0.08;
-      const _strokeOp = hasData ? (z <= 6 ? 0.85 : 0.65) : 0.2;
+      // NOT: kullanici geri bildirimiyle degerler asagi cekildi (eski dinamik
+      // formul cok opaktı; orijinal sabit 0.3'e daha yakin ama hala zoom'a gore degisken).
+      const _fillOp   = hasData ? (z <= 6 ? 0.4 : z <= 8 ? 0.32 : 0.24) : 0.07;
+      const _strokeOp = hasData ? (z <= 6 ? 0.7 : 0.55) : 0.18;
       const _weight   = z <= 6 ? 0.8 : 1.2;
       const layer = L.polygon(coords, { color, fillColor:color, fillOpacity:_fillOp, weight:_weight, opacity:_strokeOp }).addTo(maps.main);
       layer.on('click', () => showHexInfo(pins, hex)); hexLayers.push(layer);
