@@ -1144,7 +1144,7 @@ CREATE POLICY "auth_update_raporlar" ON raporlar
           ⚠ <b>Geçmiş veriler için:</b> <code>speed_test_verified</code> kolonu sonradan eklendi — eski pinler "Dışarıda" görünür.
           Aşağıdaki <b>"Tümünü Getir → Toplu Onayla"</b> butonu ile kaliteli eski pinleri tek seferde sıralamaya ekleyebilirsin.
           Ya da Supabase SQL Editor'da şu sorguyu çalıştır:<br>
-          <code style="display:block;margin-top:6px;background:rgba(0,0,0,.3);padding:6px 8px;border-radius:5px;font-size:10px;color:var(--accent);white-space:pre-wrap;word-break:break-all;">UPDATE pins SET speed_test_verified = true WHERE deleted_at IS NULL AND gorunur = true AND is_quarantine = false AND gercek_dl BETWEEN 0.5 AND 1500 AND gercek_ul > 0 AND gercek_ul &lt;= 1000 AND (speed_test_verified IS NOT TRUE);</code>
+          <code style="display:block;margin-top:6px;background:rgba(0,0,0,.3);padding:6px 8px;border-radius:5px;font-size:10px;color:var(--accent);white-space:pre-wrap;word-break:break-all;">UPDATE pins SET speed_test_verified = true WHERE deleted_at IS NULL AND gorunur = true AND is_quarantine = false AND gercek_dl BETWEEN 0.5 AND 2500 AND gercek_ul > 0 AND gercek_ul &lt;= 2500 AND (speed_test_verified IS NOT TRUE);</code>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
           <input type="text" class="fi" id="speedRankSearch" placeholder="İl veya ilçe ara..." style="flex:1;min-width:140px;" oninput="loadSpeedRankEditor(this.value)">
@@ -1315,7 +1315,7 @@ const sbc = createClient(SB_URL, SB_KEY);
    Eski pinler için Mod Paneli → İSS Yönetimi → "Toplu Onayla" butonu kullanın.
    Ya da SQL ile: UPDATE pins SET speed_test_verified = true
      WHERE deleted_at IS NULL AND gorunur = true AND is_quarantine = false
-       AND gercek_dl BETWEEN 0.5 AND 1500 AND gercek_ul > 0
+       AND gercek_dl BETWEEN 0.5 AND 2500 AND gercek_ul > 0
        AND speed_test_verified IS NOT TRUE;
 
    ── RAPORLAR TABLOSU RLS ────────────────────────────────────────────────────
@@ -1367,16 +1367,42 @@ let myPinsLayer = null;
 
 async function sbRest(path, opts = {}) {
   const { data: sess } = await sbc.auth.getSession();
-  const token = sess?.session?.access_token || SB_KEY;
+  // DUZELTME - APIKEY/AUTHORIZATION CAKISMASI (veri eklenememe sorunu):
+  // "sb_publishable_..." formatindaki yeni Supabase publishable key bir JWT
+  // DEGILDIR. Eskiden burada oturum yoksa (anonim kullanici) token = SB_KEY
+  // olup 'Authorization: Bearer sb_publishable_...' olarak gonderiliyordu.
+  // PostgREST/GoTrue bunu gecersiz bir JWT olarak parse etmeye calisip
+  // 401/403 dondurebiliyor -> anonim pin/rapor eklemeleri sessizce basarisiz
+  // oluyordu. Cozum: Authorization header'i SADECE gercek bir kullanici
+  // oturumu (moderator login) varsa eklenir. Anonim istekler icin sadece
+  // 'apikey' header'i yeterli ve dogru yontemdir.
+  const token = sess?.session?.access_token;
+  // DUZELTME - VERi EKLENMiYOR SORUNU:
+  // POST isteklerinde varsayilan 'return=representation' Supabase'de anon rolunun
+  // SELECT yetkisi gerektiriyor. Anon SELECT yetkisi olmayan tablolarda 42501 (RLS)
+  // hatasi firlatip veri eklenememesine yol aciyor. POST icin 'return=minimal'
+  // kullan; basarili insert 201 + bos body dondurur, bu yeterli.
+  // GET ve PATCH icin representation korunuyor.
+  let preferHeader;
+  if (opts.prefer) {
+    preferHeader = opts.prefer;
+  } else if (opts.method === 'POST') {
+    preferHeader = 'return=minimal';
+  } else {
+    preferHeader = 'return=representation';
+  }
   const headers = {
     'apikey': SB_KEY,
-    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
-    'Prefer': opts.prefer || 'return=representation',
+    'Prefer': preferHeader,
     'X-Browser-FP': browserFingerprint || ''
   };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
   const r = await fetch(`${SB_URL}/rest/v1/${path}`, { headers, method: opts.method || 'GET', body: opts.body });
-  if (opts.method === 'DELETE' || (opts.method === 'PATCH' && opts.prefer?.includes('minimal'))) {
+  // POST minimal, DELETE, ve PATCH minimal: body okuma gerekmiyor, sadece ok/error
+  if (opts.method === 'DELETE' ||
+      (opts.method === 'PATCH' && opts.prefer?.includes('minimal')) ||
+      (opts.method === 'POST' && !opts.prefer)) {
     if (!r.ok) { const err = await r.text(); throw new Error(err || 'İşlem başarısız'); }
     return { ok: true };
   }
@@ -1511,9 +1537,9 @@ function issHashColor(name) {
 // Global ISS listesi cache
 let issListCache = [];
 
-const SPAM_DL_MAX = 1500;
+const SPAM_DL_MAX = 2500; // 1500 -> 2500: bazi ISS'ler artik 2Gbps+ sunuyor
 const SPAM_DL_MIN = 0.5;
-const SPAM_UL_MAX = 1000;
+const SPAM_UL_MAX = 2500; // 1000 -> 2500: simetrik fiber destegi
 // Bağlantı türüne göre gerçekçi azami DL hızı — submitPin() (karantina tetikleyici) ve
 // getSpamReason() (mod paneli rozet) AYNI sabitleri kullanır, ileride yeni tür eklerken
 // burası güncellenir, başka yer değişmez.
@@ -2111,11 +2137,15 @@ async function loadPins() {
 function renderHex() {
   if (!maps.main || !h3) return; hexLayers.forEach(l => maps.main.removeLayer(l)); hexLayers =[];
   const z = maps.main.getZoom();
-  // ALTIGEN COZUNURLUGU (H3): Her res artisinda hucre kenari ~2.6x kuculuyor.
-  // Eski tablo: zoom 5->6 gecisinde res 3(166km)->res 5(24km) atliyordu
-  // (ara adim res 4 yoktu) => altigenler aniden 7x kuculuyor = 'sicrama'.
-  // Yeni tablo: her ~1.5 zoom = 1 res artisi => gorsel gecis uniform.
-  const res = z<=5 ? 3 : z<=6 ? 4 : z<=8 ? 5 : z<=10 ? 6 : z<=12 ? 7 : z<=14 ? 8 : z<=15 ? 9 : 10;
+  // ALTIGEN ÇÖZÜNÜRLÜĞÜ: H3 res'i 1 arttıkça hücre kenarı ~2.6x küçülür. Uzak zoom'da
+  // (ülke geneli görünüm) önceki ayar (z<=5 → res 4, ~22.6km) altıgenleri ekranda
+  // nokta gibi gösteriyordu. Tüm kademe bir adım büyütüldü — aynı mantık/eşikler korunuyor.
+  // ALTIGEN ÇÖZÜNÜRLÜĞÜ: önceki denemede TÜM kademeler bir basamak büyütülmüştü, ama
+  // şikayet sadece en uzak "Türkiye geneli" görünümle ilgiliydi (altıgenler nokta gibiydi).
+  // "İl bazlı" ve sonraki kademelerde büyütme gereksiz/fazla oldu (komşu şehirler birbirine
+  // karışıyor) — bu yüzden SADECE ilk kademe (z<=5) büyütülmüş kalıyor, diğerleri orijinal
+  // (daha ince) değerlerine geri alındı.
+  const res = z<=5 ? 3 : z<=7 ? 5 : z<=9 ? 6 : z<=11 ? 7 : z<=13 ? 8 : z<=15 ? 9 : 10;
   const hexMap = {};
   cleanPinsData.forEach(p => { if (!p.lat || !activeFilters.has(p.baglanti_turu)) return; const canonicalIss = canonicalIssName(p.iss); if (!isApprovedPublicIss(canonicalIss) || !activeISSFilters.has(canonicalIss)) return; try { const h = h3.latLngToCell(p.lat, p.lng, res); if (!hexMap[h]) hexMap[h]=[]; hexMap[h].push(p); } catch(e) {} });
   Object.entries(hexMap).forEach(([hex, pins]) => {
@@ -2126,10 +2156,9 @@ function renderHex() {
       // FIX: fillOpacity zoom'a gore dinamik.
       // Uzak zoom'da (buyuk altigenler) daha opak: harita rengi okumasi daha net.
       // Yakin zoom'da (kucuk altigenler) daha seffaf: harita altyapisi okunabilir.
-      const _zo = maps.main.getZoom();
-      const _fillOp  = hasData ? (_zo <= 6 ? 0.55 : _zo <= 8 ? 0.42 : 0.28) : 0.08;
-      const _strokeOp = hasData ? (_zo <= 6 ? 0.85 : 0.65) : 0.2;
-      const _weight   = _zo <= 6 ? 0.8 : 1.2;
+      const _fillOp   = hasData ? (z <= 6 ? 0.55 : z <= 8 ? 0.42 : 0.28) : 0.08;
+      const _strokeOp = hasData ? (z <= 6 ? 0.85 : 0.65) : 0.2;
+      const _weight   = z <= 6 ? 0.8 : 1.2;
       const layer = L.polygon(coords, { color, fillColor:color, fillOpacity:_fillOp, weight:_weight, opacity:_strokeOp }).addTo(maps.main);
       layer.on('click', () => showHexInfo(pins, hex)); hexLayers.push(layer);
     } catch(e) {}
@@ -3027,7 +3056,9 @@ async function submitPin() {
   const pkgUL = parseInt(document.getElementById('packageSpeedUL').value);
   let dl = parseInt(document.getElementById('dlSpeed').value) || 0;
   let ul = parseInt(document.getElementById('ulSpeed').value) || 0;
-  const speedVerified = document.getElementById('speedVerifiedBadge').classList.contains('show');
+  // DUZELTME: CSS class kontrolu bazen yanlis sonuc verebilir.
+  // Guvenilir JS state'i (speedVerifiedByTest) oncelikli kullan.
+  const speedVerified = speedVerifiedByTest || document.getElementById('speedVerifiedBadge').classList.contains('show');
 
   if (!isAltyapiYok) {
     if (!pkgDL) {
@@ -3044,9 +3075,9 @@ async function submitPin() {
       highlightRequired('dlSpeed', false);
       return showToast(!dl ? 'Önce hız testi yapın — "⚡ Hız Testi Yap" butonuna basın' : 'Hız testi tamamlanmadan veri gönderilemez','err');
     }
-    if (dl < 0.5 || dl > 1500) return showToast('Geçersiz download hızı (0.5–1500 Mbps)','err');
-    if (ul > 1000) return showToast('Geçersiz upload hızı (max 1000 Mbps)','err');
-    if (ul > dl * 3) return showToast('Upload hızı download hızının 3 katından fazla olamaz','err');
+    if (dl < 0.5 || dl > 2500) return showToast('Geçersiz download hızı (0.5–2500 Mbps)','err');
+    if (ul > 2500) return showToast('Geçersiz upload hızı (max 2500 Mbps)','err');
+    if (ul > dl * 5) return showToast('Upload hızı download hızının 5 katından fazla olamaz','err');
   } else {
     dl = 0; ul = 0;
     if (!canSubmitNoInfra()) return showToast(`⏳ Altyapı yok bildirimi için günlük limitiniz (${NO_INFRA_DAILY_LIMIT}) doldu.`, 'warn');
@@ -3380,7 +3411,7 @@ async function deleteUserPin(pinId) {
   }
 }
 
-function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); const kvkkCheck = document.getElementById('kvkkCheck');
+function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); speedVerifiedByTest = false; const kvkkCheck = document.getElementById('kvkkCheck');
   if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; }
   const noInfraCheck = document.getElementById('noInfraCheck');
   if (noInfraCheck && noInfraCheck.checked) { noInfraCheck.checked = false; onNoInfraChange(false); }
@@ -4633,6 +4664,7 @@ function goToSubmittedLocation() {
 <script>
 // ===== YENİLENMİŞ HIZ TESTİ MOTORU =====
 let stResults = null, stRunning = false;
+let speedVerifiedByTest = false; // CSS class'a bagli degil, guvenilir JS state
 let lastSubmittedLatLng = null; // "Haritada Gör" butonu için son eklenen pinin konumu
 const SPEED_DOWNLOAD_URL = 'https://speed.cloudflare.com/__down';
 const SPEED_UPLOAD_URL = window.SPEED_TEST_UPLOAD_URL || 'https://speed.cloudflare.com/__up';
@@ -4665,7 +4697,7 @@ function closeSpeedTestModal() {
   speedTestTarget = 'form';
 }
 function resetSpeedTestUI() {
-  stResults = null; stRunning = false;
+  stResults = null; stRunning = false; speedVerifiedByTest = false;
   document.getElementById('stVal').textContent = '—';
   document.getElementById('stPhase').textContent = 'HAZIR';
   document.getElementById('sgFill').style.strokeDashoffset = '427';
@@ -4682,7 +4714,7 @@ function resetSpeedTestUI() {
   document.getElementById('stUseBtn').style.display = 'none';
   document.getElementById('stRetryBtn').style.display = 'none';
   document.getElementById('stSub').style.color = '';
-  document.getElementById('stSub').textContent = 'Tarayıcı tabanlı ölçüm — otomatik form doldurur';
+  document.getElementById('stSub').textContent = 'Tarayıcı tabanlı ölçüm (Cloudflare — p90 yöntemi) | Sonuç forma otomatik aktarılır';
   liveLogReset();
 }
 function setGauge(mbps, maxMbps, color) {
@@ -4765,55 +4797,79 @@ function percentile90(samples) {
 }
 
 async function measureDownload(onLive) {
-  const CHUNK_SIZE = 128 * 1024 * 1024;
-  const MEASURE_MS = 8500;
-  const PARALLEL_STREAMS = 8; // 4 -> 8 (1 Gbps desteği)
+  // DUZELTME #2 - INDIRME HIZI HALA DUSUK OLCULUYOR (race condition):
+  // Onceki "duzeltme" her stream'in KENDI baytlarini sayip KENDI anlik
+  // Mbps'ini sharedSamples'a yaziyordu. 8 paralel stream varsa, toplam
+  // bant genisligi bu 8 stream arasinda paylasilir; yani her stream'in
+  // tek basina olcebildigi hiz, GERCEK toplam hizin sadece ~1/8'i kadardir.
+  // percentile90(sharedSamples) bu kucuk tek-stream degerlerinin p90'ini
+  // alinca sonuc GERCEK toplam hizin cok altinda cikiyordu (orn. 1 Gbps
+  // baglantida ~120-150 Mbps gorunmesi).
+  // COZUM: Tum streamler ortak bir totalBytesGlobal sayacina yazsin (JS
+  // single-thread oldugu icin race condition olmaz), TEK bir merkezi
+  // sampler (setInterval) bu ortak sayacin delta'sini SAMPLE_MS'de bir
+  // olcsun. Boylece her sample, o anki TUM streamlerin TOPLAM hizini
+  // temsil eder - tek bir stream'in payi degil.
+  const CHUNK_SIZE = 25 * 1024 * 1024;
+  const MEASURE_MS = 10000;
+  const SAMPLE_MS  = 200;
+  const PARALLEL_STREAMS = 8;
 
-  // ISINMA (warmup): TCP/TLS el sıkışması ve bağlantının "slow start" ısınma evresi
-  // ölçüm penceresine dahil edilirse ortalama gerçek hızın çok altında çıkar — yüksek
-  // hızlı (500+ Mbps) bağlantılarda bu fark katlanarak büyür. Cloudflare'in kendi resmi
-  // testi de (speed.cloudflare.com/about) bu yüzden ham ortalama değil, persentil bazlı
-  // ölçüm kullanıyor (bkz. runSpeedTest). Burada 8 stream'i ölçüm penceresi BAŞLAMADAN
-  // önce kısaca ısıtıyoruz; upload fonksiyonu zaten bunu yapıyordu, download'a da ekledik.
+  // Isitma: TCP slow-start bitmeden olcum baslamasin
   await Promise.all(Array.from({ length: PARALLEL_STREAMS }, async (_, n) => {
     try {
-      const r = await fetch(`${SPEED_DOWNLOAD_URL}?bytes=${2 * 1024 * 1024}&t=warmup_${n}_${Date.now()}`, { cache:'no-store', mode:'cors' });
-      if (r.body) { const reader = r.body.getReader(); while (true) { const { done } = await reader.read(); if (done) break; } }
+      const r = await fetch(`${SPEED_DOWNLOAD_URL}?bytes=${4 * 1024 * 1024}&t=warmup_${n}_${Date.now()}`, { cache:'no-store', mode:'cors' });
+      if (r.body) { const rdr = r.body.getReader(); while (true) { const {done} = await rdr.read(); if (done) break; } }
     } catch(e) {}
   }));
 
   const startedAt = performance.now();
   const stopAt = startedAt + MEASURE_MS;
-  let totalBytes = 0, lastLiveBytes = 0, lastLiveAt = startedAt;
+  const sharedSamples = [];
+  let totalBytesGlobal = 0;
+
+  // MERKEZI SAMPLER: tum streamlerin TOPLAM baytindan delta hesaplar.
+  let lastSampleBytes = 0, lastSampleAt = startedAt;
+  const samplerId = setInterval(() => {
+    const now = performance.now();
+    const dt = now - lastSampleAt;
+    if (dt <= 0) return;
+    const instantMbps = Math.round(((totalBytesGlobal - lastSampleBytes) * 8) / (dt / 1000) / 1e6);
+    lastSampleBytes = totalBytesGlobal;
+    lastSampleAt = now;
+    if (instantMbps > 0) {
+      sharedSamples.push(instantMbps);
+      if (onLive) onLive(instantMbps);
+    }
+  }, SAMPLE_MS);
 
   async function readStream(n) {
     while (performance.now() < stopAt) {
       const url = `${SPEED_DOWNLOAD_URL}?bytes=${CHUNK_SIZE}&t=${Date.now()}_${n}_${Math.random()}`;
-      const r = await fetch(url, { cache:'no-store', mode:'cors' });
-      if (!r.ok || !r.body) throw new Error('download endpoint failed');
+      let r;
+      try { r = await fetch(url, { cache:'no-store', mode:'cors' }); } catch(e) { break; }
+      if (!r.ok || !r.body) break;
       const reader = r.body.getReader();
       while (performance.now() < stopAt) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const now = performance.now();
-        totalBytes += value.length;
-        if (now - lastLiveAt >= 350) {
-          const instantMbps = Math.round(((totalBytes - lastLiveBytes) * 8) / ((now - lastLiveAt) / 1000) / 1e6);
-          if (instantMbps > 0 && onLive) onLive(instantMbps);
-          lastLiveBytes = totalBytes;
-          lastLiveAt = now;
-        }
+        let res;
+        try { res = await reader.read(); } catch(e) { break; }
+        if (res.done) break;
+        // Sadece ortak sayaci guncelle - hiz hesabi merkezi sampler'da yapiliyor
+        totalBytesGlobal += res.value.length;
       }
       try { await reader.cancel(); } catch(e) {}
     }
   }
 
-  try {
-    await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => readStream(i)));
-    const elapsed = (performance.now() - startedAt) / 1000;
-    if (totalBytes < 100000 || elapsed <= 0) return null;
-    return Math.round((totalBytes * 8) / elapsed / 1e6);
-  } catch(e) { return null; }
+  await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => readStream(i)));
+  clearInterval(samplerId);
+  // Persentil 90: TCP slow-start dusuk sample'larini otomatik dislar
+  const p90 = percentile90(sharedSamples);
+  if (p90) return p90;
+  // Fallback: yeterli sample yok (cok yavas baglanti / hata)
+  const elapsed = (performance.now() - startedAt) / 1000;
+  if (totalBytesGlobal < 100000 || elapsed <= 0) return null;
+  return Math.round((totalBytesGlobal * 8) / elapsed / 1e6);
 }
 
 function uploadOnce(bytes, onLive) {
@@ -4871,16 +4927,27 @@ async function measureUpload(onLive) {
   // 2) stopAt warmup BİTTİKTEN SONRA
   const measureStart = performance.now();
   const stopAt       = measureStart + MEASURE_MS;
-  let totalSent = 0;   // her iki yöntem bu sayaca yazar
+  let totalSent = 0;   // her iki yöntem bu sayaca yazar (XHR + fetch, ortak/toplam)
 
-  // 3) Live callback — 500 ms'de bir kümülatif hız yayınla
+  // 3) Live callback — DUZELTME: eskiden "totalSent / basitan-itibaren-gecen-sure"
+  // KUMULATIF ortalamasi yayinlaniyordu. Bu, testin ilk saniyelerinde (TCP slow-start /
+  // ramp-up) dusuk kalip yavasca gercek degere yukselen bir egri uretir - "anlik" diye
+  // gosterilen deger gercekte anlik degildir. Download fix'iyle TUTARLI olmasi icin
+  // burada da her tick'te SADECE o pencerenin delta'sini (lastSent -> totalSent) olcuyoruz.
+  let lastSent = 0, lastTickAt = measureStart;
+  const ulSharedSamples = [];
   let liveTimer = null;
   if (onLive) {
     liveTimer = setInterval(() => {
-      const el = (performance.now() - measureStart) / 1000;
-      if (el > 0.5 && totalSent > 0) {
-        const mbps = Math.round((totalSent * 8) / el / 1e6);
-        if (mbps > 0) onLive(mbps);
+      const now = performance.now();
+      const dt = now - lastTickAt;
+      if (dt <= 0) return;
+      const mbps = Math.round(((totalSent - lastSent) * 8) / (dt / 1000) / 1e6);
+      lastSent = totalSent;
+      lastTickAt = now;
+      if (mbps > 0) {
+        ulSharedSamples.push(mbps);
+        onLive(mbps);
       }
     }, 500);
   }
@@ -4942,9 +5009,14 @@ async function measureUpload(onLive) {
   ]);
   if (liveTimer) clearInterval(liveTimer);
 
-  // 6) Sonuç: totalSent / toplam ölçüm süresi
+  // 6) Sonuç: artik kendi icindeki ulSharedSamples (gercek anlik delta
+  // ornekleri) uzerinden persentil 90 hesaplaniyor - download fonksiyonuyla
+  // AYNI/tutarli yontem. Bu, ramp-up'taki dusuk degerleri otomatik dislar.
   const elapsed = (performance.now() - measureStart) / 1000;
   if (totalSent < 100_000 || elapsed <= 0) return null;
+  const p90 = percentile90(ulSharedSamples);
+  if (p90) return p90;
+  // Fallback: yeterli sample yok (kisa sureli/cok hizli baglanti)
   return Math.round((totalSent * 8) / elapsed / 1e6);
 }
 
@@ -4980,11 +5052,11 @@ async function runSpeedTest() {
 
   // --- DOWNLOAD ---
   document.getElementById('stPhase').textContent = '↓ İNDİRME';
-  document.getElementById('stSub').textContent = 'İndirme hızı ölçülüyor (~8 sn)...';
+  document.getElementById('stSub').textContent = 'İndirme hızı ölçülüyor (~10 sn)...';
   document.getElementById('sgFill').style.stroke = 'var(--accent)';
   document.getElementById('stVal').textContent = '…';
   
-  let liveMax = 100;
+  let liveMax = 200; // 100 -> 200: 1Gbps baglantilarda ilk sample gauge'i doldurmasin
   const dlSamples = [];
   const dl = await measureDownload((instantMbps) => {
     dlSamples.push(instantMbps);
@@ -4993,7 +5065,12 @@ async function runSpeedTest() {
     setGauge(instantMbps, liveMax, 'var(--accent)');
   });
   
-  const finalDL = percentile90(dlSamples) || dl || 0;
+  // measureDownload artik kendi icerisinde percentile90 hesapliyor ve donduruyor.
+  // dlSamples: onLive callback ile doldurulan stream-bazli anlik degerler.
+  // Iki hesaptan buyugu al: measureDownload'dan gelen p90 (dl) ile
+  // UI sample'larindan gelen p90 arasindan en gercekci sonucu sec.
+  const dlP90ui = percentile90(dlSamples);
+  const finalDL = (dlP90ui && dl) ? Math.max(dlP90ui, dl) : (dlP90ui || dl || 0);
   if (!finalDL) {
     document.getElementById('stSub').style.color = 'var(--danger)';
     document.getElementById('stSub').textContent = 'İndirme ölçümü başarısız oldu. Bağlantıyı kontrol edip tekrar deneyin.';
@@ -5008,7 +5085,7 @@ async function runSpeedTest() {
   // İndirme Ortalamasını Yazdır
   if (dlSamples.length > 1) {
     const dlAvg = Math.round(dlSamples.reduce((a,b)=>a+b,0)/dlSamples.length);
-    document.getElementById('stDLAvg').textContent = `düz ort. ${dlAvg} Mbps (${dlSamples.length} anlık okuma)`;
+    document.getElementById('stDLAvg').textContent = `düz ort. ${dlAvg} Mbps | p90=${finalDL} Mbps (${dlSamples.length} sample)`;
   }
 
   // --- UPLOAD ---
@@ -5045,13 +5122,14 @@ async function runSpeedTest() {
   // Yükleme Ortalamasını Yazdır
   if (ulSamples.length > 1) {
     const ulAvg = Math.round(ulSamples.reduce((a,b)=>a+b,0)/ulSamples.length);
-    document.getElementById('stULAvg').textContent = `düz ort. ${ulAvg} Mbps (${ulSamples.length} okuma)`;
+    document.getElementById('stULAvg').textContent = `düz ort. ${ulAvg} Mbps | p90=${finalUL} Mbps (${ulSamples.length} sample)`;
   }
 
   // --- BİTİŞ ---
   stResults = { dl:finalDL, ul:finalUL, ping };
   document.getElementById('stPhase').textContent = 'TAMAMLANDI';
-  document.getElementById('stSub').textContent = `↓ ${finalDL} Mbps  ·  ↑ ${finalUL} Mbps${ping?' · '+ping+' ms':''}`;
+  const fmtSub = v => v >= 1000 ? (v/1000).toFixed(2)+'G' : v;
+  document.getElementById('stSub').textContent = `↓ ${fmtSub(finalDL)} Mbps  ·  ↑ ${fmtSub(finalUL)} Mbps${ping?' · '+ping+' ms':''}`;
   document.getElementById('stResults').classList.add('show');
   
   btn.style.display = 'none';
@@ -5073,6 +5151,7 @@ function applySpeedResults() {
     document.getElementById('dlSpeed').value = stResults.dl;
     document.getElementById('ulSpeed').value = stResults.ul;
     document.getElementById('speedVerifiedBadge').classList.add('show');
+    speedVerifiedByTest = true; // JS state guncelle
     showToast(`✅ ↓${stResults.dl} Mbps · ↑${stResults.ul} Mbps — forma yazıldı`);
   }
   closeSpeedTestModal();
