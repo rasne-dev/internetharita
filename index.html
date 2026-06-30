@@ -2543,6 +2543,15 @@ async function renderStats() {
   }
 
   // HIZ BANDI DAĞILIMI
+  // DUZELTME - HIZ BANDI ile BAGLANTI TURU YUZDELERI TUTARSIZDI:
+  // Bu grafik yuzdeyi speedPins.length'e (Altyapi Yok HARIC) bolerken,
+  // Baglanti Turu grafigi pins.length'e (Altyapi Yok DAHIL) boluyordu.
+  // Ayni veri setinden gelen iki yuzde farkli paydaya bolununce
+  // birbirini tutmuyormus gibi gorunuyordu (orn. "<25 Mbps: %1.9" vs
+  // "ADSL: %0.5" - farkli taban uzerinden, dogrudan kiyaslanamaz).
+  // COZUM: Ayni payda (pins.length) kullanilir VE Baglanti Turu grafigindeki
+  // gibi "Altyapi Yok" payi acikca eklenir; boylece iki grafik ayni N
+  // uzerinden birebir karsilastirilabilir hale gelir.
   const bands = [
     { label:'500+ Mbps', color:'#00d4ff', min:500, max:Infinity },
     { label:'200–500',   color:'#22c55e', min:200, max:500 },
@@ -2554,14 +2563,18 @@ async function renderStats() {
     ...b,
     count: speedPins.filter(p => p.gercek_dl >= b.min && p.gercek_dl < b.max).length
   }));
+  const altyapiYokCount = pins.length - speedPins.length;
+  if (altyapiYokCount > 0) {
+    bandCounts.push({ label:'Altyapı Yok', color:'#6b7280', min:null, max:null, count: altyapiYokCount });
+  }
   const maxBand = Math.max(...bandCounts.map(b => b.count), 1);
   const bandEl = document.getElementById('speedBandChart');
   if (bandEl) {
     bandEl.innerHTML = bandCounts.map(b => {
       const pct = Math.round((b.count / maxBand) * 100);
-      // connChart'taki ile aynı sebep: tüm bantlarda tek tip hassasiyet (1 ondalık)
-      // kullanmak, toplamın 100%'den belirgin şekilde sapmasını önler.
-      const ratio = speedPins.length ? (b.count / speedPins.length * 100) : 0;
+      // connChart'taki ile AYNI payda (pins.length) kullanılıyor - artık iki
+      // grafik dogrudan karsilastirilabilir, yuzdeler tutarli.
+      const ratio = pins.length ? (b.count / pins.length * 100) : 0;
       return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
         <div style="width:70px;font-size:10px;font-family:var(--font-mono);color:var(--text2);flex-shrink:0;">${b.label}</div>
         <div style="flex:1;background:var(--surface2);border-radius:3px;height:8px;overflow:hidden;">
@@ -4893,27 +4906,46 @@ function uploadOnce(bytes, onLive) {
 }
 
 async function measureUpload(onLive) {
-  // ── Neden hibrit (XHR + fetch) yaklaşım? ────────────────────────────────
-  // Sorun kökü: Cloudflare __up HTTP/2 kullanır ve bazı ortamlarda
-  // istemci body'yi göndermeden önce 200 OK yanıtı gönderir (early response).
-  // Bu durumda Chrome, XHR upload.onprogress'i hiç tetiklemiyor →
-  // totalSent = 0 → samples boş → null → "Yükleme ölçülemedi" hatası.
+  // ── DUZELTME - UPLOAD HATALI OLCUYORDU (kok neden) ──────────────────────
+  // Eski tasarim XHR (8 stream) + fetch (8 stream) = 16 stream'i AYNI ANDA
+  // calistirip ikisinin de totalSent'ine yaziyordu. XHR onprogress GERCEK
+  // zamanli, byte-byte ilerleme bildirir (dogru). fetch() ise tarayicida
+  // upload ilerlemesi gozlemlenemedigi icin "istek bitince butun 8MB'i bir
+  // anda ekle" seklinde kaba bir yontem kullaniyordu. Bu iki yontem ayni
+  // 500ms ornekleme penceresinde birlesince, fetch chunk'lari tamamlandiginda
+  // ani +8MB/+16MB "patlamalar" sample havuzuna giriyor, p90 bu sahte
+  // yuksek degerlerden etkilenip gercek hattan COK YUKSEK/dengesiz sonuc
+  // veriyordu (orn. 50 Mbps hatta 150+ Mbps gosterilmesi).
   //
-  // Çözüm: İki yöntemi EŞ ZAMANLI çalıştır, hangisi byte üretirse kullan.
-  //   A) XHR onprogress  — early-response olmayan ortamda mükemmel
-  //   B) fetch() timing  — her chunk için elapsed ölçer, > 0.15s ise sayar
-  //
-  // Yüksek hız notu (500+ Mbps):
-  //   HTTP/2 ortamında her stream ~100-150 Mbps ile sınırlı olabilir.
-  //   900 Mbps için en az 6-8 paralel stream gerekiyor.
-  //   PARALLEL_STREAMS = 6 → 6 XHR + 6 fetch = 12 stream → ~900-1200 Mbps'e erişilebilir.
-  //   fetchStream chunk 8 MB → round-trip sayısını azaltır, throughput artar.
+  // COZUM: Once KISA bir test ile XHR'in bu ortamda guvenilir calisip
+  // calismadigi tespit edilir (early-response sorunu var mi yok mu).
+  //   - XHR guvenilirse: SADECE XHR kullanilir (gercek zamanli, hassas).
+  //   - Degilse: SADECE fetch kullanilir, kucuk chunk + nihai sonuc icin
+  //     p90 yerine TUM test suresinin DUZ ortalamasi alinir (kaba olculen
+  //     bir yontemde p90 anlamsiz/yaniltici olur).
+  // Boylece iki yontem ASLA ayni anda calismaz, burst artifact'i imkansiz.
   // ─────────────────────────────────────────────────────────────────────────
   const MEASURE_MS       = 9000;
-  const PARALLEL_STREAMS = 8;   // 6 -> 8 (Toplam 16 stream ile 1 Gbps+ desteği)
+  const PARALLEL_STREAMS = 8;
+
+  // 0) Tespit: XHR onprogress bu ortamda gercekten calisiyor mu?
+  async function detectXhrReliable() {
+    const TEST_SIZE = 4 * 1024 * 1024; // 4MB
+    return new Promise(resolve => {
+      let maxLoaded = 0;
+      const x = new XMLHttpRequest();
+      x.timeout = 8000;
+      x.upload.onprogress = e => { if (e.loaded > maxLoaded) maxLoaded = e.loaded; };
+      x.onload    = () => resolve(maxLoaded >= TEST_SIZE * 0.9);
+      x.onerror   = () => resolve(false);
+      x.ontimeout = () => resolve(false);
+      x.open('POST', `${SPEED_UPLOAD_URL}?t=detect_${Date.now()}`);
+      x.send(makeUploadBlob(TEST_SIZE));
+    });
+  }
+  const xhrReliable = await detectXhrReliable();
 
   // 1) Warmup — stopAt hesabına dahil değil
-  //    Warmup stream sayısını ve blob boyutunu artır (yüksek hızda bağlantıyı ısıt)
   await Promise.all(
     Array.from({ length: PARALLEL_STREAMS }, (_, n) =>
       new Promise(res => {
@@ -4921,7 +4953,7 @@ async function measureUpload(onLive) {
         x.open('POST', `${SPEED_UPLOAD_URL}?t=wu_${n}_${Date.now()}`);
         x.timeout = 15000;
         x.onload = x.onerror = x.ontimeout = res;
-        x.send(makeUploadBlob(2 * 1024 * 1024)); // 512KB → 2MB (yüksek hız warmup)
+        x.send(makeUploadBlob(2 * 1024 * 1024));
       })
     )
   );
@@ -4929,13 +4961,10 @@ async function measureUpload(onLive) {
   // 2) stopAt warmup BİTTİKTEN SONRA
   const measureStart = performance.now();
   const stopAt       = measureStart + MEASURE_MS;
-  let totalSent = 0;   // her iki yöntem bu sayaca yazar (XHR + fetch, ortak/toplam)
+  let totalSent = 0;
 
-  // 3) Live callback — DUZELTME: eskiden "totalSent / basitan-itibaren-gecen-sure"
-  // KUMULATIF ortalamasi yayinlaniyordu. Bu, testin ilk saniyelerinde (TCP slow-start /
-  // ramp-up) dusuk kalip yavasca gercek degere yukselen bir egri uretir - "anlik" diye
-  // gosterilen deger gercekte anlik degildir. Download fix'iyle TUTARLI olmasi icin
-  // burada da her tick'te SADECE o pencerenin delta'sini (lastSent -> totalSent) olcuyoruz.
+  // 3) Live callback — her tick'te SADECE o pencerenin delta'sini olcer
+  // (kumulatif ortalama degil; ramp-up sapmasini onler, download fix'iyle tutarli)
   let lastSent = 0, lastTickAt = measureStart;
   const ulSharedSamples = [];
   let liveTimer = null;
@@ -4954,7 +4983,7 @@ async function measureUpload(onLive) {
     }, 500);
   }
 
-  // 4a) Yöntem A: XHR + onprogress (early-response olmayan ortamlar)
+  // 4a) XHR yöntemi — gercek zamanli, hassas (onprogress guvenilirse kullanilir)
   function xhrStream(n) {
     return new Promise(resolve => {
       function sendChunk() {
@@ -4973,52 +5002,56 @@ async function measureUpload(onLive) {
         x.onabort   = () => resolve();
         x.timeout   = 60000;
         x.open('POST', `${SPEED_UPLOAD_URL}?t=${Date.now()}_x${n}`);
-        x.send(makeUploadBlob(8 * 1024 * 1024));   // 8 MB
+        x.send(makeUploadBlob(8 * 1024 * 1024));
       }
       sendChunk();
     });
   }
 
-  // 4b) Yöntem B: fetch() + chunk zamanlama (HTTP/2 early-response ortamları)
+  // 4b) fetch yöntemi — sadece XHR guvenilir DEGILSE kullanilir.
+  // Kucuk chunk (1MB) ile burst buyuklugu azaltilir; yine de bu yontemin
+  // ornekleri kaba oldugundan nihai sonuc p90 DEGIL, tum testin duz
+  // ortalamasi olarak hesaplanir (asagida bkz. adim 6).
   async function fetchStream(n) {
-    const CHUNK   = 8 * 1024 * 1024;   // 2MB → 8MB (yüksek hızda round-trip azaltır)
+    const CHUNK   = 1 * 1024 * 1024;
     let fastCount = 0;
     while (performance.now() < stopAt) {
-      if (stopAt - performance.now() < 300) break;
+      if (stopAt - performance.now() < 150) break;
       const t0 = performance.now();
       try {
         const r = await fetch(
           `${SPEED_UPLOAD_URL}?t=${Date.now()}_f${n}`,
           { method: 'POST', cache: 'no-store', body: makeUploadBlob(CHUNK) }
         );
-        await r.text().catch(() => null);          // response body tüket
+        await r.text().catch(() => null);
         const elapsed = (performance.now() - t0) / 1000;
-        if (elapsed >= 0.15) {
+        if (elapsed >= 0.05) {
           totalSent += CHUNK;
           fastCount = 0;
         } else {
-          // Sunucu body okumadan anında yanıt veriyor → bu chunk güvenilmez
           if (++fastCount >= 5) break;
         }
       } catch (e) { break; }
     }
   }
 
-  // 5) Her iki yöntemi paralel çalıştır
-  await Promise.all([
-    ...Array.from({ length: PARALLEL_STREAMS }, (_, i) => xhrStream(i)),
-    ...Array.from({ length: PARALLEL_STREAMS }, (_, i) => fetchStream(i)),
-  ]);
+  // 5) SADECE BIR yöntem çalıştırılır — asla ikisi birden (burst artifact'i onlenir)
+  if (xhrReliable) {
+    await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => xhrStream(i)));
+  } else {
+    await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => fetchStream(i)));
+  }
   if (liveTimer) clearInterval(liveTimer);
 
-  // 6) Sonuç: artik kendi icindeki ulSharedSamples (gercek anlik delta
-  // ornekleri) uzerinden persentil 90 hesaplaniyor - download fonksiyonuyla
-  // AYNI/tutarli yontem. Bu, ramp-up'taki dusuk degerleri otomatik dislar.
+  // 6) Sonuç hesaplama:
+  //    - XHR yolu: gercek zamanli ornekler guvenilir -> p90 (download ile tutarli)
+  //    - fetch yolu: ornekler kaba/chunk-bazli -> duz ortalama daha dogru
   const elapsed = (performance.now() - measureStart) / 1000;
   if (totalSent < 100_000 || elapsed <= 0) return null;
-  const p90 = percentile90(ulSharedSamples);
-  if (p90) return p90;
-  // Fallback: yeterli sample yok (kisa sureli/cok hizli baglanti)
+  if (xhrReliable) {
+    const p90 = percentile90(ulSharedSamples);
+    if (p90) return p90;
+  }
   return Math.round((totalSent * 8) / elapsed / 1e6);
 }
 
