@@ -2230,9 +2230,19 @@ function renderModPins() {
 
 function showHexInfo(pins, hexId) {
   activeHexPins = pins;
-  // Eksik alanı '—' gibi sahte bir değer olarak eklemek yerine, sadece DOLU olan
-  // parçaları birleştiriyoruz (örn. ilçe boşsa "Rize › — › Mahalle" değil "Rize › Mahalle" çıkar).
-  const locStr = [pins[0].il, pins[0].ilce, pins[0].mahalle].filter(Boolean).join(' › ') || 'Bilinmeyen Bölge';
+  // DUZELTME: eskiden pins[0].il/ilce/mahalle kullaniliyordu → ilk pin
+  // hexagonu temsil etmiyor (farkli mahallede kayitli olabilir, GPS drift vb).
+  // Artik hexagon icerisindeki pinlerin EN SIK gectigi il+ilce+mahalle
+  // kombinasyonu seciliyor (mod); hexagonu gercekten temsil eden konum bu.
+  const _locCount = {};
+  pins.forEach(p => {
+    const key = [p.il, p.ilce, p.mahalle].filter(Boolean).join('\x00');
+    if (key) _locCount[key] = (_locCount[key] || 0) + 1;
+  });
+  const _bestLoc = Object.entries(_locCount).sort((a,b) => b[1]-a[1])[0];
+  const locStr = _bestLoc
+    ? _bestLoc[0].split('\x00').join(' › ')
+    : ([pins[0].il, pins[0].ilce, pins[0].mahalle].filter(Boolean).join(' › ') || 'Bilinmeyen Bölge');
   document.getElementById('infoTitle').textContent = locStr;
   document.getElementById('reportHexId').value = hexId||''; document.getElementById('reportBolge').value = locStr;
   const avgDL = Math.round(pins.reduce((a,p)=>a+p.gercek_dl,0)/pins.length); const avgS = (pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1);
