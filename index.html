@@ -4887,171 +4887,115 @@ async function measureDownload(onLive) {
   return Math.round((totalBytesGlobal * 8) / elapsed / 1e6);
 }
 
-function uploadOnce(bytes, onLive) {
-  // cors modu: sunucu yanıtını bekler, no-cors'taki CDN buffer timing hatasını önler
-  const url = `${SPEED_UPLOAD_URL}?bytes=${bytes}&t=${Date.now()}_${Math.random()}`;
-  const t0 = performance.now();
-  return fetch(url, {
-    method: 'POST',
-    mode: 'cors',
-    cache: 'no-store',
-    body: makeUploadBlob(bytes)
-  }).then(r => {
-    const elapsed = (performance.now() - t0) / 1000;
-    if (elapsed <= 0.05 || !r.ok) return null;
-    const mbps = Math.round((bytes * 8) / elapsed / 1e6);
-    if (mbps > 0 && onLive) onLive(mbps);
-    return mbps;
-  }).catch(() => null);
-}
-
 async function measureUpload(onLive) {
-  // ── DUZELTME - UPLOAD HATALI OLCUYORDU (kok neden) ──────────────────────
-  // Eski tasarim XHR (8 stream) + fetch (8 stream) = 16 stream'i AYNI ANDA
-  // calistirip ikisinin de totalSent'ine yaziyordu. XHR onprogress GERCEK
-  // zamanli, byte-byte ilerleme bildirir (dogru). fetch() ise tarayicida
-  // upload ilerlemesi gozlemlenemedigi icin "istek bitince butun 8MB'i bir
-  // anda ekle" seklinde kaba bir yontem kullaniyordu. Bu iki yontem ayni
-  // 500ms ornekleme penceresinde birlesince, fetch chunk'lari tamamlandiginda
-  // ani +8MB/+16MB "patlamalar" sample havuzuna giriyor, p90 bu sahte
-  // yuksek degerlerden etkilenip gercek hattan COK YUKSEK/dengesiz sonuc
-  // veriyordu (orn. 50 Mbps hatta 150+ Mbps gosterilmesi).
+  // ── UPLOAD OLCUM MIMARISI ────────────────────────────────────────────────
+  // Sadece XHR kullanilir. Neden fetch yok?
+  // Cloudflare __up (HTTP/2): sunucu body bitmeden 200 OK gonderiyor (early
+  // response). fetch().then() bu erken yanit uzerine cozumlenir → elapsed,
+  // gonderme suresini degil sunucunun yanit hizini olcer → yanlis/cok dusuk.
   //
-  // COZUM: Once KISA bir test ile XHR'in bu ortamda guvenilir calisip
-  // calismadigi tespit edilir (early-response sorunu var mi yok mu).
-  //   - XHR guvenilirse: SADECE XHR kullanilir (gercek zamanli, hassas).
-  //   - Degilse: SADECE fetch kullanilir, kucuk chunk + nihai sonuc icin
-  //     p90 yerine TUM test suresinin DUZ ortalamasi alinir (kaba olculen
-  //     bir yontemde p90 anlamsiz/yaniltici olur).
-  // Boylece iki yontem ASLA ayni anda calismaz, burst artifact'i imkansiz.
+  // Neden x.onload yerine x.upload.onloadend ile rechaining?
+  // x.onload = HTTP YANITI alindiginda tetiklenir (early-response ortaminda
+  // body bitmeden). Onceki bug: x.onload ile rechaining yapilinca yeni chunk
+  // baslarken oncekinin bazi byte'lari hala ucustaydi ama onprogress takibinden
+  // dusuyordu → baytlar eksik sayiliyordu → DUSUK OLCUM.
+  // x.upload.onloadend = BODY tamamen gonderildiginde tetiklenir (yanit
+  // beklenmez). Dogru rechaining noktasi budur.
+  //
+  // Early-response fallback: onprogress hic tetiklenmediyse (bazi H2 ortam-
+  // larinda gerceklesebilir), chunk elapsed suresinden hiz hesaplanir.
+  //
+  // Merkezi 200ms sampler: download ile AYNI yontem, tutarli p90.
   // ─────────────────────────────────────────────────────────────────────────
+  const CHUNK_BYTES      = 8 * 1024 * 1024;   // 8 MB per chunk
   const MEASURE_MS       = 9000;
+  const SAMPLE_MS        = 200;
   const PARALLEL_STREAMS = 8;
 
-  // 0) Tespit: XHR onprogress bu ortamda gercekten calisiyor mu?
-  async function detectXhrReliable() {
-    const TEST_SIZE = 4 * 1024 * 1024; // 4MB
-    return new Promise(resolve => {
-      let maxLoaded = 0;
-      const x = new XMLHttpRequest();
-      x.timeout = 8000;
-      x.upload.onprogress = e => { if (e.loaded > maxLoaded) maxLoaded = e.loaded; };
-      x.onload    = () => resolve(maxLoaded >= TEST_SIZE * 0.9);
-      x.onerror   = () => resolve(false);
-      x.ontimeout = () => resolve(false);
-      x.open('POST', `${SPEED_UPLOAD_URL}?t=detect_${Date.now()}`);
-      x.send(makeUploadBlob(TEST_SIZE));
-    });
-  }
-  const xhrReliable = await detectXhrReliable();
-
   // 1) Warmup — stopAt hesabına dahil değil
-  await Promise.all(
-    Array.from({ length: PARALLEL_STREAMS }, (_, n) =>
-      new Promise(res => {
-        const x = new XMLHttpRequest();
-        x.open('POST', `${SPEED_UPLOAD_URL}?t=wu_${n}_${Date.now()}`);
-        x.timeout = 15000;
-        x.onload = x.onerror = x.ontimeout = res;
-        x.send(makeUploadBlob(2 * 1024 * 1024));
-      })
-    )
-  );
+  await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, n) =>
+    new Promise(res => {
+      const x = new XMLHttpRequest();
+      x.open('POST', `${SPEED_UPLOAD_URL}?t=wu_${n}_${Date.now()}`);
+      x.timeout = 15000;
+      x.onload = x.onerror = x.ontimeout = res;
+      x.send(makeUploadBlob(2 * 1024 * 1024));
+    })
+  ));
 
-  // 2) stopAt warmup BİTTİKTEN SONRA
+  // 2) Ölçüm penceresi
   const measureStart = performance.now();
   const stopAt       = measureStart + MEASURE_MS;
-  let totalSent = 0;
+  let totalSent      = 0;   // tüm stream'ler tek ortak sayaç (JS single-thread → safe)
 
-  // 3) Live callback — her tick'te SADECE o pencerenin delta'sini olcer
-  // (kumulatif ortalama degil; ramp-up sapmasini onler, download fix'iyle tutarli)
-  let lastSent = 0, lastTickAt = measureStart;
-  const ulSharedSamples = [];
-  let liveTimer = null;
-  if (onLive) {
-    liveTimer = setInterval(() => {
-      const now = performance.now();
-      const dt = now - lastTickAt;
-      if (dt <= 0) return;
-      const mbps = Math.round(((totalSent - lastSent) * 8) / (dt / 1000) / 1e6);
-      lastSent = totalSent;
-      lastTickAt = now;
-      if (mbps > 0) {
-        ulSharedSamples.push(mbps);
-        onLive(mbps);
-      }
-    }, 500);
-  }
+  // 3) Merkezi sampler — download ile AYNI yaklaşım
+  let lastSampleBytes = 0, lastSampleAt = measureStart;
+  const sharedSamples = [];
+  const samplerId = setInterval(() => {
+    const now = performance.now();
+    const dt  = now - lastSampleAt;
+    if (dt <= 0) return;
+    const mbps = Math.round(((totalSent - lastSampleBytes) * 8) / (dt / 1000) / 1e6);
+    lastSampleBytes = totalSent;
+    lastSampleAt    = now;
+    if (mbps > 0) {
+      sharedSamples.push(mbps);
+      if (onLive) onLive(mbps);
+    }
+  }, SAMPLE_MS);
 
-  // 4a) XHR yöntemi — gercek zamanli, hassas (onprogress guvenilirse kullanilir)
+  // 4) XHR stream — upload.onloadend ile rechaining (early-response güvenli)
   function xhrStream(n) {
     return new Promise(resolve => {
       function sendChunk() {
         if (performance.now() >= stopAt) { resolve(); return; }
-        const x  = new XMLHttpRequest();
-        let prev = 0;
+        const x = new XMLHttpRequest();
+        let progressBytes = 0;
+        let settled = false;
+        const t0 = performance.now();
+
+        // upload.onloadend = BODY tamamen gonderilince tetiklenir
+        x.upload.onloadend = () => {
+          if (settled) return;
+          // Fallback: onprogress hic tetiklenmediyse timing kullan
+          if (progressBytes === 0) {
+            const elapsed = (performance.now() - t0) / 1000;
+            if (elapsed >= 0.05) totalSent += CHUNK_BYTES;
+          }
+          settled = true;
+          if (performance.now() < stopAt) sendChunk(); else resolve();
+        };
+
         x.upload.onprogress = e => {
-          const d = e.loaded - prev;
-          if (d > 0) totalSent += d;
-          prev = e.loaded;
+          const d = e.loaded - progressBytes;
+          if (d > 0) { totalSent += d; progressBytes = e.loaded; }
           if (performance.now() >= stopAt) x.abort();
         };
-        x.onload    = () => sendChunk();
-        x.onerror   = () => resolve();
-        x.ontimeout = () => resolve();
-        x.onabort   = () => resolve();
-        x.timeout   = 60000;
+
+        // abort/error: settle + resolve (test penceresi kapandı veya hata)
+        const abort = () => { if (!settled) { settled = true; resolve(); } };
+        x.upload.onabort = abort;
+        x.upload.onerror = abort;
+        x.onerror        = abort;
+        x.ontimeout      = abort;
+        x.onabort        = abort;
+        x.timeout = 60000;
         x.open('POST', `${SPEED_UPLOAD_URL}?t=${Date.now()}_x${n}`);
-        x.send(makeUploadBlob(8 * 1024 * 1024));
+        x.send(makeUploadBlob(CHUNK_BYTES));
       }
       sendChunk();
     });
   }
 
-  // 4b) fetch yöntemi — sadece XHR guvenilir DEGILSE kullanilir.
-  // Kucuk chunk (1MB) ile burst buyuklugu azaltilir; yine de bu yontemin
-  // ornekleri kaba oldugundan nihai sonuc p90 DEGIL, tum testin duz
-  // ortalamasi olarak hesaplanir (asagida bkz. adim 6).
-  async function fetchStream(n) {
-    const CHUNK   = 1 * 1024 * 1024;
-    let fastCount = 0;
-    while (performance.now() < stopAt) {
-      if (stopAt - performance.now() < 150) break;
-      const t0 = performance.now();
-      try {
-        const r = await fetch(
-          `${SPEED_UPLOAD_URL}?t=${Date.now()}_f${n}`,
-          { method: 'POST', cache: 'no-store', body: makeUploadBlob(CHUNK) }
-        );
-        await r.text().catch(() => null);
-        const elapsed = (performance.now() - t0) / 1000;
-        if (elapsed >= 0.05) {
-          totalSent += CHUNK;
-          fastCount = 0;
-        } else {
-          if (++fastCount >= 5) break;
-        }
-      } catch (e) { break; }
-    }
-  }
+  // 5) 8 paralel XHR stream çalıştır
+  await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => xhrStream(i)));
+  clearInterval(samplerId);
 
-  // 5) SADECE BIR yöntem çalıştırılır — asla ikisi birden (burst artifact'i onlenir)
-  if (xhrReliable) {
-    await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => xhrStream(i)));
-  } else {
-    await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => fetchStream(i)));
-  }
-  if (liveTimer) clearInterval(liveTimer);
-
-  // 6) Sonuç hesaplama:
-  //    - XHR yolu: gercek zamanli ornekler guvenilir -> p90 (download ile tutarli)
-  //    - fetch yolu: ornekler kaba/chunk-bazli -> duz ortalama daha dogru
+  // 6) Sonuç — download ile aynı mantık: p90 önce, fallback ortalama
   const elapsed = (performance.now() - measureStart) / 1000;
   if (totalSent < 100_000 || elapsed <= 0) return null;
-  if (xhrReliable) {
-    const p90 = percentile90(ulSharedSamples);
-    if (p90) return p90;
-  }
+  const p90 = percentile90(sharedSamples);
+  if (p90) return p90;
   return Math.round((totalSent * 8) / elapsed / 1e6);
 }
 
