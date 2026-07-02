@@ -4765,30 +4765,22 @@ function liveLogAppend(direction, mbps) {
   // Ham satır listesi yerine tek bir canlı değer göster
   log.textContent = `${direction} ${formatMbps(mbps)} Mbps`;
 }
-let _uploadBlobPool = null;
-function getUploadBlob(size) {
+let _uploadStringPool = null;
+function getUploadPayload(size) {
   try {
-    if (!_uploadBlobPool || _uploadBlobPool.size < size) {
-      const poolSize = Math.max(size, 16 * 1024 * 1024); // 16MB pool
-      const data = new Uint8Array(poolSize);
-      // Hızlı dolum: CPU bloklamasını önlemek için basit random
-      for (let i = 0; i < poolSize; i += 4) {
-        const v = (Math.random() * 0xFFFFFFFF) >>> 0;
-        data[i] = v & 255;
-        data[i+1] = (v >>> 8) & 255;
-        data[i+2] = (v >>> 16) & 255;
-        data[i+3] = (v >>> 24) & 255;
-      }
-      _uploadBlobPool = new Blob([data], { type: 'text/plain' });
+    if (!_uploadStringPool || _uploadStringPool.length < size) {
+      const poolSize = Math.max(size, 8 * 1024 * 1024); // 8MB pool
+      const pattern = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      _uploadStringPool = pattern.repeat(Math.ceil(poolSize / pattern.length)).slice(0, poolSize);
     }
-    return _uploadBlobPool.slice(0, size);
+    return _uploadStringPool.slice(0, size);
   } catch(e) {
-    // Fallback: pool oluşturulamazsa boş blob (bazı eski tarayıcılar)
-    return new Blob([new Uint8Array(size)], { type: 'text/plain' });
+    return "A".repeat(size);
   }
 }
 function makeUploadBlob(bytes) {
-  return getUploadBlob(bytes);
+  // CORS Preflight tetiklenmesini engellemek için Blob yerine String (Simple Request) döndürüyoruz
+  return getUploadPayload(bytes);
 }
 async function measurePing() {
   try {
