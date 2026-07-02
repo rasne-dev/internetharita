@@ -2158,8 +2158,8 @@ function renderHex() {
       // Yakin zoom'da (kucuk altigenler) daha seffaf: harita altyapisi okunabilir.
       // NOT: kullanici geri bildirimiyle degerler asagi cekildi (eski dinamik
       // formul cok opaktı; orijinal sabit 0.3'e daha yakin ama hala zoom'a gore degisken).
-      const _fillOp   = hasData ? (z <= 6 ? 0.25 : z <= 8 ? 0.18 : 0.12) : 0.04;
-      const _strokeOp = hasData ? (z <= 6 ? 0.45 : 0.30) : 0.10;
+      const _fillOp   = hasData ? (z <= 6 ? 0.35 : z <= 8 ? 0.27 : 0.18) : 0.06;
+      const _strokeOp = hasData ? (z <= 6 ? 0.60 : 0.45) : 0.14;
       const _weight   = z <= 6 ? 0.8 : 1.2;
       const layer = L.polygon(coords, { color, fillColor:color, fillOpacity:_fillOp, weight:_weight, opacity:_strokeOp }).addTo(maps.main);
       layer.on('click', () => showHexInfo(pins, hex)); hexLayers.push(layer);
@@ -4922,6 +4922,7 @@ async function measureUpload(onLive) {
   // 4) XHR stream — upload.onloadend ile rechaining (early-response güvenli)
   function xhrStream(n) {
     return new Promise(resolve => {
+      let consecutiveErrors = 0;
       function sendChunk() {
         if (performance.now() >= stopAt) { resolve(); return; }
         const x = new XMLHttpRequest();
@@ -4929,28 +4930,34 @@ async function measureUpload(onLive) {
         let settled = false;
         const t0 = performance.now();
 
-        // upload.onloadend = BODY tamamen gonderilince VEYA abort/error sonrasi tetiklenir.
-        // KRITIK: upload.onabort = abort KULLANILMIYOR. Neden?
-        // Cloudflare __up (HTTP/2) early-response gonderince tarayici uploadi
-        // abort edebilir. Bu durumda: upload.onabort → settle → resolve → upload.onloadend
-        // → settled=true oldugundan timing fallback ATLIYOR → totalSent=0 → null.
-        // Cozum: upload.onabort handler yok; upload.onloadend tek settlement noktasi.
-        // e.loaded = o ana kadar gercekten gonderilen byte sayisi (abort durumunda da dolu).
+        // onloadend = BODY tamamen gönderildiğinde VEYA hata durumunda tek çıkış noktası.
+        // Erken yanıt/CORS sebebiyle tetiklenen durumlarda HTTP status 200 ise işlem başarılı sayılır.
         x.upload.onloadend = (e) => {
           if (settled) return;
-          if (progressBytes === 0) {
-            // onprogress hic tetiklenmediyse:
-            // 1) e.loaded varsa (abort durumunda bile gercek byte sayisi) kullan
-            // 2) yoksa timing tabanlı tahmin
-            const sent = (e && e.loaded > 0) ? e.loaded : 0;
-            if (sent > 0) {
-              totalSent += sent;
-            } else {
-              const elapsed = (performance.now() - t0) / 1000;
-              if (elapsed >= 0.05) totalSent += CHUNK_BYTES;
-            }
-          }
           settled = true;
+          
+          const isSuccess = (x.status >= 200 && x.status < 300);
+          const sent = (e && e.loaded > 0) ? e.loaded : 0;
+
+          if (sent > 0) {
+            const d = sent - progressBytes;
+            if (d > 0) totalSent += d;
+            if (isSuccess) consecutiveErrors = 0; // Başarıda hataları sıfırla
+          } else if (isSuccess) {
+            // Eğer istek başarılı döndüyse ama progress tetiklenmediyse tüm chunk'ı gönderilmiş say
+            totalSent += CHUNK_BYTES;
+            consecutiveErrors = 0;
+          } else {
+            // Sunucu hatası veya ağ bağlantısı koptuysa hata sayacını artır
+            consecutiveErrors++;
+          }
+
+          if (consecutiveErrors >= 3) {
+            // Üst üste 3 kez başarısız olursa bu stream'i kapat
+            resolve();
+            return;
+          }
+
           if (performance.now() < stopAt) sendChunk(); else resolve();
         };
 
@@ -4960,14 +4967,13 @@ async function measureUpload(onLive) {
           if (performance.now() >= stopAt) x.abort();
         };
 
-        // Sadece gercek ag hatasi (CORS, DNS, vb.) icin aninda resolve
-        // upload.onabort KASITLI YOK — yukarida aciklandi
-        const abort = () => { if (!settled) { settled = true; resolve(); } };
-        x.upload.onerror = abort;
-        x.onerror        = abort;
-        x.ontimeout      = abort;
-        x.onabort        = abort;
-        x.timeout = 60000;
+        // Hata durumlarında resolve etmeyip onloadend'in karar vermesini sağlıyoruz
+        x.upload.onerror = () => {};
+        x.onerror        = () => {};
+        x.ontimeout      = () => {};
+        x.onabort        = () => {};
+
+        x.timeout = 15000;
         x.open('POST', `${SPEED_UPLOAD_URL}?t=${Date.now()}_x${n}`);
         x.send(makeUploadBlob(CHUNK_BYTES));
       }
