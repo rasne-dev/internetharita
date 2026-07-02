@@ -4931,24 +4931,25 @@ async function measureUpload(onLive) {
         const t0 = performance.now();
 
         // onloadend = BODY tamamen gönderildiğinde VEYA hata durumunda tek çıkış noktası.
-        // Erken yanıt/CORS sebebiyle tetiklenen durumlarda HTTP status 200 ise işlem başarılı sayılır.
+        // CORS engeli sebebiyle yanıtın okunamaması (status === 0) durumunda veri ulaştıysa işlem başarılı sayılır.
         x.upload.onloadend = (e) => {
           if (settled) return;
           settled = true;
           
-          const isSuccess = (x.status >= 200 && x.status < 300);
           const sent = (e && e.loaded > 0) ? e.loaded : 0;
+          // CORS engeli veya erken yanıtta status 0 döner ama veri gönderilmiştir.
+          const isSuccess = (x.status >= 200 && x.status < 300) || (x.status === 0 && (sent > 0 || progressBytes > 0));
 
           if (sent > 0) {
             const d = sent - progressBytes;
             if (d > 0) totalSent += d;
             if (isSuccess) consecutiveErrors = 0; // Başarıda hataları sıfırla
           } else if (isSuccess) {
-            // Eğer istek başarılı döndüyse ama progress tetiklenmediyse tüm chunk'ı gönderilmiş say
+            // İstek başarılı olduysa ama progress tetiklenmediyse tüm chunk'ı gönderilmiş say
             totalSent += CHUNK_BYTES;
             consecutiveErrors = 0;
           } else {
-            // Sunucu hatası veya ağ bağlantısı koptuysa hata sayacını artır
+            // Gerçek ağ hatası veya bağlantı koptuysa hata sayacını artır
             consecutiveErrors++;
           }
 
