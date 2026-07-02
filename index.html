@@ -2158,8 +2158,8 @@ function renderHex() {
       // Yakin zoom'da (kucuk altigenler) daha seffaf: harita altyapisi okunabilir.
       // NOT: kullanici geri bildirimiyle degerler asagi cekildi (eski dinamik
       // formul cok opaktı; orijinal sabit 0.3'e daha yakin ama hala zoom'a gore degisken).
-      const _fillOp   = hasData ? (z <= 6 ? 0.35 : z <= 8 ? 0.27 : 0.18) : 0.06;
-      const _strokeOp = hasData ? (z <= 6 ? 0.60 : 0.45) : 0.14;
+      const _fillOp   = hasData ? (z <= 6 ? 0.38 : z <= 8 ? 0.30 : 0.22) : 0.06;
+      const _strokeOp = hasData ? (z <= 6 ? 0.75 : 0.60) : 0.16;
       const _weight   = z <= 6 ? 0.8 : 1.2;
       const layer = L.polygon(coords, { color, fillColor:color, fillOpacity:_fillOp, weight:_weight, opacity:_strokeOp }).addTo(maps.main);
       layer.on('click', () => showHexInfo(pins, hex)); hexLayers.push(layer);
