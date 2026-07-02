@@ -4882,19 +4882,19 @@ async function measureUpload(onLive) {
   //
   // Merkezi 200ms sampler: download ile AYNI yontem, tutarli p90.
   // ─────────────────────────────────────────────────────────────────────────
-  const CHUNK_BYTES      = 8 * 1024 * 1024;   // 8 MB per chunk
+  const CHUNK_BYTES      = 1 * 1024 * 1024;   // 1 MB per chunk (Düşük hızlar ve WAF limitleri için optimize edildi)
   const MEASURE_MS       = 9000;
   const SAMPLE_MS        = 200;
   const PARALLEL_STREAMS = 8;
 
-  // 1) Warmup — stopAt hesabına dahil değil
+  // 1) Warmup — stopAt hesabına dahil değil (Bağlantının asıl teste hızlı girmesi için 256KB yapıldı)
   await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, n) =>
     new Promise(res => {
       const x = new XMLHttpRequest();
       x.open('POST', `${SPEED_UPLOAD_URL}?t=wu_${n}_${Date.now()}`);
       x.timeout = 15000;
       x.onload = x.onerror = x.ontimeout = res;
-      x.send(makeUploadBlob(2 * 1024 * 1024));
+      x.send(makeUploadBlob(256 * 1024));
     })
   ));
 
@@ -4988,6 +4988,7 @@ async function measureUpload(onLive) {
 
   // 6) Sonuç — download ile aynı mantık: p90 önce, fallback ortalama
   const elapsed = (performance.now() - measureStart) / 1000;
+  window.lastUploadDebug = `gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
   if (totalSent < 100_000 || elapsed <= 0) return null;
   const p90 = percentile90(sharedSamples);
   if (p90) return p90;
@@ -5087,7 +5088,8 @@ async function runSpeedTest() {
   if (!finalUL) {
     document.getElementById('stPhase').textContent = 'HATA';
     document.getElementById('stSub').style.color = 'var(--danger)';
-    document.getElementById('stSub').textContent = 'Yükleme hızı ölçülemedi — sunucuya bağlantı başarısız. VPN/güvenlik duvarı aktifse devre dışı bırakıp tekrar deneyin.';
+    const debugDetails = window.lastUploadDebug ? `<br><span style="font-size:10px;opacity:0.8;">[Detay: ${window.lastUploadDebug}]</span>` : '';
+    document.getElementById('stSub').innerHTML = 'Yükleme hızı ölçülemedi — sunucuya bağlantı başarısız. VPN/güvenlik duvarı aktifse devre dışı bırakıp tekrar deneyin.' + debugDetails;
     document.getElementById('stULVal').textContent = '—';
     btn.disabled = false; btn.textContent = 'Tekrar Dene';
     document.getElementById('stRetryBtn').style.display = 'block';
