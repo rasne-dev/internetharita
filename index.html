@@ -2158,8 +2158,8 @@ function renderHex() {
       // Yakin zoom'da (kucuk altigenler) daha seffaf: harita altyapisi okunabilir.
       // NOT: kullanici geri bildirimiyle degerler asagi cekildi (eski dinamik
       // formul cok opaktı; orijinal sabit 0.3'e daha yakin ama hala zoom'a gore degisken).
-      const _fillOp   = hasData ? (z <= 6 ? 0.4 : z <= 8 ? 0.32 : 0.24) : 0.07;
-      const _strokeOp = hasData ? (z <= 6 ? 0.7 : 0.55) : 0.18;
+      const _fillOp   = hasData ? (z <= 6 ? 0.25 : z <= 8 ? 0.18 : 0.12) : 0.04;
+      const _strokeOp = hasData ? (z <= 6 ? 0.45 : 0.30) : 0.10;
       const _weight   = z <= 6 ? 0.8 : 1.2;
       const layer = L.polygon(coords, { color, fillColor:color, fillOpacity:_fillOp, weight:_weight, opacity:_strokeOp }).addTo(maps.main);
       layer.on('click', () => showHexInfo(pins, hex)); hexLayers.push(layer);
@@ -4803,14 +4803,6 @@ async function measurePing() {
   } catch(e) { return null; }
 }
 
-// 90. PERSENTİL: Cloudflare'in kendi resmi hız testi de (speed.cloudflare.com/about)
-// "downloading/uploading progressively larger files and taking the 90th percentile
-// speed" yöntemini kullanıyor — yani ham toplam-bayt/toplam-süre ortalaması DEĞİL.
-// Sebebi: testin ilk anlarındaki bağlantı ısınması (TCP slow-start, el sıkışma) düşük
-// örnekler üretir; bunları basit ortalamaya dahil etmek özellikle yüksek hızlı
-// bağlantılarda gerçek hızı ciddi şekilde düşük gösterir. 90. persentil bu düşük
-// uç örnekleri otomatik olarak dışlar, gerçek/sürdürülebilir tepe hıza çok daha
-// yakın bir sonuç verir.
 function percentile90(samples) {
   if (!samples || samples.length < 3) return null;
   const sorted = [...samples].sort((a, b) => a - b);
@@ -4819,28 +4811,14 @@ function percentile90(samples) {
 }
 
 async function measureDownload(onLive) {
-  // DUZELTME #2 - INDIRME HIZI HALA DUSUK OLCULUYOR (race condition):
-  // Onceki "duzeltme" her stream'in KENDI baytlarini sayip KENDI anlik
-  // Mbps'ini sharedSamples'a yaziyordu. 8 paralel stream varsa, toplam
-  // bant genisligi bu 8 stream arasinda paylasilir; yani her stream'in
-  // tek basina olcebildigi hiz, GERCEK toplam hizin sadece ~1/8'i kadardir.
-  // percentile90(sharedSamples) bu kucuk tek-stream degerlerinin p90'ini
-  // alinca sonuc GERCEK toplam hizin cok altinda cikiyordu (orn. 1 Gbps
-  // baglantida ~120-150 Mbps gorunmesi).
-  // COZUM: Tum streamler ortak bir totalBytesGlobal sayacina yazsin (JS
-  // single-thread oldugu icin race condition olmaz), TEK bir merkezi
-  // sampler (setInterval) bu ortak sayacin delta'sini SAMPLE_MS'de bir
-  // olcsun. Boylece her sample, o anki TUM streamlerin TOPLAM hizini
-  // temsil eder - tek bir stream'in payi degil.
   const CHUNK_SIZE = 25 * 1024 * 1024;
   const MEASURE_MS = 10000;
   const SAMPLE_MS  = 200;
   const PARALLEL_STREAMS = 8;
 
-  // Isitma: TCP slow-start bitmeden olcum baslamasin
   await Promise.all(Array.from({ length: PARALLEL_STREAMS }, async (_, n) => {
     try {
-      const r = await fetch(`${SPEED_DOWNLOAD_URL}?bytes=${4 * 1024 * 1024}&t=warmup_${n}_${Date.now()}`, { cache:'no-store', mode:'cors' });
+      const r = await fetch(`${SPEED_DOWNLOAD_URL}?bytes=${512 * 1024}&t=warmup_${n}_${Date.now()}`, { cache:'no-store', mode:'cors' });
       if (r.body) { const rdr = r.body.getReader(); while (true) { const {done} = await rdr.read(); if (done) break; } }
     } catch(e) {}
   }));
@@ -4850,7 +4828,6 @@ async function measureDownload(onLive) {
   const sharedSamples = [];
   let totalBytesGlobal = 0;
 
-  // MERKEZI SAMPLER: tum streamlerin TOPLAM baytindan delta hesaplar.
   let lastSampleBytes = 0, lastSampleAt = startedAt;
   const samplerId = setInterval(() => {
     const now = performance.now();
@@ -4876,7 +4853,6 @@ async function measureDownload(onLive) {
         let res;
         try { res = await reader.read(); } catch(e) { break; }
         if (res.done) break;
-        // Sadece ortak sayaci guncelle - hiz hesabi merkezi sampler'da yapiliyor
         totalBytesGlobal += res.value.length;
       }
       try { await reader.cancel(); } catch(e) {}
@@ -4885,22 +4861,14 @@ async function measureDownload(onLive) {
 
   await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => readStream(i)));
   clearInterval(samplerId);
-  // Persentil 90: TCP slow-start dusuk sample'larini otomatik dislar
   const p90 = percentile90(sharedSamples);
   if (p90) return p90;
-  // Fallback: yeterli sample yok (cok yavas baglanti / hata)
   const elapsed = (performance.now() - startedAt) / 1000;
   if (totalBytesGlobal < 100000 || elapsed <= 0) return null;
   return Math.round((totalBytesGlobal * 8) / elapsed / 1e6);
 }
 
 async function measureUpload(onLive) {
-  // ── UPLOAD OLCUM MIMARISI ────────────────────────────────────────────────
-  // Sadece XHR kullanilir. Neden fetch yok?
-  // Cloudflare __up (HTTP/2): sunucu body bitmeden 200 OK gonderiyor (early
-  // response). fetch().then() bu erken yanit uzerine cozumlenir → elapsed,
-  // gonderme suresini degil sunucunun yanit hizini olcer → yanlis/cok dusuk.
-  //
   // Neden x.onload yerine x.upload.onloadend ile rechaining?
   // x.onload = HTTP YANITI alindiginda tetiklenir (early-response ortaminda
   // body bitmeden). Onceki bug: x.onload ile rechaining yapilinca yeni chunk
@@ -5084,11 +5052,11 @@ async function runSpeedTest() {
   // İndirme ortalama etiketi — kullanıcı dostu
   if (dlSamples.length > 1) {
     const dlAvg = Math.round(dlSamples.reduce((a,b)=>a+b,0)/dlSamples.length);
+    const sampleCount = dlSamples.length;
     if (dlAvg < finalDL * 0.85) {
-      // Ortalama ile zirve arasında belirgin fark varsa bağlantı dalgalı demektir
-      document.getElementById('stDLAvg').textContent = `ort. ${dlAvg} Mbps (dalgalı)`;
+      document.getElementById('stDLAvg').textContent = `Ortalama: ${dlAvg} Mbps (Bağlantı Dalgalı · ${sampleCount} örnek)`;
     } else {
-      document.getElementById('stDLAvg').textContent = `ort. ${dlAvg} Mbps`;
+      document.getElementById('stDLAvg').textContent = `Ortalama: ${dlAvg} Mbps (${sampleCount} örnek)`;
     }
   }
 
@@ -5126,10 +5094,11 @@ async function runSpeedTest() {
   // Yükleme ortalama etiketi — kullanıcı dostu
   if (ulSamples.length > 1) {
     const ulAvg = Math.round(ulSamples.reduce((a,b)=>a+b,0)/ulSamples.length);
+    const sampleCount = ulSamples.length;
     if (ulAvg < finalUL * 0.85) {
-      document.getElementById('stULAvg').textContent = `ort. ${ulAvg} Mbps (dalgalı)`;
+      document.getElementById('stULAvg').textContent = `Ortalama: ${ulAvg} Mbps (Bağlantı Dalgalı · ${sampleCount} örnek)`;
     } else {
-      document.getElementById('stULAvg').textContent = `ort. ${ulAvg} Mbps`;
+      document.getElementById('stULAvg').textContent = `Ortalama: ${ulAvg} Mbps (${sampleCount} örnek)`;
     }
   }
 
