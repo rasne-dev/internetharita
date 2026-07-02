@@ -370,7 +370,7 @@ html.light .map-info-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15
 .verified-badge.show { display:flex; }
 .verified-tick { width:14px; height:14px; border-radius:50%; background:var(--success); color:#fff; display:flex; align-items:center; justify-content:center; font-size:8px; flex-shrink:0; }
 /* Anlık hız log şeridi */
-.st-live-log { display:none; margin:6px 0 10px; background:var(--surface2); border:1px solid var(--border); border-radius:7px; padding:6px 10px; font-family:var(--font-mono); font-size:10px; color:var(--text3); text-align:left; max-height:64px; overflow-y:auto; line-height:1.7; }
+.st-live-log { display:none; margin:4px 0 10px; font-family:var(--font-mono); font-size:13px; font-weight:700; color:var(--accent); text-align:center; letter-spacing:0.5px; min-height:20px; transition:opacity .15s; }
 .st-live-log.visible { display:block; }
 .st-live-entry { color:var(--text2); } .st-live-entry.peak { color:var(--accent); font-weight:700; }
 /* Sonuç kutusu ortalama satırı */
@@ -4762,11 +4762,8 @@ function liveLogAppend(direction, mbps) {
   const log = document.getElementById('stLiveLog');
   if (!log || !mbps) return;
   log.classList.add('visible');
-  const row = document.createElement('div');
-  row.className = 'st-live-entry';
-  row.textContent = `${direction} anlık ${formatMbps(mbps)} Mbps`;
-  log.prepend(row);
-  while (log.children.length > 8) log.lastChild.remove();
+  // Ham satır listesi yerine tek bir canlı değer göster
+  log.textContent = `${direction} ${formatMbps(mbps)} Mbps`;
 }
 let _uploadBlobPool = null;
 function getUploadBlob(size) {
@@ -4964,13 +4961,26 @@ async function measureUpload(onLive) {
         let settled = false;
         const t0 = performance.now();
 
-        // upload.onloadend = BODY tamamen gonderilince tetiklenir
-        x.upload.onloadend = () => {
+        // upload.onloadend = BODY tamamen gonderilince VEYA abort/error sonrasi tetiklenir.
+        // KRITIK: upload.onabort = abort KULLANILMIYOR. Neden?
+        // Cloudflare __up (HTTP/2) early-response gonderince tarayici uploadi
+        // abort edebilir. Bu durumda: upload.onabort → settle → resolve → upload.onloadend
+        // → settled=true oldugundan timing fallback ATLIYOR → totalSent=0 → null.
+        // Cozum: upload.onabort handler yok; upload.onloadend tek settlement noktasi.
+        // e.loaded = o ana kadar gercekten gonderilen byte sayisi (abort durumunda da dolu).
+        x.upload.onloadend = (e) => {
           if (settled) return;
-          // Fallback: onprogress hic tetiklenmediyse timing kullan
           if (progressBytes === 0) {
-            const elapsed = (performance.now() - t0) / 1000;
-            if (elapsed >= 0.05) totalSent += CHUNK_BYTES;
+            // onprogress hic tetiklenmediyse:
+            // 1) e.loaded varsa (abort durumunda bile gercek byte sayisi) kullan
+            // 2) yoksa timing tabanlı tahmin
+            const sent = (e && e.loaded > 0) ? e.loaded : 0;
+            if (sent > 0) {
+              totalSent += sent;
+            } else {
+              const elapsed = (performance.now() - t0) / 1000;
+              if (elapsed >= 0.05) totalSent += CHUNK_BYTES;
+            }
           }
           settled = true;
           if (performance.now() < stopAt) sendChunk(); else resolve();
@@ -4982,9 +4992,9 @@ async function measureUpload(onLive) {
           if (performance.now() >= stopAt) x.abort();
         };
 
-        // abort/error: settle + resolve (test penceresi kapandı veya hata)
+        // Sadece gercek ag hatasi (CORS, DNS, vb.) icin aninda resolve
+        // upload.onabort KASITLI YOK — yukarida aciklandi
         const abort = () => { if (!settled) { settled = true; resolve(); } };
-        x.upload.onabort = abort;
         x.upload.onerror = abort;
         x.onerror        = abort;
         x.ontimeout      = abort;
@@ -5071,10 +5081,15 @@ async function runSpeedTest() {
   setGauge(finalDL, dlMax, 'var(--accent)');
   document.getElementById('stDLVal').textContent = formatMbps(finalDL);
   
-  // İndirme Ortalamasını Yazdır
+  // İndirme ortalama etiketi — kullanıcı dostu
   if (dlSamples.length > 1) {
     const dlAvg = Math.round(dlSamples.reduce((a,b)=>a+b,0)/dlSamples.length);
-    document.getElementById('stDLAvg').textContent = `düz ort. ${dlAvg} Mbps | p90=${finalDL} Mbps (${dlSamples.length} sample)`;
+    if (dlAvg < finalDL * 0.85) {
+      // Ortalama ile zirve arasında belirgin fark varsa bağlantı dalgalı demektir
+      document.getElementById('stDLAvg').textContent = `ort. ${dlAvg} Mbps (dalgalı)`;
+    } else {
+      document.getElementById('stDLAvg').textContent = `ort. ${dlAvg} Mbps`;
+    }
   }
 
   // --- UPLOAD ---
@@ -5108,10 +5123,14 @@ async function runSpeedTest() {
   setGauge(finalUL, ulMax, 'var(--success)');
   document.getElementById('stULVal').textContent = formatMbps(finalUL);
   
-  // Yükleme Ortalamasını Yazdır
+  // Yükleme ortalama etiketi — kullanıcı dostu
   if (ulSamples.length > 1) {
     const ulAvg = Math.round(ulSamples.reduce((a,b)=>a+b,0)/ulSamples.length);
-    document.getElementById('stULAvg').textContent = `düz ort. ${ulAvg} Mbps | p90=${finalUL} Mbps (${ulSamples.length} sample)`;
+    if (ulAvg < finalUL * 0.85) {
+      document.getElementById('stULAvg').textContent = `ort. ${ulAvg} Mbps (dalgalı)`;
+    } else {
+      document.getElementById('stULAvg').textContent = `ort. ${ulAvg} Mbps`;
+    }
   }
 
   // --- BİTİŞ ---
