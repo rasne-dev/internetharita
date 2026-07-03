@@ -4835,6 +4835,52 @@ function makeUploadBlob(bytes) {
   // CORS Preflight tetiklenmesini engellemek için Blob yerine String (Simple Request) döndürüyoruz
   return getUploadPayload(bytes);
 }
+
+// ── DOĞRULUK DÜZELTMESİ: fetch() body'si olarak akan (streaming) bir
+// ReadableStream göndermeyi destekleyen tarayıcılarda (Chrome/Edge/Opera —
+// masaüstü ve Android), gövde tarayıcının ağ arabelleğine gerçek zamanlı
+// aktıkça bayt sayabiliyoruz. Bu, XHR'ın upload.onprogress'inin fetch()
+// karşılığıdır. Bu özellik olmadan (Safari/Firefox), sadece her 1MB'lık
+// isteğin TAMAMLANMASI (tam gidiş-dönüş) beklenip öyle sayılıyordu; bu da
+// yüksek hızlı bağlantılarda (100+ Mbps) round-trip gecikmesinin ölçümü
+// yapay şekilde düşük göstermesine yol açıyordu. Artık destekleyen
+// tarayıcılarda gerçek zamanlı, byte-hassasiyetli ölçüm; desteklemeyenlerde
+// ise daha büyük chunk + daha fazla paralel akışla yaklaşık ölçüm yapılıyor.
+let _streamUploadSupportCache = null;
+function supportsStreamingUploadBody() {
+  if (_streamUploadSupportCache !== null) return _streamUploadSupportCache;
+  let duplexUsed = false;
+  try {
+    new Request('https://example.com', {
+      method: 'POST',
+      body: new ReadableStream({ start(c) { c.close(); } }),
+      get duplex() { duplexUsed = true; return 'half'; }
+    });
+  } catch (e) { /* Bu tarayıcı streaming body'yi hiç desteklemiyor */ }
+  _streamUploadSupportCache = duplexUsed;
+  return duplexUsed;
+}
+let _uploadBytesFiller = null;
+function getUploadBytesFiller(size) {
+  if (!_uploadBytesFiller || _uploadBytesFiller.length !== size) {
+    _uploadBytesFiller = new TextEncoder().encode(getUploadPayload(size));
+  }
+  return _uploadBytesFiller;
+}
+// Sabit boyutlu parçaları (küçük tutarak backpressure'ı = gerçek gönderim hızını
+// yakından takip ediyoruz) sürekli üreten bir akış; stopAt'e ulaşınca kapanır.
+function makeUploadStream(stopAt, onBytes) {
+  const PIECE = 65536; // 64KB
+  const filler = getUploadBytesFiller(PIECE);
+  return new ReadableStream({
+    pull(controller) {
+      if (performance.now() >= stopAt) { controller.close(); return; }
+      controller.enqueue(filler);
+      onBytes(PIECE);
+    }
+  });
+}
+
 async function measurePing() {
   try {
     const times = [];
@@ -5053,13 +5099,20 @@ async function measureUploadSupabase(onLive) {
 // Content-Type: text/plain kullanıp özel header (apikey vb.) EKLEMİYORUZ —
 // böylece tarayıcı CORS preflight (OPTIONS) göndermiyor ve önceki 400 hatasına
 // yol açan senaryo (Cloudflare'ın OPTIONS'a düzgün yanıt vermemesi) devre dışı
-// kalıyor. fetch() ile isteği gönderiyoruz; fetch'in upload ilerleme olayı
-// olmadığından, her tamamlanan chunk'ın süresine göre örnekliyoruz.
+// kalıyor.
+//
+// DOĞRULUK NOTU: streaming body desteklenen tarayıcılarda (bkz.
+// supportsStreamingUploadBody) gerçek zamanlı, byte-hassasiyetli ölçüm
+// yapılır. Desteklenmeyen tarayıcılarda (Safari/Firefox) her isteğin TAM
+// gidiş-dönüşü beklenip öyle sayılır; bunun round-trip gecikmesini yüksek
+// hızlı bağlantılarda yapay şekilde düşük göstermesini azaltmak için büyük
+// chunk (4MB) ve daha fazla paralel akış (10) kullanılır.
 async function measureUploadCF(onLive) {
-  const CHUNK_BYTES      = 1 * 1024 * 1024;
   const MEASURE_MS       = 9000;
   const SAMPLE_MS        = 200;
-  const PARALLEL_STREAMS = 6;
+  const streaming        = supportsStreamingUploadBody();
+  const PARALLEL_STREAMS = streaming ? 6 : 10;
+  const CHUNK_BYTES      = 4 * 1024 * 1024; // sadece streaming desteklenmeyen tarayıcılarda kullanılır
 
   // Isınma + erişilebilirlik kontrolü: bu istek başarısız/reddedilirse
   // (ağ bu alan adını da engelliyorsa) hiç vakit kaybetmeden yedek yola geç.
@@ -5089,6 +5142,19 @@ async function measureUploadCF(onLive) {
     if (mbps > 0) { sharedSamples.push(mbps); if (onLive) onLive(mbps); }
   }, SAMPLE_MS);
 
+  // YOL A — Byte-hassasiyetli (streaming body destekleniyorsa)
+  async function cfStreamAccurate(n) {
+    try {
+      const body = makeUploadStream(stopAt, (b) => { totalSent += b; });
+      await fetch(`${SPEED_UPLOAD_URL}?t=${Date.now()}_${n}_${Math.random()}`, {
+        method: 'POST', mode: 'cors', cache: 'no-store',
+        headers: { 'Content-Type': 'text/plain' },
+        body, duplex: 'half'
+      });
+    } catch (e) { /* stream stopAt'te kapanınca bağlantı kesilmesi normaldir */ }
+  }
+
+  // YOL B — Tamamlanma-tabanlı (streaming desteklenmiyorsa)
   async function cfStream(n) {
     let consecutiveErrors = 0;
     while (performance.now() < stopAt) {
@@ -5107,16 +5173,18 @@ async function measureUploadCF(onLive) {
     }
   }
 
-  await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => cfStream(i)));
+  const runStream = streaming ? cfStreamAccurate : cfStream;
+  await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => runStream(i)));
   clearInterval(samplerId);
 
   const elapsed = (performance.now() - measureStart) / 1000;
-  window.lastUploadDebug = `[Cloudflare] gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
+  window.lastUploadDebug = `[Cloudflare/${streaming ? 'streaming' : 'chunk'}] gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
   if (totalSent < 300_000 || elapsed <= 0) return null;
   const p90 = percentile90(sharedSamples);
   if (p90) return p90;
   return Math.round((totalSent * 8) / elapsed / 1e6);
 }
+
 
 // ── UPLOAD ÖLÇÜM MİMARİSİ — YÖNLENDİRİCİ ────────────────────────────────────
 // Önce Cloudflare'ı dener (ağların büyük çoğunluğunda çalışır ve indirme testiyle
