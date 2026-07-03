@@ -5,10 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>İnternetHarita — Türkiye İnternet Altyapı Haritası</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous"/>
+<!-- GÜVENLİK: Subresource Integrity (SRI) eklendi. SRI olmadan, unpkg/jsdelivr CDN'i
+     ele geçirilirse veya (supabase-js'de olduğu gibi) sabitlenmemiş bir @2 etiketi
+     altında kötü amaçlı bir sürüm yayınlanırsa, o kod HERKESİN (moderatör dahil)
+     tarayıcısında tam yetkiyle çalışırdı — bu da moderatör oturumunun (Supabase JWT)
+     çalınmasına kadar gidebilirdi. Hash'ler, ilgili sürümlerin resmi npm paket
+     arşivinden (registry.npmjs.org) doğrudan indirilip hesaplanmıştır.
+     h3-js şu an 4.1.0'da SABİT (floating değil), bu yüzden SRI dışında ek risk
+     taşımıyor — yine de defans amaçlı hash eklendi.
+     FingerprintJS (openfpcdn.io) kasıtlı olarak sadece ana sürüm (/v3/) ile
+     sabitlemeye izin veriyor (üretici, dolandırıcılık-tespit imzalarını sürekli
+     güncelliyor); bu yüzden orada tam sürüm sabitleme/SRI teknik olarak mümkün
+     değil — bu, kütüphanenin resmi kullanım şeklidir. -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js" integrity="sha384-nKUDlg+fT0U/eEt4KWP9n034kLe/eVj6k7CVjbu6qfRhJdEyinlGajS9+9AU+UZ5" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js" integrity="sha384-3wY11tldQ5+yWqAvmTN4XtQvnjoTva0cV15O/O/O5NTtp0ivVopSzLOzsVXWZse9" crossorigin="anonymous"></script>
 <!-- FingerprintJS for browser fingerprinting -->
 <script src="https://openfpcdn.io/fingerprintjs/v3/iife.min.js"></script>
 <!-- PWA -->
@@ -4665,8 +4677,8 @@ function showThankyou(data) {
   document.getElementById('tyStatsGrid').innerHTML = `
     <div class="ty-stat"><div class="ty-stat-val" style="color:${speedColor(data.dl)}">${data.dl}</div><div class="ty-stat-label">↓ Mbps İndirme</div></div>
     <div class="ty-stat"><div class="ty-stat-val" style="color:${data.ul?speedColor(data.ul):'var(--text3)'}">${data.ul||'—'}</div><div class="ty-stat-label">↑ Mbps Yükleme</div></div>
-    <div class="ty-stat"><div class="ty-stat-val" style="color:var(--text2)">${data.iss||'—'}</div><div class="ty-stat-label">İSS</div></div>
-    <div class="ty-stat"><div class="ty-stat-val" style="color:var(--success)">${data.il||'—'}</div><div class="ty-stat-label">Şehir</div></div>
+    <div class="ty-stat"><div class="ty-stat-val" style="color:var(--text2)">${escHtml(data.iss)||'—'}</div><div class="ty-stat-label">İSS</div></div>
+    <div class="ty-stat"><div class="ty-stat-val" style="color:var(--success)">${escHtml(data.il)||'—'}</div><div class="ty-stat-label">Şehir</div></div>
   `;
   document.getElementById('thankYouModal').classList.add('open');
 }
