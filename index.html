@@ -2830,41 +2830,43 @@ function setLocation(lat, lng) {
     }
   }, 600);
 }
-// DÜZELTME: enableHighAccuracy:true masaüstü/GPS'siz cihazlarda tarayıcının
-// var olmayan bir GPS çipini beklemesine ve çoğunlukla 15sn'de zaman aşımına
-// uğramasına (err.code 3) neden oluyordu. Artık önce hızlı ağ-tabanlı (Wi-Fi/IP)
-// konum denenir; o başarısız/zaman aşımına uğrarsa GPS'li yüksek doğruluk modu
-// otomatik olarak devreye girer. Böylece hem masaüstünde hem mobilde çalışır.
+// NOT: enableHighAccuracy:false ile başlamak masaüstünde IP tabanlı konum
+// döndürür (Türkiye'de çoğu İSS'nin IP'si gerçek adresten km'lerce uzak
+// bir ilçeye çözümlenir — kullanıcı "hep Cihangir buluyor" gibi şikayetler
+// tam bu yüzden olur). Doğrudan enableHighAccuracy:true ile Wi-Fi/BLE ağ
+// tabanlı yüksek doğruluklu konum isteniyor; GPS çipi olmayan masaüstünde
+// tarayıcı yine de Wi-Fi parmak izi ile genellikle 20-200m hassasiyet
+// sağlar. Timeout 12sn — pratikte 2-5sn'de yanıt gelir.
 function autoLocate() {
   if (!window.isSecureContext) return showToast('Otomatik konum için site HTTPS üzerinden açılmalı.', 'err');
   if (!navigator.geolocation) return showToast('Konum desteklenmiyor', 'err');
-  showToast('Konum alınıyor... Tarayıcı izin penceresini onaylayın.', 'warn');
-
-  const onSuccess = pos => {
-    if (!maps.pin) return showToast('Harita henüz hazır değil, lütfen tekrar deneyin.', 'warn');
-    maps.pin.setView([pos.coords.latitude, pos.coords.longitude], 16);
-    setLocation(pos.coords.latitude, pos.coords.longitude);
-    const accuracy = Math.round(pos.coords.accuracy || 0);
-    showToast(`📍 Konum bulundu${accuracy ? ' (~' + accuracy + ' m)' : ''}`, '');
-  };
-
-  const errorMessages = {
-    1: 'Konum izni reddedildi. Tarayıcı/site izinlerinden konumu açabilirsiniz.',
-    2: 'Konum alınamadı. GPS/Wi-Fi açık mı kontrol edin veya haritadan seçin.',
-    3: 'Konum isteği zaman aşımına uğradı. Tekrar deneyin veya haritadan seçin.'
-  };
+  showToast('Konum alınıyor… İzin penceresini onaylayın.', 'warn');
 
   navigator.geolocation.getCurrentPosition(
-    onSuccess,
-    fastErr => {
-      // Hızlı deneme başarısız oldu — GPS'li yüksek doğruluk moduyla tekrar dene
-      navigator.geolocation.getCurrentPosition(
-        onSuccess,
-        err => showToast(errorMessages[err.code] || ('Konum alınamadı: ' + err.message), 'err'),
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-      );
+    pos => {
+      if (!maps.pin) return showToast('Harita henüz hazır değil, lütfen tekrar deneyin.', 'warn');
+      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+      const acc = Math.round(accuracy || 0);
+      maps.pin.setView([lat, lng], 16);
+      setLocation(lat, lng);
+      // Doğruluk seviyesine göre farklı mesaj
+      if (acc > 2000) {
+        showToast(`⚠️ Konum bulundu ama doğruluk düşük (~${(acc/1000).toFixed(1)} km). Muhtemelen IP tabanlı — haritadan konumu düzeltin.`, 'warn');
+      } else if (acc > 300) {
+        showToast(`📍 Konum bulundu (~${acc} m) — Wi-Fi tabanlı, haritadan doğrulayın.`, 'warn');
+      } else {
+        showToast(`📍 Konum bulundu${acc ? ' (~' + acc + ' m)' : ''}`, '');
+      }
     },
-    { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+    err => {
+      const messages = {
+        1: 'Konum izni reddedildi. Tarayıcı ayarlarından izni açıp tekrar deneyin.',
+        2: 'Konum alınamadı. Wi-Fi açık mı? Açık değilse haritadan seçin.',
+        3: 'Zaman aşımı. Wi-Fi açıksa tekrar deneyin, yoksa haritadan seçin.'
+      };
+      showToast(messages[err.code] || ('Konum alınamadı: ' + err.message), 'err');
+    },
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
   );
 }
 
