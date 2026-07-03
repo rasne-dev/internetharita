@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://openfpcdn.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://*.openstreetmap.org; connect-src 'self' https://vpnaxxxoiomorcvloend.supabase.co https://speed.cloudflare.com https://nominatim.openstreetmap.org https://turkiyeapi.dev https://api.turkiyeapi.dev https://openfpcdn.io; worker-src 'self' blob:; manifest-src 'self' data:; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>İnternetHarita — Türkiye İnternet Altyapı Haritası</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous"/>
@@ -2769,15 +2771,25 @@ function findNeighbourhood(a, matchedIlce) {
 }
 
 let _nominatimTimer = null;
+let _nominatimController = null;
 function setLocation(lat, lng) {
   pinLat=lat; pinLng=lng; if(pinMarker) maps.pin.removeLayer(pinMarker);
   pinMarker = L.circle([lat,lng],{radius:100,color:'#00d4ff',fillColor:'#00d4ff',fillOpacity:.12,weight:2}).addTo(maps.pin);
   document.getElementById('locDot').classList.add('set'); document.getElementById('locText').textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  ['ilInput','ilceInput','mahalleInput'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   // Nominatim'e debounce ile git — hızlı tıklamalarda önceki isteği iptal et
   if (_nominatimTimer) clearTimeout(_nominatimTimer);
+  if (_nominatimController) _nominatimController.abort();
   _nominatimTimer = setTimeout(async () => {
+    _nominatimController = new AbortController();
+    const abortTimer = setTimeout(() => _nominatimController.abort(), 7000);
     try {
-      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=tr`);
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1&zoom=18&accept-language=tr`, {
+        cache: 'no-store',
+        signal: _nominatimController.signal,
+        headers: { 'Accept': 'application/json', 'Accept-Language': 'tr' }
+      });
+      if (!r.ok) throw new Error('reverse_geocode_failed');
       const d = await r.json();
       const a = d.address||{};
       const resolvedIl = findProvince(a);
@@ -2786,20 +2798,42 @@ function setLocation(lat, lng) {
       document.getElementById('ilInput').value = resolvedIl;
       document.getElementById('ilceInput').value = resolvedIlce;
       document.getElementById('mahalleInput').value = resolvedMahalle;
-    } catch(e) {}
+      if (resolvedIl || resolvedIlce || resolvedMahalle) {
+        document.getElementById('locText').textContent = [resolvedIl, resolvedIlce, resolvedMahalle].filter(Boolean).join(' › ') || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      } else {
+        showToast('Konum bulundu; adres etiketi için il/ilçe seçeneğini kullanabilirsiniz.', 'warn');
+      }
+    } catch(e) {
+      if (e.name !== 'AbortError') {
+        showToast('Konum seçildi; adres otomatik çözülemedi, gerekirse il/ilçe düzeltin.', 'warn');
+      }
+    } finally {
+      clearTimeout(abortTimer);
+      _nominatimController = null;
+    }
   }, 600);
 }
 function autoLocate() {
+  if (!window.isSecureContext) return showToast('Otomatik konum için site HTTPS üzerinden açılmalı.', 'err');
   if (!navigator.geolocation) return showToast('Konum desteklenmiyor', 'err');
-  showToast('Konum alınıyor...', 'warn');
+  showToast('Konum alınıyor... Tarayıcı izin penceresini onaylayın.', 'warn');
   navigator.geolocation.getCurrentPosition(
     pos => {
-      maps.pin.setView([pos.coords.latitude, pos.coords.longitude], 15);
+      if (!maps.pin) return showToast('Harita henüz hazır değil, lütfen tekrar deneyin.', 'warn');
+      maps.pin.setView([pos.coords.latitude, pos.coords.longitude], 16);
       setLocation(pos.coords.latitude, pos.coords.longitude);
-      showToast('📍 Konum bulundu', '');
+      const accuracy = Math.round(pos.coords.accuracy || 0);
+      showToast(`📍 Konum bulundu${accuracy ? ' (~' + accuracy + ' m)' : ''}`, '');
     },
-    err => showToast('Konum alınamadı: ' + err.message, 'err'),
-    { enableHighAccuracy: true, timeout: 10000 }
+    err => {
+      const messages = {
+        1: 'Konum izni reddedildi. Tarayıcı/site izinlerinden konumu açabilirsiniz.',
+        2: 'Konum alınamadı. GPS/Wi-Fi açık mı kontrol edin veya haritadan seçin.',
+        3: 'Konum isteği zaman aşımına uğradı. Tekrar deneyin veya haritadan seçin.'
+      };
+      showToast(messages[err.code] || ('Konum alınamadı: ' + err.message), 'err');
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
   );
 }
 
@@ -5126,6 +5160,94 @@ async function measureUploadSupabase(onLive) {
 // başlamadan önce büyütmek için kısa bir yükleme yapılıp atılıyor —
 // aksi halde ilk 1-2 saniyedeki yavaş-başlangıç örnekleri yüksek hızlı
 // bağlantılarda sonucu yapay şekilde düşürebilirdi.
+async function measureUploadXHR(onLive) {
+  const CHUNK_BYTES      = 4 * 1024 * 1024;
+  const MEASURE_MS       = 9000;
+  const SAMPLE_MS        = 200;
+  const PARALLEL_STREAMS = 6;
+  const TARGET_URL       = SPEED_UPLOAD_URL;
+
+  try {
+    await new Promise((resolve, reject) => {
+      const x = new XMLHttpRequest();
+      x.open('POST', `${TARGET_URL}?t=probe_${Date.now()}`);
+      x.timeout = 7000;
+      x.setRequestHeader('Content-Type', 'text/plain;charset=UTF-8');
+      x.onload = () => resolve();
+      x.onerror = x.ontimeout = () => reject(new Error('upload_probe_failed'));
+      x.send(makeUploadBlob(64 * 1024));
+    });
+  } catch (e) {
+    window.lastUploadDebug = `[XHR] erişilebilirlik kontrolü başarısız: ${e && e.message ? e.message : e}`;
+    return null;
+  }
+
+  const measureStart = performance.now();
+  const stopAt = measureStart + MEASURE_MS;
+  let totalSent = 0;
+  let lastSampleBytes = 0, lastSampleAt = measureStart;
+  const sharedSamples = [];
+  const samplerId = setInterval(() => {
+    const now = performance.now();
+    const dt = now - lastSampleAt;
+    if (dt <= 0) return;
+    const mbps = Math.round(((totalSent - lastSampleBytes) * 8) / (dt / 1000) / 1e6);
+    lastSampleBytes = totalSent;
+    lastSampleAt = now;
+    if (mbps > 0) {
+      sharedSamples.push(mbps);
+      if (onLive) onLive(mbps);
+    }
+  }, SAMPLE_MS);
+
+  function xhrStream(n) {
+    return new Promise(resolve => {
+      let consecutiveErrors = 0;
+      function sendChunk() {
+        if (performance.now() >= stopAt) { resolve(); return; }
+        const x = new XMLHttpRequest();
+        let progressBytes = 0;
+        let settled = false;
+        x.open('POST', `${TARGET_URL}?t=${Date.now()}_${n}_${Math.random()}`);
+        x.timeout = 6000;
+        x.setRequestHeader('Content-Type', 'text/plain;charset=UTF-8');
+        x.upload.onprogress = e => {
+          const loaded = e && e.loaded ? e.loaded : 0;
+          const delta = loaded - progressBytes;
+          if (delta > 0) {
+            totalSent += delta;
+            progressBytes = loaded;
+          }
+          if (performance.now() >= stopAt) {
+            try { x.abort(); } catch(e) {}
+          }
+        };
+        x.onloadend = () => {
+          if (settled) return;
+          settled = true;
+          const ok = (x.status >= 200 && x.status < 300) || x.status === 0 || progressBytes > 0;
+          consecutiveErrors = ok ? 0 : consecutiveErrors + 1;
+          if (consecutiveErrors >= 3 || performance.now() >= stopAt) resolve();
+          else sendChunk();
+        };
+        x.onerror = x.ontimeout = () => {};
+        x.send(makeUploadBlob(CHUNK_BYTES));
+      }
+      sendChunk();
+    });
+  }
+
+  await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => xhrStream(i)));
+  clearInterval(samplerId);
+
+  const elapsed = (performance.now() - measureStart) / 1000;
+  window.lastUploadDebug = `[XHR/Cloudflare] gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
+  if (totalSent < 300_000 || elapsed <= 0) return null;
+  const p90 = percentile90(sharedSamples);
+  if (p90) return p90;
+  return Math.round((totalSent * 8) / elapsed / 1e6);
+}
+
 async function measureUploadCF(onLive) {
   const MEASURE_MS       = 9000;
   const WARMUP_MS         = 800;
@@ -5233,8 +5355,13 @@ async function measureUpload(onLive) {
   window.lastUploadDebug = '';
   window.lastUploadMethod = '';
 
+  const xhrResult = await measureUploadXHR(onLive);
+  if (xhrResult) { window.lastUploadMethod = 'cloudflare-xhr-progress'; return xhrResult; }
+  const xhrDebug = window.lastUploadDebug;
+
   const cfResult = await measureUploadCF(onLive);
-  if (cfResult) { window.lastUploadMethod = 'cloudflare'; return cfResult; }
+  window.lastUploadDebug = `${xhrDebug} || ${window.lastUploadDebug}`;
+  if (cfResult) { window.lastUploadMethod = 'cloudflare-fetch'; return cfResult; }
 
   const subEl = document.getElementById('stSub');
   if (subEl) {
@@ -5343,8 +5470,8 @@ async function runSpeedTest() {
   if (!finalUL) {
     document.getElementById('stPhase').textContent = 'HATA';
     document.getElementById('stSub').style.color = 'var(--danger)';
-    const debugDetails = window.lastUploadDebug ? `<br><span style="font-size:10px;opacity:0.8;">[Detay: ${window.lastUploadDebug}]</span>` : '';
-    document.getElementById('stSub').innerHTML = 'Yükleme hızı ölçülemedi — hem birincil hem yedek sunucuya bağlantı başarısız oldu. VPN/güvenlik duvarı aktifse devre dışı bırakıp tekrar deneyin.' + debugDetails;
+    const debugDetails = window.lastUploadDebug ? ` [Detay: ${window.lastUploadDebug}]` : '';
+    document.getElementById('stSub').textContent = 'Yükleme hızı ölçülemedi — hem birincil hem yedek sunucuya bağlantı başarısız oldu. VPN/güvenlik duvarı aktifse devre dışı bırakıp tekrar deneyin.' + debugDetails;
     document.getElementById('stULVal').textContent = '—';
     btn.disabled = false; btn.textContent = 'Tekrar Dene';
     document.getElementById('stRetryBtn').style.display = 'block';
