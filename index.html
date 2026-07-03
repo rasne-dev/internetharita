@@ -1014,11 +1014,12 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
       </div>
     </div>
 
-    <!-- 3 ANA SEKME -->
+    <!-- 4 ANA SEKME -->
     <div class="mod-tabs">
       <button class="mod-tab-btn" id="modTabBtn-sikayetler" onclick="switchModTab('sikayetler')">🚩 Kullanıcı Bildirimleri <span class="mod-tab-count" id="raporCount"></span></button>
       <button class="mod-tab-btn active" id="modTabBtn-tumPinler" onclick="switchModTab('tumPinler')">📋 Tüm Pinler <span class="mod-tab-count" id="pinCount" style="background:var(--surface3);color:var(--text3);"></span></button>
       <button class="mod-tab-btn" id="modTabBtn-issManager" onclick="switchModTab('issManager')">🏷 İSS Yönetimi <span class="mod-tab-count" id="onayCount" style="background:var(--warn);color:#000;"></span></button>
+      <button class="mod-tab-btn" id="modTabBtn-statEdit" onclick="switchModTab('statEdit')">✏️ Hız/Puan Düzenle</button>
     </div>
 
     <!-- SEKME 1: ŞİKAYETLER — kullanıcı raporları -->
@@ -1147,7 +1148,7 @@ CREATE POLICY "auth_update_raporlar" ON raporlar
           <code style="display:block;margin-top:6px;background:rgba(0,0,0,.3);padding:6px 8px;border-radius:5px;font-size:10px;color:var(--accent);white-space:pre-wrap;word-break:break-all;">UPDATE pins SET speed_test_verified = true WHERE deleted_at IS NULL AND gorunur = true AND is_quarantine = false AND gercek_dl BETWEEN 0.5 AND 2500 AND gercek_ul > 0 AND gercek_ul &lt;= 2500 AND (speed_test_verified IS NOT TRUE);</code>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-          <input type="text" class="fi" id="speedRankSearch" placeholder="İl veya ilçe ara..." style="flex:1;min-width:140px;" oninput="loadSpeedRankEditor(this.value)">
+          <input type="text" class="fi" id="speedRankSearch" placeholder="İl veya ilçe ara..." style="flex:1;min-width:140px;" oninput="debouncedLoadSpeedRankEditor(this.value)">
           <button class="btn-ghost" onclick="loadSpeedRankEditor(document.getElementById('speedRankSearch').value||'')">🔄 Yenile</button>
           <button class="btn-approve" style="padding:5px 12px;" onclick="document.getElementById('speedRankSearch').value='';loadSpeedRankEditor('')">Tümünü Getir</button>
           <button class="btn-approve" style="padding:5px 12px;background:rgba(34,197,94,.15);border-color:var(--success);color:var(--success);" onclick="bulkVerifySpeedRank()" id="bulkVerifyBtn" title="Tabloda görünen sıralamada olmayan tüm pinleri toplu ekle">⚡ Toplu Onayla</button>
@@ -1170,6 +1171,40 @@ CREATE POLICY "auth_update_raporlar" ON raporlar
           </table>
         </div>
       </div>
+
+    </div>
+
+    <!-- SEKME 4: HIZ/PUAN DÜZENLE — pin başına hızlı satır-içi düzeltme -->
+    <div id="modTab-statEdit" style="display:none;">
+      <div class="mod-section">
+        <div class="mod-section-title">✏️ Hız/Puan Düzenle</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">
+          Bir pinin ölçülen DL/UL hızını, memnuniyet puanını veya görünürlüğünü tek satırda hızlıca düzeltin — tam düzenleme formu için "Tüm Pinler" sekmesindeki ✏️ butonunu kullanın.
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <input type="text" class="fi" id="statEditSearch" placeholder="İSS veya il ara..." style="flex:1;min-width:140px;" oninput="debouncedLoadStatEditTable(this.value)">
+          <button class="btn-ghost" onclick="document.getElementById('statEditSearch').value='';loadStatEditTable('')">🔄 Yenile</button>
+        </div>
+        <div class="mod-table-wrap">
+          <table class="mod-table">
+            <thead>
+              <tr>
+                <th>İSS</th>
+                <th>Bağlantı</th>
+                <th>↓ DL</th>
+                <th>↑ UL</th>
+                <th>Puan</th>
+                <th>Görünürlük</th>
+                <th>İşlem</th>
+              </tr>
+            </thead>
+            <tbody id="statEditBody">
+              <tr><td colspan="7" style="text-align:center;color:var(--text3);padding:20px;">Sekmeyi açtığınızda son 200 pin listelenir</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
 
   </div>
 </div>
@@ -2616,7 +2651,7 @@ async function renderStats() {
       return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <div style="width:14px;font-size:10px;color:var(--text3);font-family:var(--font-mono);flex-shrink:0;">${i+1}</div>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:11px;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(x.il)}</div>
+          <div style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(x.il)}</div>
           <div style="background:var(--surface2);border-radius:3px;height:5px;margin-top:3px;overflow:hidden;">
             <div style="width:${pct}%;height:100%;background:var(--accent);border-radius:3px;opacity:0.7;transition:width .4s;"></div>
           </div>
@@ -3526,7 +3561,7 @@ async function modLogout() {
   showToast('Çıkış yapıldı');
 }
 function switchModTab(tab) {
-  const TABS = ['sikayetler','tumPinler','issManager'];
+  const TABS = ['sikayetler','tumPinler','issManager','statEdit'];
   TABS.forEach(t => {
     const el = document.getElementById('modTab-' + t);
     const btn = document.getElementById('modTabBtn-' + t);
@@ -3536,6 +3571,7 @@ function switchModTab(tab) {
   if (tab === 'tumPinler') loadAdminTable();
   if (tab === 'sikayetler') { loadRaporlar(); loadSikayetler(); }
   if (tab === 'issManager') { loadIssManager(); loadCustomIss(); }
+  if (tab === 'statEdit') loadStatEditTable('');
 }
 
 async function loadCustomIss() {
@@ -3835,6 +3871,21 @@ async function bulkVerifySpeedRank() {
   btn.textContent = '⚡ Toplu Onayla'; btn.disabled = false;
 }
 
+// ── DEBOUNCE YARDIMCISI ──────────────────────────────────────────────────
+// loadSpeedRankEditor ve loadStatEditTable her ikisi de her çağrıda TÜM pinler
+// tablosunu (getAllPinsAdmin / sbRest) Supabase'den yeniden çekiyor. Arama
+// kutusuna oninput ile doğrudan bağlanırlarsa her tuş vuruşunda bir ağ isteği
+// tetiklenir (örn. "istanbul" yazmak 8 ayrı sorgu = gereksiz yük + moderatör
+// yavaş bağlantıda yazarken önceki yavaş yanıtın sonraki hızlı yanıtın
+// üzerine yazıp yanlış/eski sonuç göstermesi riski). Kullanıcı yazmayı
+// bitirene kadar (350ms) bekleyip tek istek atarak bunu önlüyoruz.
+function debounce(fn, delay = 350) {
+  let timer;
+  return function (...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
 async function loadSpeedRankEditor(search) {
   const tbody = document.getElementById('speedRankEditorBody');
   if (!tbody) return;
@@ -3892,6 +3943,7 @@ async function loadSpeedRankEditor(search) {
     tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger);">Hata: ${e.message}</td></tr>`;
   }
 }
+const debouncedLoadSpeedRankEditor = debounce(loadSpeedRankEditor);
 
 async function toggleSpeedTestVerified(id, verified) {
   try {
@@ -3932,7 +3984,7 @@ async function renameIssInList(id, oldName) {
 }
 async function refreshModData() {
   // Aktif sekmeyi tespit et ve yenile
-  const TABS = ['sikayetler','tumPinler','issManager'];
+  const TABS = ['sikayetler','tumPinler','issManager','statEdit'];
   const activeTab = TABS.find(t => { const el = document.getElementById('modTab-'+t); return el && el.style.display !== 'none'; }) || 'tumPinler';
   switchModTab(activeTab);
   // Badge sayaçlarını güncelle (arka planda)
@@ -4406,6 +4458,7 @@ async function loadStatEditTable(search) {
     tbody.innerHTML = pins.map(p => `<tr id="se_${p.id}"><td style="font-size:11px;font-weight:700;">${escHtml(p.iss)}</td><td><span style="color:${cc(p.baglanti_turu)};font-family:var(--font-mono);font-size:10px">${(p.baglanti_turu||'').toUpperCase()}</span></td><td><input class="fi" type="number" value="${p.gercek_dl||''}" id="se_dl_${p.id}" style="padding:4px 8px;font-size:11px;width:70px;"></td><td><input class="fi" type="number" value="${p.gercek_ul||''}" id="se_ul_${p.id}" style="padding:4px 8px;font-size:11px;width:70px;"></td><td><input class="fi" type="number" min="1" max="10" value="${p.puan||''}" id="se_puan_${p.id}" style="padding:4px 8px;font-size:11px;width:55px;"></td><td><select class="fs" id="se_gor_${p.id}" style="padding:4px 6px;font-size:10px;width:80px;"><option value="true" ${p.gorunur!==false?'selected':''}>👁 Görünür</option><option value="false" ${p.gorunur===false?'selected':''}>🙈 Gizli</option></select></td><td style="display:flex;gap:4px;"><button class="btn-approve" style="padding:4px 8px;font-size:9px;" onclick="saveStatEdit('${p.id}')">💾</button><button class="btn-del" style="padding:4px 8px;font-size:9px;" onclick="modDeletePin('${p.id}',true)">🗑</button></td></tr>`).join('');
   } catch(e) { tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger);padding:10px;">${e.message}</td></tr>`; }
 }
+const debouncedLoadStatEditTable = debounce(loadStatEditTable);
 
 async function saveStatEdit(id) {
   const dl = parseInt(document.getElementById('se_dl_'+id)?.value); const ul = parseInt(document.getElementById('se_ul_'+id)?.value)||0; const puan = parseInt(document.getElementById('se_puan_'+id)?.value); const gorunur = document.getElementById('se_gor_'+id)?.value === 'true';
