@@ -990,7 +990,8 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
           <span style="font-size:10px; color:var(--text2); line-height:1.4;">
             <b style="color:var(--text);">KVKK/GDPR Aydınlatma Metni ve Açık Rıza:</b> 
             Altyapı haritası oluşturmak amacıyla internet performans verilerimin (ISS, hız, memnuniyet puanı, yaklaşık konum) açık yayınlanmasını onaylıyorum. 
-            Moderatör süreçlerinde sahte ve spam verileri önlemek amacıyla teknik tarayıcı parmak izimin geçici ve güvenli şekilde işlenmesini kabul ediyorum. <br><br>
+            Moderatör süreçlerinde sahte ve spam verileri önlemek amacıyla teknik tarayıcı parmak izimin geçici ve güvenli şekilde işlenmesini kabul ediyorum. 
+            Detaylar için <a href="javascript:void(0)" onclick="event.preventDefault();event.stopPropagation();openKvkkModal();" style="color:var(--accent); text-decoration:underline;">tam Aydınlatma Metnini</a> okudum. <br><br>
             <i style="color:var(--success);">🔒 Gizlilik Notu: Kesin konumunuz cihazınızdan çıkmadan önce otomatik olarak matematiksel bir sapma (~100m) ile bulanıklaştırılır. Sistem yöneticileri ve moderatörler dahil hiç kimse ham (kesin) konum verinize erişemez. Bu işlem "kişisel veri" oluşmasını engeller.</i>
           </span>
         </label>
@@ -1224,6 +1225,22 @@ CREATE POLICY "auth_update_raporlar" ON raporlar
 </div>
 </div>
 
+<div class="modal-bg" id="kvkkModal" onclick="if(event.target===this)closeKvkkModal()">
+  <div class="modal" style="max-width:560px; max-height:80vh; overflow-y:auto;">
+    <span class="modal-close" onclick="closeKvkkModal()">×</span>
+    <div class="modal-title">🔒 KVKK/GDPR Aydınlatma Metni</div>
+    <div style="font-size:11px; color:var(--text2); line-height:1.6;">
+      <p><b style="color:var(--text);">1) Veri Sorumlusu:</b> Bu platform, gönüllü katkıcılar tarafından geliştirilen açık kaynaklı, kâr amacı gütmeyen bir topluluk projesidir (İnternetHarita). Ticari bir tüzel kişilik veya kurumsal veri sorumlusu bulunmamaktadır; proje GitHub üzerinde açık kaynak olarak yürütülür.</p>
+      <p><b style="color:var(--text);">2) İşlenen Kişisel Veriler:</b> Yaklaşık konum (H3 altıgen hücresi ile ~100m bulanıklaştırılmış), seçtiğiniz ISS/altyapı bilgisi, ölçtüğünüz hız değerleri, memnuniyet puanı, opsiyonel yorum ve kötüye kullanımı önlemek amacıyla oluşturulan geçici tarayıcı parmak izi (fingerprint).</p>
+      <p><b style="color:var(--text);">3) İşleme Amacı:</b> Türkiye genelinde bölgesel internet altyapı kalitesini gösteren açık, anonimleştirilmiş bir harita oluşturmak; spam/sahte veri girişini ve aynı bölgeden tekrarlı girişleri engellemek.</p>
+      <p><b style="color:var(--text);">4) Hukuki Sebep:</b> KVKK m.5/1 kapsamında açık rızanız (bu onay kutusu). Konum verisi, kişinin belirlenmesini engelleyecek şekilde bulanıklaştırıldığından ham/kesin konum hiçbir aşamada saklanmaz.</p>
+      <p><b style="color:var(--text);">5) Veri Aktarımı:</b> Onayladığınız veriler (konum, hız, ISS, puan, yorum) harita üzerinde herkese açık şekilde yayınlanır. Veriler Supabase (AB/ABD merkezli bulut altyapı sağlayıcı) üzerinde barındırılır. Parmak izi ve ham IP gibi teknik veriler yalnızca kötüye kullanım tespiti için işlenir, üçüncü taraflarla paylaşılmaz.</p>
+      <p><b style="color:var(--text);">6) Saklama Süresi:</b> Yayınlanan altyapı verileri, haritanın işlevi gereği süresiz saklanır (statik/istatistiksel amaçlı). Fingerprint ve hız-sınırlama sayaçları yalnızca tarayıcınızın yerel deposunda (localStorage) tutulur, sunucuya ham olarak gönderilmez.</p>
+      <p><b style="color:var(--text);">7) İlgili Kişi Hakları (KVKK m.11):</b> Verilerinizin işlenip işlenmediğini öğrenme, düzeltilmesini veya silinmesini talep etme haklarına sahipsiniz. Kendi girdiğiniz kaydı "Ölçümümü Güncelle" ile düzenleyebilir, hatalı/istemediğiniz bir kaydı 🚩 "Bildir" butonuyla moderatörlere iletip kaldırılmasını talep edebilirsiniz. Repo üzerinden (GitHub Issues) de talepte bulunabilirsiniz.</p>
+      <p><b style="color:var(--text);">8) Çerez ve Yerel Depolama:</b> Site, üçüncü taraf reklam/takip çerezi kullanmaz. Yalnızca temanızı hatırlamak, spam koruması için geçici parmak izini saklamak ve hız-sınırlama sayaçlarını tutmak amacıyla tarayıcınızın localStorage'ını (teknik olarak zorunlu, rıza gerektirmeyen kategori) kullanır. Bu veriler cihazınızdan hiç çıkmaz.</p>
+    </div>
+  </div>
+</div>
 <div class="modal-bg" id="reportModal" onclick="if(event.target===this)closeReportModal()">
   <div class="modal">
     <span class="modal-close" onclick="closeReportModal()">×</span>
@@ -2813,27 +2830,41 @@ function setLocation(lat, lng) {
     }
   }, 600);
 }
+// DÜZELTME: enableHighAccuracy:true masaüstü/GPS'siz cihazlarda tarayıcının
+// var olmayan bir GPS çipini beklemesine ve çoğunlukla 15sn'de zaman aşımına
+// uğramasına (err.code 3) neden oluyordu. Artık önce hızlı ağ-tabanlı (Wi-Fi/IP)
+// konum denenir; o başarısız/zaman aşımına uğrarsa GPS'li yüksek doğruluk modu
+// otomatik olarak devreye girer. Böylece hem masaüstünde hem mobilde çalışır.
 function autoLocate() {
   if (!window.isSecureContext) return showToast('Otomatik konum için site HTTPS üzerinden açılmalı.', 'err');
   if (!navigator.geolocation) return showToast('Konum desteklenmiyor', 'err');
   showToast('Konum alınıyor... Tarayıcı izin penceresini onaylayın.', 'warn');
+
+  const onSuccess = pos => {
+    if (!maps.pin) return showToast('Harita henüz hazır değil, lütfen tekrar deneyin.', 'warn');
+    maps.pin.setView([pos.coords.latitude, pos.coords.longitude], 16);
+    setLocation(pos.coords.latitude, pos.coords.longitude);
+    const accuracy = Math.round(pos.coords.accuracy || 0);
+    showToast(`📍 Konum bulundu${accuracy ? ' (~' + accuracy + ' m)' : ''}`, '');
+  };
+
+  const errorMessages = {
+    1: 'Konum izni reddedildi. Tarayıcı/site izinlerinden konumu açabilirsiniz.',
+    2: 'Konum alınamadı. GPS/Wi-Fi açık mı kontrol edin veya haritadan seçin.',
+    3: 'Konum isteği zaman aşımına uğradı. Tekrar deneyin veya haritadan seçin.'
+  };
+
   navigator.geolocation.getCurrentPosition(
-    pos => {
-      if (!maps.pin) return showToast('Harita henüz hazır değil, lütfen tekrar deneyin.', 'warn');
-      maps.pin.setView([pos.coords.latitude, pos.coords.longitude], 16);
-      setLocation(pos.coords.latitude, pos.coords.longitude);
-      const accuracy = Math.round(pos.coords.accuracy || 0);
-      showToast(`📍 Konum bulundu${accuracy ? ' (~' + accuracy + ' m)' : ''}`, '');
+    onSuccess,
+    fastErr => {
+      // Hızlı deneme başarısız oldu — GPS'li yüksek doğruluk moduyla tekrar dene
+      navigator.geolocation.getCurrentPosition(
+        onSuccess,
+        err => showToast(errorMessages[err.code] || ('Konum alınamadı: ' + err.message), 'err'),
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
     },
-    err => {
-      const messages = {
-        1: 'Konum izni reddedildi. Tarayıcı/site izinlerinden konumu açabilirsiniz.',
-        2: 'Konum alınamadı. GPS/Wi-Fi açık mı kontrol edin veya haritadan seçin.',
-        3: 'Konum isteği zaman aşımına uğradı. Tekrar deneyin veya haritadan seçin.'
-      };
-      showToast(messages[err.code] || ('Konum alınamadı: ' + err.message), 'err');
-    },
-    { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+    { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
   );
 }
 
@@ -4815,6 +4846,8 @@ function openSpeedTestModal() {
   document.getElementById('speedTestModal').classList.add('open');
   resetSpeedTestUI();
 }
+function openKvkkModal() { document.getElementById('kvkkModal').classList.add('open'); }
+function closeKvkkModal() { document.getElementById('kvkkModal').classList.remove('open'); }
 function closeSpeedTestModal() {
   if (stRunning) return;
   document.getElementById('speedTestModal').classList.remove('open');
@@ -5129,8 +5162,7 @@ async function measureUploadSupabase(onLive) {
   const elapsed = (performance.now() - measureStart) / 1000;
   window.lastUploadDebug = `[Supabase] gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
   if (totalSent < 100_000 || elapsed <= 0) return null;
-  const p90 = percentile90(sharedSamples);
-  if (p90) return p90;
+  // DOĞRULUK DÜZELTMESİ: bkz. measureUploadXHR — aynı sebepten p90 yerine gerçek ortalama kullanılıyor.
   return Math.round((totalSent * 8) / elapsed / 1e6);
 }
 
@@ -5181,6 +5213,19 @@ async function measureUploadXHR(onLive) {
     window.lastUploadDebug = `[XHR] erişilebilirlik kontrolü başarısız: ${e && e.message ? e.message : e}`;
     return null;
   }
+
+  // Gerçek ısınma turu: TCP pencereleri ölçüm başlamadan büyüsün diye ~600ms
+  // boyunca paralel küçük istekler gönderip atıyoruz (CF yöntemiyle tutarlı).
+  const warmupStopAt = performance.now() + 600;
+  await Promise.all(Array.from({ length: PARALLEL_STREAMS }, () => new Promise(res => {
+    const x = new XMLHttpRequest();
+    x.open('POST', `${TARGET_URL}?t=wu_${Date.now()}_${Math.random()}`);
+    x.timeout = 2000;
+    x.setRequestHeader('Content-Type', 'text/plain;charset=UTF-8');
+    x.onloadend = x.onerror = x.ontimeout = res;
+    x.send(makeUploadBlob(256 * 1024));
+    if (performance.now() >= warmupStopAt) res();
+  })));
 
   const measureStart = performance.now();
   const stopAt = measureStart + MEASURE_MS;
@@ -5243,8 +5288,12 @@ async function measureUploadXHR(onLive) {
   const elapsed = (performance.now() - measureStart) / 1000;
   window.lastUploadDebug = `[XHR/Cloudflare] gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
   if (totalSent < 300_000 || elapsed <= 0) return null;
-  const p90 = percentile90(sharedSamples);
-  if (p90) return p90;
+  // DOĞRULUK DÜZELTMESİ: Upload'ta x.upload.onprogress olayları download stream
+  // okumalarına göre çok daha seyrek/düzensiz tetiklenir (bazı 200ms pencerelerinde
+  // hiç event gelmez, biriken bytelar sonraki pencereye patlama şeklinde yansır).
+  // Bu yüzden o anlık pencerelere dayanan p90, gerçek sürdürülebilir hızdan
+  // belirgin şekilde YÜKSEK çıkıyordu. Artık birincil metrik: toplam gönderilen
+  // bayt / toplam geçen süre (gerçek ortalama). p90 sadece UI'daki anlık ibre içindir.
   return Math.round((totalSent * 8) / elapsed / 1e6);
 }
 
@@ -5339,8 +5388,7 @@ async function measureUploadCF(onLive) {
   const elapsed = (performance.now() - measureStart) / 1000;
   window.lastUploadDebug = `[Cloudflare/${streaming ? 'streaming' : 'chunk'}] gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
   if (totalSent < 300_000 || elapsed <= 0) return null;
-  const p90 = percentile90(sharedSamples);
-  if (p90) return p90;
+  // DOĞRULUK DÜZELTMESİ: bkz. measureUploadXHR — aynı sebepten p90 yerine gerçek ortalama kullanılıyor.
   return Math.round((totalSent * 8) / elapsed / 1e6);
 }
 
@@ -5466,7 +5514,13 @@ async function runSpeedTest() {
     setGauge(instantMbps, ulLiveMax, 'var(--success)');
   });
   
-  const finalUL = percentile90(ulSamples) || ul || 0;
+  // DOĞRULUK DÜZELTMESİ: Önceden burada ulSamples'ın p90'ı önceliklendiriliyordu;
+  // upload progress event'leri seyrek/patlamalı geldiği için bu değer gerçek
+  // sürdürülebilir hızdan yüksek çıkıyordu. Artık ölçüm fonksiyonunun kendi
+  // toplam-bayt/toplam-süre ortalaması (ul) esas alınıyor; UI örnek ortalaması
+  // sadece o hiç dönmezse yedek olarak kullanılıyor.
+  const ulSamplesAvg = ulSamples.length ? Math.round(ulSamples.reduce((a,b)=>a+b,0)/ulSamples.length) : 0;
+  const finalUL = ul || ulSamplesAvg || 0;
   if (!finalUL) {
     document.getElementById('stPhase').textContent = 'HATA';
     document.getElementById('stSub').style.color = 'var(--danger)';
