@@ -2839,35 +2839,53 @@ function setLocation(lat, lng) {
 // sağlar. Timeout 12sn — pratikte 2-5sn'de yanıt gelir.
 function autoLocate() {
   if (!window.isSecureContext) return showToast('Otomatik konum için site HTTPS üzerinden açılmalı.', 'err');
-  if (!navigator.geolocation) return showToast('Konum desteklenmiyor', 'err');
-  showToast('Konum alınıyor… İzin penceresini onaylayın.', 'warn');
+  if (!navigator.geolocation) return showToast('Tarayıcınız konum özelliğini desteklemiyor.', 'err');
 
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      if (!maps.pin) return showToast('Harita henüz hazır değil, lütfen tekrar deneyin.', 'warn');
-      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
-      const acc = Math.round(accuracy || 0);
-      maps.pin.setView([lat, lng], 16);
-      setLocation(lat, lng);
-      // Doğruluk seviyesine göre farklı mesaj
-      if (acc > 2000) {
-        showToast(`⚠️ Konum bulundu ama doğruluk düşük (~${(acc/1000).toFixed(1)} km). Muhtemelen IP tabanlı — haritadan konumu düzeltin.`, 'warn');
-      } else if (acc > 300) {
-        showToast(`📍 Konum bulundu (~${acc} m) — Wi-Fi tabanlı, haritadan doğrulayın.`, 'warn');
+  function doGetPosition() {
+    showToast('Konum alınıyor… İzin penceresini onaylayın.', 'warn');
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        if (!maps.pin) return showToast('Harita henüz hazır değil, lütfen tekrar deneyin.', 'warn');
+        const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+        const acc = Math.round(accuracy || 0);
+        if (acc > 2000) {
+          showToast(`⚠️ Konum tespit edilemedi (doğruluk ~${(acc/1000).toFixed(0)} km — IP tabanlı). Haritaya tıklayarak konumunuzu seçin.`, 'err');
+          return;
+        }
+        maps.pin.setView([lat, lng], 16);
+        setLocation(lat, lng);
+        if (acc > 300) {
+          showToast(`📍 Konum bulundu (~${acc} m) — Wi-Fi tabanlı, haritada doğrulayın.`, 'warn');
+        } else {
+          showToast(`📍 Konum bulundu (~${acc} m)`, '');
+        }
+      },
+      err => {
+        console.error('[autoLocate] hata:', err.code, err.message);
+        const msgs = {
+          1: '🔒 Konum izni engellenmiş. Adres çubuğundaki kilit/ℹ️ simgesine tıklayıp Konum iznini "İzin Ver" yapın, sonra tekrar deneyin.',
+          2: 'Konum alınamadı. Wi-Fi açık mı? Değilse haritaya tıklayarak seçin.',
+          3: 'Zaman aşımı. Tekrar deneyin veya haritaya tıklayarak seçin.'
+        };
+        showToast(msgs[err.code] || ('Konum alınamadı: ' + err.message), 'err');
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+  }
+
+  // Önce mevcut izin durumunu sorgula — 'denied' ise hiç popup açmadan yönlendir
+  if (navigator.permissions) {
+    navigator.permissions.query({ name: 'geolocation' }).then(result => {
+      console.log('[autoLocate] izin durumu:', result.state);
+      if (result.state === 'denied') {
+        showToast('🔒 Konum izni engellenmiş. Adres çubuğundaki kilit/ℹ️ simgesine tıklayıp Konum iznini "İzin Ver" yapın.', 'err');
       } else {
-        showToast(`📍 Konum bulundu${acc ? ' (~' + acc + ' m)' : ''}`, '');
+        doGetPosition();
       }
-    },
-    err => {
-      const messages = {
-        1: 'Konum izni reddedildi. Tarayıcı ayarlarından izni açıp tekrar deneyin.',
-        2: 'Konum alınamadı. Wi-Fi açık mı? Açık değilse haritadan seçin.',
-        3: 'Zaman aşımı. Wi-Fi açıksa tekrar deneyin, yoksa haritadan seçin.'
-      };
-      showToast(messages[err.code] || ('Konum alınamadı: ' + err.message), 'err');
-    },
-    { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
-  );
+    }).catch(() => doGetPosition()); // permissions API desteklenmiyorsa direkt dene
+  } else {
+    doGetPosition();
+  }
 }
 
 // ===== MANUEL ADRES =====
