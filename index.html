@@ -4860,31 +4860,33 @@ async function measureDownload(onLive) {
   return Math.round((totalBytesGlobal * 8) / elapsed / 1e6);
 }
 
-async function measureUpload(onLive) {
-  // Neden x.onload yerine x.upload.onloadend ile rechaining?
-  // x.onload = HTTP YANITI alindiginda tetiklenir (early-response ortaminda
-  // body bitmeden). Onceki bug: x.onload ile rechaining yapilinca yeni chunk
-  // baslarken oncekinin bazi byte'lari hala ucustaydi ama onprogress takibinden
-  // dusuyordu → baytlar eksik sayiliyordu → DUSUK OLCUM.
-  // x.upload.onloadend = BODY tamamen gonderildiginde tetiklenir (yanit
-  // beklenmez). Dogru rechaining noktasi budur.
-  //
-  // Early-response fallback: onprogress hic tetiklenmediyse (bazi H2 ortam-
-  // larinda gerceklesebilir), chunk elapsed suresinden hiz hesaplanir.
-  //
-  // Merkezi 200ms sampler: download ile AYNI yontem, tutarli p90.
+async function measureUploadSupabase(onLive) {
+  // ── UPLOAD ÖLÇÜM MİMARİSİ — YEDEK YOL (Supabase Gateway Desteği) ──────────
+  // Neden Cloudflare yerine Supabase Rest API RPC hedefleniyor?
+  // 1) Cloudflare OPTIONS (CORS preflight) isteklerine 400 Bad Request döndüğü için
+  //    pek çok tarayıcı/eklenti ikili/metin veri gönderimini (POST) tamamen bloke ediyordu.
+  // 2) Supabase REST uç noktası standart CORS preflight desteğine sahiptir (OPTIONS -> 200 OK)
+  //    ve uygulamanın kendi veritabanı adresi olduğu için hiçbir reklam engelleyici veya
+  //    güvenlik yazılımı tarafından engellenmez.
+  // 3) Kong/PostgREST sunucusu yükleme gövdesi tamamen alınana kadar yanıt vermez,
+  //    yani erken yanıt (early response) veya sunucunun erken kesmesi söz konusu değildir.
+  // 4) RPC çağrısı olmayan bir fonksiyon hedeflendiği için (/rpc/speedtest_ping)
+  //    veritabanına hiçbir şey kaydedilmez (404 döner) ama upload başarıyla gerçekleşir.
   // ─────────────────────────────────────────────────────────────────────────
-  const CHUNK_BYTES      = 1 * 1024 * 1024;   // 1 MB per chunk (Düşük hızlar ve WAF limitleri için optimize edildi)
+  const CHUNK_BYTES      = 1 * 1024 * 1024;   // 1 MB per chunk (Stabilite için)
   const MEASURE_MS       = 9000;
   const SAMPLE_MS        = 200;
   const PARALLEL_STREAMS = 8;
+  const TARGET_URL       = `${SB_URL}/rest/v1/rpc/speedtest_ping`;
 
-  // 1) Warmup — stopAt hesabına dahil değil (Bağlantının asıl teste hızlı girmesi için 256KB yapıldı)
+  // 1) Warmup — stopAt hesabına dahil değil (Bağlantının asıl teste hazır olması için)
   await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, n) =>
     new Promise(res => {
       const x = new XMLHttpRequest();
-      x.open('POST', `${SPEED_UPLOAD_URL}?t=wu_${n}_${Date.now()}`);
+      x.open('POST', `${TARGET_URL}?t=wu_${n}_${Date.now()}`);
       x.timeout = 15000;
+      x.setRequestHeader('apikey', SB_KEY);
+      x.setRequestHeader('Content-Type', 'text/plain');
       x.onload = x.onerror = x.ontimeout = res;
       x.send(makeUploadBlob(256 * 1024));
     })
@@ -4911,7 +4913,7 @@ async function measureUpload(onLive) {
     }
   }, SAMPLE_MS);
 
-  // 4) XHR stream — upload.onloadend ile rechaining (early-response güvenli)
+  // 4) XHR stream — upload.onloadend ile rechaining
   function xhrStream(n) {
     return new Promise(resolve => {
       let consecutiveErrors = 0;
@@ -4923,14 +4925,13 @@ async function measureUpload(onLive) {
         const t0 = performance.now();
 
         // onloadend = BODY tamamen gönderildiğinde VEYA hata durumunda tek çıkış noktası.
-        // CORS engeli sebebiyle yanıtın okunamaması (status === 0) durumunda veri ulaştıysa işlem başarılı sayılır.
+        // Supabase fonksiyon bulunamadığında 404 döner, bu uploadın tamamlandığının kanıtıdır (başarı kabul edilir).
         x.upload.onloadend = (e) => {
           if (settled) return;
           settled = true;
           
           const sent = (e && e.loaded > 0) ? e.loaded : 0;
-          // CORS engeli veya erken yanıtta status 0 döner ama veri gönderilmiştir.
-          const isSuccess = (x.status >= 200 && x.status < 300) || (x.status === 0 && (sent > 0 || progressBytes > 0));
+          const isSuccess = (x.status >= 200 && x.status < 300) || x.status === 404 || (x.status === 0 && (sent > 0 || progressBytes > 0));
 
           if (sent > 0) {
             const d = sent - progressBytes;
@@ -4960,14 +4961,15 @@ async function measureUpload(onLive) {
           if (performance.now() >= stopAt) x.abort();
         };
 
-        // Hata durumlarında resolve etmeyip onloadend'in karar vermesini sağlıyoruz
         x.upload.onerror = () => {};
         x.onerror        = () => {};
         x.ontimeout      = () => {};
         x.onabort        = () => {};
 
-        x.timeout = 15000;
-        x.open('POST', `${SPEED_UPLOAD_URL}?t=${Date.now()}_x${n}`);
+        x.timeout = 5000;
+        x.open('POST', `${TARGET_URL}?t=${Date.now()}_x${n}`);
+        x.setRequestHeader('apikey', SB_KEY);
+        x.setRequestHeader('Content-Type', 'text/plain');
         x.send(makeUploadBlob(CHUNK_BYTES));
       }
       sendChunk();
@@ -4980,11 +4982,113 @@ async function measureUpload(onLive) {
 
   // 6) Sonuç — download ile aynı mantık: p90 önce, fallback ortalama
   const elapsed = (performance.now() - measureStart) / 1000;
-  window.lastUploadDebug = `gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
+  window.lastUploadDebug = `[Supabase] gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
   if (totalSent < 100_000 || elapsed <= 0) return null;
   const p90 = percentile90(sharedSamples);
   if (p90) return p90;
   return Math.round((totalSent * 8) / elapsed / 1e6);
+}
+
+// ── UPLOAD ÖLÇÜM MİMARİSİ — BİRİNCİL YOL (Cloudflare) ──────────────────────
+// NEDEN ARTIK CLOUDFLARE BİRİNCİL?
+// Supabase projesinin kendi alt alan adı (*.supabase.co) pek çok kurumsal
+// VPN/güvenlik duvarı ve antivirüs ürünü tarafından "sınıflandırılmamış bulut
+// depolama" olarak görülüp bloke edilebiliyor. Cloudflare ise dünya genelinde
+// neredeyse her ağda beyaz listede olan, tanınmış bir CDN/altyapı sağlayıcısı
+// olduğu için indirme testinde zaten sorunsuz çalışıyor. Yüklemede de aynı
+// güvenilirliği yakalamak için "simple request" kurallarına uyuyoruz: sadece
+// Content-Type: text/plain kullanıp özel header (apikey vb.) EKLEMİYORUZ —
+// böylece tarayıcı CORS preflight (OPTIONS) göndermiyor ve önceki 400 hatasına
+// yol açan senaryo (Cloudflare'ın OPTIONS'a düzgün yanıt vermemesi) devre dışı
+// kalıyor. fetch() ile isteği gönderiyoruz; fetch'in upload ilerleme olayı
+// olmadığından, her tamamlanan chunk'ın süresine göre örnekliyoruz.
+async function measureUploadCF(onLive) {
+  const CHUNK_BYTES      = 1 * 1024 * 1024;
+  const MEASURE_MS       = 9000;
+  const SAMPLE_MS        = 200;
+  const PARALLEL_STREAMS = 6;
+
+  // Isınma + erişilebilirlik kontrolü: bu istek başarısız/reddedilirse
+  // (ağ bu alan adını da engelliyorsa) hiç vakit kaybetmeden yedek yola geç.
+  try {
+    const warm = await fetch(`${SPEED_UPLOAD_URL}?t=wu_${Date.now()}`, {
+      method: 'POST', mode: 'cors', cache: 'no-store',
+      headers: { 'Content-Type': 'text/plain' },
+      body: makeUploadBlob(64 * 1024)
+    });
+    if (!warm) return null;
+  } catch (e) {
+    window.lastUploadDebug = `[Cloudflare] ısınma isteği başarısız: ${e && e.message ? e.message : e}`;
+    return null;
+  }
+
+  const measureStart = performance.now();
+  const stopAt = measureStart + MEASURE_MS;
+  let totalSent = 0;
+  let lastSampleBytes = 0, lastSampleAt = measureStart;
+  const sharedSamples = [];
+  const samplerId = setInterval(() => {
+    const now = performance.now();
+    const dt = now - lastSampleAt;
+    if (dt <= 0) return;
+    const mbps = Math.round(((totalSent - lastSampleBytes) * 8) / (dt / 1000) / 1e6);
+    lastSampleBytes = totalSent; lastSampleAt = now;
+    if (mbps > 0) { sharedSamples.push(mbps); if (onLive) onLive(mbps); }
+  }, SAMPLE_MS);
+
+  async function cfStream(n) {
+    let consecutiveErrors = 0;
+    while (performance.now() < stopAt) {
+      try {
+        const r = await fetch(`${SPEED_UPLOAD_URL}?t=${Date.now()}_${n}_${Math.random()}`, {
+          method: 'POST', mode: 'cors', cache: 'no-store',
+          headers: { 'Content-Type': 'text/plain' },
+          body: makeUploadBlob(CHUNK_BYTES)
+        });
+        if (r && (r.ok || r.status === 0)) { totalSent += CHUNK_BYTES; consecutiveErrors = 0; }
+        else { consecutiveErrors++; if (consecutiveErrors >= 3) break; }
+      } catch (e) {
+        consecutiveErrors++;
+        if (consecutiveErrors >= 3) break;
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => cfStream(i)));
+  clearInterval(samplerId);
+
+  const elapsed = (performance.now() - measureStart) / 1000;
+  window.lastUploadDebug = `[Cloudflare] gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
+  if (totalSent < 300_000 || elapsed <= 0) return null;
+  const p90 = percentile90(sharedSamples);
+  if (p90) return p90;
+  return Math.round((totalSent * 8) / elapsed / 1e6);
+}
+
+// ── UPLOAD ÖLÇÜM MİMARİSİ — YÖNLENDİRİCİ ────────────────────────────────────
+// Önce Cloudflare'ı dener (ağların büyük çoğunluğunda çalışır ve indirme testiyle
+// tutarlıdır). Cloudflare tamamen başarısız olursa (VPN/güvenlik yazılımı bu
+// alan adını da engelliyorsa) otomatik olarak Supabase üzerinden tekrar dener.
+// İki yöntem de başarısız olursa null döner ve UI kullanıcıya gerçekten ağ
+// düzeyinde bir engelleme olduğunu bildirir.
+async function measureUpload(onLive) {
+  window.lastUploadDebug = '';
+  window.lastUploadMethod = '';
+
+  const cfResult = await measureUploadCF(onLive);
+  if (cfResult) { window.lastUploadMethod = 'cloudflare'; return cfResult; }
+
+  const subEl = document.getElementById('stSub');
+  if (subEl) {
+    subEl.textContent = 'Birincil sunucudan yanıt alınamadı — yedek sunucu deneniyor...';
+  }
+
+  const sbDebug = window.lastUploadDebug; // CF hata detayını koru
+  const sbResult = await measureUploadSupabase(onLive);
+  window.lastUploadDebug = `${sbDebug} || ${window.lastUploadDebug}`;
+  if (sbResult) { window.lastUploadMethod = 'supabase-yedek'; return sbResult; }
+
+  return null;
 }
 
 // 3. UI GÜNCELLEYİCİ: runSpeedTest (Ortalama Değerlerin Bastırılması)
@@ -5042,6 +5146,7 @@ async function runSpeedTest() {
     document.getElementById('stSub').style.color = 'var(--danger)';
     document.getElementById('stSub').textContent = 'İndirme ölçümü başarısız oldu. Bağlantıyı kontrol edip tekrar deneyin.';
     btn.disabled = false; btn.textContent = 'Tekrar Dene';
+    document.getElementById('stRetryBtn').style.display = 'block';
     stRunning = false;
     return;
   }
@@ -5081,7 +5186,7 @@ async function runSpeedTest() {
     document.getElementById('stPhase').textContent = 'HATA';
     document.getElementById('stSub').style.color = 'var(--danger)';
     const debugDetails = window.lastUploadDebug ? `<br><span style="font-size:10px;opacity:0.8;">[Detay: ${window.lastUploadDebug}]</span>` : '';
-    document.getElementById('stSub').innerHTML = 'Yükleme hızı ölçülemedi — sunucuya bağlantı başarısız. VPN/güvenlik duvarı aktifse devre dışı bırakıp tekrar deneyin.' + debugDetails;
+    document.getElementById('stSub').innerHTML = 'Yükleme hızı ölçülemedi — hem birincil hem yedek sunucuya bağlantı başarısız oldu. VPN/güvenlik duvarı aktifse devre dışı bırakıp tekrar deneyin.' + debugDetails;
     document.getElementById('stULVal').textContent = '—';
     btn.disabled = false; btn.textContent = 'Tekrar Dene';
     document.getElementById('stRetryBtn').style.display = 'block';
@@ -5106,6 +5211,7 @@ async function runSpeedTest() {
   // --- BİTİŞ ---
   stResults = { dl:finalDL, ul:finalUL, ping };
   document.getElementById('stPhase').textContent = 'TAMAMLANDI';
+  document.getElementById('stSub').style.color = '';
   const fmtSub = v => v >= 1000 ? (v/1000).toFixed(2)+'G' : v;
   document.getElementById('stSub').textContent = `↓ ${fmtSub(finalDL)} Mbps  ·  ↑ ${fmtSub(finalUL)} Mbps${ping?' · '+ping+' ms':''}`;
   document.getElementById('stResults').classList.add('show');
