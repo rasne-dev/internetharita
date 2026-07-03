@@ -5104,15 +5104,23 @@ async function measureUploadSupabase(onLive) {
 // DOĞRULUK NOTU: streaming body desteklenen tarayıcılarda (bkz.
 // supportsStreamingUploadBody) gerçek zamanlı, byte-hassasiyetli ölçüm
 // yapılır. Desteklenmeyen tarayıcılarda (Safari/Firefox) her isteğin TAM
-// gidiş-dönüşü beklenip öyle sayılır; bunun round-trip gecikmesini yüksek
-// hızlı bağlantılarda yapay şekilde düşük göstermesini azaltmak için büyük
-// chunk (4MB) ve daha fazla paralel akış (10) kullanılır.
+// gidiş-dönüşü beklenip öyle sayılır. Cloudflare'in kendi mühendislik
+// ekibinin belgelediğine göre (blog.cloudflare.com/how-does-cloudflares-
+// speed-test-really-work) TCP yavaş başlangıcı (slow start) nedeniyle
+// 10MB'ın ALTINDAKİ aktarımlar bağlantının tam bant genişliğini kullanamıyor
+// — bu yüzden chunk boyutu bu eşiğin üzerinde (12MB) ve paralel akış sayısı
+// yüksek (10) tutuluyor. Streaming yolunda ise gerçek bir ısınma (warmup)
+// turu yapılıyor: download ölçümündeki gibi, TCP pencerelerini ölçüm
+// başlamadan önce büyütmek için kısa bir yükleme yapılıp atılıyor —
+// aksi halde ilk 1-2 saniyedeki yavaş-başlangıç örnekleri yüksek hızlı
+// bağlantılarda sonucu yapay şekilde düşürebilirdi.
 async function measureUploadCF(onLive) {
   const MEASURE_MS       = 9000;
+  const WARMUP_MS         = 800;
   const SAMPLE_MS        = 200;
   const streaming        = supportsStreamingUploadBody();
   const PARALLEL_STREAMS = streaming ? 6 : 10;
-  const CHUNK_BYTES      = 4 * 1024 * 1024; // sadece streaming desteklenmeyen tarayıcılarda kullanılır
+  const CHUNK_BYTES      = 12 * 1024 * 1024; // Cloudflare'in belgelediği 10MB eşiğinin üzerinde — sadece streaming desteklenmeyen tarayıcılarda kullanılır
 
   // Isınma + erişilebilirlik kontrolü: bu istek başarısız/reddedilirse
   // (ağ bu alan adını da engelliyorsa) hiç vakit kaybetmeden yedek yola geç.
@@ -5126,6 +5134,23 @@ async function measureUploadCF(onLive) {
   } catch (e) {
     window.lastUploadDebug = `[Cloudflare] ısınma isteği başarısız: ${e && e.message ? e.message : e}`;
     return null;
+  }
+
+  // Gerçek TCP ısınma turu (streaming destekleniyorsa): birkaç yüz ms boyunca
+  // paralel akışlarla veri gönderip atıyoruz, TCP pencereleri ölçüm penceresi
+  // başlamadan önce büyümeye başlasın diye (download'daki warmup ile aynı amaç).
+  if (streaming) {
+    const warmupStopAt = performance.now() + WARMUP_MS;
+    await Promise.all(Array.from({ length: PARALLEL_STREAMS }, async (_, n) => {
+      try {
+        const body = makeUploadStream(warmupStopAt, () => {});
+        await fetch(`${SPEED_UPLOAD_URL}?t=wu2_${n}_${Date.now()}`, {
+          method: 'POST', mode: 'cors', cache: 'no-store',
+          headers: { 'Content-Type': 'text/plain' },
+          body, duplex: 'half'
+        });
+      } catch (e) {}
+    }));
   }
 
   const measureStart = performance.now();
