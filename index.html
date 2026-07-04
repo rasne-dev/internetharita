@@ -77,6 +77,27 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:var(--nav-h); bac
 .toggle-slider { position:absolute;inset:0;background:var(--border2);border-radius:20px;transition:.3s; }
 .toggle-slider:before { content:'';position:absolute;width:14px;height:14px;left:3px;bottom:3px;background:var(--text3);border-radius:50%;transition:.3s; }
 input:checked + .toggle-slider { background:var(--warn); } input:checked + .toggle-slider:before { transform:translateX(16px);background:#000; }
+.toggle-switch.accent input:checked + .toggle-slider { background:var(--accent); }
+.toggle-switch.accent input:checked + .toggle-slider:before { background:#000; }
+
+/* ── AYARLAR MENÜSÜ (dropdown) ─────────────────────────────────────────── */
+.settings-menu-wrap { position:relative; }
+.settings-dropdown {
+  display:none; position:absolute; top:calc(100% + 8px); right:0; z-index:1500;
+  min-width:220px; background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; padding:8px; box-shadow:0 8px 28px rgba(0,0,0,.35);
+}
+.settings-dropdown.open { display:block; }
+.settings-item {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:9px 10px; border-radius:7px; font-size:12px; color:var(--text2);
+}
+.settings-item:hover { background:var(--surface2); }
+.settings-item-label { display:flex; align-items:center; gap:8px; }
+.settings-item-hint { font-size:9px; color:var(--text3); margin:2px 10px 4px; line-height:1.4; }
+@media(max-width:768px){
+  .settings-dropdown { right:-8px; min-width:210px; }
+}
 
 .btn-primary { padding:8px 16px;background:var(--accent);color:#000; border:none;border-radius:7px;font-weight:700;font-size:12px; cursor:pointer;font-family:var(--font-body);transition:all .2s; }
 .btn-primary:hover{background:#33deff;box-shadow:0 4px 16px var(--accent-glow);}
@@ -655,6 +676,40 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
 /* THEME TOGGLE */
 .theme-toggle{width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
 .theme-toggle:hover{border-color:var(--accent);color:var(--accent);}
+.theme-toggle.active{border-color:var(--accent);color:var(--accent);background:rgba(59,130,246,.1);}
+
+/* ── RENK KÖRÜ MODU ──────────────────────────────────────────────────────
+   Şekil işaretleri varsayılan olarak gizli; sadece <html class="colorblind-mode">
+   aktifken görünür. Bu sayede tüm hız/memnuniyet renkli metinlere tek bir CSS
+   kuralıyla, JS re-render gerekmeden şekil ekleniyor. */
+.speed-shape, .legend-shape { display:none; margin-right:3px; font-weight:700; letter-spacing:-1px; }
+html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:inline; }
+
+/* ── ÇOK ADIMLI FORM (pin ekleme sihirbazı) ────────────────────────────── */
+.pform-steps-indicator { display:flex; align-items:center; margin:14px 0 4px; }
+.pf-step-dot { display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0; }
+.pf-step-dot .pf-step-num { width:26px; height:26px; border-radius:50%; background:var(--surface2); border:1px solid var(--border2); color:var(--text3); font-family:var(--font-mono); font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+.pf-step-dot .pf-step-label { font-size:9px; color:var(--text3); white-space:nowrap; font-family:var(--font-mono); }
+.pf-step-dot.active .pf-step-num { background:var(--accent); border-color:var(--accent); color:#fff; }
+.pf-step-dot.active .pf-step-label { color:var(--accent); font-weight:700; }
+.pf-step-dot.done .pf-step-num { background:var(--success); border-color:var(--success); color:#fff; }
+.pf-step-dot.done .pf-step-num::before { content:'✓'; }
+.pf-step-line { flex:1; height:2px; background:var(--border2); margin:0 4px 16px; transition:background .2s; }
+.pf-step-line.done { background:var(--success); }
+.pform-step { animation:pfFadeIn .2s ease; }
+@keyframes pfFadeIn { from{opacity:0;transform:translateY(4px);} to{opacity:1;transform:translateY(0);} }
+.pf-nav-row { display:flex; gap:8px; margin-top:6px; }
+.pf-nav-row .btn-submit { flex:1; }
+.pf-back-btn { flex:0 0 auto; padding:0 16px; border:1px solid var(--border2); background:var(--surface2); color:var(--text2); border-radius:8px; font-size:13px; cursor:pointer; font-family:var(--font-mono); transition:all .2s; }
+.pf-back-btn:hover { border-color:var(--text3); }
+.pf-next-btn { width:100%; }
+
+/* ── YENİDEN KULLANILABİLİR METİN YARDIMCI SINIFLARI (satır-içi stil azaltma) ── */
+.txt-hint { font-size:10px; color:var(--text3); margin-top:3px; line-height:1.4; }
+.txt-warn-hint { font-size:10px; color:var(--warn); margin-top:8px; line-height:1.4; }
+.status-banner { display:flex; gap:8px; align-items:flex-start; font-size:11px; line-height:1.4; border-radius:8px; padding:10px 12px; margin-bottom:12px; }
+.status-banner.quarantine { background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.3); color:var(--warn); }
+.status-banner.hidden-by-mod { background:rgba(107,114,128,.08); border:1px solid var(--border2); color:var(--text2); }
 
 /* ISS/speed verified CSS artık sidebar bloğu içinde */
 
@@ -681,6 +736,9 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
 
 @media(max-width:768px){
   nav .nav-tabs { display:none; } nav .btn-ghost { display:none; } .mobile-nav { display:flex; } .page { bottom:56px; } .toast { bottom:72px; }
+  nav { padding:0 10px; gap:6px; }
+  .nav-right { gap:6px; }
+  #navModLogoutBtn { font-size:11px; padding:6px 10px; }
   .map-sidebar { display:none; }
   .map-sidebar.mobile-open {
     display:flex; flex-direction:column;
@@ -705,6 +763,20 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
   .loc-actions { flex-wrap:wrap; }
   .btn-loc { min-height:44px; font-size:12px; }
   .btn-submit { min-height:48px; }
+  .settings-dropdown { right:-8px; }
+  .pform-steps-indicator { margin:12px 0 2px; }
+  .pf-step-dot .pf-step-label { font-size:8px; }
+}
+/* Çok dar ekranlar (iPhone SE, eski Android'ler ~320-380px) */
+@media(max-width:400px){
+  .cbtns { flex-wrap:wrap; }
+  .cbtn { flex:1 1 calc(50% - 3px); min-width:calc(50% - 3px); font-size:10px; padding:7px 4px; }
+  .sbtn { min-width:24px; font-size:9px; padding:5px 1px; }
+  .modal { padding:16px; }
+  .modal-title { font-size:13px; }
+  nav { padding:0 8px; }
+  .logo-text { font-size:13px; }
+  .settings-dropdown { min-width:190px; right:-12px; }
 }
 </style>
 <!-- Tema erken init — flash önleme -->
@@ -712,6 +784,7 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
   (function(){
     var t = localStorage.getItem('ih_theme') || 'dark';
     if (t === 'light') document.documentElement.classList.add('light');
+    if (localStorage.getItem('ih_colorblind') === 'true') document.documentElement.classList.add('colorblind-mode');
   })();
 </script>
 </head>
@@ -732,7 +805,23 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
     <button class="nav-tab mod-tab" id="navModBtn" onclick="showPage('mod')">🔧 Moderatör</button>
   </div>
   <div class="nav-right">
-    <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="Tema Değiştir">☀️</button>
+    <div class="settings-menu-wrap" id="settingsMenuWrap">
+      <button class="theme-toggle" id="settingsBtn" onclick="toggleSettingsMenu(event)" title="Ayarlar">⚙️</button>
+      <div class="settings-dropdown" id="settingsDropdown">
+        <div class="settings-item">
+          <span class="settings-item-label">🌗 Tema</span>
+          <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="Tema Değiştir" style="width:28px;height:28px;font-size:13px;">☀️</button>
+        </div>
+        <div class="settings-item">
+          <span class="settings-item-label">👁️ Renk Körü Modu</span>
+          <label class="toggle-switch accent">
+            <input type="checkbox" id="colorblindCheck" onchange="toggleColorblindMode()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="settings-item-hint">Açıkken hız/memnuniyet renklerine ek şekil işaretleri (◆■▲●▼) eklenir.</div>
+      </div>
+    </div>
     <label class="maintenance-toggle" id="headerMaintenanceToggle" style="display:none; margin-right: 15px; padding: 4px 10px; height: 32px;">
       <div class="toggle-switch">
         <input type="checkbox" id="headerMaintenanceCheck" onchange="toggleMaintenanceMode(this.checked)">
@@ -843,11 +932,11 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
   <div class="map-legend-box" id="mapLegendBox">
     <div class="legend-stats-row" id="mapStats"></div>
     <div class="legend-items-wrap" id="legendItems">
-      <div class="legend-item"><div class="legend-dot" style="background:var(--s1)"></div>500+</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--s2)"></div>200–500</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--s3)"></div>100–200</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--s4)"></div>25–100</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--s5)"></div>&lt;25 Mbps</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--s1)"></div><span class="legend-shape">◆</span>500+</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--s2)"></div><span class="legend-shape">■</span>200–500</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--s3)"></div><span class="legend-shape">▲</span>100–200</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--s4)"></div><span class="legend-shape">●</span>25–100</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--s5)"></div><span class="legend-shape">▼</span>&lt;25 Mbps</div>
     </div>
   </div>
   <div class="zoom-hint" id="zoomHint">Yakınlaştırın: Daha küçük bölgeler</div>
@@ -2032,6 +2121,21 @@ const IC = {
 const ic = iss => { const canonical = canonicalIssName(iss); const item = issListCache.find(i=>canonicalIssName(i.name)===canonical); return (item && item.color) ? item.color : (IC[canonical] || issHashColor(canonical)); }; const cc = t => t==='fiber'?'#00d4ff':t==='vdsl'?'#FB8C00':t==='adsl'?'#E53935':t==='docsis'?'#7c4dff':'#888';
 function speedColor(dl) { if(dl>=500)return'#800080';if(dl>=200)return'#1E88E5';if(dl>=100)return'#43A047';if(dl>=25)return'#FB8C00';return'#E53935'; }
 function memColor(s) { if(s>=8)return'#22c55e';if(s>=6)return'#84cc16';if(s>=4)return'#eab308';return'#ef4444'; }
+// RENK KÖRÜ MODU: speedColor/memColor ile aynı eşikleri kullanan şekil işaretleri.
+// Kırmızı-yeşil ayrımı göremeyen kullanıcılar için renklere ek bir ipucu sağlar.
+// Şekiller CSS ile (.colorblind-mode altında) gösterilir/gizlenir — bkz. <style> bloğu.
+function speedShape(dl) { if(dl>=500)return'◆'; if(dl>=200)return'■'; if(dl>=100)return'▲'; if(dl>=25)return'●'; return'▼'; }
+function speedShapeHtml(dl) { return `<span class="speed-shape">${speedShape(dl)}</span>`; }
+function memShape(s) { if(s>=8)return'★'; if(s>=6)return'◐'; if(s>=4)return'▲'; return'▼'; }
+function memShapeHtml(s) { return `<span class="speed-shape">${memShape(s)}</span>`; }
+let colorblindMode = localStorage.getItem('ih_colorblind') === 'true';
+function toggleColorblindMode() {
+  colorblindMode = !colorblindMode;
+  localStorage.setItem('ih_colorblind', String(colorblindMode));
+  document.documentElement.classList.toggle('colorblind-mode', colorblindMode);
+  document.getElementById('colorblindCheck') && (document.getElementById('colorblindCheck').checked = colorblindMode);
+  showToast(colorblindMode ? '👁️ Renk körü modu açık — hız/memnuniyet değerlerine şekil işaretleri eklendi' : '👁️ Renk körü modu kapatıldı');
+}
 
 let maps = {}, pinsData =[], cleanPinsData =[], activeFilters = new Set(['fiber','vdsl','adsl','docsis']);
 let activeISSFilters = new Set(); // iss_list tablosundan doldurulacak
@@ -4668,6 +4772,20 @@ document.addEventListener('DOMContentLoaded', function() {
   if (meta) meta.setAttribute('content', saved === 'light' ? '#eef2f6' : '#070b0f');
   // Harita tile'larını da tema ile senkronize et
   if (saved === 'light') setTimeout(updateMapTiles, 200);
+  // Renk körü modu butonunu da senkronize et (class zaten head'de eklendi)
+  document.getElementById('colorblindCheck') && (document.getElementById('colorblindCheck').checked = colorblindMode);
+});
+
+// ── AYARLAR MENÜSÜ (dropdown) ───────────────────────────────────────────
+function toggleSettingsMenu(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('settingsDropdown')?.classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('settingsMenuWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('settingsDropdown')?.classList.remove('open');
+  }
 });
 function getMapTileUrl() {
   return document.documentElement.classList.contains('light')
@@ -5366,10 +5484,9 @@ async function measureUploadXHR(onLive) {
 
 async function measureUploadCF(onLive) {
   const MEASURE_MS       = 9000;
-  const WARMUP_MS         = 800;
+  const PROBE_MS         = 1000;
   const SAMPLE_MS        = 200;
   const streaming        = supportsStreamingUploadBody();
-  const PARALLEL_STREAMS = streaming ? 6 : 10;
   const CHUNK_BYTES      = 12 * 1024 * 1024; // Cloudflare'in belgelediği 10MB eşiğinin üzerinde — sadece streaming desteklenmeyen tarayıcılarda kullanılır
 
   // Isınma + erişilebilirlik kontrolü: bu istek başarısız/reddedilirse
@@ -5386,21 +5503,38 @@ async function measureUploadCF(onLive) {
     return null;
   }
 
-  // Gerçek TCP ısınma turu (streaming destekleniyorsa): birkaç yüz ms boyunca
-  // paralel akışlarla veri gönderip atıyoruz, TCP pencereleri ölçüm penceresi
-  // başlamadan önce büyümeye başlasın diye (download'daki warmup ile aynı amaç).
+  // ── UYARLANABİLİR PARALEL AKIŞ SAYISI ─────────────────────────────────
+  // DOĞRULUK DÜZELTMESİ: Sabit 6 (veya streaming desteklenmeyen tarayıcılarda
+  // 10!) paralel akış, zayıf/mobil bağlantılarda gerçek tek-uygulama deneyiminin
+  // (WhatsApp, Instagram vb. tek bağlantı kullanan uygulamalar) çok üzerinde bir
+  // "toplam" hız veriyordu — bu bir sayım hatası değil ama kullanıcı için "yanlış
+  // yüksek" gibi hissettiriyordu. Ookla/Fast.com gibi araçlar da bağlantı hızına
+  // göre akış sayısını uyarlar. Burada da aynı mantık: önce ~1 saniyelik TEK akışlı
+  // bir ön ölçüm yapılıyor (bu aynı zamanda TCP ısınması yerine geçiyor — Cloudflare
+  // HTTP/2 kullandığı için sonraki paralel istekler zaten aynı bağlantıyı
+  // paylaşacak), sonuca göre akış sayısı seçiliyor: yavaş bağlantıda az akış
+  // (gerçekçi tek-bağlantı deneyimine yakın), hızlı bağlantıda daha fazla akış
+  // (TCP pencere sınırını aşıp gerçek kapasiteyi ölçmek için).
+  let PARALLEL_STREAMS = streaming ? 4 : 8; // streaming desteklenmiyorsa prob atlanır, ılımlı sabit değer kullanılır
   if (streaming) {
-    const warmupStopAt = performance.now() + WARMUP_MS;
-    await Promise.all(Array.from({ length: PARALLEL_STREAMS }, async (_, n) => {
-      try {
-        const body = makeUploadStream(warmupStopAt, () => {});
-        await fetch(`${SPEED_UPLOAD_URL}?t=wu2_${n}_${Date.now()}`, {
-          method: 'POST', mode: 'cors', cache: 'no-store',
-          headers: { 'Content-Type': 'text/plain' },
-          body, duplex: 'half'
-        });
-      } catch (e) {}
-    }));
+    const probeStart = performance.now();
+    const probeStopAt = probeStart + PROBE_MS;
+    let probeSent = 0;
+    try {
+      const probeBody = makeUploadStream(probeStopAt, (b) => { probeSent += b; });
+      await fetch(`${SPEED_UPLOAD_URL}?t=probe_${Date.now()}`, {
+        method: 'POST', mode: 'cors', cache: 'no-store',
+        headers: { 'Content-Type': 'text/plain' },
+        body: probeBody, duplex: 'half'
+      });
+    } catch (e) {}
+    const probeElapsed = (performance.now() - probeStart) / 1000;
+    const probeMbps = (probeSent >= 50000 && probeElapsed > 0) ? (probeSent * 8) / probeElapsed / 1e6 : null;
+    if (probeMbps === null) PARALLEL_STREAMS = 4;       // prob başarısız oldu, ılımlı varsayılan
+    else if (probeMbps < 15) PARALLEL_STREAMS = 2;      // yavaş/mobil bağlantı — tek-uygulama deneyimine yakın tut
+    else if (probeMbps < 80) PARALLEL_STREAMS = 4;      // orta hız
+    else PARALLEL_STREAMS = 6;                          // hızlı fiber — TCP pencere sınırını aşmak için daha fazla akış gerekli
+    window.lastUploadProbeMbps = probeMbps ? Math.round(probeMbps) : null;
   }
 
   const measureStart = performance.now();
@@ -5453,7 +5587,7 @@ async function measureUploadCF(onLive) {
   clearInterval(samplerId);
 
   const elapsed = (performance.now() - measureStart) / 1000;
-  window.lastUploadDebug = `[Cloudflare/${streaming ? 'streaming' : 'chunk'}] gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
+  window.lastUploadDebug = `[Cloudflare/${streaming ? 'streaming' : 'chunk'}] akış sayısı: ${PARALLEL_STREAMS}${window.lastUploadProbeMbps ? ` (prob: ~${window.lastUploadProbeMbps} Mbps)` : ''}, gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
   if (totalSent < 300_000 || elapsed <= 0) return null;
   // DOĞRULUK DÜZELTMESİ: bkz. measureUploadXHR — aynı sebepten p90 yerine gerçek ortalama kullanılıyor.
   return Math.round((totalSent * 8) / elapsed / 1e6);
