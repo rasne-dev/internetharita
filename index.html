@@ -5060,10 +5060,18 @@ async function measureDownload(onLive) {
 
   await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => readStream(i)));
   clearInterval(samplerId);
-  const p90 = percentile90(sharedSamples);
-  if (p90) return p90;
   const elapsed = (performance.now() - startedAt) / 1000;
   if (totalBytesGlobal < 100000 || elapsed <= 0) return null;
+  // DOĞRULUK DÜZELTMESİ: bkz. measureUploadXHR — aynı sebepten p90 yerine gerçek
+  // ortalama kullanılıyor. reader.read() ile gelen veri, ağdan aktığı anda değil
+  // JS event loop'a sıra geldiğinde okunuyor; 8 paralel stream aynı anda
+  // çalışırken bazı 200ms pencerelerde arabelleğe birikmiş veri "patlama"
+  // şeklinde boşalıyor. Bu da o pencerede olmayan bir hız sıçraması gibi
+  // görünüyor ve p90 tam da bu yapay sıçramaları seçip gerçek sonuç sanıyordu
+  // — bu yüzden hız testi normalden yüksek ölçüyordu. Artık birincil metrik:
+  // toplam alınan bayt / toplam geçen süre (gerçek ortalama). percentile90()
+  // fonksiyonu geriye dönük uyumluluk ve olası UI/anlık ibre kullanımları için
+  // korunuyor, sadece burada birincil sonuç hesaplamasında kullanılmıyor.
   return Math.round((totalBytesGlobal * 8) / elapsed / 1e6);
 }
 
@@ -5498,12 +5506,14 @@ async function runSpeedTest() {
     setGauge(instantMbps, liveMax, 'var(--accent)');
   });
   
-  // measureDownload artik kendi icerisinde percentile90 hesapliyor ve donduruyor.
-  // dlSamples: onLive callback ile doldurulan stream-bazli anlik degerler.
-  // Iki hesaptan buyugu al: measureDownload'dan gelen p90 (dl) ile
-  // UI sample'larindan gelen p90 arasindan en gercekci sonucu sec.
-  const dlP90ui = percentile90(dlSamples);
-  const finalDL = (dlP90ui && dl) ? Math.max(dlP90ui, dl) : (dlP90ui || dl || 0);
+  // DOĞRULUK DÜZELTMESİ: bkz. measureUploadXHR/measureDownload — burada eskiden
+  // iki ayrı p90 hesabının BÜYÜĞÜ alınıyordu (Math.max), bu da sonucu bilerek
+  // yukarı çekip hız testinin normalden yüksek ölçmesine yol açıyordu. Artık
+  // measureDownload'ın döndürdüğü gerçek ortalama (toplam bayt/toplam süre)
+  // esas alınıyor; UI örnek ortalaması sadece o hiç dönmezse yedek olarak
+  // kullanılıyor (upload ile aynı mantık).
+  const dlSamplesAvg = dlSamples.length ? Math.round(dlSamples.reduce((a,b)=>a+b,0)/dlSamples.length) : 0;
+  const finalDL = dl || dlSamplesAvg || 0;
   if (!finalDL) {
     document.getElementById('stSub').style.color = 'var(--danger)';
     document.getElementById('stSub').textContent = 'İndirme ölçümü başarısız oldu. Bağlantıyı kontrol edip tekrar deneyin.';
