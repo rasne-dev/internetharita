@@ -5431,22 +5431,36 @@ async function measureUploadCF(onLive) {
 
 
 // ── UPLOAD ÖLÇÜM MİMARİSİ — YÖNLENDİRİCİ ────────────────────────────────────
-// Önce Cloudflare'ı dener (ağların büyük çoğunluğunda çalışır ve indirme testiyle
-// tutarlıdır). Cloudflare tamamen başarısız olursa (VPN/güvenlik yazılımı bu
-// alan adını da engelliyorsa) otomatik olarak Supabase üzerinden tekrar dener.
-// İki yöntem de başarısız olursa null döner ve UI kullanıcıya gerçekten ağ
-// düzeyinde bir engelleme olduğunu bildirir.
+// DOĞRULUK DÜZELTMESİ: Bu fonksiyon eskiden önce measureUploadXHR'ı deniyordu.
+// Ama measureUploadXHR ve measureUploadCF AYNI Cloudflare adresine gidiyor —
+// aralarındaki tek fark ÖLÇÜM YÖNTEMİ: XHR, xhr.upload.onprogress ile "e.loaded"
+// değerini takip eder ve bu değer verinin AĞA GERÇEKTEN ÇIKTIĞINI değil,
+// tarayıcının/işletim sisteminin gönderim arabelleğine YAZILDIĞINI gösterir.
+// 4MB'lık büyük chunk'larla, hızlı bir yerel ağ arabirimi bu arabelleği neredeyse
+// anında doldurabiliyor — gerçek yükleme hızı çok daha düşük olsa bile — özellikle
+// her stream'in test sonunda abort() ile kesilen son chunk'ında, arabelleğe
+// yazılmış ama fiilen hiç iletilmemiş baytlar da sayılmış oluyordu. Bu da upload
+// sonucunun gerçek hızdan belirgin şekilde YÜKSEK çıkmasına yol açıyordu.
+// measureUploadCF ise streaming destekleyen tarayıcılarda gerçek geri-basınç
+// (backpressure) ile çalışan bir ReadableStream kullanır (pull() sadece taşıma
+// katmanı hazır olduğunda tetiklenir); desteklemeyen tarayıcılarda ise bir
+// chunk'ı yalnızca TAM round-trip tamamlandığında sayar. İkisi de gerçek iletim
+// hızını yansıtır. Bu yüzden artık ÖNCE measureUploadCF deneniyor; XHR sadece
+// CF'in fetch/duplex API'siyle ilgili bir tarayıcı tuhaflığı yüzünden tamamen
+// başarısız olursa yedek olarak kullanılıyor. Cloudflare'in her iki yöntemi de
+// tamamen başarısız olursa (VPN/güvenlik yazılımı alan adını engelliyorsa)
+// otomatik olarak Supabase üzerinden tekrar denenir.
 async function measureUpload(onLive) {
   window.lastUploadDebug = '';
   window.lastUploadMethod = '';
 
-  const xhrResult = await measureUploadXHR(onLive);
-  if (xhrResult) { window.lastUploadMethod = 'cloudflare-xhr-progress'; return xhrResult; }
-  const xhrDebug = window.lastUploadDebug;
-
   const cfResult = await measureUploadCF(onLive);
-  window.lastUploadDebug = `${xhrDebug} || ${window.lastUploadDebug}`;
   if (cfResult) { window.lastUploadMethod = 'cloudflare-fetch'; return cfResult; }
+  const cfDebug = window.lastUploadDebug;
+
+  const xhrResult = await measureUploadXHR(onLive);
+  window.lastUploadDebug = `${cfDebug} || ${window.lastUploadDebug}`;
+  if (xhrResult) { window.lastUploadMethod = 'cloudflare-xhr-progress'; return xhrResult; }
 
   const subEl = document.getElementById('stSub');
   if (subEl) {
