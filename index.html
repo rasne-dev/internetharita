@@ -1241,7 +1241,6 @@ CREATE POLICY "auth_update_raporlar" ON raporlar
     </div>
   </div>
 </div>
-<div class="modal-bg" id="locPermModal" onclick="if(event.target===this)this.classList.remove('open')"></div>
 <div class="modal-bg" id="reportModal" onclick="if(event.target===this)closeReportModal()">
   <div class="modal">
     <span class="modal-close" onclick="closeReportModal()">×</span>
@@ -2841,65 +2840,30 @@ function setLocation(lat, lng) {
 function autoLocate() {
   if (!navigator.geolocation) return showToast('Tarayıcınız konum özelliğini desteklemiyor.', 'err');
 
-  // İzin durumunu önce sorgula — denied ise dialog açmadan açıklayıcı mesaj ver
   const attempt = () => {
     showToast('Konum alınıyor...', 'warn');
     navigator.geolocation.getCurrentPosition(
       pos => {
         if (!maps.pin) return showToast('Harita henüz hazır değil, lütfen tekrar deneyin.', 'warn');
         const { latitude: lat, longitude: lng, accuracy } = pos.coords;
-        const acc = Math.round(accuracy || 0);
-        if (acc > 2000) {
-          // IP tabanlı, güvenilmez — pin koyma, açıklayıcı modal göster
-          showLocPermModal(acc);
-          return;
-        }
+        if ((accuracy || 0) > 2000) return showToast('Konum bulunamadı. Haritadan seçin.', 'err');
         maps.pin.setView([lat, lng], 16);
         setLocation(lat, lng);
-        showToast(acc > 300 ? `📍 Konum bulundu (~${acc} m) — Wi-Fi tabanlı, haritada doğrulayın.` : `📍 Konum bulundu (~${acc} m)`, acc > 300 ? 'warn' : '');
+        showToast('📍 Konum bulundu', '');
       },
-      err => {
-        if (err.code === 1) showLocPermModal(null);
-        else showToast(err.code === 3 ? 'Zaman aşımı. Wi-Fi açıksa tekrar deneyin, değilse haritadan seçin.' : 'Konum alınamadı. Wi-Fi açık mı? Haritadan seçin.', 'err');
-      },
+      () => showToast('Konum bulunamadı. Haritadan seçin.', 'err'),
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
   if (navigator.permissions) {
     navigator.permissions.query({ name: 'geolocation' }).then(r => {
-      if (r.state === 'denied') showLocPermModal(null);
+      if (r.state === 'denied') showToast('Konum izni engellenmiş. Tarayıcı ayarlarından izni açıp tekrar deneyin.', 'err');
       else attempt();
     }).catch(attempt);
   } else {
     attempt();
   }
-}
-
-// IP tabanlı konum veya izin reddi durumunda açıklayıcı modal
-function showLocPermModal(accKm) {
-  const ipMsg = accKm ? `<p style="margin:0 0 10px;color:var(--warn);">⚠️ Konum alındı ama doğruluk çok düşük (~${Math.round(accKm/1000)} km). Bu genellikle <b>işletim sistemi konum servisi kapalı</b> olduğunda olur — tarayıcı IP adresinizden tahmin ediyor.</p>` : '';
-  document.getElementById('locPermModal').innerHTML = `
-    <div class="modal" style="max-width:480px;">
-      <span class="modal-close" onclick="document.getElementById('locPermModal').classList.remove('open')">×</span>
-      <div class="modal-title">📍 Konum Neden Çalışmıyor?</div>
-      ${ipMsg}
-      <p style="margin:0 0 8px;font-size:12px;color:var(--text2);">Otomatik konumun doğru çalışması için <b>iki iznin</b> birden açık olması gerekir:</p>
-      <div style="font-size:11px;color:var(--text2);line-height:1.8;">
-        <b style="color:var(--text);">1) Windows Konum Servisi</b><br>
-        Başlat → Ayarlar → Gizlilik ve Güvenlik → Konum → <b>"Konum hizmetleri" Açık</b><br><br>
-        <b style="color:var(--text);">2) Chrome/Edge Konum İzni</b><br>
-        Adres çubuğu solundaki 🔒 simgesi → Site Ayarları → Konum → <b>İzin Ver</b><br>
-        <i>(Firefox: adres çubuğundaki kalkan → İzinleri Temizle, sonra tekrar deneyin)</i><br><br>
-        <b style="color:var(--text);">İkisi de açıksa ama hâlâ çalışmıyorsa:</b><br>
-        Wi-Fi açık mı? Mobil veri mi kullanıyorsunuz? Masaüstünde Wi-Fi ile bağlıyken en doğru sonucu alırsınız.
-      </div>
-      <div style="margin-top:14px;display:flex;gap:8px;">
-        <button class="btn" onclick="document.getElementById('locPermModal').classList.remove('open'); autoLocate();" style="flex:1;">🔄 Tekrar Dene</button>
-        <button class="btn" onclick="document.getElementById('locPermModal').classList.remove('open');" style="flex:1;background:var(--surface2);">Haritadan Seçeceğim</button>
-      </div>
-    </div>`;
-  document.getElementById('locPermModal').classList.add('open');
 }
 
 // ===== MANUEL ADRES =====
