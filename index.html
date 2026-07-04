@@ -2219,13 +2219,16 @@ function renderHex() {
       const coords = h3.cellToBoundary(hex).map(([lat,lng]) =>[lat,lng]);
       const avgDL = pins.reduce((a,p)=>a+p.gercek_dl,0)/pins.length; const avgScore = pins.reduce((a,p)=>a+p.puan,0)/pins.length;
       let color, hasData = true; if (colorMode==='hiz') color = speedColor(avgDL); else { if (!pins.some(p=>p.puan)) { color='#374151'; hasData=false; } else color=memColor(avgScore); }
-      // FIX: fillOpacity zoom'a gore dinamik.
+      // FIX: fillOpacity zoom'a gore dinamik + tema bazlı.
       // Uzak zoom'da (buyuk altigenler) daha opak: harita rengi okumasi daha net.
       // Yakin zoom'da (kucuk altigenler) daha seffaf: harita altyapisi okunabilir.
-      // NOT: kullanici geri bildirimiyle degerler asagi cekildi (eski dinamik
-      // formul cok opaktı; orijinal sabit 0.3'e daha yakin ama hala zoom'a gore degisken).
-      const _fillOp   = hasData ? (z <= 6 ? 0.38 : z <= 8 ? 0.30 : 0.22) : 0.06;
-      const _strokeOp = hasData ? (z <= 6 ? 0.75 : 0.60) : 0.16;
+      // DÜZELTME: Karanlık modda (neredeyse siyah zemin) aynı düşük opaklık değerleri
+      // rengi siyaha yakınlaştırıp "cansız/donuk" gösteriyordu — açık modda (beyaz zemin)
+      // aynı değerler renkleri canlı gösteriyor çünkü beyazla karışım rengi soldurmuyor,
+      // aydınlatıyor. Bu yüzden karanlık modda opaklık belirgin şekilde yükseltiliyor.
+      const _isLight = document.documentElement.classList.contains('light');
+      const _fillOp   = hasData ? (_isLight ? (z <= 6 ? 0.38 : z <= 8 ? 0.30 : 0.22) : (z <= 6 ? 0.58 : z <= 8 ? 0.48 : 0.38)) : 0.06;
+      const _strokeOp = hasData ? (_isLight ? (z <= 6 ? 0.75 : 0.60) : (z <= 6 ? 0.95 : 0.85)) : 0.16;
       const _weight   = z <= 6 ? 0.8 : 1.2;
       const layer = L.polygon(coords, { color, fillColor:color, fillOpacity:_fillOp, weight:_weight, opacity:_strokeOp }).addTo(maps.main);
       layer.on('click', () => showHexInfo(pins, hex)); hexLayers.push(layer);
@@ -2857,19 +2860,17 @@ function autoLocate() {
     }).catch(() => {});
   }
 
-  function handleSuccess(pos, isFallback) {
+  function handleSuccess(pos) {
     if (!maps.pin) return showToast('Harita henüz hazır değil, lütfen tekrar deneyin.', 'warn');
     const { latitude: lat, longitude: lng, accuracy } = pos.coords;
     const acc = Math.round(accuracy || 0);
+    if (acc > 2000) {
+      showToast('Konum bulunamadı. Haritadan seçin.', 'err');
+      return;
+    }
     maps.pin.setView([lat, lng], 16);
     setLocation(lat, lng);
-    if (acc > 2000) {
-      showToast(`⚠️ Konum ~${(acc/1000).toFixed(1)} km hatalı olabilir (mobil veri/hotspot kullanıyorsanız normaldir — bilgisayarda GPS yok, operatörün ağ konumu baz alınıyor). Lütfen haritaya tıklayarak gerçek konumunuzu işaretleyin.`, 'warn');
-    } else if (acc > 300) {
-      showToast(`📍 Konum bulundu (~${acc} m) — haritada doğrulayın.`, 'warn');
-    } else {
-      showToast('📍 Konum bulundu', '');
-    }
+    showToast('📍 Konum bulundu', '');
   }
 
   // Mobil veride (Wi-Fi yok) GPS soğuk başlangıçta 10-30sn sürebilir.
@@ -2878,7 +2879,7 @@ function autoLocate() {
   //    daha hızlı ama daha az hassas — hiçbir şey bulamamaktan iyidir.
   showToast('Konum alınıyor... (GPS için biraz sürebilir)', 'warn');
   navigator.geolocation.getCurrentPosition(
-    pos => handleSuccess(pos, false),
+    pos => handleSuccess(pos),
     err => {
       if (err.code === 1) {
         showToast('🔒 Konum izni engellenmiş. Adres çubuğundaki kilit simgesine tıklayıp izni açın.', 'err');
@@ -2886,7 +2887,7 @@ function autoLocate() {
       }
       showToast('GPS bulunamadı, ağ tabanlı konum deneniyor...', 'warn');
       navigator.geolocation.getCurrentPosition(
-        pos => handleSuccess(pos, true),
+        pos => handleSuccess(pos),
         () => showToast('Konum bulunamadı. Açık alanda tekrar deneyin veya haritadan seçin.', 'err'),
         { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
       );
@@ -4626,6 +4627,7 @@ function toggleTheme() {
   const isLight = document.documentElement.classList.contains('light');
   applyTheme(isLight ? 'dark' : 'light');
   updateMapTiles();
+  if (typeof renderHex === 'function') renderHex();
 }
 // Sayfa yüklenince butonu senkronize et (class zaten head'de eklendi)
 document.addEventListener('DOMContentLoaded', function() {
