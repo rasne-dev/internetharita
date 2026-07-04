@@ -2840,30 +2840,43 @@ function setLocation(lat, lng) {
 function autoLocate() {
   if (!navigator.geolocation) return showToast('Tarayıcınız konum özelliğini desteklemiyor.', 'err');
 
-  const attempt = () => {
-    showToast('Konum alınıyor...', 'warn');
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        if (!maps.pin) return showToast('Harita henüz hazır değil, lütfen tekrar deneyin.', 'warn');
-        const { latitude: lat, longitude: lng, accuracy } = pos.coords;
-        if ((accuracy || 0) > 2000) return showToast('Konum bulunamadı. Haritadan seçin.', 'err');
-        maps.pin.setView([lat, lng], 16);
-        setLocation(lat, lng);
-        showToast('📍 Konum bulundu', '');
-      },
-      () => showToast('Konum bulunamadı. Haritadan seçin.', 'err'),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-  };
-
+  // DÜZELTME (regresyon: v1.7.51 / commit 9d2b56c): getCurrentPosition() çağrısı
+  // önceden navigator.permissions.query().then() içine alınmıştı. Bu, tıklama
+  // olayı ile konum isteği arasına bir Promise adımı sokuyor ve bazı tarayıcılarda
+  // (iOS Safari, bazı Android WebView'ler) "kullanıcı jesti" (user activation)
+  // bu asenkron adımda kayboluyor — tarayıcı izin penceresini SESSİZCE hiç
+  // göstermiyor, hata da fırlatmıyor. Çözüm: getCurrentPosition() her zaman
+  // tıklamayla senkron/doğrudan çağrılmalı. permissions.query() sadece "denied"
+  // durumunu erken haber vermek için opsiyonel bir ön-kontrol olarak kullanılır,
+  // asla asıl çağrıyı geciktirmez veya bir .then() zincirine bağlamaz.
   if (navigator.permissions) {
     navigator.permissions.query({ name: 'geolocation' }).then(r => {
-      if (r.state === 'denied') showToast('Konum izni engellenmiş. Tarayıcı ayarlarından izni açıp tekrar deneyin.', 'err');
-      else attempt();
-    }).catch(attempt);
-  } else {
-    attempt();
+      if (r.state === 'denied') {
+        showToast('Konum izni engellenmiş. Tarayıcı ayarlarından izni açıp tekrar deneyin.', 'err');
+      }
+    }).catch(() => {});
   }
+
+  showToast('Konum alınıyor...', 'warn');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      if (!maps.pin) return showToast('Harita henüz hazır değil, lütfen tekrar deneyin.', 'warn');
+      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+      if ((accuracy || 0) > 2000) return showToast('Konum bulunamadı. Haritadan seçin.', 'err');
+      maps.pin.setView([lat, lng], 16);
+      setLocation(lat, lng);
+      showToast('📍 Konum bulundu', '');
+    },
+    err => {
+      const msgs = {
+        1: '🔒 Konum izni engellenmiş. Adres çubuğundaki kilit simgesine tıklayıp izni açın.',
+        2: 'Konum alınamadı. Wi-Fi açık mı? Haritadan da seçebilirsiniz.',
+        3: 'Zaman aşımı. Tekrar deneyin veya haritadan seçin.'
+      };
+      showToast(msgs[err.code] || 'Konum bulunamadı. Haritadan seçin.', 'err');
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
 }
 
 // ===== MANUEL ADRES =====
