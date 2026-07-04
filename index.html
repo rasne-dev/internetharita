@@ -890,6 +890,7 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
         <div style="font-size:16px;font-weight:700;font-family:var(--font-mono);">Veri Ekle</div>
         <div style="font-size:11px;color:var(--text3);margin-top:3px;">İnternet performansını toplulukla paylaş</div>
         <div class="fp-status" id="fpStatus" style="margin-top:6px;"><div class="fp-dot" id="fpDot"></div><span id="fpText">Cihaz tanımlanıyor...</span></div>
+        <div style="font-size:10px;color:var(--warn);margin-top:8px;line-height:1.4;">📵 Bu harita <b>sabit internet altyapısı</b> (fiber/DSL/kablo vb.) içindir — lütfen mobil veri (hücresel) ile değil, WiFi/sabit bağlantınızdan veri girin.</div>
       </div>
       <div class="fg">
         <div class="fl">Konum</div>
@@ -3174,7 +3175,25 @@ function highlightRequired(elementOrId, scrollTo = true) {
 async function submitPin() {
   if (isMaintenanceMode) return showToast('🔧 Bakım modu aktif — şu an veri eklenemiyor','warn');
   if (isSubmissionsPaused) return showToast('🚨 Otomatik güvenlik duraklatması aktif — moderatör incelemesi bekleniyor, lütfen birazdan tekrar deneyin','warn');
-  
+
+  // MOBİL VERİ ENGELİ: Bu harita SABİT internet altyapısı (fiber/DSL/kablo/vb.)
+  // kalitesini ölçmek için hazırlanmıştır. Mobil veri (hücresel) üzerinden yapılan
+  // bir ölçüm, o bölgedeki sabit altyapıyı yansıtmaz ve haritayı yanıltıcı hale
+  // getirir — bu yüzden moderatörler dışında engelleniyor.
+  // NOT: navigator.connection (Network Information API) sadece Chromium tabanlı
+  // tarayıcılarda (Android Chrome/Edge/Opera vb.) desteklenir; iOS Safari ve
+  // masaüstü Safari/Firefox bu API'yi sunmadığı için o tarayıcılarda mobil veri
+  // tespiti yapılamaz ve bu kontrol sessizce atlanır. Yani bu, %100 kapsayan bir
+  // engel değil, tespit edilebilen durumlar için bir güvenlik katmanıdır.
+  const connCheck = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  if (connCheck && connCheck.type === 'cellular') {
+    const { data: sessCheck } = await sbc.auth.getSession();
+    const isModeratorSession = !!sessCheck?.session?.access_token;
+    if (!isModeratorSession) {
+      return showToast('📵 Bu harita sabit internet altyapısını ölçer. Mobil veri (hücresel) ile veri eklenemez — lütfen WiFi/sabit bağlantınızdan tekrar deneyin.', 'err');
+    }
+  }
+
   const isAltyapiYok = document.getElementById('noInfraCheck')?.checked;
   
   // SPAM PROTECTION: Honeypot check
@@ -3483,6 +3502,17 @@ function openSpeedTestForUserEdit() {
 }
 
 async function saveUserEdit() {
+  // MOBİL VERİ ENGELİ: bkz. submitPin() — aynı gerekçeyle, mevcut bir ölçümü
+  // hücresel veri üzerinden güncellemek de sabit altyapı haritasını yanıltır.
+  const connCheckEdit = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  if (connCheckEdit && connCheckEdit.type === 'cellular') {
+    const { data: sessCheckEdit } = await sbc.auth.getSession();
+    const isModeratorSessionEdit = !!sessCheckEdit?.session?.access_token;
+    if (!isModeratorSessionEdit) {
+      return showToast('📵 Bu harita sabit internet altyapısını ölçer. Mobil veri (hücresel) ile güncelleme yapılamaz — lütfen WiFi/sabit bağlantınızdan tekrar deneyin.', 'err');
+    }
+  }
+
   const pinId = document.getElementById('userEditPinId').value;
   const dl = parseInt(document.getElementById('userEditDL').value);
   const ul = parseInt(document.getElementById('userEditUL').value) || 0;
