@@ -2857,25 +2857,41 @@ function autoLocate() {
     }).catch(() => {});
   }
 
-  showToast('Konum alınıyor...', 'warn');
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      if (!maps.pin) return showToast('Harita henüz hazır değil, lütfen tekrar deneyin.', 'warn');
-      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
-      if ((accuracy || 0) > 2000) return showToast('Konum bulunamadı. Haritadan seçin.', 'err');
-      maps.pin.setView([lat, lng], 16);
-      setLocation(lat, lng);
+  function handleSuccess(pos, isFallback) {
+    if (!maps.pin) return showToast('Harita henüz hazır değil, lütfen tekrar deneyin.', 'warn');
+    const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+    const acc = Math.round(accuracy || 0);
+    maps.pin.setView([lat, lng], 16);
+    setLocation(lat, lng);
+    if (acc > 2000) {
+      showToast(`⚠️ Konum ~${(acc/1000).toFixed(1)} km hatalı olabilir (mobil veri/hotspot kullanıyorsanız normaldir — bilgisayarda GPS yok, operatörün ağ konumu baz alınıyor). Lütfen haritaya tıklayarak gerçek konumunuzu işaretleyin.`, 'warn');
+    } else if (acc > 300) {
+      showToast(`📍 Konum bulundu (~${acc} m) — haritada doğrulayın.`, 'warn');
+    } else {
       showToast('📍 Konum bulundu', '');
-    },
+    }
+  }
+
+  // Mobil veride (Wi-Fi yok) GPS soğuk başlangıçta 10-30sn sürebilir.
+  // 1. deneme: yüksek doğruluk (GPS), daha uzun timeout.
+  // 2. deneme (1. başarısız/zaman aşımına uğrarsa): ağ/hücre tabanlı,
+  //    daha hızlı ama daha az hassas — hiçbir şey bulamamaktan iyidir.
+  showToast('Konum alınıyor... (GPS için biraz sürebilir)', 'warn');
+  navigator.geolocation.getCurrentPosition(
+    pos => handleSuccess(pos, false),
     err => {
-      const msgs = {
-        1: '🔒 Konum izni engellenmiş. Adres çubuğundaki kilit simgesine tıklayıp izni açın.',
-        2: 'Konum alınamadı. Wi-Fi açık mı? Haritadan da seçebilirsiniz.',
-        3: 'Zaman aşımı. Tekrar deneyin veya haritadan seçin.'
-      };
-      showToast(msgs[err.code] || 'Konum bulunamadı. Haritadan seçin.', 'err');
+      if (err.code === 1) {
+        showToast('🔒 Konum izni engellenmiş. Adres çubuğundaki kilit simgesine tıklayıp izni açın.', 'err');
+        return;
+      }
+      showToast('GPS bulunamadı, ağ tabanlı konum deneniyor...', 'warn');
+      navigator.geolocation.getCurrentPosition(
+        pos => handleSuccess(pos, true),
+        () => showToast('Konum bulunamadı. Açık alanda tekrar deneyin veya haritadan seçin.', 'err'),
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+      );
     },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
   );
 }
 
