@@ -1049,9 +1049,10 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
         <div id="docsisNote" style="display:none;font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">DOCSIS, Türksat'ın TV kablosu (coaxial) üzerinden verdiği internet türüdür. Türksat'tan fiber veya VDSL hizmeti alıyorsanız DOCSIS'i değil, "Fiber" veya "VDSL"yi seçin — DOCSIS sadece kablo TV hattından gelen Türksat bağlantıları içindir.</div>
       </div>
       <div class="fg">
-        <div class="fl">Bu Adreste Ayrıca Mevcut Olan Altyapılar <span style="color:var(--text3);font-weight:400;">(opsiyonel, birden fazla seçilebilir) 🧪 test aşamasında</span></div>
-        <div class="cbtns" id="extraAltyapiBtns"><div class="cbtn fiber" onclick="toggleExtraAltyapi(this,'fiber')">Fiber</div><div class="cbtn vdsl" onclick="toggleExtraAltyapi(this,'vdsl')">VDSL</div><div class="cbtn adsl" onclick="toggleExtraAltyapi(this,'adsl')">ADSL</div><div class="cbtn docsis" onclick="toggleExtraAltyapi(this,'docsis')">DOCSIS</div></div>
-        <div style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">Örn. adreste hem Türk Telekom VDSL hem TurkNet Fiber çekiyorsa, yukarıda test ettiğinizi seçip burada diğerini de işaretleyin.</div>
+        <div class="fl">Adreste Bilinen Diğer Sağlayıcı/Altyapılar <span style="color:var(--text3);font-weight:400;">(opsiyonel) 🧪 test aşamasında</span></div>
+        <div id="extraAltyapiRows"></div>
+        <div style="margin-top:6px;padding:7px;text-align:center;border-radius:6px;border:1px dashed var(--border);color:var(--text2);font-size:11px;cursor:pointer;" onclick="addExtraAltyapiRow()">+ Sağlayıcı / Altyapı Ekle</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">Örn. adreste siz TurkNet Fiber kullanıyorsanız ama Türk Telekom VDSL de çekiyorsa, buraya "Türk Telekom" + "VDSL" olarak ekleyin. Birden fazla sağlayıcı/tür ekleyebilirsiniz.</div>
       </div>
       <div class="fg">
         <div class="fl">Paket Hızı</div>
@@ -1990,11 +1991,12 @@ function onNoInfraChange(checked) {
   const speedRows = document.querySelectorAll('.speed-row');
   const issSelect = document.getElementById('issSelect');
   const connBtns = document.querySelectorAll('.cbtn');
-  const extraBtns = document.getElementById('extraAltyapiBtns');
+  const extraWrap = document.getElementById('extraAltyapiRows');
+  const extraAddBtn = extraWrap?.nextElementSibling;
   
   if (checked) {
-    if (extraBtns) { extraBtns.querySelectorAll('.cbtn').forEach(b=>b.classList.remove('sel')); extraBtns.style.opacity='0.4'; extraBtns.style.pointerEvents='none'; }
-    selExtraAltyapi = new Set();
+    if (extraWrap) { extraWrap.innerHTML=''; extraWrap.style.opacity='0.4'; extraWrap.style.pointerEvents='none'; }
+    if (extraAddBtn) { extraAddBtn.style.opacity='0.4'; extraAddBtn.style.pointerEvents='none'; }
     // Hız bölümlerini etkisizleştir
     if (speedBtn) speedBtn.disabled = true;
     document.getElementById('dlSpeed').value = '';
@@ -2019,7 +2021,8 @@ function onNoInfraChange(checked) {
     }
     showToast('Altyapı yok seçildi: Hız testi gereksinimi kaldırıldı.', 'warn');
   } else {
-    if (extraBtns) { extraBtns.style.opacity=''; extraBtns.style.pointerEvents=''; }
+    if (extraWrap) { extraWrap.style.opacity=''; extraWrap.style.pointerEvents=''; }
+    if (extraAddBtn) { extraAddBtn.style.opacity=''; extraAddBtn.style.pointerEvents=''; }
     if (speedBtn) speedBtn.disabled = false;
     document.getElementById('dlSpeed').value = '';
     document.getElementById('ulSpeed').value = '';
@@ -2135,6 +2138,12 @@ const IC = {
   'Altyapı Yok': '#3f3f3f' 
 };
 const ic = iss => { const canonical = canonicalIssName(iss); const item = issListCache.find(i=>canonicalIssName(i.name)===canonical); return (item && item.color) ? item.color : (IC[canonical] || issHashColor(canonical)); }; const cc = t => t==='fiber'?'#9333ea':t==='vdsl'?'#FB8C00':t==='adsl'?'#E53935':t==='docsis'?'#3b82f6':'#888';
+// diger_altyapilar: yeni format JSON [{iss,tur}] — eski format (ilk sürüm) virgüllü tür listesiydi ("vdsl,docsis"), geriye dönük uyumluluk için ikisini de destekliyoruz.
+function parseDigerAltyapi(raw) {
+  if (!raw) return [];
+  try { const j = JSON.parse(raw); if (Array.isArray(j)) return j.filter(e=>e && e.tur); } catch(e) {}
+  return raw.split(',').filter(Boolean).map(t => ({ iss: null, tur: t }));
+}
 function speedColor(dl) { if(dl>=500)return'#800080';if(dl>=200)return'#1E88E5';if(dl>=100)return'#43A047';if(dl>=25)return'#FB8C00';return'#E53935'; }
 function memColor(s) { if(s>=8)return'#22c55e';if(s>=6)return'#84cc16';if(s>=4)return'#eab308';return'#ef4444'; }
 // RENK KÖRÜ MODU: speedColor/memColor ile aynı eşikleri kullanan şekil işaretleri.
@@ -2345,7 +2354,7 @@ function renderHex() {
       if (colorMode==='hiz') color = speedColor(avgDL);
       else if (colorMode==='altyapi') {
         // Hex içindeki en yaygın bağlantı türünü bul (fiber/vdsl/adsl/docsis)
-        const tc = {}; pins.forEach(p=>{ const t=p.baglanti_turu; if(t && t!=='yok') tc[t]=(tc[t]||0)+1; if(p.diger_altyapilar) p.diger_altyapilar.split(',').forEach(t2=>{ if(t2) tc[t2]=(tc[t2]||0)+1; }); });
+        const tc = {}; pins.forEach(p=>{ const t=p.baglanti_turu; if(t && t!=='yok') tc[t]=(tc[t]||0)+1; parseDigerAltyapi(p.diger_altyapilar).forEach(e=>{ tc[e.tur]=(tc[e.tur]||0)+1; }); });
         const dominant = Object.entries(tc).sort((a,b)=>b[1]-a[1])[0];
         if (!dominant) { color='#374151'; hasData=false; } else color = cc(dominant[0]);
       }
@@ -2451,9 +2460,11 @@ function showHexInfo(pins, hexId) {
   document.getElementById('infoScore').textContent = avgS+'/10'; document.getElementById('infoScore').style.color = memColor(parseFloat(avgS));
   document.getElementById('infoCount').textContent = pins.length+' ölçüm';
   const im={}; pins.forEach(p=>{ if(!im[p.iss]) im[p.iss]={c:0,t:0}; im[p.iss].c++; im[p.iss].t+=p.puan; });
-  const tc={}; pins.forEach(p=>{ const t=p.baglanti_turu; if(t && t!=='yok') tc[t]=(tc[t]||0)+1; if(p.diger_altyapilar) p.diger_altyapilar.split(',').forEach(t2=>{ if(t2) tc[t2]=(tc[t2]||0)+1; }); });
+  const tc={}; pins.forEach(p=>{ const t=p.baglanti_turu; if(t && t!=='yok') tc[t]=(tc[t]||0)+1; parseDigerAltyapi(p.diger_altyapilar).forEach(e=>{ tc[e.tur]=(tc[e.tur]||0)+1; }); });
   const altyapiHtml = Object.keys(tc).length ? `<div class="panel-title" style="margin:10px 0 6px;">Altyapı Dağılımı</div>`+Object.entries(tc).sort((a,b)=>b[1]-a[1]).map(([t,c])=>`<div class="info-iss-item"><span><span class="iss-dot" style="background:${cc(t)}"></span>${t.toUpperCase()}</span><span style="color:${cc(t)};font-weight:700;font-family:var(--font-mono)">${c} (%${Math.round(c/pins.length*100)})</span></div>`).join('') : '';
-  document.getElementById('infoISS').innerHTML = `<div class="panel-title" style="margin-bottom:6px;">ISS Dağılımı</div>`+Object.entries(im).sort((a,b)=>b[1].c-a[1].c).slice(0,4).map(([iss,d])=>`<div class="info-iss-item"><span><span class="iss-dot" style="background:${ic(iss)}"></span>${escHtml(iss)}</span><span style="color:${ic(iss)};font-weight:700;font-family:var(--font-mono)">${(d.t/d.c).toFixed(1)}</span></div>`).join('') + altyapiHtml;
+  const providerCombo = {}; pins.forEach(p=>parseDigerAltyapi(p.diger_altyapilar).forEach(e=>{ if(!e.iss) return; const k=e.iss+'|'+e.tur; providerCombo[k]=(providerCombo[k]||0)+1; }));
+  const providerHtml = Object.keys(providerCombo).length ? `<div class="panel-title" style="margin:10px 0 6px;">Bilinen Diğer Sağlayıcılar</div>`+Object.entries(providerCombo).sort((a,b)=>b[1]-a[1]).map(([k,c])=>{ const [iss,tur]=k.split('|'); return `<div class="info-iss-item"><span><span class="iss-dot" style="background:${cc(tur)}"></span>${escHtml(iss)} · ${tur.toUpperCase()}</span><span style="color:var(--text3);font-weight:700;font-family:var(--font-mono)">${c}</span></div>`; }).join('') : '';
+  document.getElementById('infoISS').innerHTML = `<div class="panel-title" style="margin-bottom:6px;">ISS Dağılımı</div>`+Object.entries(im).sort((a,b)=>b[1].c-a[1].c).slice(0,4).map(([iss,d])=>`<div class="info-iss-item"><span><span class="iss-dot" style="background:${ic(iss)}"></span>${escHtml(iss)}</span><span style="color:${ic(iss)};font-weight:700;font-family:var(--font-mono)">${(d.t/d.c).toFixed(1)}</span></div>`).join('') + altyapiHtml + providerHtml;
   document.getElementById('mapInfo').classList.add('visible');
   const body = document.querySelector('.map-info-body'); if(body) body.scrollTop = 0;
   // Ölçüm listesini sıfırla
@@ -2481,7 +2492,7 @@ function toggleHexPinsList() {
           
           const isOwnPin = browserFingerprint && p.browser_fp === browserFingerprint;
           const ownPinBadge = isOwnPin ? `<span class="own-pin-badge">Senin Ölçümün</span>` : '';
-          const extraBadges = p.diger_altyapilar ? p.diger_altyapilar.split(',').filter(Boolean).map(t=>`<span style="font-size:8px;color:${cc(t)};border:1px solid ${cc(t)};border-radius:8px;padding:1px 5px;margin-left:4px;">+${t.toUpperCase()}</span>`).join('') : '';
+          const extraBadges = parseDigerAltyapi(p.diger_altyapilar).map(e=>`<span style="font-size:8px;color:${cc(e.tur)};border:1px solid ${cc(e.tur)};border-radius:8px;padding:1px 5px;margin-left:4px;" title="${escAttr(e.iss||'')}">+${e.iss ? escHtml(e.iss)+' ' : ''}${e.tur.toUpperCase()}</span>`).join('');
           const actions = isOwnPin ? `
             <div class="user-pin-actions">
               <span class="user-pin-action edit" onclick="event.stopPropagation(); openUserEditModal('${p.id}')">✏️ Düzenle</span>
@@ -2833,7 +2844,7 @@ async function renderStats() {
   }
 }
 
-let pinLat=null, pinLng=null, pinMarker=null, selConnVal='', selScoreVal=0, selExtraAltyapi=new Set();
+let pinLat=null, pinLng=null, pinMarker=null, selConnVal='', selScoreVal=0, extraAltyapiRowSeq=0;
 function initPinMap() { 
   const m = L.map('pin-map', { zoomControl:false }).setView([39.2,35.5], 6); 
   L.tileLayer(getMapTileUrl(), { maxZoom:19 }).addTo(m); 
@@ -3285,9 +3296,44 @@ function selConn(el,type) {
     if (infraSel && infraSel.disabled) { infraSel.disabled = false; infraSel.value=''; }
   }
 }
-function toggleExtraAltyapi(el, type) {
-  el.classList.toggle('sel');
-  if (selExtraAltyapi.has(type)) selExtraAltyapi.delete(type); else selExtraAltyapi.add(type);
+function addExtraAltyapiRow() {
+  const wrap = document.getElementById('extraAltyapiRows');
+  if (!wrap) return;
+  const rowId = 'ea_' + (++extraAltyapiRowSeq);
+  const issOptions = document.getElementById('issSelect')?.innerHTML || '<option value="">Seçin...</option>';
+  const row = document.createElement('div');
+  row.className = 'extra-altyapi-row';
+  row.id = rowId;
+  row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px;';
+  row.innerHTML = `
+    <select class="fs" style="flex:1.2;" data-role="iss">${issOptions}</select>
+    <div class="cbtns" style="flex:2;" data-role="turgroup">
+      <div class="cbtn fiber" onclick="selExtraRowType(this,'${rowId}','fiber')">Fiber</div>
+      <div class="cbtn vdsl" onclick="selExtraRowType(this,'${rowId}','vdsl')">VDSL</div>
+      <div class="cbtn adsl" onclick="selExtraRowType(this,'${rowId}','adsl')">ADSL</div>
+      <div class="cbtn docsis" onclick="selExtraRowType(this,'${rowId}','docsis')">DOCSIS</div>
+    </div>
+    <div style="cursor:pointer;color:var(--text3);font-size:16px;padding:0 4px;" onclick="removeExtraAltyapiRow('${rowId}')">✕</div>
+  `;
+  wrap.appendChild(row);
+}
+function removeExtraAltyapiRow(rowId) {
+  document.getElementById(rowId)?.remove();
+}
+function selExtraRowType(el, rowId, type) {
+  el.parentElement.querySelectorAll('.cbtn').forEach(b=>b.className=b.className.replace(/ sel/g,''));
+  el.classList.add('sel');
+  el.closest('.extra-altyapi-row').dataset.tur = type;
+}
+function collectExtraAltyapi() {
+  const rows = document.querySelectorAll('#extraAltyapiRows .extra-altyapi-row');
+  const out = [];
+  rows.forEach(r => {
+    const iss = r.querySelector('[data-role="iss"]')?.value || '';
+    const tur = r.dataset.tur || '';
+    if (iss && tur && iss !== 'Diğer') out.push({ iss, tur });
+  });
+  return out;
 }
 function selScore(el,val) { document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); selScoreVal=val; }
 (function buildScoreRow() { const row = document.getElementById('scoreRow'); if(!row) return; for(let i=1;i<=10;i++){const b=document.createElement('div');b.className='sbtn';b.textContent=i;b.onclick=()=>selScore(b,i);row.appendChild(b);} })();
@@ -3472,7 +3518,7 @@ async function submitPin() {
     mahalle:document.getElementById('mahalleInput').value||null, 
     iss: finalIss, 
     baglanti_turu:selConnVal || (isAltyapiYok ? 'yok' : null), 
-    diger_altyapilar: (!isAltyapiYok && selExtraAltyapi.size) ? [...selExtraAltyapi].filter(t => t !== selConnVal).join(',') || null : null,
+    diger_altyapilar: (!isAltyapiYok && collectExtraAltyapi().length) ? JSON.stringify(collectExtraAltyapi()) : null,
     altyapi_sahibi:document.getElementById('infraSelect').value||null, 
     paket_hizi: pkgDL, paket_hizi_dl: pkgDL, paket_hizi_ul: pkgUL, 
     gercek_dl:dl, gercek_ul:ul, 
@@ -3752,7 +3798,7 @@ async function deleteUserPin(pinId) {
   }
 }
 
-function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selExtraAltyapi=new Set(); selScoreVal=0; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); speedVerifiedByTest = false; const multiAltyapiReset = document.getElementById('multiAltyapiCheck'); if (multiAltyapiReset) multiAltyapiReset.checked=false; const kvkkCheck = document.getElementById('kvkkCheck');
+function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; const extraRowsReset = document.getElementById('extraAltyapiRows'); if (extraRowsReset) extraRowsReset.innerHTML=''; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); speedVerifiedByTest = false; const multiAltyapiReset = document.getElementById('multiAltyapiCheck'); if (multiAltyapiReset) multiAltyapiReset.checked=false; const kvkkCheck = document.getElementById('kvkkCheck');
   if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; }
   const noInfraCheck = document.getElementById('noInfraCheck');
   if (noInfraCheck && noInfraCheck.checked) { noInfraCheck.checked = false; onNoInfraChange(false); }
