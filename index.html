@@ -1078,12 +1078,6 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
         <div class="fl">Altyapı Sahibi (biliyorsanız)</div>
         <select class="fs" id="infraSelect"><option value="">Bilmiyorum</option><option>Türk Telekom (kiralık port)</option><option>TurkNet öz altyapı</option><option>Superonline öz altyapı</option><option>Türksat öz altyapı</option><option>Diğer öz altyapı</option></select>
       </div>
-      <div class="fg" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">
-        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
-          <input type="checkbox" id="multiAltyapiCheck" style="margin-top:2px;cursor:pointer;">
-          <span style="font-size:11px;color:var(--text2);line-height:1.4;">🏗 Bu adreste birden fazla internet altyapısı var (örn. hem Fiber hem VDSL) ve bunun için <b>ayrı bir ölçüm</b> daha giriyorum.</span>
-        </label>
-      </div>
       <div class="flag-note"><span>🚩</span><span>Yanlış veriler topluluk tarafından bildirilebilir ve moderatörler kaldırabilir.</span></div>
       
       <!-- KVKK / Açık Rıza Alanı -->
@@ -3488,15 +3482,13 @@ async function submitPin() {
     return dist < 500 && age < 24;
   });
   if (nearbyRecent) {
-    // ÇOKLU ALTYAPI: Kullanıcı "farklı bir altyapı/İSS ekliyorum" kutusunu işaretlediyse
-    // ve gerçekten FARKLI bir İSS ya da bağlantı türü giriyorsa, aynı adres/24 saat
-    // kısıtlamasını aşmasına izin ver (örn. hem TurkNet Fiber hem TT VDSL aynı adres).
-    const multiAltyapi = document.getElementById('multiAltyapiCheck')?.checked;
+    // Aynı adreste FARKLI bir İSS veya bağlantı türü giriliyorsa (örn. TurkNet Fiber'dan
+    // sonra TT VDSL), otomatik olarak izin ver — çünkü bu gerçekten ayrı bir altyapı/ölçüm.
+    // Sadece TAM AYNI İSS + bağlantı türü tekrar girilirse (spam/tekrar) engelle.
     const sameIssType = nearbyRecent.iss === finalIss && nearbyRecent.baglanti_turu === (selConnVal || (isAltyapiYok ? 'yok' : null));
-    if (!multiAltyapi || sameIssType) {
+    if (sameIssType) {
       submitBtn.disabled=false; submitBtn.textContent='📍 Veriyi Paylaş';
-      if (multiAltyapi && sameIssType) return showToast(`⚠ Bu altyapı (${nearbyRecent.iss} - ${(nearbyRecent.baglanti_turu||'').toUpperCase()}) zaten kayıtlı. Farklı bir İSS veya bağlantı türü seçin.`, 'warn');
-      return showToast(`⚠ Bu bölge için son 24 saat içinde veri girdiniz. Farklı bir altyapı/İSS giriyorsanız aşağıdaki kutuyu işaretleyin.`, 'warn');
+      return showToast(`⚠ Bu altyapı (${nearbyRecent.iss} - ${(nearbyRecent.baglanti_turu||'').toUpperCase()}) için son 24 saat içinde zaten veri girdiniz.`, 'warn');
     }
   }
   const f = fuzzy(pinLat, pinLng);
@@ -3798,7 +3790,7 @@ async function deleteUserPin(pinId) {
   }
 }
 
-function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; const extraRowsReset = document.getElementById('extraAltyapiRows'); if (extraRowsReset) extraRowsReset.innerHTML=''; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); speedVerifiedByTest = false; const multiAltyapiReset = document.getElementById('multiAltyapiCheck'); if (multiAltyapiReset) multiAltyapiReset.checked=false; const kvkkCheck = document.getElementById('kvkkCheck');
+function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; const extraRowsReset = document.getElementById('extraAltyapiRows'); if (extraRowsReset) extraRowsReset.innerHTML=''; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); speedVerifiedByTest = false; const kvkkCheck = document.getElementById('kvkkCheck');
   if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; }
   const noInfraCheck = document.getElementById('noInfraCheck');
   if (noInfraCheck && noInfraCheck.checked) { noInfraCheck.checked = false; onNoInfraChange(false); }
