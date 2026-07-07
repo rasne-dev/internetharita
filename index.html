@@ -228,7 +228,7 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
 .search-result-sub { font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 2px; }
 
 /* RENK MODU TABS */
-.mode-tabs { display: flex; gap: 5px; }
+.mode-tabs { display: flex; gap: 5px; flex-wrap: wrap; }
 .mode-tab {
   flex: 1; padding: 7px 6px; border-radius: 7px;
   border: 1px solid rgba(255,255,255,0.08);
@@ -252,14 +252,14 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
   opacity: 0.35; white-space: nowrap;
 }
 .chip.on { opacity: 1; }
-.chip-fiber { color: var(--accent); border-color: rgba(0,212,255,0.4); }
-.chip-fiber.on { background: rgba(0,212,255,0.1); border-color: var(--accent); }
+.chip-fiber { color: #9333ea; border-color: rgba(147,51,234,0.4); }
+.chip-fiber.on { background: rgba(147,51,234,0.1); border-color: #9333ea; }
 .chip-vdsl { color: var(--s4); border-color: rgba(251,140,0,0.4); }
 .chip-vdsl.on { background: rgba(251,140,0,0.1); border-color: var(--s4); }
 .chip-adsl { color: var(--s5); border-color: rgba(229,57,53,0.4); }
 .chip-adsl.on { background: rgba(229,57,53,0.1); border-color: var(--s5); }
-.chip-docsis { color: #b388ff; border-color: rgba(124,77,255,0.4); }
-.chip-docsis.on { background: rgba(124,77,255,0.12); border-color: #7c4dff; }
+.chip-docsis { color: #3b82f6; border-color: rgba(59,130,246,0.4); }
+.chip-docsis.on { background: rgba(59,130,246,0.12); border-color: #3b82f6; }
 .chip-iss { background: none; }
 .chip-iss.on { background: rgba(255,255,255,0.05); }
 
@@ -301,14 +301,14 @@ html.light .mode-tab.active { background: rgba(0,119,204,0.1); border-color: rgb
 html.light .mode-tab:hover:not(.active) { background: rgba(0,0,0,0.07); color: rgba(0,0,0,0.7); }
 html.light .chip { opacity: 0.5; }
 html.light .chip.on { opacity: 1; }
-html.light .chip-fiber { color: #0077cc; border-color: rgba(0,119,204,0.5); }
-html.light .chip-fiber.on { background: rgba(0,119,204,0.1); border-color: #0077cc; }
+html.light .chip-fiber { color: #9333ea; border-color: rgba(147,51,234,0.5); }
+html.light .chip-fiber.on { background: rgba(147,51,234,0.1); border-color: #9333ea; }
 html.light .chip-vdsl { color: #e65100; border-color: rgba(230,81,0,0.5); }
 html.light .chip-vdsl.on { background: rgba(230,81,0,0.08); border-color: #e65100; }
 html.light .chip-adsl { color: #c62828; border-color: rgba(198,40,40,0.5); }
 html.light .chip-adsl.on { background: rgba(198,40,40,0.08); border-color: #c62828; }
-html.light .chip-docsis { color: #5e35b1; border-color: rgba(94,53,177,0.5); }
-html.light .chip-docsis.on { background: rgba(94,53,177,0.08); border-color: #5e35b1; }
+html.light .chip-docsis { color: #3b82f6; border-color: rgba(59,130,246,0.5); }
+html.light .chip-docsis.on { background: rgba(59,130,246,0.08); border-color: #3b82f6; }
 html.light .chip-iss { opacity: 0.45; }
 html.light .chip-iss.on { opacity: 1; background: rgba(0,0,0,0.05); }
 html.light .map-sidebar-toggle { background: rgba(255,255,255,0.97); border-color: rgba(0,0,0,0.12); color: #0077cc; }
@@ -517,7 +517,7 @@ html.light .sr-ping { background:#f5f7fa; }
 .fiu{position:relative;} .fiu input{ width:100%;padding:9px 44px 9px 12px; background:var(--surface2);border:1px solid var(--border); color:var(--text);border-radius:7px;font-size:12px; outline:none;} .fiu input:focus{border-color:var(--accent);} .fiu-unit{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--text3);font-family:var(--font-mono);pointer-events:none;}
 .speed-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;} .score-row{display:flex;gap:3px;flex-wrap:wrap;}
 .sbtn{ flex:1;min-width:28px;padding:6px 2px;border-radius:5px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:10px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center; } .sbtn.sel{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
-.cbtns{display:flex;gap:6px;} .cbtn{ flex:1;padding:8px;border-radius:6px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:11px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center; } .cbtn.fiber.sel{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);} .cbtn.vdsl.sel{background:rgba(251,140,0,.12);border-color:var(--s4);color:var(--s4);} .cbtn.adsl.sel{background:rgba(229,57,53,.12);border-color:var(--s5);color:var(--s5);} .cbtn.docsis.sel{background:rgba(124,77,255,.12);border-color:#7c4dff;color:#b388ff;} .cbtn.docsis:disabled,.fs:disabled{opacity:.55;cursor:not-allowed;}
+.cbtns{display:flex;gap:6px;} .cbtn{ flex:1;padding:8px;border-radius:6px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:11px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center; } .cbtn.fiber.sel{background:rgba(147,51,234,.12);border-color:#9333ea;color:#9333ea;} .cbtn.vdsl.sel{background:rgba(251,140,0,.12);border-color:var(--s4);color:var(--s4);} .cbtn.adsl.sel{background:rgba(229,57,53,.12);border-color:var(--s5);color:var(--s5);} .cbtn.docsis.sel{background:rgba(59,130,246,.12);border-color:#3b82f6;color:#3b82f6;} .cbtn.docsis:disabled,.fs:disabled{opacity:.55;cursor:not-allowed;}
 .loc-box{ background:var(--surface2);border:1px solid var(--border); border-radius:7px;padding:9px 12px;font-size:11px; color:var(--text3);display:flex;align-items:center;gap:8px; }
 .loc-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);flex-shrink:0;} .loc-dot.set{background:var(--success);box-shadow:0 0 8px var(--success);}
 .loc-actions{display:flex;gap:6px;margin-top:5px;} .btn-loc{ flex:1;padding:8px;border-radius:6px; border:1px solid rgba(0,212,255,.3); background:var(--accent-dim);color:var(--accent); font-size:11px;font-weight:700;cursor:pointer; text-align:center; }
@@ -885,12 +885,13 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
           <div class="mode-tabs">
             <div class="mode-tab active" id="colorModeHiz" onclick="setColorMode('hiz',this)">⚡ Hız</div>
             <div class="mode-tab" id="colorModeMem" onclick="setColorMode('memnuniyet',this)">😊 Memnuniyet</div>
+            <div class="mode-tab" id="colorModeAltyapi" onclick="setColorMode('altyapi',this)">🏗 Altyapı <span style="opacity:.6;font-size:9px;">(deneysel)</span></div>
           </div>
         </div>
 
         <!-- BAĞLANTI TÜRÜ -->
         <div class="sidebar-section">
-          <div class="sidebar-section-title">Bağlantı Türü</div>
+          <div class="sidebar-section-title">Bağlantı Türü <span style="opacity:.6;font-weight:400;font-size:9px;">🧪 test aşamasında</span></div>
           <div class="chips">
             <div class="chip chip-fiber on" onclick="toggleChip(this,'fiber')">Fiber</div>
             <div class="chip chip-vdsl on" onclick="toggleChip(this,'vdsl')">VDSL</div>
@@ -1043,9 +1044,14 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
         </div>
       </div>
       <div class="fg">
-        <div class="fl">Bağlantı Türü</div>
+        <div class="fl">Bağlantı Türü <span style="color:var(--text3);font-weight:400;">(bu ölçümün yapıldığı bağlantı)</span></div>
         <div class="cbtns"><div class="cbtn fiber" onclick="selConn(this,'fiber')">Fiber</div><div class="cbtn vdsl" onclick="selConn(this,'vdsl')">VDSL</div><div class="cbtn adsl" onclick="selConn(this,'adsl')">ADSL</div><div class="cbtn docsis" onclick="selConn(this,'docsis')">DOCSIS</div></div>
         <div id="docsisNote" style="display:none;font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">DOCSIS, Türksat'ın TV kablosu (coaxial) üzerinden verdiği internet türüdür. Türksat'tan fiber veya VDSL hizmeti alıyorsanız DOCSIS'i değil, "Fiber" veya "VDSL"yi seçin — DOCSIS sadece kablo TV hattından gelen Türksat bağlantıları içindir.</div>
+      </div>
+      <div class="fg">
+        <div class="fl">Bu Adreste Ayrıca Mevcut Olan Altyapılar <span style="color:var(--text3);font-weight:400;">(opsiyonel, birden fazla seçilebilir) 🧪 test aşamasında</span></div>
+        <div class="cbtns" id="extraAltyapiBtns"><div class="cbtn fiber" onclick="toggleExtraAltyapi(this,'fiber')">Fiber</div><div class="cbtn vdsl" onclick="toggleExtraAltyapi(this,'vdsl')">VDSL</div><div class="cbtn adsl" onclick="toggleExtraAltyapi(this,'adsl')">ADSL</div><div class="cbtn docsis" onclick="toggleExtraAltyapi(this,'docsis')">DOCSIS</div></div>
+        <div style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">Örn. adreste hem Türk Telekom VDSL hem TurkNet Fiber çekiyorsa, yukarıda test ettiğinizi seçip burada diğerini de işaretleyin.</div>
       </div>
       <div class="fg">
         <div class="fl">Paket Hızı</div>
@@ -1070,6 +1076,12 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
       <div class="fg">
         <div class="fl">Altyapı Sahibi (biliyorsanız)</div>
         <select class="fs" id="infraSelect"><option value="">Bilmiyorum</option><option>Türk Telekom (kiralık port)</option><option>TurkNet öz altyapı</option><option>Superonline öz altyapı</option><option>Türksat öz altyapı</option><option>Diğer öz altyapı</option></select>
+      </div>
+      <div class="fg" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">
+        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="multiAltyapiCheck" style="margin-top:2px;cursor:pointer;">
+          <span style="font-size:11px;color:var(--text2);line-height:1.4;">🏗 Bu adreste birden fazla internet altyapısı var (örn. hem Fiber hem VDSL) ve bunun için <b>ayrı bir ölçüm</b> daha giriyorum.</span>
+        </label>
       </div>
       <div class="flag-note"><span>🚩</span><span>Yanlış veriler topluluk tarafından bildirilebilir ve moderatörler kaldırabilir.</span></div>
       
@@ -1978,8 +1990,11 @@ function onNoInfraChange(checked) {
   const speedRows = document.querySelectorAll('.speed-row');
   const issSelect = document.getElementById('issSelect');
   const connBtns = document.querySelectorAll('.cbtn');
+  const extraBtns = document.getElementById('extraAltyapiBtns');
   
   if (checked) {
+    if (extraBtns) { extraBtns.querySelectorAll('.cbtn').forEach(b=>b.classList.remove('sel')); extraBtns.style.opacity='0.4'; extraBtns.style.pointerEvents='none'; }
+    selExtraAltyapi = new Set();
     // Hız bölümlerini etkisizleştir
     if (speedBtn) speedBtn.disabled = true;
     document.getElementById('dlSpeed').value = '';
@@ -2004,6 +2019,7 @@ function onNoInfraChange(checked) {
     }
     showToast('Altyapı yok seçildi: Hız testi gereksinimi kaldırıldı.', 'warn');
   } else {
+    if (extraBtns) { extraBtns.style.opacity=''; extraBtns.style.pointerEvents=''; }
     if (speedBtn) speedBtn.disabled = false;
     document.getElementById('dlSpeed').value = '';
     document.getElementById('ulSpeed').value = '';
@@ -2118,7 +2134,7 @@ const IC = {
   'Diğer': '#6b7280', 
   'Altyapı Yok': '#3f3f3f' 
 };
-const ic = iss => { const canonical = canonicalIssName(iss); const item = issListCache.find(i=>canonicalIssName(i.name)===canonical); return (item && item.color) ? item.color : (IC[canonical] || issHashColor(canonical)); }; const cc = t => t==='fiber'?'#00d4ff':t==='vdsl'?'#FB8C00':t==='adsl'?'#E53935':t==='docsis'?'#7c4dff':'#888';
+const ic = iss => { const canonical = canonicalIssName(iss); const item = issListCache.find(i=>canonicalIssName(i.name)===canonical); return (item && item.color) ? item.color : (IC[canonical] || issHashColor(canonical)); }; const cc = t => t==='fiber'?'#9333ea':t==='vdsl'?'#FB8C00':t==='adsl'?'#E53935':t==='docsis'?'#3b82f6':'#888';
 function speedColor(dl) { if(dl>=500)return'#800080';if(dl>=200)return'#1E88E5';if(dl>=100)return'#43A047';if(dl>=25)return'#FB8C00';return'#E53935'; }
 function memColor(s) { if(s>=8)return'#22c55e';if(s>=6)return'#84cc16';if(s>=4)return'#eab308';return'#ef4444'; }
 // RENK KÖRÜ MODU: speedColor/memColor ile aynı eşikleri kullanan şekil işaretleri.
@@ -2207,12 +2223,14 @@ let colorMode = 'hiz', hexLayers =[], pinMarkerLayers =[], isModLoggedIn = false
 
 function setColorMode(m) {
   colorMode = m==='memnuniyet' ? 'mem' : m;
-  const isHiz = colorMode === 'hiz';
+  const isHiz = colorMode === 'hiz', isAltyapi = colorMode === 'altyapi', isMem = !isHiz && !isAltyapi;
   document.getElementById('colorModeHiz')?.classList.toggle('active', isHiz);
-  document.getElementById('colorModeMem')?.classList.toggle('active', !isHiz);
+  document.getElementById('colorModeMem')?.classList.toggle('active', isMem);
+  document.getElementById('colorModeAltyapi')?.classList.toggle('active', isAltyapi);
   const items = document.getElementById('legendItems');
   if (!items) return renderHex();
   if (m === 'hiz') { items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:#800080"></div>500+</div><div class="legend-item"><div class="legend-dot" style="background:#1E88E5"></div>200–500</div><div class="legend-item"><div class="legend-dot" style="background:#43A047"></div>100–200</div><div class="legend-item"><div class="legend-dot" style="background:#FB8C00"></div>25–100</div><div class="legend-item"><div class="legend-dot" style="background:#E53935"></div>&lt;25 Mbps</div>`; }
+  else if (m === 'altyapi') { items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:#9333ea"></div>Fiber</div><div class="legend-item"><div class="legend-dot" style="background:#FB8C00"></div>VDSL</div><div class="legend-item"><div class="legend-dot" style="background:#E53935"></div>ADSL</div><div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>DOCSIS</div>`; }
   else { items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div>Mükemmel (8–10)</div><div class="legend-item"><div class="legend-dot" style="background:#84cc16"></div>İyi (6–7)</div><div class="legend-item"><div class="legend-dot" style="background:#eab308"></div>Orta (4–5)</div><div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>Düşük (1–3)</div>`; }
   renderHex();
 }
@@ -2323,7 +2341,15 @@ function renderHex() {
     try {
       const coords = h3.cellToBoundary(hex).map(([lat,lng]) =>[lat,lng]);
       const avgDL = pins.reduce((a,p)=>a+p.gercek_dl,0)/pins.length; const avgScore = pins.reduce((a,p)=>a+p.puan,0)/pins.length;
-      let color, hasData = true; if (colorMode==='hiz') color = speedColor(avgDL); else { if (!pins.some(p=>p.puan)) { color='#374151'; hasData=false; } else color=memColor(avgScore); }
+      let color, hasData = true;
+      if (colorMode==='hiz') color = speedColor(avgDL);
+      else if (colorMode==='altyapi') {
+        // Hex içindeki en yaygın bağlantı türünü bul (fiber/vdsl/adsl/docsis)
+        const tc = {}; pins.forEach(p=>{ const t=p.baglanti_turu; if(t && t!=='yok') tc[t]=(tc[t]||0)+1; if(p.diger_altyapilar) p.diger_altyapilar.split(',').forEach(t2=>{ if(t2) tc[t2]=(tc[t2]||0)+1; }); });
+        const dominant = Object.entries(tc).sort((a,b)=>b[1]-a[1])[0];
+        if (!dominant) { color='#374151'; hasData=false; } else color = cc(dominant[0]);
+      }
+      else { if (!pins.some(p=>p.puan)) { color='#374151'; hasData=false; } else color=memColor(avgScore); }
       // FIX: fillOpacity zoom'a gore dinamik + tema bazlı.
       // Uzak zoom'da (buyuk altigenler) daha opak: harita rengi okumasi daha net.
       // Yakin zoom'da (kucuk altigenler) daha seffaf: harita altyapisi okunabilir.
@@ -2425,7 +2451,9 @@ function showHexInfo(pins, hexId) {
   document.getElementById('infoScore').textContent = avgS+'/10'; document.getElementById('infoScore').style.color = memColor(parseFloat(avgS));
   document.getElementById('infoCount').textContent = pins.length+' ölçüm';
   const im={}; pins.forEach(p=>{ if(!im[p.iss]) im[p.iss]={c:0,t:0}; im[p.iss].c++; im[p.iss].t+=p.puan; });
-  document.getElementById('infoISS').innerHTML = `<div class="panel-title" style="margin-bottom:6px;">ISS Dağılımı</div>`+Object.entries(im).sort((a,b)=>b[1].c-a[1].c).slice(0,4).map(([iss,d])=>`<div class="info-iss-item"><span><span class="iss-dot" style="background:${ic(iss)}"></span>${escHtml(iss)}</span><span style="color:${ic(iss)};font-weight:700;font-family:var(--font-mono)">${(d.t/d.c).toFixed(1)}</span></div>`).join('');
+  const tc={}; pins.forEach(p=>{ const t=p.baglanti_turu; if(t && t!=='yok') tc[t]=(tc[t]||0)+1; if(p.diger_altyapilar) p.diger_altyapilar.split(',').forEach(t2=>{ if(t2) tc[t2]=(tc[t2]||0)+1; }); });
+  const altyapiHtml = Object.keys(tc).length ? `<div class="panel-title" style="margin:10px 0 6px;">Altyapı Dağılımı</div>`+Object.entries(tc).sort((a,b)=>b[1]-a[1]).map(([t,c])=>`<div class="info-iss-item"><span><span class="iss-dot" style="background:${cc(t)}"></span>${t.toUpperCase()}</span><span style="color:${cc(t)};font-weight:700;font-family:var(--font-mono)">${c} (%${Math.round(c/pins.length*100)})</span></div>`).join('') : '';
+  document.getElementById('infoISS').innerHTML = `<div class="panel-title" style="margin-bottom:6px;">ISS Dağılımı</div>`+Object.entries(im).sort((a,b)=>b[1].c-a[1].c).slice(0,4).map(([iss,d])=>`<div class="info-iss-item"><span><span class="iss-dot" style="background:${ic(iss)}"></span>${escHtml(iss)}</span><span style="color:${ic(iss)};font-weight:700;font-family:var(--font-mono)">${(d.t/d.c).toFixed(1)}</span></div>`).join('') + altyapiHtml;
   document.getElementById('mapInfo').classList.add('visible');
   const body = document.querySelector('.map-info-body'); if(body) body.scrollTop = 0;
   // Ölçüm listesini sıfırla
@@ -2453,6 +2481,7 @@ function toggleHexPinsList() {
           
           const isOwnPin = browserFingerprint && p.browser_fp === browserFingerprint;
           const ownPinBadge = isOwnPin ? `<span class="own-pin-badge">Senin Ölçümün</span>` : '';
+          const extraBadges = p.diger_altyapilar ? p.diger_altyapilar.split(',').filter(Boolean).map(t=>`<span style="font-size:8px;color:${cc(t)};border:1px solid ${cc(t)};border-radius:8px;padding:1px 5px;margin-left:4px;">+${t.toUpperCase()}</span>`).join('') : '';
           const actions = isOwnPin ? `
             <div class="user-pin-actions">
               <span class="user-pin-action edit" onclick="event.stopPropagation(); openUserEditModal('${p.id}')">✏️ Düzenle</span>
@@ -2468,7 +2497,7 @@ function toggleHexPinsList() {
             <div class="hex-pin-header">
               <span class="hex-pin-iss" style="color:${c}">● ${escHtml(p.iss)}</span>
               ${ownPinBadge}
-              <span style="font-size:9px;color:var(--text3)">${(p.baglanti_turu||'').toUpperCase()}</span>
+              <span style="font-size:9px;color:var(--text3)">${(p.baglanti_turu||'').toUpperCase()}</span>${extraBadges}
             </div>
             <div class="hex-pin-speeds">
               ↓ <span style="color:${speedColor(p.gercek_dl)}">${dlBand} Mbps</span>
@@ -2666,10 +2695,10 @@ async function renderStats() {
 
   const cm={fiber:0,vdsl:0,adsl:0,yok:0,docsis:0}; pins.forEach(p=>{if(cm[p.baglanti_turu]!==undefined) cm[p.baglanti_turu]++;});
   document.getElementById('connChart').innerHTML =[
-    {l:'Fiber',v:cm.fiber,c:'#00d4ff'},
+    {l:'Fiber',v:cm.fiber,c:'#9333ea'},
     {l:'VDSL',v:cm.vdsl,c:'#FB8C00'},
     {l:'ADSL',v:cm.adsl,c:'#E53935'},
-    {l:'DOCSIS',v:cm.docsis,c:'#7c4dff'},
+    {l:'DOCSIS',v:cm.docsis,c:'#3b82f6'},
     ...(cm.yok > 0 ? [{l:'Altyapı Yok',v:cm.yok,c:'#6b7280'}] : [])
   ].map(t=>{
     const pct = pins.length ? (t.v/pins.length*100) : 0;
@@ -2804,7 +2833,7 @@ async function renderStats() {
   }
 }
 
-let pinLat=null, pinLng=null, pinMarker=null, selConnVal='', selScoreVal=0;
+let pinLat=null, pinLng=null, pinMarker=null, selConnVal='', selScoreVal=0, selExtraAltyapi=new Set();
 function initPinMap() { 
   const m = L.map('pin-map', { zoomControl:false }).setView([39.2,35.5], 6); 
   L.tileLayer(getMapTileUrl(), { maxZoom:19 }).addTo(m); 
@@ -3226,7 +3255,7 @@ function applyManualAddress() {
   document.getElementById('manualAddressWrap').style.display = 'none';
 }
 function selConn(el,type) {
-  document.querySelectorAll('.cbtn').forEach(b=>b.className=b.className.replace(/ sel/g,''));
+  el.parentElement.querySelectorAll('.cbtn').forEach(b=>b.className=b.className.replace(/ sel/g,''));
   el.classList.add('sel');
   selConnVal=type;
   const issSel = document.getElementById('issSelect');
@@ -3255,6 +3284,10 @@ function selConn(el,type) {
     if (issSel && issSel.disabled) { issSel.disabled = false; issSel.value=''; toggleCustomIss(''); }
     if (infraSel && infraSel.disabled) { infraSel.disabled = false; infraSel.value=''; }
   }
+}
+function toggleExtraAltyapi(el, type) {
+  el.classList.toggle('sel');
+  if (selExtraAltyapi.has(type)) selExtraAltyapi.delete(type); else selExtraAltyapi.add(type);
 }
 function selScore(el,val) { document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); selScoreVal=val; }
 (function buildScoreRow() { const row = document.getElementById('scoreRow'); if(!row) return; for(let i=1;i<=10;i++){const b=document.createElement('div');b.className='sbtn';b.textContent=i;b.onclick=()=>selScore(b,i);row.appendChild(b);} })();
@@ -3409,8 +3442,16 @@ async function submitPin() {
     return dist < 500 && age < 24;
   });
   if (nearbyRecent) {
-    submitBtn.disabled=false; submitBtn.textContent='📍 Veriyi Paylaş';
-    return showToast(`⚠ Bu bölge için son 24 saat içinde veri girdiniz. Lütfen farklı bir konumdan giriş yapın.`, 'warn');
+    // ÇOKLU ALTYAPI: Kullanıcı "farklı bir altyapı/İSS ekliyorum" kutusunu işaretlediyse
+    // ve gerçekten FARKLI bir İSS ya da bağlantı türü giriyorsa, aynı adres/24 saat
+    // kısıtlamasını aşmasına izin ver (örn. hem TurkNet Fiber hem TT VDSL aynı adres).
+    const multiAltyapi = document.getElementById('multiAltyapiCheck')?.checked;
+    const sameIssType = nearbyRecent.iss === finalIss && nearbyRecent.baglanti_turu === (selConnVal || (isAltyapiYok ? 'yok' : null));
+    if (!multiAltyapi || sameIssType) {
+      submitBtn.disabled=false; submitBtn.textContent='📍 Veriyi Paylaş';
+      if (multiAltyapi && sameIssType) return showToast(`⚠ Bu altyapı (${nearbyRecent.iss} - ${(nearbyRecent.baglanti_turu||'').toUpperCase()}) zaten kayıtlı. Farklı bir İSS veya bağlantı türü seçin.`, 'warn');
+      return showToast(`⚠ Bu bölge için son 24 saat içinde veri girdiniz. Farklı bir altyapı/İSS giriyorsanız aşağıdaki kutuyu işaretleyin.`, 'warn');
+    }
   }
   const f = fuzzy(pinLat, pinLng);
   lastSubmittedLatLng = { lat: f.lat, lng: f.lng };
@@ -3431,6 +3472,7 @@ async function submitPin() {
     mahalle:document.getElementById('mahalleInput').value||null, 
     iss: finalIss, 
     baglanti_turu:selConnVal || (isAltyapiYok ? 'yok' : null), 
+    diger_altyapilar: (!isAltyapiYok && selExtraAltyapi.size) ? [...selExtraAltyapi].filter(t => t !== selConnVal).join(',') || null : null,
     altyapi_sahibi:document.getElementById('infraSelect').value||null, 
     paket_hizi: pkgDL, paket_hizi_dl: pkgDL, paket_hizi_ul: pkgUL, 
     gercek_dl:dl, gercek_ul:ul, 
@@ -3710,7 +3752,7 @@ async function deleteUserPin(pinId) {
   }
 }
 
-function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); speedVerifiedByTest = false; const kvkkCheck = document.getElementById('kvkkCheck');
+function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selExtraAltyapi=new Set(); selScoreVal=0; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); speedVerifiedByTest = false; const multiAltyapiReset = document.getElementById('multiAltyapiCheck'); if (multiAltyapiReset) multiAltyapiReset.checked=false; const kvkkCheck = document.getElementById('kvkkCheck');
   if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; }
   const noInfraCheck = document.getElementById('noInfraCheck');
   if (noInfraCheck && noInfraCheck.checked) { noInfraCheck.checked = false; onNoInfraChange(false); }
@@ -5239,11 +5281,10 @@ async function measureUploadSupabase(onLive) {
   const CHUNK_BYTES      = 1 * 1024 * 1024;   // 1 MB per chunk (Stabilite için)
   const MEASURE_MS       = 9000;
   const SAMPLE_MS        = 200;
-  const PARALLEL_STREAMS = 8;
   const TARGET_URL       = `${SB_URL}/rest/v1/rpc/speedtest_ping`;
 
   // 1) Warmup — stopAt hesabına dahil değil (Bağlantının asıl teste hazır olması için)
-  await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, n) =>
+  await Promise.all(Array.from({ length: 2 }, (_, n) =>
     new Promise(res => {
       const x = new XMLHttpRequest();
       x.open('POST', `${TARGET_URL}?t=wu_${n}_${Date.now()}`);
@@ -5254,6 +5295,38 @@ async function measureUploadSupabase(onLive) {
       x.send(makeUploadBlob(256 * 1024));
     })
   ));
+
+  // DOĞRULUK DÜZELTMESİ: Bu yedek yol sabit 8 paralel akış kullanıyordu — bu,
+  // measureUploadCF'de (Cloudflare birincil yol) daha önce tespit edilip
+  // düzeltilen "zayıf bağlantıda gerçek tek-uygulama deneyiminin çok üzerinde
+  // toplam hız gösterme" hatasının AYNISI. Bu yedek yola sadece Cloudflare
+  // erişilemediğinde (örn. VPN/güvenlik duvarı/bazı ISS'lerin CDN engeli)
+  // düşülüyor — yani tam olarak "yanlış yüksek ölçüyor" şikayetinin en çok
+  // görüleceği senaryo. Cloudflare yolundaki ile aynı mantıkla, kısa bir
+  // tek-akışlı ön ölçüm yapılıp bağlantı hızına göre akış sayısı seçiliyor.
+  let PARALLEL_STREAMS = 4; // prob başarısız olursa ılımlı varsayılan
+  {
+    const probeStart = performance.now();
+    let probeSent = 0, probeDone = false;
+    await new Promise(res => {
+      const x = new XMLHttpRequest();
+      x.open('POST', `${TARGET_URL}?t=probe_${Date.now()}`);
+      x.timeout = 1200;
+      x.setRequestHeader('apikey', SB_KEY);
+      x.setRequestHeader('Content-Type', 'text/plain');
+      x.upload.onprogress = e => { probeSent = e.loaded; };
+      x.upload.onloadend = () => { probeDone = true; res(); };
+      x.onerror = x.ontimeout = () => res();
+      x.send(makeUploadBlob(3 * 1024 * 1024));
+    });
+    const probeElapsed = (performance.now() - probeStart) / 1000;
+    const probeMbps = (probeSent >= 50000 && probeElapsed > 0) ? (probeSent * 8) / probeElapsed / 1e6 : null;
+    if (probeMbps === null) PARALLEL_STREAMS = 4;
+    else if (probeMbps < 15) PARALLEL_STREAMS = 2;   // yavaş/mobil bağlantı — tek-uygulama deneyimine yakın tut
+    else if (probeMbps < 80) PARALLEL_STREAMS = 4;   // orta hız
+    else PARALLEL_STREAMS = 6;                       // hızlı fiber
+    window.lastUploadProbeMbps = probeMbps ? Math.round(probeMbps) : null;
+  }
 
   // 2) Ölçüm penceresi
   const measureStart = performance.now();
@@ -5345,7 +5418,7 @@ async function measureUploadSupabase(onLive) {
 
   // 6) Sonuç — download ile aynı mantık: p90 önce, fallback ortalama
   const elapsed = (performance.now() - measureStart) / 1000;
-  window.lastUploadDebug = `[Supabase] gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
+  window.lastUploadDebug = `[Supabase] akış sayısı: ${PARALLEL_STREAMS}${window.lastUploadProbeMbps ? ` (prob: ~${window.lastUploadProbeMbps} Mbps)` : ''}, gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
   if (totalSent < 100_000 || elapsed <= 0) return null;
   // DOĞRULUK DÜZELTMESİ: bkz. measureUploadXHR — aynı sebepten p90 yerine gerçek ortalama kullanılıyor.
   return Math.round((totalSent * 8) / elapsed / 1e6);
