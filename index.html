@@ -4609,6 +4609,36 @@ function filterAdminTable(search) {
 }
 
 const RAPOR_TIP_LABELS = { yanlis_hiz:'Yanlış hız', yanlis_konum:'Yanlış konum', yanlis_iss:'Yanlış ISS', spam:'Spam', guncelleme:'Bilgi Güncelleme', diger:'Diğer' };
+// Bir rapor tek bir pin için mi, yoksa "Bu Bölgeyi Bildir" ile aynı bölgedeki birden fazla
+// pin için mi gönderilmiş anlaşılmıyordu (openHexReport, aynı bölge+tip+açıklama ile aynı anda
+// en fazla 5 ayrı satır ekliyor). Aynı bölge/tip/açıklama/~zaman damgasına sahip raporları
+// "kardeş" olarak gruplayıp moderatöre net bir rozet gösteriyoruz.
+function groupRaporSiblings(raporlar) {
+  const groups = {};
+  raporlar.forEach(r => {
+    if (!cleanBolgeStr(r.bolge)) return; // sadece bölge bağlamlı raporlarda gruplama anlamlı
+    const bucket = Math.floor(new Date(r.created_at).getTime() / 5000); // 5 sn'lik pencere
+    const key = r.bolge + '|' + r.tip + '|' + (r.aciklama || '') + '|' + bucket;
+    (groups[key] = groups[key] || []).push(r.id);
+  });
+  return groups;
+}
+function buildRaporScopeAndPinHtml(r, pin, siblingGroups) {
+  let scopeKey = null;
+  if (cleanBolgeStr(r.bolge)) {
+    const bucket = Math.floor(new Date(r.created_at).getTime() / 5000);
+    scopeKey = r.bolge + '|' + r.tip + '|' + (r.aciklama || '') + '|' + bucket;
+  }
+  const siblingCount = scopeKey && siblingGroups[scopeKey] ? siblingGroups[scopeKey].length : 1;
+  const scopeBadge = siblingCount > 1
+    ? `<span style="display:inline-block;padding:2px 7px;background:rgba(251,140,0,.12);border:1px solid rgba(251,140,0,.4);border-radius:4px;font-size:9px;color:var(--warn);font-family:var(--font-mono);font-weight:700;">🗺️ BÖLGE BİLDİRİMİ — bu bölgedeki ${siblingCount} pinden biri</span>`
+    : `<span style="display:inline-block;padding:2px 7px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:4px;font-size:9px;color:var(--accent);font-family:var(--font-mono);font-weight:700;">📍 TEK PİN BİLDİRİMİ</span>`;
+  const pinInfo = pin
+    ? `<span style="color:var(--text2);font-weight:700;">${escHtml(pin.iss||'—')}</span> · <span style="color:${cc(pin.baglanti_turu)}">${(pin.baglanti_turu||'').toUpperCase()}</span> · ${pin.gercek_dl||'?'} Mbps <span title="${escHtml(r.pin_id||'')}" style="opacity:.5;font-family:var(--font-mono);">(${r.pin_id?escHtml(r.pin_id.slice(0,8))+'…':'—'})</span>`
+    : `<span style="color:var(--warn);">⚠ Bu pin artık bulunamıyor — silinmiş olabilir</span>`;
+  return `<div style="margin-bottom:5px;">${scopeBadge}</div>
+        <div class="report-meta" style="margin-top:5px;line-height:1.8;">${cleanBolgeStr(r.bolge)?`<span style="display:inline-block;margin-top:4px;padding:2px 8px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:4px;font-size:9px;color:var(--accent);font-family:var(--font-mono);">🏘️ Bölge: ${escHtml(cleanBolgeStr(r.bolge))}</span><br>`:''}<span style="font-size:10px;">${pinInfo}</span></div>`;
+}
 // Eski showHexInfo hatası yüzünden bazı raporların 'bolge' alanına ilçe boşken
 // "İl › — › Mahalle" gibi sahte bir tire kaydedilmiş. Veritabanına dokunmadan,
 // görüntüleme anında bu boş/placeholder parçaları ayıklıyoruz.
@@ -4621,6 +4651,7 @@ async function loadRaporlar() {
   const list = document.getElementById('bekleyenList'); list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
   try {
     const raporlar = await getRaporlar()||[]; if (!raporlar.length) return list.innerHTML='<div class="empty-state">Bekleyen rapor yok ✅</div>';
+    const siblingGroups = groupRaporSiblings(raporlar);
     list.innerHTML = raporlar.map(r => {
       const tarihStr = new Date(r.created_at).toLocaleString('tr-TR');
       const pin = adminPinsCache.find(p => p.id === r.pin_id);
@@ -4628,7 +4659,7 @@ async function loadRaporlar() {
       return `<div class="report-card">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div class="report-type">${RAPOR_TIP_LABELS[r.tip]||escHtml(r.tip)}</div><div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);">${tarihStr}</div></div>
         <div class="report-text">${escHtml(r.aciklama)||'Açıklama girilmedi'}</div>
-        <div class="report-meta" style="margin-top:5px;line-height:1.8;">${cleanBolgeStr(r.bolge)?`<span style="display:inline-block;margin-top:4px;padding:2px 8px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:4px;font-size:9px;color:var(--accent);font-family:var(--font-mono);">📍 ${escHtml(cleanBolgeStr(r.bolge))}</span><br>`:''}<span style="font-family:var(--font-mono);font-size:9px;opacity:.6;" title="${escHtml(r.pin_id||'')}">Pin: ${r.pin_id ? escHtml(r.pin_id.slice(0,8))+'…' : '—'}</span></div>
+        ${buildRaporScopeAndPinHtml(r, pin, siblingGroups)}
         <div class="mod-actions" style="margin-top:8px;">
           <button class="btn-approve" onclick="handleRapor('${r.id}','islendi')">✅ İşlendi</button>
           <button class="btn-hide" onclick="handleRapor('${r.id}','reddedildi')">❌ Reddet</button>
@@ -4657,6 +4688,7 @@ async function loadGecmisRaporlar() {
   const list = document.getElementById('gecmisRaporList'); list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
   try {
     const raporlar = await getGecmisRaporlar()||[]; if (!raporlar.length) return list.innerHTML='<div class="empty-state">Henüz işlenmiş rapor yok</div>';
+    const siblingGroups = groupRaporSiblings(raporlar);
     const durumBadge = { islendi:'<span style="color:var(--success);font-weight:700;">✅ İşlendi</span>', reddedildi:'<span style="color:var(--danger);font-weight:700;">❌ Reddedildi</span>' };
     list.innerHTML = raporlar.map(r => {
       const tarihStr = new Date(r.created_at).toLocaleString('tr-TR');
@@ -4666,7 +4698,7 @@ async function loadGecmisRaporlar() {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div class="report-type">${RAPOR_TIP_LABELS[r.tip]||escHtml(r.tip)}</div><div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);">${tarihStr}</div></div>
         <div style="margin-bottom:5px;font-size:11px;">${durumBadge[r.durum]||escHtml(r.durum)}</div>
         <div class="report-text">${escHtml(r.aciklama)||'Açıklama girilmedi'}</div>
-        <div class="report-meta" style="margin-top:5px;line-height:1.8;">${cleanBolgeStr(r.bolge)?`<span style="display:inline-block;margin-top:4px;padding:2px 8px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:4px;font-size:9px;color:var(--accent);font-family:var(--font-mono);">📍 ${escHtml(cleanBolgeStr(r.bolge))}</span><br>`:''}<span style="font-family:var(--font-mono);font-size:9px;opacity:.6;" title="${escHtml(r.pin_id||'')}">Pin: ${r.pin_id ? escHtml(r.pin_id.slice(0,8))+'…' : '—'}</span></div>
+        ${buildRaporScopeAndPinHtml(r, pin, siblingGroups)}
         <div class="mod-actions" style="margin-top:8px;">
           <button class="btn-edit" onclick="undoRapor('${r.id}')">↩️ Geri Al (Bekleyene Taşı)</button>
           ${focusBtn}
