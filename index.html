@@ -1069,7 +1069,7 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
         <div id="docsisNote" style="display:none;font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">DOCSIS, Türksat'ın TV kablosu (coaxial) üzerinden verdiği internet türüdür. Türksat'tan fiber veya VDSL hizmeti alıyorsanız DOCSIS'i değil, "Fiber" veya "VDSL"yi seçin — DOCSIS sadece kablo TV hattından gelen Türksat bağlantıları içindir.</div>
       </div>
       <div class="fg">
-        <div class="fl">Adreste Bilinen Diğer Sağlayıcı/Altyapılar <span style="color:var(--text3);font-weight:400;">(opsiyonel) 🧪 test aşamasında</span></div>
+        <div class="fl">🏘️ Adreste BAŞKA Hangi Sağlayıcılar da Var? <span style="color:var(--text3);font-weight:400;">(siz kullanmıyorsunuz, sadece mevcut olan — opsiyonel) 🧪 test aşamasında</span></div>
         <div id="extraAltyapiRows"></div>
         <div style="margin-top:6px;padding:7px;text-align:center;border-radius:6px;border:1px dashed var(--border);color:var(--text2);font-size:11px;cursor:pointer;" onclick="addExtraAltyapiRow()">+ Sağlayıcı / Altyapı Ekle</div>
         <div style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">Örn. adreste siz TurkNet Fiber kullanıyorsanız ama Türk Telekom VDSL de çekiyorsa, buraya "Türk Telekom" + "VDSL" olarak ekleyin. Birden fazla sağlayıcı/tür ekleyebilirsiniz.</div>
@@ -1095,7 +1095,7 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
       <div class="fg"><div class="fl">Memnuniyet Puanı (1–10)</div><div class="score-row" id="scoreRow"></div></div>
       <div class="fg"><div class="fl">Kısa Yorum (opsiyonel)</div><textarea class="fta" placeholder="Fiber'e geçişten sonra çok iyi oldu..." id="commentInput"></textarea></div>
       <div class="fg">
-        <div class="fl">Altyapı Sahibi (biliyorsanız) <span style="color:var(--text3);font-weight:400;">(birden fazla seçilebilir)</span></div>
+        <div class="fl">🔧 SİZİN Bağlantınızın Fiziksel Altyapı Sahibi <span style="color:var(--text3);font-weight:400;">(biliyorsanız, birden fazla seçilebilir)</span></div>
         <div class="cbtns" id="infraChips" style="flex-wrap:wrap;">
           <div class="cbtn" data-val="Türk Telekom (kiralık port)" onclick="toggleInfraChip(this)">TT Kiralık Port</div>
           <div class="cbtn" data-val="TurkNet öz altyapı" onclick="toggleInfraChip(this)">TurkNet Öz</div>
@@ -1402,6 +1402,11 @@ CREATE POLICY "auth_update_raporlar" ON raporlar
       <div class="fg"><div class="fl">Paket Hızı DL (Mbps)</div><input class="fi" type="number" id="editPkgDL" placeholder="opsiyonel"></div>
       <div class="fg"><div class="fl">Paket Hızı UL (Mbps)</div><input class="fi" type="number" id="editPkgUL" placeholder="opsiyonel"></div>
       <div class="fg"><div class="fl">Memnuniyet Puanı (1–10)</div><input class="fi" type="number" min="1" max="10" id="editPuan" placeholder="8"></div>
+    </div>
+    <div class="fg" style="margin-bottom:10px;">
+      <div class="fl">🏘️ Adreste Başka Sağlayıcılar <span style="color:var(--text3);font-weight:400;">(bu pinin sahibi kullanmıyor, sadece mevcut)</span></div>
+      <div id="editExtraAltyapiRows"></div>
+      <div style="margin-top:6px;padding:7px;text-align:center;border-radius:6px;border:1px dashed var(--border);color:var(--text2);font-size:11px;cursor:pointer;" onclick="addEditExtraAltyapiRow()">+ Sağlayıcı / Altyapı Ekle</div>
     </div>
     <div class="fg" style="margin-bottom:10px;">
       <div class="fl">Görünürlük</div>
@@ -2381,7 +2386,7 @@ function renderHex() {
   // (daha ince) değerlerine geri alındı.
   const res = z<=5 ? 3 : z<=6 ? 4 : z<=7 ? 5 : z<=9 ? 6 : z<=11 ? 7 : z<=13 ? 8 : z<=15 ? 9 : 10;
   const hexMap = {};
-  cleanPinsData.forEach(p => { if (!p.lat || !activeFilters.has(p.baglanti_turu)) return; const canonicalIss = canonicalIssName(p.iss); if (!isApprovedPublicIss(canonicalIss) || !activeISSFilters.has(canonicalIss)) return; try { const h = h3.latLngToCell(p.lat, p.lng, res); if (!hexMap[h]) hexMap[h]=[]; hexMap[h].push(p); } catch(e) {} });
+  cleanPinsData.forEach(p => { if (!p.lat) return; const matchesTypeFilter = activeFilters.has(p.baglanti_turu) || parseDigerAltyapi(p.diger_altyapilar).some(e => activeFilters.has(e.tur)); if (!matchesTypeFilter) return; const canonicalIss = canonicalIssName(p.iss); if (!isApprovedPublicIss(canonicalIss) || !activeISSFilters.has(canonicalIss)) return; try { const h = h3.latLngToCell(p.lat, p.lng, res); if (!hexMap[h]) hexMap[h]=[]; hexMap[h].push(p); } catch(e) {} });
   Object.entries(hexMap).forEach(([hex, pins]) => {
     try {
       const coords = h3.cellToBoundary(hex).map(([lat,lng]) =>[lat,lng]);
@@ -3336,8 +3341,8 @@ function selConn(el,type) {
     if (infraChips && infraChips.style.pointerEvents === 'none') { infraChips.style.opacity=''; infraChips.style.pointerEvents=''; }
   }
 }
-function addExtraAltyapiRow() {
-  const wrap = document.getElementById('extraAltyapiRows');
+function createExtraAltyapiRow(containerId, prefillIss, prefillTur) {
+  const wrap = document.getElementById(containerId);
   if (!wrap) return;
   const rowId = 'ea_' + (++extraAltyapiRowSeq);
   // "Diğer (İSS adını girin)" seçeneği bu satırlarda işlevsiz kalıyor (serbest metin girişi yok),
@@ -3359,6 +3364,25 @@ function addExtraAltyapiRow() {
     <div style="cursor:pointer;color:var(--text3);font-size:16px;padding:0 4px;flex:0 0 auto;" onclick="removeExtraAltyapiRow('${rowId}')">✕</div>
   `;
   wrap.appendChild(row);
+  if (prefillIss) {
+    const sel = row.querySelector('[data-role="iss"]');
+    if (sel) { sel.value = prefillIss; if (sel.value !== prefillIss) { const o=document.createElement('option'); o.value=prefillIss; o.textContent=prefillIss; sel.insertBefore(o, sel.firstChild.nextSibling); sel.value=prefillIss; } }
+  }
+  if (prefillTur) {
+    const btn = row.querySelector(`.cbtn.${prefillTur}`);
+    if (btn) selExtraRowType(btn, rowId, prefillTur);
+  }
+  return rowId;
+}
+function addExtraAltyapiRow() {
+  const issSel = document.getElementById('issSelect');
+  if (!issSel || issSel.options.length < 2) return showToast('⏳ Sağlayıcı listesi henüz yüklenmedi, birkaç saniye bekleyip tekrar deneyin', 'warn');
+  createExtraAltyapiRow('extraAltyapiRows');
+}
+function addEditExtraAltyapiRow() {
+  const issSel = document.getElementById('issSelect');
+  if (!issSel || issSel.options.length < 2) return showToast('⏳ Sağlayıcı listesi henüz yüklenmedi, birkaç saniye bekleyip tekrar deneyin', 'warn');
+  createExtraAltyapiRow('editExtraAltyapiRows');
 }
 function removeExtraAltyapiRow(rowId) {
   document.getElementById(rowId)?.remove();
@@ -3368,20 +3392,21 @@ function selExtraRowType(el, rowId, type) {
   el.classList.add('sel');
   el.closest('.extra-altyapi-row').dataset.tur = type;
 }
-function collectExtraAltyapi() {
-  const rows = document.querySelectorAll('#extraAltyapiRows .extra-altyapi-row');
+function collectExtraAltyapiFrom(containerId) {
+  const rows = document.querySelectorAll(`#${containerId} .extra-altyapi-row`);
   const out = [], seen = new Set();
   rows.forEach(r => {
     const iss = r.querySelector('[data-role="iss"]')?.value || '';
     const tur = r.dataset.tur || '';
     if (!iss || !tur || iss === 'Diğer') return;
     const key = iss + '|' + tur;
-    if (seen.has(key)) return; // mükerrer satır — atla
+    if (seen.has(key)) return;
     seen.add(key);
     out.push({ iss, tur });
   });
   return out;
 }
+function collectExtraAltyapi() { return collectExtraAltyapiFrom('extraAltyapiRows'); }
 function selScore(el,val) { document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); selScoreVal=val; }
 function toggleInfraChip(el) { el.classList.toggle('sel'); }
 function collectInfraSahibi() {
@@ -4693,7 +4718,10 @@ async function openEditModal(id) {
     if (currentIss && !getAllIss().includes(currentIss)) { const extras = getExtraIss(); extras.push(currentIss); saveExtraIss(extras); }
     buildIssOptions(editIssSel, currentIss);
     checkEditIssValidity();
-    document.getElementById('editConn').value=['fiber','vdsl','adsl','docsis','yok'].includes(p.baglanti_turu) ? p.baglanti_turu : 'fiber'; document.getElementById('editDL').value=p.gercek_dl||''; document.getElementById('editUL').value=p.gercek_ul||''; document.getElementById('editPkgDL').value=p.paket_hizi_dl||p.paket_hizi||''; document.getElementById('editPkgUL').value=p.paket_hizi_ul||''; document.getElementById('editPuan').value=p.puan||''; document.getElementById('editGorunur').value=String(p.gorunur!==false); document.getElementById('editModNote').value=p.mod_notu||''; document.getElementById('editModal').classList.add('open');
+    document.getElementById('editConn').value=['fiber','vdsl','adsl','docsis','yok'].includes(p.baglanti_turu) ? p.baglanti_turu : 'fiber'; document.getElementById('editDL').value=p.gercek_dl||''; document.getElementById('editUL').value=p.gercek_ul||''; document.getElementById('editPkgDL').value=p.paket_hizi_dl||p.paket_hizi||''; document.getElementById('editPkgUL').value=p.paket_hizi_ul||''; document.getElementById('editPuan').value=p.puan||''; document.getElementById('editGorunur').value=String(p.gorunur!==false); document.getElementById('editModNote').value=p.mod_notu||'';
+    const editExtraWrap = document.getElementById('editExtraAltyapiRows');
+    if (editExtraWrap) { editExtraWrap.innerHTML=''; parseDigerAltyapi(p.diger_altyapilar).forEach(e => createExtraAltyapiRow('editExtraAltyapiRows', e.iss, e.tur)); }
+    document.getElementById('editModal').classList.add('open');
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 
@@ -4718,6 +4746,7 @@ async function saveEdit() {
     }
     const editPkgDLVal = parseInt(document.getElementById('editPkgDL').value)||null;
     const editPkgULVal = parseInt(document.getElementById('editPkgUL').value)||null;
+    const editExtraList = collectExtraAltyapiFrom('editExtraAltyapiRows').filter(e => !(e.iss === newIss && e.tur === document.getElementById('editConn').value));
     await patchPin(id, {
       iss: newIss,
       baglanti_turu: document.getElementById('editConn').value,
@@ -4729,7 +4758,8 @@ async function saveEdit() {
       puan,
       gorunur: isGorunur,
       is_quarantine: isGorunur && issNowApproved ? false : true,
-      mod_notu: document.getElementById('editModNote').value.trim()||null
+      mod_notu: document.getElementById('editModNote').value.trim()||null,
+      diger_altyapilar: editExtraList.length ? JSON.stringify(editExtraList) : null
     });
     showToast('✅ Pin güncellendi');
     closeEditModal();
@@ -4742,6 +4772,7 @@ async function saveEdit() {
       // Eski şema — yeni kolonlar henüz yok, sadece paket_hizi ile tekrar dene
       try {
         const editPkgDLVal = parseInt(document.getElementById('editPkgDL').value)||null;
+        const editExtraList2 = collectExtraAltyapiFrom('editExtraAltyapiRows').filter(e => !(e.iss === newIss && e.tur === document.getElementById('editConn').value));
         await patchPin(id, {
           iss: newIss,
           baglanti_turu: document.getElementById('editConn').value,
@@ -4751,7 +4782,8 @@ async function saveEdit() {
           puan,
           gorunur: isGorunur,
           is_quarantine: isGorunur && issNowApproved ? false : true,
-          mod_notu: document.getElementById('editModNote').value.trim()||null
+          mod_notu: document.getElementById('editModNote').value.trim()||null,
+          diger_altyapilar: editExtraList2.length ? JSON.stringify(editExtraList2) : null
         });
         showToast('✅ Pin güncellendi (DB şeması bekleniyor — sadece eski Paket Hızı kaydedildi)');
         closeEditModal();
