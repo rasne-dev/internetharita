@@ -254,8 +254,8 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
 .chip.on { opacity: 1; }
 .chip-fiber { color: #9333ea; border-color: rgba(147,51,234,0.4); }
 .chip-fiber.on { background: rgba(147,51,234,0.1); border-color: #9333ea; }
-.chip-vdsl { color: var(--s4); border-color: rgba(251,140,0,0.4); }
-.chip-vdsl.on { background: rgba(251,140,0,0.1); border-color: var(--s4); }
+.chip-vdsl { color: #06b6d4; border-color: rgba(6,182,212,0.4); }
+.chip-vdsl.on { background: rgba(6,182,212,0.1); border-color: #06b6d4; }
 .chip-adsl { color: var(--s5); border-color: rgba(229,57,53,0.4); }
 .chip-adsl.on { background: rgba(229,57,53,0.1); border-color: var(--s5); }
 .chip-docsis { color: #3b82f6; border-color: rgba(59,130,246,0.4); }
@@ -517,7 +517,7 @@ html.light .sr-ping { background:#f5f7fa; }
 .fiu{position:relative;} .fiu input{ width:100%;padding:9px 44px 9px 12px; background:var(--surface2);border:1px solid var(--border); color:var(--text);border-radius:7px;font-size:12px; outline:none;} .fiu input:focus{border-color:var(--accent);} .fiu-unit{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--text3);font-family:var(--font-mono);pointer-events:none;}
 .speed-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;} .score-row{display:flex;gap:3px;flex-wrap:wrap;}
 .sbtn{ flex:1;min-width:28px;padding:6px 2px;border-radius:5px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:10px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center; } .sbtn.sel{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
-.cbtns{display:flex;gap:6px;} .cbtn{ flex:1;padding:8px;border-radius:6px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:11px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center; } .cbtn.fiber.sel{background:rgba(147,51,234,.12);border-color:#9333ea;color:#9333ea;} .cbtn.vdsl.sel{background:rgba(251,140,0,.12);border-color:var(--s4);color:var(--s4);} .cbtn.adsl.sel{background:rgba(229,57,53,.12);border-color:var(--s5);color:var(--s5);} .cbtn.docsis.sel{background:rgba(59,130,246,.12);border-color:#3b82f6;color:#3b82f6;} .cbtn.docsis:disabled,.fs:disabled{opacity:.55;cursor:not-allowed;}
+.cbtns{display:flex;gap:6px;} .cbtn{ flex:1;padding:8px;border-radius:6px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:11px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center; } .cbtn.fiber.sel{background:rgba(147,51,234,.12);border-color:#9333ea;color:#9333ea;} .cbtn.vdsl.sel{background:rgba(6,182,212,.12);border-color:#06b6d4;color:#06b6d4;} .cbtn.adsl.sel{background:rgba(229,57,53,.12);border-color:var(--s5);color:var(--s5);} .cbtn.docsis.sel{background:rgba(59,130,246,.12);border-color:#3b82f6;color:#3b82f6;} .cbtn.docsis:disabled,.fs:disabled{opacity:.55;cursor:not-allowed;}
 #infraChips .cbtn{flex:0 1 auto;padding:6px 10px;} #infraChips .cbtn.sel{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
 .loc-box{ background:var(--surface2);border:1px solid var(--border); border-radius:7px;padding:9px 12px;font-size:11px; color:var(--text3);display:flex;align-items:center;gap:8px; }
 .loc-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);flex-shrink:0;} .loc-dot.set{background:var(--success);box-shadow:0 0 8px var(--success);}
@@ -734,6 +734,25 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
 }
 .my-pin-ripple.pending { background: var(--warn); }
 .my-pin-core.pending { background: var(--warn); border-color: #000; }
+
+/* MOD PANELİ: bildirim/rapor "Harita" butonuyla odaklanılan pini net göstermek için hedef işaretçi */
+@keyframes report-target-ripple {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(4.5); opacity: 0; }
+}
+.report-target-container { position: relative; width: 20px; height: 20px; }
+.report-target-core {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: transparent; border: 3px solid var(--danger);
+  box-shadow: 0 0 12px var(--danger);
+  position: relative; z-index: 2;
+}
+.report-target-ripple {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  border-radius: 50%; border: 2px solid var(--danger);
+  opacity: 0; z-index: 1;
+  animation: report-target-ripple 1.4s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+}
 
 @media(max-width:768px){
   nav .nav-tabs { display:none; } nav .btn-ghost { display:none; } .mobile-nav { display:flex; } .page { bottom:56px; } .toast { bottom:72px; }
@@ -1904,13 +1923,29 @@ function isSpam(p) {
   return reason !== "" && reason !== "Altyapı Yok Bildirimi" && reason !== "Karantina / Güvenlik Kontrolü";
 }
 
+let reportTargetMarker = null, reportTargetTimer = null;
 function focusOnMap(lat, lng) {
   if (!lat || !lng) return showToast("Koordinat bulunamadı", "err");
   showPage('harita');
   setTimeout(() => {
     if (maps.main) {
-      maps.main.setView([lat, lng], 16);
-      showToast("📍 Bölgeye odaklanıldı");
+      maps.main.setView([lat, lng], 17);
+      // Önceki hedef işaretçisini temizle
+      if (reportTargetMarker) { maps.main.removeLayer(reportTargetMarker); reportTargetMarker = null; }
+      if (reportTargetTimer) { clearTimeout(reportTargetTimer); reportTargetTimer = null; }
+      // Tam olarak hangi pinin bildirildiğini göstermek için belirgin, kırmızı çerçeveli bir hedef işaretçisi koy.
+      // Hex agregasyonu yüzünden aynı bölgede başka pinler de olabileceğinden, sadece bölgeye
+      // odaklanmak yeterli değil — kullanıcı tam koordinatı görsel olarak ayırt edebilmeli.
+      const icon = L.divIcon({
+        className: 'report-target-div-icon',
+        html: `<div class="report-target-container"><div class="report-target-ripple"></div><div class="report-target-core"></div></div>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
+      });
+      reportTargetMarker = L.marker([lat, lng], { icon, zIndexOffset: 1000, interactive: false }).addTo(maps.main);
+      // 20 saniye sonra otomatik kaldır — kalıcı görsel kirlilik yaratmasın
+      reportTargetTimer = setTimeout(() => { if (reportTargetMarker) { maps.main.removeLayer(reportTargetMarker); reportTargetMarker = null; } }, 20000);
+      showToast("📍 Bildirilen pin kırmızı halkayla işaretlendi");
     }
   }, 300);
 }
@@ -2138,7 +2173,7 @@ const IC = {
   'Diğer': '#6b7280', 
   'Altyapı Yok': '#3f3f3f' 
 };
-const ic = iss => { const canonical = canonicalIssName(iss); const item = issListCache.find(i=>canonicalIssName(i.name)===canonical); return (item && item.color) ? item.color : (IC[canonical] || issHashColor(canonical)); }; const cc = t => t==='fiber'?'#9333ea':t==='vdsl'?'#FB8C00':t==='adsl'?'#E53935':t==='docsis'?'#3b82f6':'#888';
+const ic = iss => { const canonical = canonicalIssName(iss); const item = issListCache.find(i=>canonicalIssName(i.name)===canonical); return (item && item.color) ? item.color : (IC[canonical] || issHashColor(canonical)); }; const cc = t => t==='fiber'?'#9333ea':t==='vdsl'?'#06b6d4':t==='adsl'?'#E53935':t==='docsis'?'#3b82f6':'#888';
 // diger_altyapilar: yeni format JSON [{iss,tur}] — eski format (ilk sürüm) virgüllü tür listesiydi ("vdsl,docsis"), geriye dönük uyumluluk için ikisini de destekliyoruz.
 function parseDigerAltyapi(raw) {
   if (!raw) return [];
@@ -2240,7 +2275,7 @@ function setColorMode(m) {
   const items = document.getElementById('legendItems');
   if (!items) return renderHex();
   if (m === 'hiz') { items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:#800080"></div>500+</div><div class="legend-item"><div class="legend-dot" style="background:#1E88E5"></div>200–500</div><div class="legend-item"><div class="legend-dot" style="background:#43A047"></div>100–200</div><div class="legend-item"><div class="legend-dot" style="background:#FB8C00"></div>25–100</div><div class="legend-item"><div class="legend-dot" style="background:#E53935"></div>&lt;25 Mbps</div>`; }
-  else if (m === 'altyapi') { items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:#9333ea"></div>Fiber</div><div class="legend-item"><div class="legend-dot" style="background:#FB8C00"></div>VDSL</div><div class="legend-item"><div class="legend-dot" style="background:#E53935"></div>ADSL</div><div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>DOCSIS</div>`; }
+  else if (m === 'altyapi') { items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:#9333ea"></div>Fiber</div><div class="legend-item"><div class="legend-dot" style="background:#06b6d4"></div>VDSL</div><div class="legend-item"><div class="legend-dot" style="background:#E53935"></div>ADSL</div><div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>DOCSIS</div>`; }
   else { items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div>Mükemmel (8–10)</div><div class="legend-item"><div class="legend-dot" style="background:#84cc16"></div>İyi (6–7)</div><div class="legend-item"><div class="legend-dot" style="background:#eab308"></div>Orta (4–5)</div><div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>Düşük (1–3)</div>`; }
   renderHex();
 }
@@ -2463,7 +2498,7 @@ function showHexInfo(pins, hexId) {
   const im={}; pins.forEach(p=>{ if(!im[p.iss]) im[p.iss]={c:0,t:0}; im[p.iss].c++; im[p.iss].t+=p.puan; });
   const tc={}; pins.forEach(p=>{ const t=p.baglanti_turu; if(t && t!=='yok') tc[t]=(tc[t]||0)+1; parseDigerAltyapi(p.diger_altyapilar).forEach(e=>{ tc[e.tur]=(tc[e.tur]||0)+1; }); });
   const showAltyapiInfo = colorMode === 'altyapi';
-  const altyapiHtml = (showAltyapiInfo && Object.keys(tc).length) ? `<div class="panel-title" style="margin:10px 0 6px;">Altyapı Dağılımı</div>`+Object.entries(tc).sort((a,b)=>b[1]-a[1]).map(([t,c])=>`<div class="info-iss-item"><span><span class="iss-dot" style="background:${cc(t)}"></span>${t.toUpperCase()}</span><span style="color:${cc(t)};font-weight:700;font-family:var(--font-mono)">${c} (%${Math.round(c/pins.length*100)})</span></div>`).join('') : '';
+  const altyapiHtml = (showAltyapiInfo && Object.keys(tc).length) ? `<div class="panel-title" style="margin:10px 0 6px;">Altyapı Dağılımı <span style="opacity:.6;font-weight:400;font-size:9px;">(kaç ölçümde mevcut)</span></div>`+Object.entries(tc).sort((a,b)=>b[1]-a[1]).map(([t,c])=>`<div class="info-iss-item"><span><span class="iss-dot" style="background:${cc(t)}"></span>${t.toUpperCase()}</span><span style="color:${cc(t)};font-weight:700;font-family:var(--font-mono)">${c}/${pins.length}</span></div>`).join('') : '';
   const providerCombo = {}; if (showAltyapiInfo) pins.forEach(p=>parseDigerAltyapi(p.diger_altyapilar).forEach(e=>{ if(!e.iss) return; const k=e.iss+'|'+e.tur; providerCombo[k]=(providerCombo[k]||0)+1; }));
   const providerHtml = (showAltyapiInfo && Object.keys(providerCombo).length) ? `<div class="panel-title" style="margin:10px 0 6px;">Bilinen Diğer Sağlayıcılar</div>`+Object.entries(providerCombo).sort((a,b)=>b[1]-a[1]).map(([k,c])=>{ const [iss,tur]=k.split('|'); return `<div class="info-iss-item"><span><span class="iss-dot" style="background:${cc(tur)}"></span>${escHtml(iss)} · ${tur.toUpperCase()}</span><span style="color:var(--text3);font-weight:700;font-family:var(--font-mono)">${c}</span></div>`; }).join('') : '';
   document.getElementById('infoISS').innerHTML = `<div class="panel-title" style="margin-bottom:6px;">ISS Dağılımı</div>`+Object.entries(im).sort((a,b)=>b[1].c-a[1].c).slice(0,4).map(([iss,d])=>`<div class="info-iss-item"><span><span class="iss-dot" style="background:${ic(iss)}"></span>${escHtml(iss)}</span><span style="color:${ic(iss)};font-weight:700;font-family:var(--font-mono)">${(d.t/d.c).toFixed(1)}</span></div>`).join('') + altyapiHtml + providerHtml;
@@ -2709,7 +2744,7 @@ async function renderStats() {
   const cm={fiber:0,vdsl:0,adsl:0,yok:0,docsis:0}; pins.forEach(p=>{if(cm[p.baglanti_turu]!==undefined) cm[p.baglanti_turu]++;});
   document.getElementById('connChart').innerHTML =[
     {l:'Fiber',v:cm.fiber,c:'#9333ea'},
-    {l:'VDSL',v:cm.vdsl,c:'#FB8C00'},
+    {l:'VDSL',v:cm.vdsl,c:'#06b6d4'},
     {l:'ADSL',v:cm.adsl,c:'#E53935'},
     {l:'DOCSIS',v:cm.docsis,c:'#3b82f6'},
     ...(cm.yok > 0 ? [{l:'Altyapı Yok',v:cm.yok,c:'#6b7280'}] : [])
