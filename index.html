@@ -518,7 +518,6 @@ html.light .sr-ping { background:#f5f7fa; }
 .speed-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;} .score-row{display:flex;gap:3px;flex-wrap:wrap;}
 .sbtn{ flex:1;min-width:28px;padding:6px 2px;border-radius:5px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:10px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center; } .sbtn.sel{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
 .cbtns{display:flex;gap:6px;} .cbtn{ flex:1;padding:8px;border-radius:6px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:11px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center; } .cbtn.fiber.sel{background:rgba(147,51,234,.12);border-color:#9333ea;color:#9333ea;} .cbtn.vdsl.sel{background:rgba(6,182,212,.12);border-color:#06b6d4;color:#06b6d4;} .cbtn.adsl.sel{background:rgba(229,57,53,.12);border-color:var(--s5);color:var(--s5);} .cbtn.docsis.sel{background:rgba(59,130,246,.12);border-color:#3b82f6;color:#3b82f6;} .cbtn.docsis:disabled,.fs:disabled{opacity:.55;cursor:not-allowed;}
-#infraChips .cbtn{flex:0 1 auto;padding:6px 10px;} #infraChips .cbtn.sel{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
 .loc-box{ background:var(--surface2);border:1px solid var(--border); border-radius:7px;padding:9px 12px;font-size:11px; color:var(--text3);display:flex;align-items:center;gap:8px; }
 .loc-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);flex-shrink:0;} .loc-dot.set{background:var(--success);box-shadow:0 0 8px var(--success);}
 .loc-actions{display:flex;gap:6px;margin-top:5px;} .btn-loc{ flex:1;padding:8px;border-radius:6px; border:1px solid rgba(0,212,255,.3); background:var(--accent-dim);color:var(--accent); font-size:11px;font-weight:700;cursor:pointer; text-align:center; }
@@ -1095,14 +1094,9 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
       <div class="fg"><div class="fl">Memnuniyet Puanı (1–10)</div><div class="score-row" id="scoreRow"></div></div>
       <div class="fg"><div class="fl">Kısa Yorum (opsiyonel)</div><textarea class="fta" placeholder="Fiber'e geçişten sonra çok iyi oldu..." id="commentInput"></textarea></div>
       <div class="fg">
-        <div class="fl">🔧 SİZİN Bağlantınızın Fiziksel Altyapı Sahibi <span style="color:var(--text3);font-weight:400;">(biliyorsanız, birden fazla seçilebilir)</span></div>
-        <div class="cbtns" id="infraChips" style="flex-wrap:wrap;">
-          <div class="cbtn" data-val="Türk Telekom (kiralık port)" onclick="toggleInfraChip(this)">TT Kiralık Port</div>
-          <div class="cbtn" data-val="TurkNet öz altyapı" onclick="toggleInfraChip(this)">TurkNet Öz</div>
-          <div class="cbtn" data-val="Superonline öz altyapı" onclick="toggleInfraChip(this)">Superonline Öz</div>
-          <div class="cbtn" data-val="Türksat öz altyapı" onclick="toggleInfraChip(this)">Türksat Öz</div>
-          <div class="cbtn" data-val="Diğer öz altyapı" onclick="toggleInfraChip(this)">Diğer Öz</div>
-        </div>
+        <div class="fl">🔧 SİZİN Bağlantınızın Fiziksel Altyapı Sahibi <span style="color:var(--text3);font-weight:400;">(biliyorsanız)</span></div>
+        <select class="fs" id="infraSelect"><option value="">Bilmiyorum</option><option>Türk Telekom (kiralık port)</option><option>TurkNet öz altyapı</option><option>Superonline öz altyapı</option><option>Türksat öz altyapı</option><option>Diğer öz altyapı</option></select>
+        <div style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">Bu, şu an test ettiğiniz TEK bağlantının fiziksel hattı kime ait (örn. İSS'niz TurkNet ama hat Türk Telekom'un kiralık portu olabilir). Adreste başka sağlayıcı/altyapı varsa onu aşağıdaki "Adreste Başka Sağlayıcılar" bölümüne ekleyin.</div>
       </div>
       <div class="flag-note"><span>🚩</span><span>Yanlış veriler topluluk tarafından bildirilebilir ve moderatörler kaldırabilir.</span></div>
       
@@ -1164,7 +1158,13 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
     <div id="modTab-sikayetler" style="display:none;">
       <div class="mod-section">
         <div class="mod-section-title">🚩 Kullanıcı Bildirimleri</div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">Kullanıcıların "Bildir" butonu ile gönderdiği raporlar.</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px;">Kullanıcıların "Bildir" butonu ile gönderdiği raporlar.</div>
+        <div style="font-size:10px;color:var(--text2);background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.25);border-radius:8px;padding:8px 10px;margin-bottom:12px;line-height:1.6;">
+          ℹ️ <b>Bu butonlar SADECE bildirimin durumunu değiştirir, pin verisini DEĞİŞTİRMEZ:</b><br>
+          1️⃣ Önce <b>📍 Harita</b> ile pini bulun, gerekiyorsa <b>✏️ Düzenle</b> ile pindeki hatayı (yanlış hız, İSS vb.) düzeltin.<br>
+          2️⃣ Sorunu çözdükten sonra <b>✅ İşlendi</b>'ye basıp bildirimi kapatın.<br>
+          3️⃣ Bildirim asılsız/geçersizse (pin doğru, kullanıcı yanılmış) <b>❌ Reddet</b>'e basın — bu da sadece bildirimi kapatır, pini SİLMEZ.
+        </div>
         <!-- RLS Uyarısı: Kullanıcılar "42501 row-level security" hatası alıyorsa bu bloğu göster -->
         <details style="margin-bottom:12px;">
           <summary style="font-size:10px;color:var(--warn);cursor:pointer;font-family:var(--font-mono);">⚠ Kullanıcılar bildirim gönderemiyorsa — RLS kurulum rehberi</summary>
@@ -3312,7 +3312,7 @@ function selConn(el,type) {
   el.classList.add('sel');
   selConnVal=type;
   const issSel = document.getElementById('issSelect');
-  const infraChips = document.getElementById('infraChips');
+  const infraSel = document.getElementById('infraSelect');
   const docsisNote = document.getElementById('docsisNote');
   if (docsisNote) docsisNote.style.display = (type === 'docsis') ? 'block' : 'none';
   if (type === 'docsis') {
@@ -3326,19 +3326,16 @@ function selConn(el,type) {
       issSel.value = match.value;
       issSel.disabled = true;
       toggleCustomIss(match.value);
-      if (infraChips) {
-        infraChips.querySelectorAll('.cbtn').forEach(b => b.classList.toggle('sel', b.dataset.val === DOCSIS_ALTYAPI));
-        infraChips.style.opacity = '0.55'; infraChips.style.pointerEvents = 'none';
-      }
+      if (infraSel) { infraSel.value = DOCSIS_ALTYAPI; infraSel.disabled = true; }
     } else {
       // Listede Türksat tabanlı İSS yok — kilitleme yapma, kullanıcıyı "Diğer" ile elle girmeye yönlendir.
       if (issSel) issSel.disabled = false;
-      if (infraChips) { infraChips.style.opacity=''; infraChips.style.pointerEvents=''; }
+      if (infraSel) infraSel.disabled = false;
       showToast('⚠ İSS listenizde Türksat tabanlı bir sağlayıcı bulunamadı — lütfen İSS alanından "Diğer" seçip elle girin.', 'warn');
     }
   } else {
     if (issSel && issSel.disabled) { issSel.disabled = false; issSel.value=''; toggleCustomIss(''); }
-    if (infraChips && infraChips.style.pointerEvents === 'none') { infraChips.style.opacity=''; infraChips.style.pointerEvents=''; }
+    if (infraSel && infraSel.disabled) { infraSel.disabled = false; infraSel.value=''; }
   }
 }
 function createExtraAltyapiRow(containerId, prefillIss, prefillTur) {
@@ -3408,10 +3405,6 @@ function collectExtraAltyapiFrom(containerId) {
 }
 function collectExtraAltyapi() { return collectExtraAltyapiFrom('extraAltyapiRows'); }
 function selScore(el,val) { document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); selScoreVal=val; }
-function toggleInfraChip(el) { el.classList.toggle('sel'); }
-function collectInfraSahibi() {
-  return [...document.querySelectorAll('#infraChips .cbtn.sel')].map(b => b.dataset.val).join(',') || null;
-}
 (function buildScoreRow() { const row = document.getElementById('scoreRow'); if(!row) return; for(let i=1;i<=10;i++){const b=document.createElement('div');b.className='sbtn';b.textContent=i;b.onclick=()=>selScore(b,i);row.appendChild(b);} })();
 
 // ===== ALAN HATA VURGUSU =====
@@ -3594,7 +3587,7 @@ async function submitPin() {
     iss: finalIss, 
     baglanti_turu:selConnVal || (isAltyapiYok ? 'yok' : null), 
     diger_altyapilar: extraAltyapiList.length ? JSON.stringify(extraAltyapiList) : null,
-    altyapi_sahibi:collectInfraSahibi(), 
+    altyapi_sahibi:document.getElementById('infraSelect').value||null, 
     paket_hizi: pkgDL, paket_hizi_dl: pkgDL, paket_hizi_ul: pkgUL, 
     gercek_dl:dl, gercek_ul:ul, 
     puan:selScoreVal, 
@@ -3873,7 +3866,7 @@ async function deleteUserPin(pinId) {
   }
 }
 
-function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraChips'); if(infraSelReset) { infraSelReset.style.opacity=''; infraSelReset.style.pointerEvents=''; } const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; const extraRowsReset = document.getElementById('extraAltyapiRows'); if (extraRowsReset) extraRowsReset.innerHTML=''; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); speedVerifiedByTest = false; const kvkkCheck = document.getElementById('kvkkCheck');
+function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; const extraRowsReset = document.getElementById('extraAltyapiRows'); if (extraRowsReset) extraRowsReset.innerHTML=''; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); speedVerifiedByTest = false; const kvkkCheck = document.getElementById('kvkkCheck');
   if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; }
   const noInfraCheck = document.getElementById('noInfraCheck');
   if (noInfraCheck && noInfraCheck.checked) { noInfraCheck.checked = false; onNoInfraChange(false); }
@@ -4661,10 +4654,10 @@ async function loadRaporlar() {
         <div class="report-text">${escHtml(r.aciklama)||'Açıklama girilmedi'}</div>
         ${buildRaporScopeAndPinHtml(r, pin, siblingGroups)}
         <div class="mod-actions" style="margin-top:8px;">
-          <button class="btn-approve" onclick="handleRapor('${r.id}','islendi')">✅ İşlendi</button>
-          <button class="btn-hide" onclick="handleRapor('${r.id}','reddedildi')">❌ Reddet</button>
           ${focusBtn}
-          ${r.pin_id?`<button class="btn-edit" onclick="openEditModal('${r.pin_id}')">✏️ Düzenle</button>`:''}
+          ${r.pin_id?`<button class="btn-edit" onclick="openEditModal('${r.pin_id}')" title="Pindeki hatayı burada düzelt">✏️ Pini Düzelt</button>`:''}
+          <button class="btn-approve" onclick="handleRapor('${r.id}','islendi')" title="Sadece bu BİLDİRİMİ kapatır — pini değiştirmez">✅ Bildirimi Kapat (İşlendi)</button>
+          <button class="btn-hide" onclick="handleRapor('${r.id}','reddedildi')" title="Bildirim geçersiz/asılsız — pini SİLMEZ, sadece bildirimi kapatır">❌ Bildirimi Reddet</button>
         </div>
       </div>`;
     }).join('');
@@ -4700,9 +4693,9 @@ async function loadGecmisRaporlar() {
         <div class="report-text">${escHtml(r.aciklama)||'Açıklama girilmedi'}</div>
         ${buildRaporScopeAndPinHtml(r, pin, siblingGroups)}
         <div class="mod-actions" style="margin-top:8px;">
-          <button class="btn-edit" onclick="undoRapor('${r.id}')">↩️ Geri Al (Bekleyene Taşı)</button>
           ${focusBtn}
-          ${r.pin_id?`<button class="btn-edit" onclick="openEditModal('${r.pin_id}')">✏️ Düzenle</button>`:''}
+          ${r.pin_id?`<button class="btn-edit" onclick="openEditModal('${r.pin_id}')" title="Pindeki hatayı burada düzelt">✏️ Pini Düzelt</button>`:''}
+          <button class="btn-edit" onclick="undoRapor('${r.id}')" title="Bu bildirimi tekrar 'bekleyen' listesine taşır">↩️ Geri Al (Bekleyene Taşı)</button>
         </div>
       </div>`;
     }).join('');
