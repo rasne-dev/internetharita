@@ -5516,10 +5516,15 @@ async function measureUploadSupabase(onLive) {
     });
     const probeElapsed = (performance.now() - probeStart) / 1000;
     const probeMbps = (probeSent >= 50000 && probeElapsed > 0) ? (probeSent * 8) / probeElapsed / 1e6 : null;
-    if (probeMbps === null) PARALLEL_STREAMS = 4;
-    else if (probeMbps < 15) PARALLEL_STREAMS = 2;   // yavaş/mobil bağlantı — tek-uygulama deneyimine yakın tut
-    else if (probeMbps < 80) PARALLEL_STREAMS = 4;   // orta hız
-    else PARALLEL_STREAMS = 6;                       // hızlı fiber
+    // DOĞRULUK DÜZELTMESİ 2: Eşikler yükseltildi. 1 saniyelik kısa prob, jitter/buffer
+    // yüzünden gerçek hattan daha yüksek bir anlık değer okuyabiliyor (örn. 15 Mbps'lik
+    // bir paket, kısa patlamada 20+ Mbps gösterip "orta hız" kutusuna düşüyor ve 4 paralel
+    // akış seçiliyordu — bu da sonucu gerçek tek-bağlantı deneyiminden yukarı çekiyordu).
+    // Artık daha yüksek bir eşiğin altında kalan bağlantılar 2 akışta tutuluyor.
+    if (probeMbps === null) PARALLEL_STREAMS = 2;
+    else if (probeMbps < 25) PARALLEL_STREAMS = 2;   // yavaş/orta bağlantı — tek-uygulama deneyimine yakın tut
+    else if (probeMbps < 100) PARALLEL_STREAMS = 4;  // hızlı bağlantı
+    else PARALLEL_STREAMS = 6;                       // çok hızlı fiber
     window.lastUploadProbeMbps = probeMbps ? Math.round(probeMbps) : null;
   }
 
@@ -5798,10 +5803,15 @@ async function measureUploadCF(onLive) {
     } catch (e) {}
     const probeElapsed = (performance.now() - probeStart) / 1000;
     const probeMbps = (probeSent >= 50000 && probeElapsed > 0) ? (probeSent * 8) / probeElapsed / 1e6 : null;
-    if (probeMbps === null) PARALLEL_STREAMS = 4;       // prob başarısız oldu, ılımlı varsayılan
-    else if (probeMbps < 15) PARALLEL_STREAMS = 2;      // yavaş/mobil bağlantı — tek-uygulama deneyimine yakın tut
-    else if (probeMbps < 80) PARALLEL_STREAMS = 4;      // orta hız
-    else PARALLEL_STREAMS = 6;                          // hızlı fiber — TCP pencere sınırını aşmak için daha fazla akış gerekli
+    // DOĞRULUK DÜZELTMESİ 2: Eşikler yükseltildi. 1 saniyelik kısa prob, jitter/buffer
+    // yüzünden gerçek hattan daha yüksek bir anlık değer okuyabiliyor (örn. 15 Mbps'lik
+    // bir paket, kısa patlamada 20+ Mbps gösterip "orta hız" kutusuna düşüyor ve 4 paralel
+    // akış seçiliyordu — bu da sonucu gerçek tek-bağlantı deneyiminden yukarı çekiyordu).
+    // Artık daha yüksek bir eşiğin altında kalan bağlantılar 2 akışta tutuluyor.
+    if (probeMbps === null) PARALLEL_STREAMS = 2;       // prob başarısız oldu, ılımlı varsayılan
+    else if (probeMbps < 25) PARALLEL_STREAMS = 2;      // yavaş/orta bağlantı — tek-uygulama deneyimine yakın tut
+    else if (probeMbps < 100) PARALLEL_STREAMS = 4;     // hızlı bağlantı
+    else PARALLEL_STREAMS = 6;                          // çok hızlı fiber — TCP pencere sınırını aşmak için daha fazla akış gerekli
     window.lastUploadProbeMbps = probeMbps ? Math.round(probeMbps) : null;
   }
 
