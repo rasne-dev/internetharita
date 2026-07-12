@@ -518,6 +518,7 @@ html.light .sr-ping { background:#f5f7fa; }
 .speed-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;} .score-row{display:flex;gap:3px;flex-wrap:wrap;}
 .sbtn{ flex:1;min-width:28px;padding:6px 2px;border-radius:5px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:10px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center; } .sbtn.sel{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
 .cbtns{display:flex;gap:6px;} .cbtn{ flex:1;padding:8px;border-radius:6px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:11px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center; } .cbtn.fiber.sel{background:rgba(147,51,234,.12);border-color:#9333ea;color:#9333ea;} .cbtn.vdsl.sel{background:rgba(6,182,212,.12);border-color:#06b6d4;color:#06b6d4;} .cbtn.adsl.sel{background:rgba(229,57,53,.12);border-color:var(--s5);color:var(--s5);} .cbtn.docsis.sel{background:rgba(59,130,246,.12);border-color:#3b82f6;color:#3b82f6;} .cbtn.docsis:disabled,.fs:disabled{opacity:.55;cursor:not-allowed;}
+#extraAltyapiRows:empty::before, #editExtraAltyapiRows:empty::before { content: "Henüz sağlayıcı eklenmedi — aşağıdaki butonla ekleyin."; display:block; font-size:10px; color:var(--text3); font-style:italic; padding:2px 0 6px; }
 .loc-box{ background:var(--surface2);border:1px solid var(--border); border-radius:7px;padding:9px 12px;font-size:11px; color:var(--text3);display:flex;align-items:center;gap:8px; }
 .loc-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);flex-shrink:0;} .loc-dot.set{background:var(--success);box-shadow:0 0 8px var(--success);}
 .loc-actions{display:flex;gap:6px;margin-top:5px;} .btn-loc{ flex:1;padding:8px;border-radius:6px; border:1px solid rgba(0,212,255,.3); background:var(--accent-dim);color:var(--accent); font-size:11px;font-weight:700;cursor:pointer; text-align:center; }
@@ -981,6 +982,7 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
       <div class="stat-card"><div class="stat-title">Hız Bandı Dağılımı</div><div id="speedBandChart"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
     </div>
     <div class="stat-card" style="grid-column:1/-1"><div class="stat-title">Bağlantı Türü Dağılımı</div><div id="connChart"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
+    <div class="stat-card" style="grid-column:1/-1"><div class="stat-title">Adreste Mevcut Diğer Sağlayıcılar <span style="opacity:.6;font-weight:400;font-size:9px;">(kullanıcıların "Diğer Sağlayıcı Ekle" ile bildirdiği, kendi bağlantıları olmayan altyapılar) 🧪 test aşamasında</span></div><div id="otherProvidersChart"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
     <div class="stat-card" style="grid-column:1/-1"><div id="issSpeedTrend" class="trend-section"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
   </div>
 </div>
@@ -1071,7 +1073,7 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
         <div class="fl">🏘️ Adreste BAŞKA Hangi Sağlayıcılar da Var? <span style="color:var(--text3);font-weight:400;">(siz kullanmıyorsunuz, sadece mevcut olan — opsiyonel) 🧪 test aşamasında</span></div>
         <div id="extraAltyapiRows"></div>
         <div style="margin-top:6px;padding:7px;text-align:center;border-radius:6px;border:1px dashed var(--border);color:var(--text2);font-size:11px;cursor:pointer;" onclick="addExtraAltyapiRow()">+ Sağlayıcı / Altyapı Ekle</div>
-        <div style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">Örn. adreste siz TurkNet Fiber kullanıyorsanız ama Türk Telekom VDSL de çekiyorsa, buraya "Türk Telekom" + "VDSL" olarak ekleyin. Birden fazla sağlayıcı/tür ekleyebilirsiniz.</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">Örn. adreste siz TurkNet Fiber kullanıyorsanız ama Türk Telekom hem VDSL hem Fiber de çekiyorsa: "Türk Telekom"u ekleyip VDSL ve Fiber'in İKİSİNİ de işaretleyin. İstediğiniz kadar sağlayıcı satırı ekleyebilirsiniz.</div>
       </div>
       <div class="fg">
         <div class="fl">Paket Hızı</div>
@@ -2573,9 +2575,14 @@ function renderRegions() {
   if (!all.length) { grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🌍</div><div>Henüz veri yok</div></div>'; return; }
   const regions = Object.entries(BOLGELER).map(([name, info]) => {
     const pins = all.filter(p => info.iller.includes(p.il));
-    const avgDL = pins.length ? Math.round(pins.reduce((a,p)=>a+p.gercek_dl,0)/pins.length) : 0;
-    const avgUL = pins.length ? Math.round(pins.filter(p=>p.gercek_ul>0).reduce((a,p)=>a+(p.gercek_ul||0),0)/Math.max(1,pins.filter(p=>p.gercek_ul>0).length)) : 0;
-    const avgS = pins.length ? parseFloat((pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1)) : null;
+    // "Altyapı Yok" bildirimleri gercek_dl/gercek_ul=0 ve otomatik 1/10 puanla kaydedilir —
+    // gerçek bir ölçüm değildir. İstatistikler sayfasıyla TUTARLI olması için (bkz. renderStats
+    // içindeki speedPins mantığı) bölge ortalamalarından da hariç tutuluyor; aksi halde bir
+    // bölgede çok sayıda "altyapı yok" bildirimi varsa ortalama hız/memnuniyet yapay şekilde düşer.
+    const speedPins = pins.filter(p => !p.is_altyapi_yok);
+    const avgDL = speedPins.length ? Math.round(speedPins.reduce((a,p)=>a+p.gercek_dl,0)/speedPins.length) : 0;
+    const avgUL = speedPins.length ? Math.round(speedPins.filter(p=>p.gercek_ul>0).reduce((a,p)=>a+(p.gercek_ul||0),0)/Math.max(1,speedPins.filter(p=>p.gercek_ul>0).length)) : 0;
+    const avgS = speedPins.length ? parseFloat((speedPins.reduce((a,p)=>a+p.puan,0)/speedPins.length).toFixed(1)) : null;
     return { name, color:info.color, iller:info.iller, pins, avgDL, avgUL, avgS };
   });
   if (regionSortMode==='dl') regions.sort((a,b)=>b.avgDL-a.avgDL); else if (regionSortMode==='mem') regions.sort((a,b)=>(b.avgS||0)-(a.avgS||0)); else regions.sort((a,b)=>b.pins.length-a.pins.length);
@@ -2706,7 +2713,7 @@ function renderSpeedRankList(filterIl) {
 
 async function renderStats() {
   let pins = cleanPinsData;
-  if (!pins.length) {['issRankList','speedRankList','connChart','speedBandChart','activeIlList'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = '<div class="loading-text">Henüz veri yok</div>'; }); return; }
+  if (!pins.length) {['issRankList','speedRankList','connChart','speedBandChart','activeIlList','otherProvidersChart'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = '<div class="loading-text">Henüz veri yok</div>'; }); return; }
   // "Altyapı Yok" bildirimleri gercek_dl/gercek_ul=0 olarak kayıtlıdır; bunlar gerçek bir hız ölçümü
   // değildir ve hız istatistiklerine (ortalama, bant dağılımı, en hızlı lokasyon vb.) dahil edilirse
   // ortalamaları yanlış şekilde aşağı çeker. Bu yüzden tüm hız hesaplarında speedPins kullanılır.
@@ -2767,6 +2774,38 @@ async function renderStats() {
     const barWidth = pct > 0 ? Math.max(pct, 1) : 0;
     return `<div class="ct-row"><div class="ct-label">${t.l}</div><div class="ct-track"><div class="ct-fill" style="width:${barWidth}%;background:${t.c}"></div></div><div class="ct-pct">${displayPct}%</div></div>`;
   }).join('');
+
+  // ADRESTE MEVCUT DİĞER SAĞLAYICILAR — "Diğer Sağlayıcı Ekle" ile bildirilen, kullanıcının
+  // kendi bağlantısı OLMAYAN, sadece adreste var olduğu bilinen İSS+tür kombinasyonları.
+  // connChart'taki gibi "kaç pinin birincil bağlantısı" değil, "kaç ölçümde bu altyapı ek
+  // olarak bildirilmiş" sayısı — bu yüzden ayrı, kendi ölçeğinde gösteriliyor.
+  const otherProvidersEl = document.getElementById('otherProvidersChart');
+  if (otherProvidersEl) {
+    const combo = {};
+    pins.forEach(p => parseDigerAltyapi(p.diger_altyapilar).forEach(e => {
+      if (!e.iss) return;
+      const key = e.iss + '|' + e.tur;
+      combo[key] = (combo[key] || 0) + 1;
+    }));
+    const fullComboList = Object.entries(combo).sort((a,b) => b[1]-a[1]);
+    if (!fullComboList.length) {
+      otherProvidersEl.innerHTML = '<div class="loading-text">Henüz bildirim yok</div>';
+    } else {
+      const renderComboRows = (list) => {
+        const maxCombo = Math.max(...list.map(c => c[1]), 1);
+        return list.map(([key, count]) => {
+          const [iss, tur] = key.split('|');
+          const w = Math.max((count/maxCombo)*100, 4);
+          return `<div class="ct-row"><div class="ct-label" style="font-size:10px;width:130px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escAttr(iss)} · ${tur.toUpperCase()}">${escHtml(iss)} · <span style="color:${cc(tur)}">${tur.toUpperCase()}</span></div><div class="ct-track"><div class="ct-fill" style="width:${w}%;background:${cc(tur)}"></div></div><div class="ct-pct">${count}</div></div>`;
+        }).join('');
+      };
+      const shown = fullComboList.slice(0, 15);
+      const rest = fullComboList.slice(15);
+      otherProvidersEl.innerHTML = renderComboRows(shown) +
+        (rest.length ? `<div id="otherProvidersMore" style="display:none;">${renderComboRows(rest)}</div>
+         <div onclick="const m=document.getElementById('otherProvidersMore'); const isOpen=m.style.display!=='none'; m.style.display=isOpen?'none':'block'; this.textContent=isOpen?'▾ Tümünü Gör (+${rest.length})':'▴ Daha Az Göster';" style="cursor:pointer;text-align:center;font-size:10px;color:var(--accent);font-family:var(--font-mono);margin-top:6px;padding:4px;">▾ Tümünü Gör (+${rest.length})</div>` : '');
+    }
+  }
 
   // ISS BAŞINA ORTALAMA HIZ TREND CHART
   const issSpeedMap = {};
@@ -3338,7 +3377,7 @@ function selConn(el,type) {
     if (infraSel && infraSel.disabled) { infraSel.disabled = false; infraSel.value=''; }
   }
 }
-function createExtraAltyapiRow(containerId, prefillIss, prefillTur) {
+function createExtraAltyapiRow(containerId, prefillIss, prefillTurs) {
   const wrap = document.getElementById(containerId);
   if (!wrap) return;
   const rowId = 'ea_' + (++extraAltyapiRowSeq);
@@ -3353,10 +3392,10 @@ function createExtraAltyapiRow(containerId, prefillIss, prefillTur) {
   row.innerHTML = `
     <select class="fs" style="flex:1 1 100%;" data-role="iss">${issOptions}</select>
     <div class="cbtns" style="flex:1;min-width:0;" data-role="turgroup">
-      <div class="cbtn fiber" onclick="selExtraRowType(this,'${rowId}','fiber')">Fiber</div>
-      <div class="cbtn vdsl" onclick="selExtraRowType(this,'${rowId}','vdsl')">VDSL</div>
-      <div class="cbtn adsl" onclick="selExtraRowType(this,'${rowId}','adsl')">ADSL</div>
-      <div class="cbtn docsis" onclick="selExtraRowType(this,'${rowId}','docsis')">DOCSIS</div>
+      <div class="cbtn fiber" data-tur="fiber" onclick="selExtraRowType(this)">Fiber</div>
+      <div class="cbtn vdsl" data-tur="vdsl" onclick="selExtraRowType(this)">VDSL</div>
+      <div class="cbtn adsl" data-tur="adsl" onclick="selExtraRowType(this)">ADSL</div>
+      <div class="cbtn docsis" data-tur="docsis" onclick="selExtraRowType(this)">DOCSIS</div>
     </div>
     <div style="cursor:pointer;color:var(--text3);font-size:16px;padding:0 4px;flex:0 0 auto;" onclick="removeExtraAltyapiRow('${rowId}')">✕</div>
   `;
@@ -3365,10 +3404,7 @@ function createExtraAltyapiRow(containerId, prefillIss, prefillTur) {
     const sel = row.querySelector('[data-role="iss"]');
     if (sel) { sel.value = prefillIss; if (sel.value !== prefillIss) { const o=document.createElement('option'); o.value=prefillIss; o.textContent=prefillIss; sel.insertBefore(o, sel.firstChild.nextSibling); sel.value=prefillIss; } }
   }
-  if (prefillTur) {
-    const btn = row.querySelector(`.cbtn.${prefillTur}`);
-    if (btn) selExtraRowType(btn, rowId, prefillTur);
-  }
+  (prefillTurs || []).forEach(t => { row.querySelector(`.cbtn[data-tur="${t}"]`)?.classList.add('sel'); });
   return rowId;
 }
 function addExtraAltyapiRow() {
@@ -3384,22 +3420,23 @@ function addEditExtraAltyapiRow() {
 function removeExtraAltyapiRow(rowId) {
   document.getElementById(rowId)?.remove();
 }
-function selExtraRowType(el, rowId, type) {
-  el.parentElement.querySelectorAll('.cbtn').forEach(b=>b.className=b.className.replace(/ sel/g,''));
-  el.classList.add('sel');
-  el.closest('.extra-altyapi-row').dataset.tur = type;
-}
+// Tür butonları artık ÇOKLU seçim — aynı satırdaki (aynı İSS) birden fazla tür işaretlenebilir
+// (örn. Türk Telekom hem VDSL hem Fiber sunuyorsa ikisi de seçilebilir).
+function selExtraRowType(el) { el.classList.toggle('sel'); }
 function collectExtraAltyapiFrom(containerId) {
   const rows = document.querySelectorAll(`#${containerId} .extra-altyapi-row`);
   const out = [], seen = new Set();
   rows.forEach(r => {
     const iss = r.querySelector('[data-role="iss"]')?.value || '';
-    const tur = r.dataset.tur || '';
-    if (!iss || !tur || iss === 'Diğer') return;
-    const key = iss + '|' + tur;
-    if (seen.has(key)) return;
-    seen.add(key);
-    out.push({ iss, tur });
+    if (!iss || iss === 'Diğer') return;
+    r.querySelectorAll('[data-role="turgroup"] .cbtn.sel').forEach(b => {
+      const tur = b.dataset.tur;
+      if (!tur) return;
+      const key = iss + '|' + tur;
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push({ iss, tur });
+    });
   });
   return out;
 }
@@ -4745,7 +4782,12 @@ async function openEditModal(id) {
     checkEditIssValidity();
     document.getElementById('editConn').value=['fiber','vdsl','adsl','docsis','yok'].includes(p.baglanti_turu) ? p.baglanti_turu : 'fiber'; document.getElementById('editDL').value=p.gercek_dl||''; document.getElementById('editUL').value=p.gercek_ul||''; document.getElementById('editPkgDL').value=p.paket_hizi_dl||p.paket_hizi||''; document.getElementById('editPkgUL').value=p.paket_hizi_ul||''; document.getElementById('editPuan').value=p.puan||''; document.getElementById('editGorunur').value=String(p.gorunur!==false); document.getElementById('editModNote').value=p.mod_notu||'';
     const editExtraWrap = document.getElementById('editExtraAltyapiRows');
-    if (editExtraWrap) { editExtraWrap.innerHTML=''; parseDigerAltyapi(p.diger_altyapilar).forEach(e => createExtraAltyapiRow('editExtraAltyapiRows', e.iss, e.tur)); }
+    if (editExtraWrap) {
+      editExtraWrap.innerHTML='';
+      const grouped = {};
+      parseDigerAltyapi(p.diger_altyapilar).forEach(e => { if(!e.iss) return; (grouped[e.iss] = grouped[e.iss] || []).push(e.tur); });
+      Object.entries(grouped).forEach(([iss, turs]) => createExtraAltyapiRow('editExtraAltyapiRows', iss, turs));
+    }
     document.getElementById('editModal').classList.add('open');
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
