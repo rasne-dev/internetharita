@@ -1379,7 +1379,7 @@ CREATE POLICY "auth_update_raporlar" ON raporlar
       <select class="fs" id="reportType"><option value="yanlis_hiz">Hız verisi yanlış</option><option value="yanlis_konum">Konum yanlış</option><option value="yanlis_iss">İSS bilgisi yanlış</option><option value="spam">Spam / sahte veri</option><option value="guncelleme">Altyapı değişti / Bilgi güncelleme (örn. Fiber geldi)</option><option value="diger">Diğer</option></select>
     </div>
     <div class="fg" style="margin-bottom:16px;"><div class="fl">Açıklama (opsiyonel)</div><textarea class="fta" id="reportText" placeholder="Neyin yanlış olduğunu açıklayın..."></textarea></div>
-    <button class="btn-primary" style="width:100%;padding:11px;" onclick="submitReport()">Bildirimi Gönder</button>
+    <button class="btn-primary" id="reportSubmitBtn" style="width:100%;padding:11px;" onclick="submitReport()">Bildirimi Gönder</button>
   </div>
 </div>
 
@@ -1419,7 +1419,7 @@ CREATE POLICY "auth_update_raporlar" ON raporlar
     </div>
     <div class="fg" style="margin-bottom:16px;"><div class="fl">Moderatör Notu <span class="mod-note-badge">MOD</span></div><textarea class="fta" id="editModNote" placeholder="Bu pin ile ilgili bir not ekleyin..." style="min-height:70px;"></textarea></div>
     <div style="display:flex;gap:8px;">
-      <button class="btn-primary" style="flex:1;padding:11px;" onclick="saveEdit()">💾 Kaydet</button>
+      <button class="btn-primary" id="editSaveBtn" style="flex:1;padding:11px;" onclick="saveEdit()">💾 Kaydet</button>
       <button class="btn-approve" style="padding:11px 14px;" onclick="quickApproveEdit()" title="ISS'i onayla, görünür yap, kaydet">✅ Onayla</button>
       <button class="btn-ghost" style="padding:11px 16px;" onclick="closeEditModal()">İptal</button>
     </div>
@@ -1489,7 +1489,7 @@ CREATE POLICY "auth_update_raporlar" ON raporlar
       <input class="fi" type="text" id="addIssName" placeholder="Örn: Fibernet, Bimcell..." maxlength="60" onkeydown="if(event.key==='Enter')confirmAddIss()">
     </div>
     <div style="display:flex;gap:8px;">
-      <button class="btn-primary" style="flex:1;padding:10px;" onclick="confirmAddIss()">✅ Ekle</button>
+      <button class="btn-primary" id="confirmAddIssBtn" style="flex:1;padding:10px;" onclick="confirmAddIss()">✅ Ekle</button>
       <button class="btn-ghost" style="padding:10px 14px;" onclick="closeAddIssModal()">İptal</button>
     </div>
   </div>
@@ -1840,11 +1840,17 @@ function buildIssOptions(selectEl, currentVal) {
   selectEl.innerHTML = all.map(iss => `<option value="${escHtml(iss)}" ${iss===current?'selected':''}>${escHtml(iss)}</option>`).join('');
 }
 
-function showAddIssModal() { document.getElementById('addIssName').value=''; document.getElementById('addIssModal').classList.add('open'); setTimeout(()=>document.getElementById('addIssName').focus(),100); }
+function showAddIssModal() { document.getElementById('addIssName').value=''; const addIssBtnReset = document.getElementById('confirmAddIssBtn'); if (addIssBtnReset) { addIssBtnReset.disabled = false; addIssBtnReset.textContent = '✅ Ekle'; } document.getElementById('addIssModal').classList.add('open'); setTimeout(()=>document.getElementById('addIssName').focus(),100); }
 function closeAddIssModal() { document.getElementById('addIssModal').classList.remove('open'); }
 async function confirmAddIss() {
   const name = canonicalIssName(document.getElementById('addIssName').value.trim());
   if (!name) return showToast('İSS adı boş olamaz','err');    
+
+  // Çift tıklama koruması: "zaten listede mi" kontrolü, henüz tamamlanmamış bir önceki
+  // INSERT'e karşı yarışabiliyordu (iki hızlı tık aynı anda "listede yok" görüp ikisi de
+  // eklenebiliyordu). Buton devre dışı bırakılarak bu yarış durumu tamamen engelleniyor.
+  const addIssBtn = document.getElementById('confirmAddIssBtn');
+  if (addIssBtn) { if (addIssBtn.disabled) return; addIssBtn.disabled = true; addIssBtn.textContent = 'Ekleniyor...'; }
 
   // GÜVENLİK: Bu modal hem moderatör panelinden hem de herhangi bir ziyaretçinin kendi pinini
   // düzenleme ekranından açılabiliyor. Moderatör değilse İSS doğrudan aktif/herkese açık listeye
@@ -1902,6 +1908,8 @@ async function confirmAddIss() {
     } else {
       showToast('Bu İSS zaten listede','warn');
     }
+  } finally {
+    if (addIssBtn) { addIssBtn.disabled = false; addIssBtn.textContent = '✅ Ekle'; }
   }
 }
 
@@ -3921,6 +3929,7 @@ function openReportModal(pinId, locStr) {
   }
   document.getElementById('reportType').value = 'yanlis_hiz';
   document.getElementById('reportText').value = '';
+  const rsb1 = document.getElementById('reportSubmitBtn'); if (rsb1) { rsb1.disabled = false; rsb1.textContent = 'Bildirimi Gönder'; }
   document.getElementById('reportModal').classList.add('open');
 }
 function openHexReport() {
@@ -3933,6 +3942,7 @@ function openHexReport() {
   document.getElementById('reportLocationInfo').style.display = 'block';
   document.getElementById('reportType').value = 'yanlis_hiz';
   document.getElementById('reportText').value = '';
+  const rsb2 = document.getElementById('reportSubmitBtn'); if (rsb2) { rsb2.disabled = false; rsb2.textContent = 'Bildirimi Gönder'; }
   document.getElementById('reportModal').classList.add('open');
 }
 function closeReportModal() { document.getElementById('reportModal').classList.remove('open'); }
@@ -3944,28 +3954,40 @@ async function submitReport() {
   if (!targets.length) return showToast('Bildirilecek veri yok','err');
   const tip = document.getElementById('reportType').value;
   const aciklama = document.getElementById('reportText').value || null;
+  // Çift tıklama koruması: buton devre dışı bırakılmazsa hızlı çift tıklamada mükerrer bildirim satırı oluşuyordu.
+  const btn = document.getElementById('reportSubmitBtn');
+  if (btn) { if (btn.disabled) return; btn.disabled = true; btn.textContent = 'Gönderiliyor...'; }
+  const resetBtn = () => { if (btn) { btn.disabled = false; btn.textContent = 'Bildirimi Gönder'; } };
 
   const fullPayload  = t => ({ pin_id:t.pin_id, tip, aciklama, durum:'bekleyen', browser_fp: browserFingerprint || null, hex_id: hexId, bolge });
   const basicPayload = t => ({ pin_id:t.pin_id, tip, aciklama, durum:'bekleyen' });
 
-  try {
-    await Promise.all(targets.map(t => addRapor(fullPayload(t))));
-    showToast('✅ Bildirim alındı!'); closeReportModal();
-  } catch(e) {
-    const msg = e.message || '';
-    if (msg.includes('row-level security') || msg.includes('42501')) {
-      // RLS politikası eksik — Supabase'de anon insert policy eklenmeli
-      showToast('⚠ Bildirim gönderilemedi: Veritabanı izin hatası (RLS). Lütfen yöneticiye bildirin.', 'err');
-      console.error('[internetHarita] raporlar RLS hatası — Supabase SQL Editor\'da "anon_insert_raporlar" politikasını ekleyin. Detay:', msg);
-    } else if (msg.includes('schema cache') || msg.includes('does not exist') || msg.includes('column')) {
-      try {
-        await Promise.all(targets.map(t => addRapor(basicPayload(t))));
-        showToast('✅ Bildirim alındı!'); closeReportModal();
-      } catch(e2) { showToast('Hata: '+e2.message,'err'); }
-    } else {
-      showToast('Hata: '+msg,'err');
-    }
+  // HATA DÜZELTMESİ: Önceden Promise.all kullanılıyordu — 5 pinlik bir bölge bildiriminde
+  // TEK bir pin şema/RLS hatası verse bile Promise.all TÜMÜNÜ reddediyor, ardından catch
+  // bloğu TÜM 5 pini tekrar gönderiyordu. Bu, ilk denemede zaten başarıyla eklenmiş
+  // pinler için MÜKERRER (2 kez) bildirim satırı oluşturuyordu. Promise.allSettled ile
+  // hangi hedeflerin gerçekten başarısız olduğunu ayırt edip SADECE onları tekrar deniyoruz.
+  const results = await Promise.allSettled(targets.map(t => addRapor(fullPayload(t))));
+  const failed = targets.filter((t,i) => results[i].status === 'rejected');
+  if (!failed.length) { showToast('✅ Bildirim alındı!'); closeReportModal(); resetBtn(); return; }
+
+  const firstErr = results.find(r => r.status === 'rejected')?.reason;
+  const msg = firstErr?.message || '';
+  if (msg.includes('row-level security') || msg.includes('42501')) {
+    showToast('⚠ Bildirim gönderilemedi: Veritabanı izin hatası (RLS). Lütfen yöneticiye bildirin.', 'err');
+    console.error('[internetHarita] raporlar RLS hatası — Supabase SQL Editor\'da "anon_insert_raporlar" politikasını ekleyin. Detay:', msg);
+    resetBtn(); return;
   }
+  if (msg.includes('schema cache') || msg.includes('does not exist') || msg.includes('column')) {
+    // Sadece BAŞARISIZ olan hedefleri, eski şemayla uyumlu sade payload'la tekrar dene.
+    const retryResults = await Promise.allSettled(failed.map(t => addRapor(basicPayload(t))));
+    const stillFailed = retryResults.some(r => r.status === 'rejected');
+    if (!stillFailed) { showToast('✅ Bildirim alındı!'); closeReportModal(); resetBtn(); return; }
+    showToast('⚠ Bazı bildirimler gönderilemedi: '+(retryResults.find(r=>r.status==='rejected')?.reason?.message||''), 'err');
+    resetBtn(); return;
+  }
+  showToast('Hata: '+msg,'err');
+  resetBtn();
 }
 
 async function modLogin() {
@@ -4788,6 +4810,7 @@ async function openEditModal(id) {
       parseDigerAltyapi(p.diger_altyapilar).forEach(e => { if(!e.iss) return; (grouped[e.iss] = grouped[e.iss] || []).push(e.tur); });
       Object.entries(grouped).forEach(([iss, turs]) => createExtraAltyapiRow('editExtraAltyapiRows', iss, turs));
     }
+    const editSaveBtnReset = document.getElementById('editSaveBtn'); if (editSaveBtnReset) { editSaveBtnReset.disabled = false; editSaveBtnReset.textContent = '💾 Kaydet'; }
     document.getElementById('editModal').classList.add('open');
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
@@ -4800,6 +4823,10 @@ async function saveEdit() {
   if (puan<1||puan>10||isNaN(puan)) return showToast('Puan 1-10 arasında olmalı','err');
   const newIss = document.getElementById('editIss').value;
   const isGorunur = document.getElementById('editGorunur').value === 'true';
+  // Çift tıklama koruması: bu fonksiyon içinde İSS listesine ekleme gibi INSERT işlemleri de
+  // var — buton devre dışı bırakılmazsa hızlı çift tıklamada aynı İSS iki kez eklenebiliyordu.
+  const saveBtn = document.getElementById('editSaveBtn');
+  if (saveBtn) { if (saveBtn.disabled) return; saveBtn.disabled = true; saveBtn.textContent = 'Kaydediliyor...'; }
   try {
     // Her zaman taze cache
     await loadIssListAndRenderChips();
@@ -4861,6 +4888,8 @@ async function saveEdit() {
       } catch(e2) { showToast('Hata: '+e2.message,'err'); }
     } else if(e.message.includes("does not exist")) showToast("Uyarı: Eksik sütunlar var. DB güncelleyin.", "err");
     else showToast('Hata: '+e.message,'err');
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Kaydet'; }
   }
 }
 function closeEditModal() { document.getElementById('editModal').classList.remove('open'); }
