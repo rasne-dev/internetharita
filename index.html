@@ -515,8 +515,8 @@ html.light .sr-ping { background:#f5f7fa; }
 .fi,.fs,.fta{ background:var(--surface2);border:1px solid var(--border); color:var(--text);border-radius:7px;padding:9px 12px; font-size:12px;font-family:var(--font-body); outline:none;width:100%; }
 .fi:focus,.fs:focus,.fta:focus{border-color:var(--accent);} .fi:read-only{opacity:.6;cursor:not-allowed;} .fta{resize:vertical;min-height:56px;}
 .fiu{position:relative;} .fiu input{ width:100%;padding:9px 44px 9px 12px; background:var(--surface2);border:1px solid var(--border); color:var(--text);border-radius:7px;font-size:12px; outline:none;} .fiu input:focus{border-color:var(--accent);} .fiu-unit{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--text3);font-family:var(--font-mono);pointer-events:none;}
-.speed-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;} .score-row{display:flex;gap:3px;flex-wrap:wrap;}
-.sbtn{ flex:1;min-width:28px;padding:6px 2px;border-radius:5px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:10px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center; } .sbtn.sel{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
+.speed-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;} .score-row{display:flex;gap:4px;flex-wrap:wrap;}
+.sbtn{ flex:1;min-width:28px;min-height:38px;padding:8px 2px;border-radius:5px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:12px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center;display:flex;align-items:center;justify-content:center; } .sbtn.sel{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
 .cbtns{display:flex;gap:6px;} .cbtn{ flex:1;padding:8px;border-radius:6px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:11px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center; } .cbtn.fiber.sel{background:rgba(147,51,234,.12);border-color:#9333ea;color:#9333ea;} .cbtn.vdsl.sel{background:rgba(6,182,212,.12);border-color:#06b6d4;color:#06b6d4;} .cbtn.adsl.sel{background:rgba(229,57,53,.12);border-color:var(--s5);color:var(--s5);} .cbtn.docsis.sel{background:rgba(59,130,246,.12);border-color:#3b82f6;color:#3b82f6;} .cbtn.docsis:disabled,.fs:disabled{opacity:.55;cursor:not-allowed;}
 #extraAltyapiRows:empty::before, #editExtraAltyapiRows:empty::before { content: "Henüz sağlayıcı eklenmedi — aşağıdaki butonla ekleyin."; display:block; font-size:10px; color:var(--text3); font-style:italic; padding:2px 0 6px; }
 .loc-box{ background:var(--surface2);border:1px solid var(--border); border-radius:7px;padding:9px 12px;font-size:11px; color:var(--text3);display:flex;align-items:center;gap:8px; }
@@ -609,7 +609,7 @@ html.light .sr-ping { background:#f5f7fa; }
 .toast.err{border-color:var(--danger);color:var(--danger);} .toast.warn{border-color:var(--warn);color:var(--warn);}
 
 .modal-bg{ position:fixed;inset:0;z-index:2000; background:rgba(7,11,15,.85);backdrop-filter:blur(8px); display:none;align-items:center;justify-content:center;padding:16px; } .modal-bg.open{display:flex;}
-.modal{ background:var(--surface);border:1px solid var(--border); border-radius:12px;padding:24px;width:100%;max-width:380px;max-height:90vh;overflow-y:auto; } .modal-title{font-family:var(--font-mono);font-size:14px;font-weight:700;margin-bottom:16px;} .modal-close{float:right;cursor:pointer;color:var(--text3);font-size:18px;line-height:1;}
+.modal{ background:var(--surface);border:1px solid var(--border); border-radius:12px;padding:24px;width:100%;max-width:380px;max-height:90vh;overflow-y:auto; } .modal-title{font-family:var(--font-mono);font-size:14px;font-weight:700;margin-bottom:16px;} .modal-close{float:right;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:8px;margin:-8px -8px 0 0;}
 .mod-note-badge{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;background:rgba(245,158,11,.15);color:var(--warn);border:1px solid var(--warn);font-family:var(--font-mono);}
 .user-comment-box{background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:6px;padding:7px 10px;margin-top:6px;font-size:10px;color:var(--text2);font-style:italic;} .mod-note-box{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);border-radius:6px;padding:7px 10px;margin-top:6px;font-size:10px;color:var(--warn);}
 .mobile-nav { display:none; position:fixed;bottom:0;left:0;right:0;z-index:1001; background:rgba(7,11,15,0.97);backdrop-filter:blur(16px); border-top:1px solid var(--border); height:56px;padding:0 4px; align-items:center;justify-content:space-around; }
@@ -3405,7 +3405,7 @@ function createExtraAltyapiRow(containerId, prefillIss, prefillTurs) {
       <div class="cbtn adsl" data-tur="adsl" onclick="selExtraRowType(this)">ADSL</div>
       <div class="cbtn docsis" data-tur="docsis" onclick="selExtraRowType(this)">DOCSIS</div>
     </div>
-    <div style="cursor:pointer;color:var(--text3);font-size:16px;padding:0 4px;flex:0 0 auto;" onclick="removeExtraAltyapiRow('${rowId}')">✕</div>
+    <div style="cursor:pointer;color:var(--text3);font-size:18px;padding:8px 10px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;" onclick="removeExtraAltyapiRow('${rowId}')" title="Bu satırı sil">✕</div>
   `;
   wrap.appendChild(row);
   if (prefillIss) {
@@ -4623,8 +4623,8 @@ function renderAdminTable(pins) {
       <td><span style="font-size:10px;font-weight:700;color:${durumColor};font-family:var(--font-mono);">${durumLabel}</span>${reasonText}${modNot}</td>
       <td style="display:flex;gap:4px;flex-wrap:wrap;">
         <button class="btn-edit" onclick="focusOnMap(${p.lat}, ${p.lng})" title="Haritada Gör">📍</button>
-        <button class="btn-edit" onclick="openEditModal('${p.id}')">✏️</button>
-        <button class="btn-del" onclick="modDeletePin('${p.id}')">🗑</button>
+        <button class="btn-edit" onclick="openEditModal('${p.id}')" title="Pini Düzenle" aria-label="Pini Düzenle">✏️</button>
+        <button class="btn-del" onclick="modDeletePin('${p.id}')" title="Pini Sil" aria-label="Pini Sil">🗑</button>
       </td>
     </tr>`;
   }).join('');
@@ -4960,7 +4960,7 @@ async function loadStatEditTable(search) {
     let pins = await sbRest(query) ||[];
     pins = pins.filter(p => !p.deleted_at);
     if (!pins.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3);">Sonuç yok</td></tr>'; return; }
-    tbody.innerHTML = pins.map(p => `<tr id="se_${p.id}"><td style="font-size:11px;font-weight:700;">${escHtml(p.iss)}</td><td><span style="color:${cc(p.baglanti_turu)};font-family:var(--font-mono);font-size:10px">${(p.baglanti_turu||'').toUpperCase()}</span></td><td><input class="fi" type="number" value="${p.gercek_dl||''}" id="se_dl_${p.id}" style="padding:4px 8px;font-size:11px;width:70px;"></td><td><input class="fi" type="number" value="${p.gercek_ul||''}" id="se_ul_${p.id}" style="padding:4px 8px;font-size:11px;width:70px;"></td><td><input class="fi" type="number" min="1" max="10" value="${p.puan||''}" id="se_puan_${p.id}" style="padding:4px 8px;font-size:11px;width:55px;"></td><td><select class="fs" id="se_gor_${p.id}" style="padding:4px 6px;font-size:10px;width:80px;"><option value="true" ${p.gorunur!==false?'selected':''}>👁 Görünür</option><option value="false" ${p.gorunur===false?'selected':''}>🙈 Gizli</option></select></td><td style="display:flex;gap:4px;"><button class="btn-approve" style="padding:4px 8px;font-size:9px;" onclick="saveStatEdit('${p.id}')">💾</button><button class="btn-del" style="padding:4px 8px;font-size:9px;" onclick="modDeletePin('${p.id}',true)">🗑</button></td></tr>`).join('');
+    tbody.innerHTML = pins.map(p => `<tr id="se_${p.id}"><td style="font-size:11px;font-weight:700;">${escHtml(p.iss)}</td><td><span style="color:${cc(p.baglanti_turu)};font-family:var(--font-mono);font-size:10px">${(p.baglanti_turu||'').toUpperCase()}</span></td><td><input class="fi" type="number" value="${p.gercek_dl||''}" id="se_dl_${p.id}" style="padding:4px 8px;font-size:11px;width:70px;"></td><td><input class="fi" type="number" value="${p.gercek_ul||''}" id="se_ul_${p.id}" style="padding:4px 8px;font-size:11px;width:70px;"></td><td><input class="fi" type="number" min="1" max="10" value="${p.puan||''}" id="se_puan_${p.id}" style="padding:4px 8px;font-size:11px;width:55px;"></td><td><select class="fs" id="se_gor_${p.id}" style="padding:4px 6px;font-size:10px;width:80px;"><option value="true" ${p.gorunur!==false?'selected':''}>👁 Görünür</option><option value="false" ${p.gorunur===false?'selected':''}>🙈 Gizli</option></select></td><td style="display:flex;gap:4px;"><button class="btn-approve" style="padding:4px 8px;font-size:9px;" onclick="saveStatEdit('${p.id}')" title="Kaydet" aria-label="Kaydet">💾</button><button class="btn-del" style="padding:4px 8px;font-size:9px;" onclick="modDeletePin('${p.id}',true)" title="Pini Sil" aria-label="Pini Sil">🗑</button></td></tr>`).join('');
   } catch(e) { tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger);padding:10px;">${e.message}</td></tr>`; }
 }
 const debouncedLoadStatEditTable = debounce(loadStatEditTable);
