@@ -1650,8 +1650,14 @@ function renderMyPins() {
   });
 }
 
+// GÜVENLİK: Herkese açık harita verisi (anon) sadece haritada gösterilen alanları içermeli.
+// Önceden select=* kullanılıyordu — bu, browser_fp (cihaz kimliği), ip_hash ve client_metadata
+// gibi HASSAS alanları da herkese açık REST API'den okunabilir hale getiriyordu (herkes bu
+// alanları API'den doğrudan çekip kullanıcıları cihaz bazlı takip edebilirdi). Bu alanlar
+// moderatör panelinde (getAllPinsAdmin, authenticated) hâlâ erişilebilir durumda.
+const PUBLIC_PIN_COLUMNS = 'id,lat,lng,il,ilce,mahalle,iss,baglanti_turu,diger_altyapilar,altyapi_sahibi,paket_hizi,paket_hizi_dl,paket_hizi_ul,gercek_dl,gercek_ul,puan,yorum,gorunur,is_quarantine,is_altyapi_yok,speed_test_verified,created_at,deleted_at';
 const getPins = async () => { 
-  const res = await sbRest('pins?select=*&gorunur=eq.true&order=created_at.desc&limit=3000'); 
+  const res = await sbRest(`pins?select=${PUBLIC_PIN_COLUMNS}&gorunur=eq.true&order=created_at.desc&limit=3000`); 
   const p = (res||[]).filter(p=>!p.deleted_at);
   // Yükleme bittiğinde user pinlerini de güncelle
   setTimeout(renderMyPins, 100);
@@ -1659,6 +1665,7 @@ const getPins = async () => {
 };
 const getAllPinsAdmin = async () => { const res = await sbRest('pins?select=*&order=created_at.desc'); return (res||[]).filter(p=>!p.deleted_at); };
 const getPinById = async id => { const res = await sbRest(`pins?id=eq.${id}&select=*`); return (res||[]).filter(p=>!p.deleted_at); };
+
 
 // KULLANICI DOSTU HATA MESAJI: RLS (42501) ve benzeri sunucu hatalarını ham JSON
 // yerine anlaşılır bir mesaja çevirir. Kullanıcıya "code:42501,details:null..." gibi
