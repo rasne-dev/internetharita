@@ -5267,6 +5267,23 @@ let lastSubmittedLatLng = null; // "Haritada Gör" butonu için son eklenen pini
 const SPEED_DOWNLOAD_URL = 'https://speed.cloudflare.com/__down';
 const SPEED_UPLOAD_URL = window.SPEED_TEST_UPLOAD_URL || 'https://speed.cloudflare.com/__up';
 
+// HATA DÜZELTMESİ: Bu dosyadaki hiçbir fetch() çağrısında zaman aşımı (timeout)
+// yoktu (XHR yollarında x.timeout özenle ayarlanmışken, fetch tabanlı indirme/
+// yükleme yollarında bu koruma unutulmuştu). Ağ isteği bir VPN/güvenlik duvarı/
+// captive portal tarafından yanıtsız bırakılırsa (ne başarı ne hata — sonsuza
+// kadar askıda), `await fetch(...)` hiç dönmüyor, dolayısıyla stRunning hiçbir
+// zaman false olmuyor ve × (kapat) butonu da "if (stRunning) return" koruması
+// yüzünden hiçbir şey yapmıyordu — kullanıcı modalda kilitli kalıp sayfayı
+// yenilemek zorunda kalıyordu. fetchWithTimeout(), AbortController ile her
+// isteği ms sonra iptal eder; böylece askıda kalan istek zaten var olan
+// try/catch ve "sıradaki yönteme geç" mantığına doğal olarak düşer.
+function fetchWithTimeout(url, opts, ms) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms || 10000);
+  const finalOpts = Object.assign({}, opts, { signal: controller.signal });
+  return fetch(url, finalOpts).finally(() => clearTimeout(timer));
+}
+
 // KRİTİK DÜZELTME: Bu fonksiyon `applySpeedResults()` ve `resetPinForm()`
 // içinde çağrılıyordu ama hiçbir yerde TANIMLI DEĞİLDİ. Bu durum
 // "ReferenceError: setSpeedEntryMode is not defined" hatasına yol açıyordu.
@@ -5408,7 +5425,7 @@ async function measurePing() {
     const times = [];
     for (let i = 0; i < 5; i++) {
       const t0 = performance.now();
-      await fetch(`${SPEED_DOWNLOAD_URL}?bytes=0&t=${Date.now()}_${i}`, { cache:'no-store', mode:'cors' });
+      await fetchWithTimeout(`${SPEED_DOWNLOAD_URL}?bytes=0&t=${Date.now()}_${i}`, { cache:'no-store', mode:'cors' }, 5000);
       times.push(Math.round(performance.now() - t0));
     }
     times.sort((a,b)=>a-b);
@@ -5431,7 +5448,7 @@ async function measureDownload(onLive) {
 
   await Promise.all(Array.from({ length: PARALLEL_STREAMS }, async (_, n) => {
     try {
-      const r = await fetch(`${SPEED_DOWNLOAD_URL}?bytes=${512 * 1024}&t=warmup_${n}_${Date.now()}`, { cache:'no-store', mode:'cors' });
+      const r = await fetchWithTimeout(`${SPEED_DOWNLOAD_URL}?bytes=${512 * 1024}&t=warmup_${n}_${Date.now()}`, { cache:'no-store', mode:'cors' }, 8000);
       if (r.body) { const rdr = r.body.getReader(); while (true) { const {done} = await rdr.read(); if (done) break; } }
     } catch(e) {}
   }));
@@ -5459,7 +5476,7 @@ async function measureDownload(onLive) {
     while (performance.now() < stopAt) {
       const url = `${SPEED_DOWNLOAD_URL}?bytes=${CHUNK_SIZE}&t=${Date.now()}_${n}_${Math.random()}`;
       let r;
-      try { r = await fetch(url, { cache:'no-store', mode:'cors' }); } catch(e) { break; }
+      try { r = await fetchWithTimeout(url, { cache:'no-store', mode:'cors' }, 12000); } catch(e) { break; }
       if (!r.ok || !r.body) break;
       const reader = r.body.getReader();
       while (performance.now() < stopAt) {
@@ -5794,11 +5811,11 @@ async function measureUploadCF(onLive) {
   // Isınma + erişilebilirlik kontrolü: bu istek başarısız/reddedilirse
   // (ağ bu alan adını da engelliyorsa) hiç vakit kaybetmeden yedek yola geç.
   try {
-    const warm = await fetch(`${SPEED_UPLOAD_URL}?t=wu_${Date.now()}`, {
+    const warm = await fetchWithTimeout(`${SPEED_UPLOAD_URL}?t=wu_${Date.now()}`, {
       method: 'POST', mode: 'cors', cache: 'no-store',
       headers: { 'Content-Type': 'text/plain' },
       body: makeUploadBlob(64 * 1024)
-    });
+    }, 6000);
     if (!warm) return null;
   } catch (e) {
     window.lastUploadDebug = `[Cloudflare] ısınma isteği başarısız: ${e && e.message ? e.message : e}`;
@@ -5824,11 +5841,11 @@ async function measureUploadCF(onLive) {
     let probeSent = 0;
     try {
       const probeBody = makeUploadStream(probeStopAt, (b) => { probeSent += b; });
-      await fetch(`${SPEED_UPLOAD_URL}?t=probe_${Date.now()}`, {
+      await fetchWithTimeout(`${SPEED_UPLOAD_URL}?t=probe_${Date.now()}`, {
         method: 'POST', mode: 'cors', cache: 'no-store',
         headers: { 'Content-Type': 'text/plain' },
         body: probeBody, duplex: 'half'
-      });
+      }, 6000);
     } catch (e) {}
     const probeElapsed = (performance.now() - probeStart) / 1000;
     const probeMbps = (probeSent >= 50000 && probeElapsed > 0) ? (probeSent * 8) / probeElapsed / 1e6 : null;
@@ -5862,11 +5879,11 @@ async function measureUploadCF(onLive) {
   async function cfStreamAccurate(n) {
     try {
       const body = makeUploadStream(stopAt, (b) => { totalSent += b; });
-      await fetch(`${SPEED_UPLOAD_URL}?t=${Date.now()}_${n}_${Math.random()}`, {
+      await fetchWithTimeout(`${SPEED_UPLOAD_URL}?t=${Date.now()}_${n}_${Math.random()}`, {
         method: 'POST', mode: 'cors', cache: 'no-store',
         headers: { 'Content-Type': 'text/plain' },
         body, duplex: 'half'
-      });
+      }, MEASURE_MS + 5000);
     } catch (e) { /* stream stopAt'te kapanınca bağlantı kesilmesi normaldir */ }
   }
 
@@ -5875,11 +5892,11 @@ async function measureUploadCF(onLive) {
     let consecutiveErrors = 0;
     while (performance.now() < stopAt) {
       try {
-        const r = await fetch(`${SPEED_UPLOAD_URL}?t=${Date.now()}_${n}_${Math.random()}`, {
+        const r = await fetchWithTimeout(`${SPEED_UPLOAD_URL}?t=${Date.now()}_${n}_${Math.random()}`, {
           method: 'POST', mode: 'cors', cache: 'no-store',
           headers: { 'Content-Type': 'text/plain' },
           body: makeUploadBlob(CHUNK_BYTES)
-        });
+        }, 15000);
         if (r && (r.ok || r.status === 0)) { totalSent += CHUNK_BYTES; consecutiveErrors = 0; }
         else { consecutiveErrors++; if (consecutiveErrors >= 3) break; }
       } catch (e) {
