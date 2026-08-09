@@ -1168,23 +1168,9 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
           3️⃣ Bildirim asılsız/geçersizse (pin doğru, kullanıcı yanılmış) <b>❌ Reddet</b>'e basın — bu da sadece bildirimi kapatır, pini SİLMEZ.
         </div>
         <!-- RLS Uyarısı: Kullanıcılar "42501 row-level security" hatası alıyorsa bu bloğu göster -->
-        <details style="margin-bottom:12px;">
-          <summary style="font-size:10px;color:var(--warn);cursor:pointer;font-family:var(--font-mono);">⚠ Kullanıcılar bildirim gönderemiyorsa — RLS kurulum rehberi</summary>
-          <div style="margin-top:8px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--text2);">
-            Hata: <code style="color:var(--danger);">42501 – new row violates row-level security policy for table "raporlar"</code><br><br>
-            Supabase SQL Editor'da bir kez çalıştır:
-            <code style="display:block;margin-top:6px;background:rgba(0,0,0,.35);padding:8px 10px;border-radius:6px;font-size:10px;color:var(--accent);white-space:pre-wrap;word-break:break-all;">ALTER TABLE raporlar ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "anon_insert_raporlar" ON raporlar
-  FOR INSERT TO anon WITH CHECK (true);
-
-CREATE POLICY "auth_select_raporlar" ON raporlar
-  FOR SELECT TO authenticated USING (true);
-
-CREATE POLICY "auth_update_raporlar" ON raporlar
-  FOR UPDATE TO authenticated USING (true);</code>
-          </div>
-        </details>
+        <div style="margin-bottom:12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--text2);">
+          ⚠ Kullanıcılar bildirim gönderemiyorsa (Hata: <code style="color:var(--danger);">42501 – row-level security policy for table "raporlar"</code>), Supabase projesindeki <b>raporlar</b> tablosunun RLS politikalarını kontrol et. Düzeltme SQL'i repoda ayrı tutuluyor, projeyi yöneten kişiye danış.
+        </div>
         <div id="bekleyenList"><div class="loading-text loading-dots">Yükleniyor</div></div>
         <div style="margin-top:14px;">
           <button class="btn-edit" style="padding:6px 12px;font-size:10px;" onclick="toggleGecmisRaporlar()" id="gecmisToggleBtn">🕘 Geçmiş Bildirimler</button>
@@ -1209,6 +1195,10 @@ CREATE POLICY "auth_update_raporlar" ON raporlar
       <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:var(--font-mono);">
         <span style="color:var(--success);">✅ Doğrulandı</span> = sayfa içi hız testi &nbsp;·&nbsp;
         <span style="color:var(--warn);">❌ Dışarıda</span> = test doğrulanmamış (eski veya manuel)
+      </div>
+      <!-- RLS Uyarısı: Kullanıcılar "42501 row-level security" hatası alıyorsa bu bloğu göster -->
+      <div style="margin-bottom:12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--text2);">
+        ⚠ Kullanıcılar veri ekleyemiyorsa (Hata: <code style="color:var(--danger);">42501 – row-level security policy for table "pins"</code>), Supabase projesindeki <b>pins</b> tablosunun RLS politikalarını kontrol et. Düzeltme SQL'i repoda ayrı tutuluyor, projeyi yöneten kişiye danış.
       </div>
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
         <button class="btn-approve" style="padding:8px 16px;" id="bulkApproveBtn" onclick="bulkApprovePins()">✅ Seçilileri Onayla</button>
@@ -1513,23 +1503,6 @@ const sbc = createClient(SB_URL, SB_KEY);
      WHERE deleted_at IS NULL AND gorunur = true AND is_quarantine = false
        AND gercek_dl BETWEEN 0.5 AND 2500 AND gercek_ul > 0
        AND speed_test_verified IS NOT TRUE;
-
-   ── RAPORLAR TABLOSU RLS ────────────────────────────────────────────────────
-   Aşağıdaki hatayı alıyorsan: "new row violates row-level security policy for table raporlar"
-   Supabase SQL Editor'da çalıştır:
-
-   ALTER TABLE raporlar ENABLE ROW LEVEL SECURITY;
-
-   -- Anonim kullanıcıların rapor eklemesine izin ver
-   CREATE POLICY "anon_insert_raporlar" ON raporlar
-     FOR INSERT TO anon WITH CHECK (true);
-
-   -- Sadece moderatörler (authenticated) okuyabilir ve güncelleyebilir
-   CREATE POLICY "auth_select_raporlar" ON raporlar
-     FOR SELECT TO authenticated USING (true);
-
-   CREATE POLICY "auth_update_raporlar" ON raporlar
-     FOR UPDATE TO authenticated USING (true);
    ──────────────────────────────────────────────────────────────────────────── */
 
 let isMaintenanceMode = false;
@@ -1687,6 +1660,17 @@ const getPins = async () => {
 const getAllPinsAdmin = async () => { const res = await sbRest('pins?select=*&order=created_at.desc'); return (res||[]).filter(p=>!p.deleted_at); };
 const getPinById = async id => { const res = await sbRest(`pins?id=eq.${id}&select=*`); return (res||[]).filter(p=>!p.deleted_at); };
 
+// KULLANICI DOSTU HATA MESAJI: RLS (42501) ve benzeri sunucu hatalarını ham JSON
+// yerine anlaşılır bir mesaja çevirir. Kullanıcıya "code:42501,details:null..." gibi
+// teknik çıktı göstermek kafa karıştırıyor ve ne yapması gerektiğini belli etmiyordu.
+function friendlyDbError(e, tableLabel) {
+  const msg = e?.message || String(e);
+  if (msg.includes('42501') || msg.includes('row-level security')) {
+    console.error(`[internetHarita] "${tableLabel}" tablosunda RLS (42501) hatası — Supabase SQL Editor'da anon politikalarını kontrol edin. Detay:`, msg);
+    return '⚠ Veri kaydedilemedi (sunucu izin hatası). Bu bizim tarafımızdaki bir ayar sorunu — birazdan tekrar deneyin, sorun devam ederse lütfen bize bildirin.';
+  }
+  return 'Hata: ' + msg;
+}
 const addPin = d => sbRest('pins', { method:'POST', body:JSON.stringify(d) });
 const patchPin = (id,d) => sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
 // Kullanıcının "kendi ölçümünü düzenle" akışı için: RLS eşleşmezse (browser_fp uyuşmazsa)
@@ -3669,8 +3653,8 @@ async function submitPin() {
         await addPin(fb); markSubmit(); if (isAltyapiYok) markSubmitNoInfra();
         showToast('⚠ Verini aldık — DB güncellemesi bekleniyor', 'warn'); 
         resetPinForm(); loadPins(); 
-      } catch(e2) { showToast('Hata: '+e2.message,'err'); }
-    } else showToast('Hata: '+e.message,'err');
+      } catch(e2) { showToast(friendlyDbError(e2,'pins'),'err'); }
+    } else showToast(friendlyDbError(e,'pins'),'err');
   }
   submitBtn.disabled=false; submitBtn.textContent='📍 Veriyi Paylaş';
 }
@@ -3888,9 +3872,9 @@ async function saveUserEdit() {
         closeUserEditModal();
         document.getElementById('mapInfo').classList.remove('visible');
         await loadPins();
-      } catch(e2) { showToast('Güncelleme sırasında hata oluştu: ' + e2.message, 'err'); }
+      } catch(e2) { showToast(friendlyDbError(e2,'pins'), 'err'); }
     } else {
-      showToast('Güncelleme sırasında hata oluştu: ' + e.message, 'err');
+      showToast(friendlyDbError(e,'pins'), 'err');
     }
   }
 }
@@ -3907,7 +3891,7 @@ async function deleteUserPin(pinId) {
     document.getElementById('mapInfo').classList.remove('visible');
     await loadPins(); // sunucu verisini de senkronize et
   } catch(e) {
-    showToast('Silme işlemi sırasında hata oluştu: ' + e.message, 'err');
+    showToast(friendlyDbError(e,'pins'), 'err');
   }
 }
 
@@ -3986,7 +3970,7 @@ async function submitReport() {
     showToast('⚠ Bazı bildirimler gönderilemedi: '+(retryResults.find(r=>r.status==='rejected')?.reason?.message||''), 'err');
     resetBtn(); return;
   }
-  showToast('Hata: '+msg,'err');
+  showToast(friendlyDbError(firstErr,'raporlar'),'err');
   resetBtn();
 }
 
