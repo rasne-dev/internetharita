@@ -5129,7 +5129,7 @@ const ASSETS=[
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js'
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js'
 ];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).catch(()=>{})));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k))))));
@@ -5431,16 +5431,45 @@ function percentile90(samples) {
   return sorted[idx];
 }
 
+// HATA DÜZELTMESİ: fetchWithTimeout()'un AbortController'ı yalnızca fetch()
+// promise'i (yani HTTP başlıkları) dönene kadar aktifti — clearTimeout()
+// başlıklar gelir gelmez çalışıyordu. Bundan sonra reader.read() ile yapılan
+// gövde (body) okumalarının HİÇBİR zaman aşımı yoktu. Bir VPN/proxy/captive
+// portal başlıkları gönderip gövdeyi ortada keserse, reader.read() sonsuza
+// kadar askıda kalır; dıştaki "while (performance.now() < stopAt)" kontrolü
+// bir sonraki read() çağrısına asla ulaşamaz ve Promise.all hiç dönmediği
+// için tüm indirme testi "İndirme ölçülüyor..." ekranında donar. readWithTimeout,
+// her read() çağrısını bir zaman aşımıyla yarıştırır; aşım olursa reader
+// iptal edilip stream kapatılır ve döngü bir sonraki isteğe geçer.
+function readWithTimeout(reader, ms) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('read_timeout')), ms);
+    reader.read().then(
+      (res) => { clearTimeout(timer); resolve(res); },
+      (err) => { clearTimeout(timer); reject(err); }
+    );
+  });
+}
+
 async function measureDownload(onLive) {
   const CHUNK_SIZE = 25 * 1024 * 1024;
   const MEASURE_MS = 10000;
   const SAMPLE_MS  = 200;
   const PARALLEL_STREAMS = 8;
+  const READ_TIMEOUT_MS = 8000; // tek bir read() çağrısı için üst sınır
 
   await Promise.all(Array.from({ length: PARALLEL_STREAMS }, async (_, n) => {
     try {
       const r = await fetchWithTimeout(`${SPEED_DOWNLOAD_URL}?bytes=${512 * 1024}&t=warmup_${n}_${Date.now()}`, { cache:'no-store', mode:'cors' }, 8000);
-      if (r.body) { const rdr = r.body.getReader(); while (true) { const {done} = await rdr.read(); if (done) break; } }
+      if (r.body) {
+        const rdr = r.body.getReader();
+        try {
+          while (true) {
+            const {done} = await readWithTimeout(rdr, READ_TIMEOUT_MS);
+            if (done) break;
+          }
+        } catch(e) { try { await rdr.cancel(); } catch(e2) {} }
+      }
     } catch(e) {}
   }));
 
@@ -5472,7 +5501,7 @@ async function measureDownload(onLive) {
       const reader = r.body.getReader();
       while (performance.now() < stopAt) {
         let res;
-        try { res = await reader.read(); } catch(e) { break; }
+        try { res = await readWithTimeout(reader, READ_TIMEOUT_MS); } catch(e) { break; }
         if (res.done) break;
         totalBytesGlobal += res.value.length;
       }
@@ -5797,7 +5826,12 @@ async function measureUploadCF(onLive) {
   const PROBE_MS         = 1000;
   const SAMPLE_MS        = 200;
   const streaming        = supportsStreamingUploadBody();
-  const CHUNK_BYTES      = 12 * 1024 * 1024; // Cloudflare'in belgelediği 10MB eşiğinin üzerinde — sadece streaming desteklenmeyen tarayıcılarda kullanılır
+  const CHUNK_BYTES      = 512 * 1024; // DOĞRULUK + KULLANICI DENEYİMİ DÜZELTMESİ: eskiden 12MB,
+  // sonra 2MB idi — streaming desteklemeyen tarayıcılarda (ör. eski Safari) yavaş bağlantılarda tek
+  // chunk zamanında tamamlanamıyor ve her denemede saniyelerce boşa bekleniyordu (bu yol tam-tamamlanma
+  // bazlı sayıyor, fetch() ile kısmi ilerleme takibi mümkün değil). 512KB, gerçekçi en yavaş
+  // bağlantılarda bile (~0.5 Mbps) makul sürede tamamlanıyor; "toplam bayt/toplam süre" ortalamasını
+  // etkilemiyor çünkü chunk sayısı arttıkça sonuç aynı kalıyor.
 
   // Isınma + erişilebilirlik kontrolü: bu istek başarısız/reddedilirse
   // (ağ bu alan adını da engelliyorsa) hiç vakit kaybetmeden yedek yola geç.
@@ -5887,12 +5921,12 @@ async function measureUploadCF(onLive) {
           method: 'POST', mode: 'cors', cache: 'no-store',
           headers: { 'Content-Type': 'text/plain' },
           body: makeUploadBlob(CHUNK_BYTES)
-        }, 15000);
+        }, 10000);
         if (r && (r.ok || r.status === 0)) { totalSent += CHUNK_BYTES; consecutiveErrors = 0; }
-        else { consecutiveErrors++; if (consecutiveErrors >= 3) break; }
+        else { consecutiveErrors++; if (consecutiveErrors >= 2) break; }
       } catch (e) {
         consecutiveErrors++;
-        if (consecutiveErrors >= 3) break;
+        if (consecutiveErrors >= 2) break;
       }
     }
   }
@@ -5936,6 +5970,15 @@ async function measureUpload(onLive) {
   const cfResult = await measureUploadCF(onLive);
   if (cfResult) { window.lastUploadMethod = 'cloudflare-fetch'; return cfResult; }
   const cfDebug = window.lastUploadDebug;
+
+  // KULLANICI DENEYİMİ DÜZELTMESİ: CF yolu (streaming desteklemeyen tarayıcılarda
+  // yavaş bağlantılarda birkaç deneme sonrası) başarısız olup burada XHR'a geçerken
+  // kullanıcıya hiçbir ara bilgi gösterilmiyordu — ekran, üst kısımda hâlâ "~10 sn"
+  // yazarken sessizce donmuş gibi görünebiliyordu. Artık geçiş anında bilgilendiriliyor.
+  const subElXhr = document.getElementById('stSub');
+  if (subElXhr) {
+    subElXhr.textContent = 'Yükleme hızı ölçülüyor (~10 sn) — alternatif yöntemle devam ediliyor...';
+  }
 
   const xhrResult = await measureUploadXHR(onLive);
   window.lastUploadDebug = `${cfDebug} || ${window.lastUploadDebug}`;
