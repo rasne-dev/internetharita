@@ -5044,16 +5044,25 @@ document.addEventListener('click', function(e) {
     document.getElementById('settingsDropdown')?.classList.remove('open');
   }
 });
+// CARTO, Ağustos 2026'dan itibaren keysiz raster tile isteklerini "API KEY REQUIRED"
+// filigranıyla damgalıyor. Ücretsiz key (hesap gerekmez, ~1 dk): dashboard.basemaps.carto.com
+// Key'i aldıktan sonra aşağıya yapıştır; boş bırakılırsa site otomatik olarak
+// keysiz OpenStreetMap standart tile'larına düşer (filigransız ama koyu tema yok).
+const CARTO_API_KEY = '';
 function getMapTileUrl() {
-  return document.documentElement.classList.contains('light')
-    ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+  const isLight = document.documentElement.classList.contains('light');
+  if (CARTO_API_KEY) {
+    return (isLight
+      ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png') + '?key=' + CARTO_API_KEY;
+  }
+  return 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 }
 function updateMapTiles() {
   const url = getMapTileUrl();
   [maps.main, maps.pin].forEach(m => {
     if (!m) return;
-    m.eachLayer(l => { if (l._url && l._url.includes('cartocdn')) m.removeLayer(l); });
+    m.eachLayer(l => { if (l._url && (l._url.includes('cartocdn') || l._url.includes('openstreetmap.org'))) m.removeLayer(l); });
     L.tileLayer(url, { maxZoom:19, noWrap:true }).addTo(m);
   });
 }
