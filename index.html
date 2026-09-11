@@ -2358,8 +2358,14 @@ async function loadPins() {
     ]);
     
     const all = publicRes || [];
+    // BUG FIX: publicRes'teki pinlerde browser_fp yok (PUBLIC_PIN_COLUMNS'da güvenlik
+    // gereği bulunmuyor). Kendi pinim zaten genel listede varsa sadece browser_fp'yi
+    // üzerine işaretle, yoksa myRes'teki tam veriyi ekle. Aksi halde "Ölçümlerimi
+    // Haritada Gör" onaylı pinleri hiç bulamıyordu.
     (myRes || []).forEach(p => {
-      if (!all.some(x => x.id === p.id)) all.push(p);
+      const idx = all.findIndex(x => x.id === p.id);
+      if (idx === -1) all.push(p);
+      else all[idx] = { ...all[idx], browser_fp: p.browser_fp };
     });
 
     pinsData = all; 
@@ -5044,11 +5050,9 @@ document.addEventListener('click', function(e) {
     document.getElementById('settingsDropdown')?.classList.remove('open');
   }
 });
-// CARTO, Ağustos 2026'dan itibaren keysiz raster tile isteklerini "API KEY REQUIRED"
-// filigranıyla damgalıyor. Ücretsiz key (hesap gerekmez, ~1 dk): dashboard.basemaps.carto.com
-// Key'i aldıktan sonra aşağıya yapıştır; boş bırakılırsa site otomatik olarak
-// keysiz OpenStreetMap standart tile'larına düşer (filigransız ama koyu tema yok).
-const CARTO_API_KEY = '';
+// CARTO ücretsiz key. carto.com/basemaps/apikey üzerinden alındı — aylık 5M tile
+// isteğine kadar ücretsiz. Boş bırakılırsa site keysiz OpenStreetMap'e düşer (koyu tema yok).
+const CARTO_API_KEY = 'cb1_3gtw_1_6a857133eb2c83334bf96b05';
 function getMapTileUrl() {
   const isLight = document.documentElement.classList.contains('light');
   if (CARTO_API_KEY) {
