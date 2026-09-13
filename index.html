@@ -709,8 +709,8 @@ html.light .panel { background:var(--surface2); border-color:var(--border); }
    Şekil işaretleri varsayılan olarak gizli; sadece <html class="colorblind-mode">
    aktifken görünür. Bu sayede tüm hız/memnuniyet renkli metinlere tek bir CSS
    kuralıyla, JS re-render gerekmeden şekil ekleniyor. */
-.speed-shape, .legend-shape { display:none; margin-right:3px; font-weight:700; letter-spacing:-1px; }
-html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:inline; }
+.speed-shape, .legend-shape { display:none; margin-right:4px; font-weight:700; font-family:var(--font-mono); }
+html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:inline-block; }
 
 /* ── ÇOK ADIMLI FORM (pin ekleme sihirbazı) ────────────────────────────── */
 .pform-steps-indicator { display:flex; align-items:center; margin:14px 0 4px; }
@@ -2213,22 +2213,55 @@ function parseDigerAltyapi(raw) {
   try { const j = JSON.parse(raw); if (Array.isArray(j)) return j.filter(e=>e && e.tur); } catch(e) {}
   return raw.split(',').filter(Boolean).map(t => ({ iss: null, tur: t }));
 }
-function speedColor(dl) { if(dl>=500)return'#800080';if(dl>=200)return'#1E88E5';if(dl>=100)return'#43A047';if(dl>=25)return'#FB8C00';return'#E53935'; }
-function memColor(s) { if(s>=8)return'#22c55e';if(s>=6)return'#84cc16';if(s>=4)return'#eab308';return'#ef4444'; }
+function speedColor(dl) {
+  if (colorblindMode) {
+    if (dl >= 500) return '#4c1d95'; // Koyu Mor
+    if (dl >= 200) return '#2563eb'; // Canlı Mavi
+    if (dl >= 100) return '#0284c7'; // Açık Mavi
+    if (dl >= 25)  return '#d97706'; // Amber / Sarı-Turuncu
+    return '#dc2626';                // Kırmızı
+  }
+  if (dl >= 500) return '#800080';
+  if (dl >= 200) return '#1E88E5';
+  if (dl >= 100) return '#43A047';
+  if (dl >= 25)  return '#FB8C00';
+  return '#E53935';
+}
+function memColor(s) {
+  if (colorblindMode) {
+    if (s >= 8) return '#2563eb'; // Mavi (Mükemmel)
+    if (s >= 6) return '#06b6d4'; // Cyan (İyi)
+    if (s >= 4) return '#f59e0b'; // Amber (Orta)
+    return '#e11d48';             // Kırmızı/Gül (Düşük)
+  }
+  if (s >= 8) return '#22c55e';
+  if (s >= 6) return '#84cc16';
+  if (s >= 4) return '#eab308';
+  return '#ef4444';
+}
 // RENK KÖRÜ MODU: speedColor/memColor ile aynı eşikleri kullanan şekil işaretleri.
 // Kırmızı-yeşil ayrımı göremeyen kullanıcılar için renklere ek bir ipucu sağlar.
-// Şekiller CSS ile (.colorblind-mode altında) gösterilir/gizlenir — bkz. <style> bloğu.
 function speedShape(dl) { if(dl>=500)return'◆'; if(dl>=200)return'■'; if(dl>=100)return'▲'; if(dl>=25)return'●'; return'▼'; }
-function speedShapeHtml(dl) { return `<span class="speed-shape">${speedShape(dl)}</span>`; }
+function speedShapeHtml(dl) { return `<span class="speed-shape">${speedShape(dl)} </span>`; }
 function memShape(s) { if(s>=8)return'★'; if(s>=6)return'◐'; if(s>=4)return'▲'; return'▼'; }
-function memShapeHtml(s) { return `<span class="speed-shape">${memShape(s)}</span>`; }
+function memShapeHtml(s) { return `<span class="speed-shape">${memShape(s)} </span>`; }
 let colorblindMode = localStorage.getItem('ih_colorblind') === 'true';
 function toggleColorblindMode() {
   colorblindMode = !colorblindMode;
   localStorage.setItem('ih_colorblind', String(colorblindMode));
   document.documentElement.classList.toggle('colorblind-mode', colorblindMode);
   document.getElementById('colorblindCheck') && (document.getElementById('colorblindCheck').checked = colorblindMode);
-  showToast(colorblindMode ? '👁️ Renk körü modu açık — hız/memnuniyet değerlerine şekil işaretleri eklendi' : '👁️ Renk körü modu kapatıldı');
+  if (typeof setColorMode === 'function') setColorMode(colorMode);
+  if (typeof renderHex === 'function') renderHex();
+  if (typeof renderMyPins === 'function') renderMyPins();
+  if (typeof renderModPins === 'function') renderModPins();
+  if (activeHexPins && activeHexPins.length) {
+    const rHexId = document.getElementById('reportHexId')?.value;
+    showHexInfo(activeHexPins, rHexId);
+  }
+  if (document.getElementById('page-bolge')?.classList.contains('active')) renderRegions();
+  if (document.getElementById('page-istatistik')?.classList.contains('active')) renderStats();
+  showToast(colorblindMode ? '👁️ Renk körü modu açık — güvenli renk paleti ve şekil işaretleri aktif' : '👁️ Renk körü modu kapatıldı');
 }
 
 let maps = {}, pinsData =[], cleanPinsData =[], activeFilters = new Set(['fiber','vdsl','adsl','docsis']);
@@ -2309,9 +2342,15 @@ function setColorMode(m) {
   if (hintEl) hintEl.style.display = isAltyapi ? 'block' : 'none';
   const items = document.getElementById('legendItems');
   if (!items) return renderHex();
-  if (m === 'hiz') { items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:#800080"></div>500+</div><div class="legend-item"><div class="legend-dot" style="background:#1E88E5"></div>200–500</div><div class="legend-item"><div class="legend-dot" style="background:#43A047"></div>100–200</div><div class="legend-item"><div class="legend-dot" style="background:#FB8C00"></div>25–100</div><div class="legend-item"><div class="legend-dot" style="background:#E53935"></div>&lt;25 Mbps</div>`; }
-  else if (m === 'altyapi') { items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:#9333ea"></div>Fiber</div><div class="legend-item"><div class="legend-dot" style="background:#06b6d4"></div>VDSL</div><div class="legend-item"><div class="legend-dot" style="background:#E53935"></div>ADSL</div><div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>DOCSIS</div>`; }
-  else { items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div>Mükemmel (8–10)</div><div class="legend-item"><div class="legend-dot" style="background:#84cc16"></div>İyi (6–7)</div><div class="legend-item"><div class="legend-dot" style="background:#eab308"></div>Orta (4–5)</div><div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>Düşük (1–3)</div>`; }
+  if (colorMode === 'hiz') {
+    const c1 = speedColor(500), c2 = speedColor(300), c3 = speedColor(150), c4 = speedColor(50), c5 = speedColor(10);
+    items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:${c1}"></div><span class="legend-shape">◆ </span>500+</div><div class="legend-item"><div class="legend-dot" style="background:${c2}"></div><span class="legend-shape">■ </span>200–500</div><div class="legend-item"><div class="legend-dot" style="background:${c3}"></div><span class="legend-shape">▲ </span>100–200</div><div class="legend-item"><div class="legend-dot" style="background:${c4}"></div><span class="legend-shape">● </span>25–100</div><div class="legend-item"><div class="legend-dot" style="background:${c5}"></div><span class="legend-shape">▼ </span>&lt;25 Mbps</div>`;
+  } else if (colorMode === 'altyapi') {
+    items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:#9333ea"></div>Fiber</div><div class="legend-item"><div class="legend-dot" style="background:#06b6d4"></div>VDSL</div><div class="legend-item"><div class="legend-dot" style="background:#E53935"></div>ADSL</div><div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>DOCSIS</div>`;
+  } else {
+    const m1 = memColor(9), m2 = memColor(7), m3 = memColor(5), m4 = memColor(2);
+    items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:${m1}"></div><span class="legend-shape">★ </span>Mükemmel (8–10)</div><div class="legend-item"><div class="legend-dot" style="background:${m2}"></div><span class="legend-shape">◐ </span>İyi (6–7)</div><div class="legend-item"><div class="legend-dot" style="background:${m3}"></div><span class="legend-shape">▲ </span>Orta (4–5)</div><div class="legend-item"><div class="legend-dot" style="background:${m4}"></div><span class="legend-shape">▼ </span>Düşük (1–3)</div>`;
+  }
   renderHex();
 }
 
@@ -2496,11 +2535,11 @@ function renderModPins() {
           ${escHtml(p.iss)} 
           <span class="popup-badge" style="background:${cc(p.baglanti_turu)}22;color:${cc(p.baglanti_turu)};border:1px solid ${cc(p.baglanti_turu)}">${(p.baglanti_turu||'').toUpperCase()}</span>
         </div>
-        <div class="popup-row"><span class="popup-key">Download</span><span class="popup-val" style="color:${speedColor(p.gercek_dl)}">${p.gercek_dl} Mbps</span></div>
+        <div class="popup-row"><span class="popup-key">Download</span><span class="popup-val" style="color:${speedColor(p.gercek_dl)}">${speedShapeHtml(p.gercek_dl)}${p.gercek_dl} Mbps</span></div>
         <div class="popup-row"><span class="popup-key">Upload</span><span class="popup-val">${p.gercek_ul||0} Mbps</span></div>
         <div class="popup-row"><span class="popup-key">Paket Hızı</span><span class="popup-val">${(p.paket_hizi_dl||p.paket_hizi) ? `↓${p.paket_hizi_dl||p.paket_hizi}${p.paket_hizi_ul?` / ↑${p.paket_hizi_ul}`:''} Mbps` : '—'}</span></div>
         <div class="popup-row"><span class="popup-key">Altyapı</span><span class="popup-val" style="font-size:10px">${escHtml((p.altyapi_sahibi||'').replace(/,/g,', ')) || '—'}</span></div>
-        <div class="popup-row"><span class="popup-key">Puan</span><span class="popup-val" style="color:${memColor(p.puan)}">${p.puan}/10</span></div>
+        <div class="popup-row"><span class="popup-key">Puan</span><span class="popup-val" style="color:${memColor(p.puan)}">${memShapeHtml(p.puan)}${p.puan}/10</span></div>
         <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
           <div class="mod-popup-row"><span class="mod-popup-key">Cihaz FP:</span><span class="mod-popup-val" style="color:var(--warn)">${escHtml(p.browser_fp||p.ip_hash||'Bilinmiyor')}</span></div>
           <div class="mod-popup-row"><span class="mod-popup-key">Konum:</span><span class="mod-popup-val">${escHtml(p.il||'')} › ${escHtml(p.ilce||'')}</span></div>
@@ -2531,10 +2570,12 @@ function showHexInfo(pins, hexId) {
     : ([pins[0].il, pins[0].ilce, pins[0].mahalle].filter(Boolean).join(' › ') || 'Bilinmeyen Bölge');
   document.getElementById('infoTitle').textContent = locStr;
   document.getElementById('reportHexId').value = hexId||''; document.getElementById('reportBolge').value = locStr;
-  const avgDL = Math.round(pins.reduce((a,p)=>a+p.gercek_dl,0)/pins.length); const avgS = (pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1);
-  document.getElementById('infoDL').textContent = avgDL+' Mbps'; document.getElementById('infoDL').style.color = speedColor(avgDL);
-  document.getElementById('infoUL').textContent = Math.round(pins.reduce((a,p)=>a+(p.gercek_ul||0),0)/pins.length)+' Mbps';
-  document.getElementById('infoScore').textContent = avgS+'/10'; document.getElementById('infoScore').style.color = memColor(parseFloat(avgS));
+  const dlEl = document.getElementById('infoDL');
+  if (dlEl) { dlEl.innerHTML = speedShapeHtml(avgDL) + avgDL + ' Mbps'; dlEl.style.color = speedColor(avgDL); }
+  const ulEl = document.getElementById('infoUL');
+  if (ulEl) ulEl.textContent = Math.round(pins.reduce((a,p)=>a+(p.gercek_ul||0),0)/pins.length)+' Mbps';
+  const scEl = document.getElementById('infoScore');
+  if (scEl) { scEl.innerHTML = memShapeHtml(parseFloat(avgS)) + avgS + '/10'; scEl.style.color = memColor(parseFloat(avgS)); }
   document.getElementById('infoCount').textContent = pins.length+' ölçüm';
   // BÖLGESEL SAĞLAYICI VE ALTYAPI MATRİSİ
   // Hangi İSS'nin bu altıgende Fiber, VDSL, ADSL veya DOCSIS sunduğunu net eşleştir
@@ -2699,9 +2740,9 @@ function toggleHexPinsList() {
               <span style="font-size:9px;color:var(--text3)">${(p.baglanti_turu||'').toUpperCase()}</span>${extraBadges}
             </div>
             <div class="hex-pin-speeds">
-              ↓ <span style="color:${speedColor(p.gercek_dl)}">${dlBand} Mbps</span>
+              ↓ <span style="color:${speedColor(p.gercek_dl)}">${speedShapeHtml(p.gercek_dl)}${dlBand} Mbps</span>
               ${ulText ? `· <span style="color:var(--text3)">${ulText}</span>` : ''}
-              · <span style="color:${memColor(p.puan)}">${p.puan}/10</span>
+              · <span style="color:${memColor(p.puan)}">${memShapeHtml(p.puan)}${p.puan}/10</span>
             </div>
             ${actions}
           </div>`;
@@ -2730,7 +2771,7 @@ function renderRegions() {
     return { name, color:info.color, iller:info.iller, pins, avgDL, avgUL, avgS };
   });
   if (regionSortMode==='dl') regions.sort((a,b)=>b.avgDL-a.avgDL); else if (regionSortMode==='mem') regions.sort((a,b)=>(b.avgS||0)-(a.avgS||0)); else regions.sort((a,b)=>b.pins.length-a.pins.length);
-  grid.innerHTML = regions.map(r => `<div class="region-card"><div style="position:absolute;top:0;left:0;right:0;height:2px;background:${r.color}"></div><div class="region-name" style="color:${r.color}">${r.name} Bölgesi</div><div class="region-cities">${r.iller.slice(0,4).join(', ')} +${Math.max(0,r.iller.length-4)} il</div><div class="region-stats"><div class="rstat"><div class="rstat-val" style="color:${speedColor(r.avgDL)}">${r.avgDL||'—'}</div><div class="rstat-label">Mbps ↓ İndirme</div></div><div class="rstat"><div class="rstat-val" style="color:${r.avgUL?speedColor(r.avgUL):'var(--text3)'}">${r.avgUL||'—'}</div><div class="rstat-label">Mbps ↑ Yükleme</div></div><div class="rstat"><div class="rstat-val" style="color:${r.avgS!==null?memColor(r.avgS):'var(--text3)'}">${r.avgS!==null?r.avgS.toFixed(1):'—'}</div><div class="rstat-label">/ 10 Memnuniyet</div></div></div><div class="region-count">${r.pins.length} ölçüm</div></div>`).join('');
+  grid.innerHTML = regions.map(r => `<div class="region-card"><div style="position:absolute;top:0;left:0;right:0;height:2px;background:${r.color}"></div><div class="region-name" style="color:${r.color}">${r.name} Bölgesi</div><div class="region-cities">${r.iller.slice(0,4).join(', ')} +${Math.max(0,r.iller.length-4)} il</div><div class="region-stats"><div class="rstat"><div class="rstat-val" style="color:${speedColor(r.avgDL)}">${r.avgDL ? speedShapeHtml(r.avgDL) + r.avgDL : '—'}</div><div class="rstat-label">Mbps ↓ İndirme</div></div><div class="rstat"><div class="rstat-val" style="color:${r.avgUL?speedColor(r.avgUL):'var(--text3)'}">${r.avgUL ? speedShapeHtml(r.avgUL) + r.avgUL : '—'}</div><div class="rstat-label">Mbps ↑ Yükleme</div></div><div class="rstat"><div class="rstat-val" style="color:${r.avgS!==null?memColor(r.avgS):'var(--text3)'}">${r.avgS!==null ? memShapeHtml(r.avgS) + r.avgS.toFixed(1) : '—'}</div><div class="rstat-label">/ 10 Memnuniyet</div></div></div><div class="region-count">${r.pins.length} ölçüm</div></div>`).join('');
 }
 function sortRegions(mode) { regionSortMode = mode;['sortDL','sortMem','sortCount'].forEach(id => document.getElementById(id)?.classList.remove('active')); document.getElementById(mode==='dl'?'sortDL':mode==='mem'?'sortMem':'sortCount')?.classList.add('active'); renderRegions(); }
 
@@ -2796,7 +2837,7 @@ function renderSpeedRankList(filterIl) {
         <div class="speed-loc" style="color:var(--text3);font-size:10px;">${x.c} ölçüm${badge||''}</div>
       </div>
       <div style="text-align:right;">
-        <div class="speed-val" style="color:${speedColor(x.dl)}">↓ ${x.dl}</div>
+        <div class="speed-val" style="color:${speedColor(x.dl)}">${speedShapeHtml(x.dl)}↓ ${x.dl}</div>
         <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);">↑ ${x.ul} Mbps</div>
       </div>
     </div>`;
@@ -2818,7 +2859,7 @@ function renderSpeedRankList(filterIl) {
       </div>
       <div class="spotlight-name">${locTitle(top)}</div>
       <div class="spotlight-stats">
-        <div><span class="spotlight-val" style="color:${speedColor(top.dl)}">${top.dl}</span><span class="spotlight-unit">Mbps ↓</span></div>
+        <div><span class="spotlight-val" style="color:${speedColor(top.dl)}">${speedShapeHtml(top.dl)}${top.dl}</span><span class="spotlight-unit">Mbps ↓</span></div>
         <div><span class="spotlight-val" style="color:var(--text2);font-size:16px;">${top.ul}</span><span class="spotlight-unit">Mbps ↑</span></div>
       </div>
       <div class="spotlight-sub">${top.c} ölçüm${verified ? ' · yerleşik hız testi ile doğrulanmış' : ''}</div>
@@ -2869,7 +2910,7 @@ async function renderStats() {
   // bildirimidir. speedPins kullanılarak hız ortalamalarıyla TUTARLI şekilde dışlanıyor;
   // aksi halde altyapısız bölge bildirimleri ortalama memnuniyeti yapay olarak düşürür.
   const avgS = speedPins.length ? (speedPins.reduce((a,p)=>a+p.puan,0)/speedPins.length).toFixed(1) : '—';
-  document.getElementById('sumGrid').innerHTML = `<div class="sum-card"><div class="sum-val">${speedPins.length}</div><div class="sum-label">Onaylı Ölçüm</div></div><div class="sum-card"><div class="sum-val" style="color:${speedColor(avgDL)}">${avgDL}</div><div class="sum-label">Ort. İndirme (↓ Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgUL?speedColor(avgUL):'var(--text3)'}">${avgUL||'—'}</div><div class="sum-label">Ort. Yükleme (↑ Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgS!=='—'?memColor(avgS):'var(--text3)'}">${avgS}</div><div class="sum-label">Ort. Memnuniyet</div></div>`;
+  document.getElementById('sumGrid').innerHTML = `<div class="sum-card"><div class="sum-val">${speedPins.length}</div><div class="sum-label">Onaylı Ölçüm</div></div><div class="sum-card"><div class="sum-val" style="color:${speedColor(avgDL)}">${speedShapeHtml(avgDL)}${avgDL}</div><div class="sum-label">Ort. İndirme (↓ Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgUL?speedColor(avgUL):'var(--text3)'}">${avgUL?speedShapeHtml(avgUL):''}${avgUL||'—'}</div><div class="sum-label">Ort. Yükleme (↑ Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgS!=='—'?memColor(avgS):'var(--text3)'}">${avgS!=='—'?memShapeHtml(parseFloat(avgS)):''}${avgS}</div><div class="sum-label">Ort. Memnuniyet</div></div>`;
 
   // issListCache (Supabase) + getAllIss() (BASE_ISS + localStorage) birleşimi — hiçbir onaylı ISS atlanmasın
   const knownFromCache = issListCache.map(i => canonicalIssName(i.name));
@@ -2889,7 +2930,7 @@ async function renderStats() {
     .map(([iss,d]) => ({ iss, s:(d.t/d.c).toFixed(1), c:d.c, u:d.fps.size }))
     .filter(x => x.u >= MIN_UNIQUE)
     .sort((a,b) => b.s-a.s)
-    .map((x,i) => `<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${escHtml(displayIssName(x.iss))}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.s)}">${x.s}</div></div>`)
+    .map((x,i) => `<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${escHtml(displayIssName(x.iss))}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.s)}">${memShapeHtml(parseFloat(x.s))}${x.s}</div></div>`)
     .join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok (min. 3 farklı kullanıcı gerekli)</div>';
   
   // EN HIZLI LOKASYONLAR (artık ISS filtresiyle de çağrılabilen bağımsız fonksiyon)
@@ -5175,6 +5216,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (saved === 'light') setTimeout(updateMapTiles, 200);
   // Renk körü modu butonunu da senkronize et (class zaten head'de eklendi)
   document.getElementById('colorblindCheck') && (document.getElementById('colorblindCheck').checked = colorblindMode);
+  if (colorblindMode && typeof setColorMode === 'function') setColorMode(colorMode);
 });
 
 // ── AYARLAR MENÜSÜ (dropdown) ───────────────────────────────────────────
