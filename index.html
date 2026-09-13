@@ -3024,8 +3024,10 @@ function showHexInfo(pins, hexId) {
   // Ölçüm listesini sıfırla
   const hexList = document.getElementById('hexPinsList');
   const hexBtn = document.getElementById('hexPinsToggleBtn');
+  const bildirBtn = document.getElementById('infoBildirBtn');
   if (hexList) { hexList.style.display = 'none'; hexList.innerHTML = ''; }
-  if (hexBtn) hexBtn.textContent = `▼ Tüm ölçümleri gör (${pins.length})`;
+  if (hexBtn) { hexBtn.style.display = 'block'; hexBtn.textContent = `▼ Tüm ölçümleri gör (${pins.length})`; }
+  if (bildirBtn) bildirBtn.style.display = 'block';
 }
 
 function toggleHexPinsList() {
@@ -5709,19 +5711,103 @@ async function searchLocation() {
     }
     resultsEl.innerHTML = results.map(res => {
       const parts = res.display_name.split(',');
-      return `<div class="search-result-item" onclick="flyToResult(${res.lat},${res.lon})">
-        <div class="search-result-name">${parts[0].trim()}</div>
-        <div class="search-result-sub">${parts.slice(1,3).join(',').trim()}</div>
+      const title = parts[0].trim();
+      const sub = parts.slice(1,3).join(',').trim();
+      return `<div class="search-result-item" onclick="flyToResult(${res.lat},${res.lon},'${escAttr(title)}','${escAttr(sub)}')">
+        <div class="search-result-name">${escHtml(title)}</div>
+        <div class="search-result-sub">${escHtml(sub)}</div>
       </div>`;
     }).join('');
   } catch(e) {
     resultsEl.innerHTML = '<div class="search-result-item" style="color:var(--danger)">Bağlantı hatası</div>';
   }
 }
-function flyToResult(lat, lng) {
+
+function flyToResult(lat, lng, title = '', sub = '') {
   if (!maps.main) return;
-  maps.main.flyTo([parseFloat(lat), parseFloat(lng)], 13, { animate:true, duration:1.5 });
-  document.getElementById('searchResults').classList.remove('open');
+  const targetLat = parseFloat(lat);
+  const targetLng = parseFloat(lng);
+  maps.main.flyTo([targetLat, targetLng], 14, { animate: true, duration: 1.5 });
+  document.getElementById('searchResults')?.classList.remove('open');
+
+  // Hedef noktayı cyan nabız halkasıyla vurgula
+  if (typeof locationFocusMarker !== 'undefined' && locationFocusMarker) {
+    maps.main.removeLayer(locationFocusMarker); locationFocusMarker = null;
+  }
+  if (typeof locationFocusTimer !== 'undefined' && locationFocusTimer) {
+    clearTimeout(locationFocusTimer); locationFocusTimer = null;
+  }
+  const icon = L.divIcon({
+    className: 'location-focus-div-icon',
+    html: `<div class="location-focus-container"><div class="location-focus-ripple"></div><div class="location-focus-core"></div></div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11]
+  });
+  locationFocusMarker = L.marker([targetLat, targetLng], { icon, zIndexOffset: 999, interactive: false }).addTo(maps.main);
+  locationFocusTimer = setTimeout(() => {
+    if (locationFocusMarker && maps.main) {
+      maps.main.removeLayer(locationFocusMarker);
+      locationFocusMarker = null;
+    }
+  }, 10000);
+
+  // Bölgeye ait verileri toparla ve özet bilgi kartını aç
+  setTimeout(() => {
+    showSearchResultCard(targetLat, targetLng, title, sub);
+  }, 500);
+}
+
+function showSearchResultCard(targetLat, targetLng, title, sub) {
+  const displayTitle = [title, sub].filter(Boolean).join(' › ') || 'Aranan Bölge';
+  
+  function getDistanceKm(lat1, lon1, lat2, lon2) {
+    const dLat = (lat2 - lat1) * 111.32;
+    const dLon = (lon2 - lon1) * 111.32 * Math.cos(lat1 * Math.PI / 180);
+    return Math.sqrt(dLat * dLat + dLon * dLon);
+  }
+
+  // 1. Koordinata göre en yakın pinleri bul (~3.5 km yarıçapında)
+  let matchedPins = (cleanPinsData || []).filter(p => {
+    if (!p.lat || !p.lng) return false;
+    return getDistanceKm(targetLat, targetLng, p.lat, p.lng) <= 3.5;
+  });
+
+  // 2. Eğer yakınlarda pin yoksa isim eşleşmesi dene (İlçe/Mahalle/İl)
+  if (!matchedPins.length && title) {
+    const tLower = title.toLocaleLowerCase('tr-TR');
+    matchedPins = (cleanPinsData || []).filter(p => {
+      const ilce = (p.ilce || '').toLocaleLowerCase('tr-TR');
+      const il = (p.il || '').toLocaleLowerCase('tr-TR');
+      const mah = (p.mahalle || '').toLocaleLowerCase('tr-TR');
+      return (ilce && (ilce === tLower || tLower.includes(ilce))) ||
+             (mah && (mah === tLower || tLower.includes(mah))) ||
+             (il && (il === tLower || tLower.includes(il)));
+    });
+  }
+
+  if (matchedPins.length > 0) {
+    showHexInfo(matchedPins, null);
+    const titleEl = document.getElementById('infoTitle');
+    if (titleEl) titleEl.textContent = '📍 ' + (title || displayTitle);
+  } else {
+    document.getElementById('infoTitle').textContent = '📍 ' + displayTitle;
+    const dlEl = document.getElementById('infoDL'); if (dlEl) { dlEl.textContent = '—'; dlEl.style.color = 'var(--text3)'; }
+    const ulEl = document.getElementById('infoUL'); if (ulEl) ulEl.textContent = '—';
+    const scEl = document.getElementById('infoScore'); if (scEl) { scEl.textContent = '—'; scEl.style.color = 'var(--text3)'; }
+    document.getElementById('infoCount').textContent = '0 ölçüm';
+    document.getElementById('infoISS').innerHTML = `
+      <div style="padding:14px 10px;text-align:center;background:var(--surface2);border-radius:8px;border:1px dashed var(--border);margin-top:6px;">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">Bu bölgede henüz kayıtlı altyapı testi bulunmuyor.</div>
+        <div style="font-size:10px;color:var(--text3);margin-bottom:10px;">İlk ölçümü siz ekleyerek haritanın gelişmesine katkı sağlayabilirsiniz!</div>
+        <button class="btn-primary" style="font-size:11px;padding:6px 14px;" onclick="showPage('pin')">+ Bu Konum İçin Ölçüm Ekle</button>
+      </div>
+    `;
+    const hexBtn = document.getElementById('hexPinsToggleBtn'); if (hexBtn) hexBtn.style.display = 'none';
+    const hexList = document.getElementById('hexPinsList'); if (hexList) hexList.style.display = 'none';
+    const bildirBtn = document.getElementById('infoBildirBtn'); if (bildirBtn) bildirBtn.style.display = 'none';
+    const infoEl = document.getElementById('mapInfo');
+    if (infoEl) infoEl.classList.add('visible');
+  }
 }
 document.addEventListener('click', e => {
   if (!e.target.closest('.search-wrap')) document.getElementById('searchResults')?.classList.remove('open');
