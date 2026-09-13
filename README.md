@@ -1,6 +1,6 @@
 # 🗺 İnternetHarita
 
-**Türkiye'nin kullanıcı kaynaklı internet hız ve memnuniyet haritası.**
+**Türkiye'nin bağımsız, kullanıcı kaynaklı internet hız ve altyapı memnuniyet haritası.**
 
 🔗 **Canlı Site:** [rasne-dev.github.io/internetharita](https://rasne-dev.github.io/internetharita)
 
@@ -8,68 +8,74 @@
 
 ## Ne işe yarar?
 
-İnternetHarita, Türkiye genelinde gerçek kullanıcıların kendi internet bağlantılarını ölçüp paylaştığı açık kaynaklı bir topluluk haritasıdır. Taşınmadan önce yeni semtinizdeki internet kalitesini öğrenebilir, servis sağlayıcıları karşılaştırabilir ya da bulunduğunuz bölgedeki altyapı hızlarını şeffaf bir şekilde görebilirsiniz.
+İnternetHarita, Türkiye genelinde gerçek kullanıcıların ev veya iş yerlerindeki internet bağlantılarını test edip paylaştığı açık kaynaklı, bağımsız bir topluluk haritasıdır. 
+
+Taşınmadan önce yeni mahallenizdeki gerçek internet hızlarını ve fiber oranını öğrenebilir, servis sağlayıcıları (Türk Telekom, Superonline, TurkNet, Vodafone, Türksat Kablonet vb.) tarafsızca karşılaştırabilir ya da altyapı sorunlarınızı harita üzerinde görünür kılabilirsiniz.
 
 ---
 
-## Öne Çıkan Özellikler
+## 🚀 Öne Çıkan Özellikler
 
-*   🛡️ **Güvenilir Topluluk Verisi:** Arka planda çalışan akıllı algoritmalarımız sayesinde sahte veriler, spam denemeleri ve mantık dışı hız ölçümleri otomatik olarak engellenir.
-*   🔧 **Aktif Moderasyon:** Haritanın kalitesini korumak için topluluk üyeleri şüpheli bölgeleri bildirebilir. Gönüllü moderatör ekibimiz bu bildirimleri inceleyerek haritayı her zaman güncel ve doğru tutar.
-*   📊 **Detaylı İstatistikler:** Türkiye geneli, bölgeler arası karşılaştırmalar, İSS (İnternet Servis Sağlayıcı) sıralamaları ve en hızlı ilçeler gibi veriler gerçek zamanlı olarak derlenir.
-*   🔍 **Dinamik Harita Görünümü:** Haritaya yaklaştıkça bölgeler (altıgenler) sokak ve mahalle seviyesine kadar detaylanır, böylece çok daha lokal ve kesin verilere ulaşırsınız.
+* ⚡ **Dahili Doğrulanmış Hız Testi:** Harita içerisinden tek tıkla indirme (download), yükleme (upload) ve gecikme (ping) testi yapabilirsiniz. Test sonuçları `⚡ Doğrulandı` rozetiyle kaydedilerek verilerin güvenilirliği artırılır.
+* 🏷️ **Hazır Deneyim Etiketleri:** Yalnızca hız rakamları değil; *"Akşam saatlerinde hız düşüyor"*, *"Oyunlarda ping yüksek"*, *"Kesinti çok sık"*, *"Fiyat/Performans iyi"*, *"Müşteri hizmetleri ilgisiz"* gibi hazır etiketlerle gerçek kullanıcı deneyiminizi aktarabilirsiniz.
+* 🚫 **"Altyapı Yok" Bildirimi:** İnternet altyapısı bulunmayan bölgeler için bildirim bırakabilir, mahallenizdeki sayısal uçurumu ve altyapı talebini harita üzerinde belgeleyebilirsiniz.
+* ✏️ **Ölçümlerinizi Yönetin (Düzenle & Sil):** Haritaya eklediğiniz ölçümler kendi tarayıcınızda özel olarak işaretlenir (`📍 Sizin Ölçümünüz`). İstediğiniz zaman etiketi güncelleyebilir veya ölçümünüzü haritadan tamamen silebilirsiniz (*Unutulma Hakkı*).
+* 📊 **Detaylı İstatistikler & Analiz:** Türkiye geneli ortalama hızlar, bölge karşılaştırmaları (Marmara, Ege, İç Anadolu vb.), fiber altyapı oranları ve İSS hız/memnuniyet sıralamaları gerçek zamanlı derlenir.
+* 🔍 **Dinamik H3 Altıgen Görünümü:** Haritada yakınlaştıkça bölgeler mahalle ve sokak seviyesine kadar detaylanan H3 altıgenleriyle gösterilir; hem genel özeti hem de mikro-lokal verileri inceleyebilirsiniz.
+* 👁️ **Erişilebilirlik & Çevrimdışı Önbellek:** Renk körü modu desteği sayesinde veri haritaları herkes için erişilebilirdir. Ayrıca yerel önbellek desteğiyle internetiniz kopsa bile daha önce yüklenen haritayı inceleyebilirsiniz.
 
 ---
 
-## Nasıl kullanılır?
+## 🗺 Nasıl Kullanılır?
 
-### 🗺 Harita
-Haritadaki bölgelere tıklayarak o konumun ortalama hızını, memnuniyet puanını ve İSS dağılımını görebilirsiniz. Renk skalası:
+### 1. Haritayı İnceleyin
+Haritadaki altıgenlere veya pinlere tıklayarak o bölgenin ortalama hızını, altyapı türünü (Fiber, VDSL, ADSL), memnuniyet puanını ve kullanıcı etiketlerini inceleyin. Sol panelden harita modunu **Hız**, **Memnuniyet** veya **Altyapı** olarak değiştirebilirsiniz.
 
 | Renk | Hız Aralığı |
-|------|-----|
+|------|-------------|
 | 🟣 Mor | 500+ Mbps |
 | 🔵 Mavi | 200 – 500 Mbps |
 | 🟢 Yeşil | 100 – 200 Mbps |
 | 🟠 Turuncu | 25 – 100 Mbps |
-| 🔴 Kırmızı | 25 Mbps ve altı |
+| 🔴 Kırmızı | 25 Mbps ve altı / Altyapı Yok |
 
-Sol panelden harita modunu **Hız** veya **Memnuniyet** olarak değiştirebilirsiniz.
+### 2. Kendi Ölçümünüzü Ekleyin
+1. Sağ üstteki **+ Veri Ekle** butonuna tıklayın.
+2. Haritadan konumunuzu seçin veya GPS butonuna basarak konumunuzu otomatik belirleyin.
+3. Dahili hız testini başlatın ya da harici hız testi sonucunuzu girin.
+4. İSS'nizi, altyapı tipinizi ve 1–10 arası memnuniyet puanınızı seçin.
+5. Varsa durumunuza uygun **hazır etiketleri** işaretleyip gönderin.
 
-### 📍 Veri Ekle
-Kendi internet performansınızı paylaşmak için sağ üstteki **+ Veri Ekle** butonuna tıklayın:
-1. Konumunuzu haritadan seçin veya GPS ile otomatik bulun.
-2. Servis sağlayıcınızı, hız testinden aldığınız sonucu ve altyapı türünü girin.
-3. 1–10 arası bir memnuniyet puanı verip gönderin. *(Sistemi korumak amacıyla arka arkaya aşırı veri girişi engellenmiştir).*
-
-### 🚩 Bildirim Yapma
-Bir bölgede hatalı veri olduğunu düşünüyorsanız haritada o bölgeye tıklayıp **"Bu Bölgeyi Bildir"** butonunu kullanabilirsiniz.
-
----
-
-## Sorumluluk Reddi (Disclaimer)
-
-İnternetHarita tamamen açık kaynaklı ve topluluk odaklı bir platformdur. Haritadaki veriler (hız, konum, puan) tamamen kullanıcılar tarafından sağlanır ve doğruluğu garanti edilemez. 
-- Yanlış, yanıltıcı veya eksik olabilecek verilerden doğabilecek doğrudan veya dolaylı hiçbir zarardan sorumluluk kabul edilmez.
-- Projede yer alan hız verileri resmi, hukuki veya bağlayıcı nitelik taşımaz.
-- Veriler moderasyon süreçlerinden geçse de, her bir verinin kesin doğruluğu teknik olarak teyit edilemez.
+### 3. Şüpheli Veri Bildirimi (Moderasyon)
+Haritada tutarsız veya sahte olduğunu düşündüğünüz bir kayıt görürseniz, bölge detayındaki **"Bu Bölgeyi Bildir"** seçeneğiyle gönüllü moderasyon ekibimize bildirebilirsiniz.
 
 ---
 
-## Gizlilik & Güvenlik
+## 🔒 Gizlilik, KVKK ve Güvenlik İlkeleri
 
-Kullanıcı gizliliği platformumuzun temel önceliğidir (KVKK/GDPR Uyumlu):
-- 📍 **Konum Gizliliği (Fuzzing):** Haritada işaretlediğiniz konum, sistem tarafından matematiksel olarak ~100m kaydırılarak (obfuscation) kaydedilir. Moderatörler dahil kimse kesin (ham) ev adresinize veya koordinatınıza erişemez.
-- 👤 **Kişisel Veri İstenmez:** Adınız, e-posta adresiniz veya telefon numaranız gibi hiçbir kişisel veri talep edilmez ve toplanmaz.
-- 🔒 **Tarayıcı Parmak İzi (Fingerprinting):** Kötü niyetli spam kullanımlarını engellemek ve veritabanı moderasyon süreçlerini yürütmek için anonimleştirilmiş cihaz bilgileri geçici ve güvenli şekilde işlenir. Bireysel bağlantı kayıtları takip edilmez.
+İnternetHarita, kullanıcı mahremiyetini ve şeffaflığı temel prensip olarak benimser:
+
+1. 📍 **Konum Şaşırtma (~100m Fuzzing):** Haritada seçtiğiniz konum koordinatları veritabanına kaydedilmeden önce algoritmik olarak rastgele ~100 metre kaydırılır. Moderatörler dahil hiç kimse kesin ev adresinize veya kapı numaranıza ulaşamaz.
+2. 👤 **Sıfır Kişisel Veri:** İsim, soyisim, telefon numarası, e-posta adresi veya T.C. kimlik numarası gibi hiçbir kişisel kimlik verisi (PII) istenmez, toplanmaz ve saklanmaz.
+3. 🛡️ **Anti-Spam & Hız Sınırlaması (Rate Limiting):** Sahte veri girişini ve bot saldırılarını engellemek için IP karması (hash) ve anonimleştirilmiş tarayıcı parmak izi (fingerprint) yalnızca güvenlik doğrulamasında kullanılır. Bu teknik veriler harita ziyaretçilerine **asla açık API üzerinden sunulmaz veya üçüncü taraflarla paylaşılmaz**.
+4. 🗑️ **Unutulma Hakkı:** Kendi eklediğiniz ölçümleri dilediğiniz an haritadan tek tıkla silebilirsiniz.
+5. 🍪 **Sıfır Reklam / Sıfır Takip Çerezi:** Platformda herhangi bir reklam ağı veya ticari kullanıcı takip çerezi bulunmaz.
 
 ---
 
+## ⚠️ Sorumluluk Reddi (Disclaimer)
+
+İnternetHarita tamamen bağımsız ve açık kaynaklı bir topluluk projesidir.
+* Haritada sunulan tüm veriler kullanıcıların sağladığı beyan ve testlere dayanmaktadır; verilerin mutlak doğruluğu hukuken garanti edilemez.
+* Sitedeki hız ve altyapı verileri resmi veya bağlayıcı nitelik taşımaz; ticari veya yasal uyuşmazlıklarda delil teşkil etmez.
+* Verilerden doğabilecek herhangi bir doğrudan veya dolaylı aksaklıktan platform geliştiricileri sorumlu tutulamaz.
+
+---
 ---
 
 # 🗺 İnternetHarita — English
 
-**A robust, community-sourced internet speed and satisfaction map of Turkey.**
+**A community-driven, crowdsourced internet speed and infrastructure satisfaction map of Turkey.**
 
 🔗 **Live Site:** [rasne-dev.github.io/internetharita](https://rasne-dev.github.io/internetharita)
 
@@ -77,58 +83,28 @@ Kullanıcı gizliliği platformumuzun temel önceliğidir (KVKK/GDPR Uyumlu):
 
 ## What is it?
 
-İnternetHarita is a community-driven platform where real users across Turkey share their internet connection speeds and experiences. It allows you to check internet quality in different neighborhoods, compare ISPs, and see real-world infrastructure performance.
+İnternetHarita is an open-source, community-driven platform where users across Turkey test and map their real-world internet connection speeds, latency, and provider experiences.
+
+Before moving to a new neighborhood, you can verify genuine connection speeds, check fiber optic coverage, compare internet service providers (ISPs), or highlight lack of broadband infrastructure in your area.
 
 ---
 
-## Key Features
+## 🚀 Key Features
 
-*   🛡️ **Reliable Data:** Our automated smart algorithms filter out unrealistic speed tests, duplicate entries, and spam attempts to keep the data clean.
-*   🔧 **Active Moderation:** Users can flag suspicious regions. Our moderation team reviews these reports to ensure the map remains accurate.
-*   📊 **Real-time Statistics:** View dynamic rankings of ISPs, the fastest districts, and regional speed comparisons.
-*   🔍 **Dynamic Map Detail:** As you zoom in, the map breaks down into smaller, highly detailed geographic areas (down to the neighborhood/street level).
-
----
-
-## How to use
-
-### 🗺 Map
-Click on any region on the map to see its average download/upload speeds, user satisfaction scores, and ISP breakdowns. Color scale:
-
-| Color | Speed Range |
-|-------|-------|
-| 🟣 Purple | 500+ Mbps |
-| 🔵 Blue | 200 – 500 Mbps |
-| 🟢 Green | 100 – 200 Mbps |
-| 🟠 Orange | 25 – 100 Mbps |
-| 🔴 Red | Below 25 Mbps |
-
-You can toggle the map view between **Speed** and **Satisfaction** using the side panel.
-
-### 📍 Add Data
-Click the **+ Veri Ekle (Add Data)** button in the top right:
-1. Pinpoint your location on the map.
-2. Provide your speed test results and select your ISP.
-3. Give a satisfaction score (1–10) and submit. *(Rate limiting applies to protect the platform).*
-
-### 🚩 Report Data
-If you spot an anomaly in a specific region, simply click the region on the map and use the **Report** button to notify our moderators.
+* ⚡ **Integrated Speed Test:** Perform download, upload, and ping tests directly on the map. Results measured on-site earn a `⚡ Verified` badge.
+* 🏷️ **Experience Tags:** Share qualitative feedback with single-click preset tags (e.g., *"Speed drops during evenings"*, *"High ping in games"*, *"Frequent disconnections"*, *"Good value for price"*).
+* 🚫 **"No Infrastructure" Reporting:** Users without broadband access can flag their location, highlighting digital divide zones and underserved neighborhoods.
+* ✏️ **Manage Your Measurements:** Pins created on your device are labeled as `📍 Your Measurement`. You can update tags or delete your measurement at any time (*Right to be Forgotten*).
+* 📊 **Live Analytics & Rankings:** National averages, regional speed differences, fiber penetration rates, and ISP leaderboards calculated dynamically.
+* 🔍 **H3 Hexagonal Aggregation:** Zoom into street and district level resolution powered by dynamic Uber H3 spatial indexing.
+* 👁️ **Accessibility & Offline Cache:** High-contrast colorblind mode support and local caching that keeps previously loaded map tiles and points accessible during network outages.
 
 ---
 
-## Liability Disclaimer
+## 🔒 Privacy & Data Protection (GDPR Compliant)
 
-İnternetHarita is a fully open-source and community-driven platform. The data on the map (speed, location, score) is provided entirely by users, and its accuracy cannot be guaranteed.
-- We accept no liability for any direct or indirect damages that may arise from incorrect, misleading, or incomplete data.
-- The speed data in the project has no official, legal, or binding status.
-- Even though data goes through moderation processes, the exact accuracy of every single entry cannot be technically verified.
-
----
-
-## Privacy & Security
-
-User privacy is our top priority (GDPR Compliant):
-
-- 📍 **Location Obfuscation (Fuzzing):** The exact location you select is mathematically shifted by ~100m (obfuscation) before saving. No one, including moderators, can access your precise (raw) coordinates or home address.
-- 👤 **No PII Collected:** We do not ask for or collect Personally Identifiable Information (name, email, phone number).
-- 🔒 **Browser Fingerprinting:** To prevent malicious spam attacks and conduct database moderation processes, anonymized device information is processed securely and temporarily. Individual connection records are not tracked.
+1. 📍 **Location Fuzzing (~100m):** Pinned coordinates are mathematically fuzzed by approximately 100 meters before being saved. Exact door/building addresses are never stored.
+2. 👤 **Zero Personal Data:** No names, emails, phone numbers, or user accounts are required or collected.
+3. 🛡️ **Spam Prevention & Rate Limiting:** Anonymized browser fingerprinting and salted IP hashes are utilized strictly for rate-limiting and anti-abuse verification. These technical identifiers are **never exposed to public APIs or third parties**.
+4. 🗑️ **Right to be Forgotten:** You can edit or permanently delete your submitted pins directly from the map interface.
+5. 🍪 **No Tracking / No Ads:** Free of commercial tracking cookies and third-party advertising scripts.
