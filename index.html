@@ -1009,7 +1009,6 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
       <div class="stat-card"><div class="stat-title">Hız Bandı Dağılımı</div><div id="speedBandChart"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
     </div>
     <div class="stat-card" style="grid-column:1/-1"><div class="stat-title">Bağlantı Türü Dağılımı</div><div id="connChart"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
-    <div class="stat-card" style="grid-column:1/-1"><div class="stat-title">Adreste Mevcut Diğer Sağlayıcılar <span style="opacity:.6;font-weight:400;font-size:9px;">(kullanıcıların "Diğer Sağlayıcı Ekle" ile bildirdiği, kendi bağlantıları olmayan altyapılar) 🧪 test aşamasında</span></div><div id="otherProvidersChart"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
     <div class="stat-card" style="grid-column:1/-1"><div id="issSpeedTrend" class="trend-section"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
   </div>
 </div>
@@ -2440,9 +2439,10 @@ async function loadPins() {
     cleanPinsData = publicCleanPins(all); 
     renderHex(); renderModPins(); renderMyPins();
     
+    const speedPins = cleanPinsData.filter(p => !p.is_altyapi_yok);
     const cnt = cleanPinsData.length;
-    const avg = cnt ? Math.round(cleanPinsData.reduce((a,p) => a+p.gercek_dl, 0)/cnt) : 0;
-    const ulPins = cleanPinsData.filter(p => p.gercek_ul > 0);
+    const avg = speedPins.length ? Math.round(speedPins.reduce((a,p) => a+p.gercek_dl, 0)/speedPins.length) : 0;
+    const ulPins = speedPins.filter(p => p.gercek_ul > 0);
     const avgUL = ulPins.length ? Math.round(ulPins.reduce((a,p) => a+p.gercek_ul, 0)/ulPins.length) : 0;
     document.getElementById('mapStats').innerHTML = `<span>${cnt}</span> ölçüm · ↓ <span>${avg}</span>${avgUL ? ` ↑ <span style="color:var(--text2)">${avgUL}</span>` : ''} Mbps`;
   } catch(e) { document.getElementById('mapStats').textContent = 'Bağlanamadı'; }
@@ -2570,10 +2570,15 @@ function showHexInfo(pins, hexId) {
     : ([pins[0].il, pins[0].ilce, pins[0].mahalle].filter(Boolean).join(' › ') || 'Bilinmeyen Bölge');
   document.getElementById('infoTitle').textContent = locStr;
   document.getElementById('reportHexId').value = hexId||''; document.getElementById('reportBolge').value = locStr;
+  const speedPins = pins.filter(p => !p.is_altyapi_yok);
+  const avgDL = speedPins.length ? Math.round(speedPins.reduce((a,p)=>a+p.gercek_dl,0)/speedPins.length) : 0;
+  const avgS = (pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1);
+  const ulPins = speedPins.filter(p=>p.gercek_ul>0);
+  const avgUL = ulPins.length ? Math.round(ulPins.reduce((a,p)=>a+p.gercek_ul,0)/ulPins.length) : 0;
   const dlEl = document.getElementById('infoDL');
   if (dlEl) { dlEl.innerHTML = speedShapeHtml(avgDL) + avgDL + ' Mbps'; dlEl.style.color = speedColor(avgDL); }
   const ulEl = document.getElementById('infoUL');
-  if (ulEl) ulEl.textContent = Math.round(pins.reduce((a,p)=>a+(p.gercek_ul||0),0)/pins.length)+' Mbps';
+  if (ulEl) ulEl.textContent = avgUL + ' Mbps';
   const scEl = document.getElementById('infoScore');
   if (scEl) { scEl.innerHTML = memShapeHtml(parseFloat(avgS)) + avgS + '/10'; scEl.style.color = memColor(parseFloat(avgS)); }
   document.getElementById('infoCount').textContent = pins.length+' ölçüm';
@@ -2898,7 +2903,7 @@ function renderSpeedRankList(filterIl) {
 
 async function renderStats() {
   let pins = cleanPinsData;
-  if (!pins.length) {['issRankList','speedRankList','connChart','speedBandChart','activeIlList','otherProvidersChart'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = '<div class="loading-text">Henüz veri yok</div>'; }); return; }
+  if (!pins.length) {['issRankList','speedRankList','connChart','speedBandChart','activeIlList'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = '<div class="loading-text">Henüz veri yok</div>'; }); return; }
   // "Altyapı Yok" bildirimleri gercek_dl/gercek_ul=0 olarak kayıtlıdır; bunlar gerçek bir hız ölçümü
   // değildir ve hız istatistiklerine (ortalama, bant dağılımı, en hızlı lokasyon vb.) dahil edilirse
   // ortalamaları yanlış şekilde aşağı çeker. Bu yüzden tüm hız hesaplarında speedPins kullanılır.
@@ -2959,38 +2964,6 @@ async function renderStats() {
     const barWidth = pct > 0 ? Math.max(pct, 1) : 0;
     return `<div class="ct-row"><div class="ct-label">${t.l}</div><div class="ct-track"><div class="ct-fill" style="width:${barWidth}%;background:${t.c}"></div></div><div class="ct-pct">${displayPct}%</div></div>`;
   }).join('');
-
-  // ADRESTE MEVCUT DİĞER SAĞLAYICILAR — "Diğer Sağlayıcı Ekle" ile bildirilen, kullanıcının
-  // kendi bağlantısı OLMAYAN, sadece adreste var olduğu bilinen İSS+tür kombinasyonları.
-  // connChart'taki gibi "kaç pinin birincil bağlantısı" değil, "kaç ölçümde bu altyapı ek
-  // olarak bildirilmiş" sayısı — bu yüzden ayrı, kendi ölçeğinde gösteriliyor.
-  const otherProvidersEl = document.getElementById('otherProvidersChart');
-  if (otherProvidersEl) {
-    const combo = {};
-    pins.forEach(p => parseDigerAltyapi(p.diger_altyapilar).forEach(e => {
-      if (!e.iss) return;
-      const key = e.iss + '|' + e.tur;
-      combo[key] = (combo[key] || 0) + 1;
-    }));
-    const fullComboList = Object.entries(combo).sort((a,b) => b[1]-a[1]);
-    if (!fullComboList.length) {
-      otherProvidersEl.innerHTML = '<div class="loading-text">Henüz bildirim yok</div>';
-    } else {
-      const renderComboRows = (list) => {
-        const maxCombo = Math.max(...list.map(c => c[1]), 1);
-        return list.map(([key, count]) => {
-          const [iss, tur] = key.split('|');
-          const w = Math.max((count/maxCombo)*100, 4);
-          return `<div class="ct-row"><div class="ct-label" style="font-size:10px;width:130px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escAttr(iss)} · ${tur.toUpperCase()}">${escHtml(iss)} · <span style="color:${cc(tur)}">${tur.toUpperCase()}</span></div><div class="ct-track"><div class="ct-fill" style="width:${w}%;background:${cc(tur)}"></div></div><div class="ct-pct">${count}</div></div>`;
-        }).join('');
-      };
-      const shown = fullComboList.slice(0, 15);
-      const rest = fullComboList.slice(15);
-      otherProvidersEl.innerHTML = renderComboRows(shown) +
-        (rest.length ? `<div id="otherProvidersMore" style="display:none;">${renderComboRows(rest)}</div>
-         <div onclick="const m=document.getElementById('otherProvidersMore'); const isOpen=m.style.display!=='none'; m.style.display=isOpen?'none':'block'; this.textContent=isOpen?'▾ Tümünü Gör (+${rest.length})':'▴ Daha Az Göster';" style="cursor:pointer;text-align:center;font-size:10px;color:var(--accent);font-family:var(--font-mono);margin-top:6px;padding:4px;">▾ Tümünü Gör (+${rest.length})</div>` : '');
-    }
-  }
 
   // ISS BAŞINA ORTALAMA HIZ TREND CHART
   const issSpeedMap = {};
