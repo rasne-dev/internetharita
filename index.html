@@ -1001,9 +1001,7 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
           <div class="mode-tabs">
             <div class="mode-tab active" id="colorModeHiz" onclick="setColorMode('hiz',this)">⚡ Hız</div>
             <div class="mode-tab" id="colorModeMem" onclick="setColorMode('memnuniyet',this)">😊 Memnuniyet</div>
-            <div class="mode-tab" id="colorModeAltyapi" onclick="setColorMode('altyapi',this)">🏗 Altyapı</div>
           </div>
-          <div id="altyapiHint" style="display:none;font-size:9.5px;color:var(--accent);margin-top:7px;line-height:1.4;background:rgba(0,212,255,0.06);padding:6px 8px;border-radius:6px;border:1px solid rgba(0,212,255,0.18);">💡 <b>İpucu:</b> Aşağıdaki İSS filtresinden bir operatör seçerek (örn. TurkNet), o operatörün Fiber / VDSL haritasını görebilirsiniz.</div>
         </div>
 
         <!-- BAĞLANTI TÜRÜ -->
@@ -2570,20 +2568,15 @@ function renderISSChips(list) {
 let colorMode = 'hiz', hexLayers =[], pinMarkerLayers =[], isModLoggedIn = false, currentModUser = null, regionSortMode = 'dl';
 
 function setColorMode(m) {
-  colorMode = m==='memnuniyet' ? 'mem' : m;
-  const isHiz = colorMode === 'hiz', isAltyapi = colorMode === 'altyapi', isMem = !isHiz && !isAltyapi;
+  colorMode = (m === 'memnuniyet' || m === 'mem') ? 'mem' : 'hiz';
+  const isHiz = colorMode === 'hiz';
   document.getElementById('colorModeHiz')?.classList.toggle('active', isHiz);
-  document.getElementById('colorModeMem')?.classList.toggle('active', isMem);
-  document.getElementById('colorModeAltyapi')?.classList.toggle('active', isAltyapi);
-  const hintEl = document.getElementById('altyapiHint');
-  if (hintEl) hintEl.style.display = isAltyapi ? 'block' : 'none';
+  document.getElementById('colorModeMem')?.classList.toggle('active', !isHiz);
   const items = document.getElementById('legendItems');
   if (!items) return renderHex();
-  if (colorMode === 'hiz') {
+  if (isHiz) {
     const c1 = speedColor(500), c2 = speedColor(300), c3 = speedColor(150), c4 = speedColor(50), c5 = speedColor(10);
     items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:${c1}"></div><span class="legend-shape">◆ </span>500+</div><div class="legend-item"><div class="legend-dot" style="background:${c2}"></div><span class="legend-shape">■ </span>200–500</div><div class="legend-item"><div class="legend-dot" style="background:${c3}"></div><span class="legend-shape">▲ </span>100–200</div><div class="legend-item"><div class="legend-dot" style="background:${c4}"></div><span class="legend-shape">● </span>25–100</div><div class="legend-item"><div class="legend-dot" style="background:${c5}"></div><span class="legend-shape">▼ </span>&lt;25 Mbps</div>`;
-  } else if (colorMode === 'altyapi') {
-    items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:#9333ea"></div>Fiber</div><div class="legend-item"><div class="legend-dot" style="background:#06b6d4"></div>VDSL</div><div class="legend-item"><div class="legend-dot" style="background:#E53935"></div>ADSL</div><div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>DOCSIS</div>`;
   } else {
     const m1 = memColor(9), m2 = memColor(7), m3 = memColor(5), m4 = memColor(2);
     items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:${m1}"></div><span class="legend-shape">★ </span>Mükemmel (8–10)</div><div class="legend-item"><div class="legend-dot" style="background:${m2}"></div><span class="legend-shape">◐ </span>İyi (6–7)</div><div class="legend-item"><div class="legend-dot" style="background:${m3}"></div><span class="legend-shape">▲ </span>Orta (4–5)</div><div class="legend-item"><div class="legend-dot" style="background:${m4}"></div><span class="legend-shape">▼ </span>Düşük (1–3)</div>`;
@@ -2801,12 +2794,6 @@ function renderHex() {
       const avgDL = pins.reduce((a,p)=>a+p.gercek_dl,0)/pins.length; const avgScore = pins.reduce((a,p)=>a+p.puan,0)/pins.length;
       let color, hasData = true;
       if (colorMode==='hiz') color = speedColor(avgDL);
-      else if (colorMode==='altyapi') {
-        // Hex içindeki en yaygın bağlantı türünü bul (fiber/vdsl/adsl/docsis)
-        const tc = {}; pins.forEach(p=>{ const t=p.baglanti_turu; if(t && t!=='yok') tc[t]=(tc[t]||0)+1; parseDigerAltyapi(p.diger_altyapilar).forEach(e=>{ tc[e.tur]=(tc[e.tur]||0)+1; }); });
-        const dominant = Object.entries(tc).sort((a,b)=>b[1]-a[1])[0];
-        if (!dominant) { color='#374151'; hasData=false; } else color = cc(dominant[0]);
-      }
       else { if (!pins.some(p=>p.puan)) { color='#374151'; hasData=false; } else color=memColor(avgScore); }
       // FIX: fillOpacity zoom'a gore dinamik + tema bazlı.
       // Uzak zoom'da (buyuk altigenler) daha opak: harita rengi okumasi daha net.
