@@ -6813,68 +6813,14 @@ function liveLogAppend(direction, mbps) {
   // Ham satır listesi yerine tek bir canlı değer göster
   log.textContent = `${direction} ${formatMbps(mbps)} Mbps`;
 }
-let _uploadStringPool = null;
-function getUploadPayload(size) {
-  try {
-    if (!_uploadStringPool || _uploadStringPool.length < size) {
-      const poolSize = Math.max(size, 8 * 1024 * 1024); // 8MB pool
-      const pattern = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      _uploadStringPool = pattern.repeat(Math.ceil(poolSize / pattern.length)).slice(0, poolSize);
-    }
-    return _uploadStringPool.slice(0, size);
-  } catch(e) {
-    return "A".repeat(size);
-  }
-}
-function makeUploadBlob(bytes) {
-  // CORS Preflight tetiklenmesini engellemek için Blob yerine String (Simple Request) döndürüyoruz
-  return getUploadPayload(bytes);
-}
-
-// ── DOĞRULUK DÜZELTMESİ: fetch() body'si olarak akan (streaming) bir
-// ReadableStream göndermeyi destekleyen tarayıcılarda (Chrome/Edge/Opera —
-// masaüstü ve Android), gövde tarayıcının ağ arabelleğine gerçek zamanlı
-// aktıkça bayt sayabiliyoruz. Bu, XHR'ın upload.onprogress'inin fetch()
-// karşılığıdır. Bu özellik olmadan (Safari/Firefox), sadece her 1MB'lık
-// isteğin TAMAMLANMASI (tam gidiş-dönüş) beklenip öyle sayılıyordu; bu da
-// yüksek hızlı bağlantılarda (100+ Mbps) round-trip gecikmesinin ölçümü
-// yapay şekilde düşük göstermesine yol açıyordu. Artık destekleyen
-// tarayıcılarda gerçek zamanlı, byte-hassasiyetli ölçüm; desteklemeyenlerde
-// ise daha büyük chunk + daha fazla paralel akışla yaklaşık ölçüm yapılıyor.
-let _streamUploadSupportCache = null;
-function supportsStreamingUploadBody() {
-  if (_streamUploadSupportCache !== null) return _streamUploadSupportCache;
-  let duplexUsed = false;
-  try {
-    new Request('https://example.com', {
-      method: 'POST',
-      body: new ReadableStream({ start(c) { c.close(); } }),
-      get duplex() { duplexUsed = true; return 'half'; }
-    });
-  } catch (e) { /* Bu tarayıcı streaming body'yi hiç desteklemiyor */ }
-  _streamUploadSupportCache = duplexUsed;
-  return duplexUsed;
-}
-let _uploadBytesFiller = null;
-function getUploadBytesFiller(size) {
-  if (!_uploadBytesFiller || _uploadBytesFiller.length !== size) {
-    _uploadBytesFiller = new TextEncoder().encode(getUploadPayload(size));
-  }
-  return _uploadBytesFiller;
-}
-// Sabit boyutlu parçaları (yüksek hızlı Gigabit bağlantılarda CPU/event-loop yükünü
-// minimize etmek ve backpressure'ı yakından takip etmek için 128KB) üreten akış.
-function makeUploadStream(stopAt, onBytes) {
-  const PIECE = 131072; // 128KB (1 Gbps yüklemede saniyede ~1000 yerine ~500 pull ile tam verim)
-  const filler = getUploadBytesFiller(PIECE);
-  return new ReadableStream({
-    pull(controller) {
-      if (performance.now() >= stopAt) { controller.close(); return; }
-      controller.enqueue(filler);
-      onBytes(PIECE);
-    }
-  });
-}
+// Yükleme testi için bellek dostu, GC baskısı yapmayan sabit boyutlu Blob'lar
+const _uploadBlobs = {
+  k256: new Blob([new Uint8Array(256 * 1024)]),
+  k512: new Blob([new Uint8Array(512 * 1024)]),
+  m1:   new Blob([new Uint8Array(1024 * 1024)]),
+  m2:   new Blob([new Uint8Array(2 * 1024 * 1024)]),
+  m4:   new Blob([new Uint8Array(4 * 1024 * 1024)]),
+};
 
 async function measurePing() {
   try {
@@ -6991,474 +6937,150 @@ async function measureDownload(onLive) {
   return Math.max(1, Math.round((totalBytesGlobal * 8) / elapsed / 1e6));
 }
 
-async function measureUploadSupabase(onLive) {
-  // ── UPLOAD ÖLÇÜM MİMARİSİ — YEDEK YOL (Supabase Gateway Desteği) ──────────
-  // Neden Cloudflare yerine Supabase Rest API RPC hedefleniyor?
-  // 1) Cloudflare OPTIONS (CORS preflight) isteklerine 400 Bad Request döndüğü için
-  //    pek çok tarayıcı/eklenti ikili/metin veri gönderimini (POST) tamamen bloke ediyordu.
-  // 2) Supabase REST uç noktası standart CORS preflight desteğine sahiptir (OPTIONS -> 200 OK)
-  //    ve uygulamanın kendi veritabanı adresi olduğu için hiçbir reklam engelleyici veya
-  //    güvenlik yazılımı tarafından engellenmez.
-  // 3) Kong/PostgREST sunucusu yükleme gövdesi tamamen alınana kadar yanıt vermez,
-  //    yani erken yanıt (early response) veya sunucunun erken kesmesi söz konusu değildir.
-  // 4) RPC çağrısı olmayan bir fonksiyon hedeflendiği için (/rpc/speedtest_ping)
-  //    veritabanına hiçbir şey kaydedilmez (404 döner) ama upload başarıyla gerçekleşir.
-  // ─────────────────────────────────────────────────────────────────────────
-  const CHUNK_BYTES      = 1 * 1024 * 1024;   // 1 MB per chunk (Stabilite için)
-  const MEASURE_MS       = 9000;
-  const SAMPLE_MS        = 200;
-  const TARGET_URL       = `${SB_URL}/rest/v1/rpc/speedtest_ping`;
+// ── UPLOAD ÖLÇÜM MİMARİSİ (Tam Round-Trip Doğrulamalı Blob Akışı) ───────────
+// HATA DÜZELTMESİ (Yüksek / Yanlış Ölçüm ve Bufferbloat Sorunu):
+// Eski sistemde iki kritik hata vardı:
+// 1) ReadableStream + duplex: 'half' kullanımı Chromium CORS kontrollerinde
+//    "TypeError: Failed to fetch" verip doğrudan yedek yola düşürüyordu.
+// 2) XHR veya progress tabanlı ölçümlerde tarayıcının ve işletim sisteminin
+//    lokal soket gönderme arabelleğine (OS send buffer) yazılan veriler
+//    "onprogress" ile fiziksel ağa çıkmış gibi sayılıyordu. 4MB'lık parçalarla
+//    hızlı bir yerel arayüz bu tamponu neredeyse anında dolduruyor ve 20 Mbps'lik
+//    bir hatta 70+ Mbps yapay sıçramalar kaydediliyordu. Test durdurulduğunda
+//    ise tamponda bekleyen baytlar fiilen iletilmediği halde hıza katılıyordu.
+// 
+// YENİ VE KESİN ÇÖZÜM (Ookla / Cloudflare Speedtest Standardı):
+// 1) Bellekte önceden oluşturulmuş sabit boyutlu Blob'lar kullanılır (GC baskısı sıfır).
+// 2) Sadece SUNUCUYA TAM ULAŞIP 200 OK YANITI ALINAN parçalar hıza sayılır.
+//    Böylece lokal soket tamponu değil, fiziksel internetten geçip sunucunun
+//    aldığı net bayt sayısı ölçülür.
+// 3) Bağlantı hızına göre otomatik uyarlanan parça boyutu ve eşzamanlılık:
+//    - Hızlı 0.3s prob ile hat kapasitesi anlaşılır.
+//    - Yavaş / DSL (<15 Mbps): 256KB - 512KB parçalar, 2 paralel işçi.
+//    - Orta / VDSL (15 - 45 Mbps): 1MB parçalar, 2 paralel işçi.
+//    - Hızlı Fiber (45 - 120 Mbps): 2MB parçalar, 3 paralel işçi.
+//    - Gigabit Fiber (>120 Mbps): 4MB parçalar, 4 paralel işçi.
+// 4) Canlı ibre için kayan pencere (rolling window) hız hesaplayıcısı:
+//    Tamamlanan son parçaların gerçek zamansal aktarım hızını hesaplar,
+//    sahte sıçramaları filtreleyerek ibreyi pürüzsüz ve doğru gösterir.
+// 5) Birincil olarak Cloudflare Istanbul Edge Node (speed.cloudflare.com/__up),
+//    erişilemezse otomatik olarak Supabase Gateway kullanılır.
+// ─────────────────────────────────────────────────────────────────────────────
 
-  // 1) Warmup — stopAt hesabına dahil değil (Bağlantının asıl teste hazır olması için)
-  await Promise.all(Array.from({ length: 2 }, (_, n) =>
-    new Promise(res => {
-      const x = new XMLHttpRequest();
-      x.open('POST', `${TARGET_URL}?t=wu_${n}_${Date.now()}`);
-      x.timeout = 15000;
-      x.setRequestHeader('apikey', SB_KEY);
-      x.setRequestHeader('Content-Type', 'text/plain');
-      x.onload = x.onerror = x.ontimeout = res;
-      x.send(makeUploadBlob(256 * 1024));
-    })
-  ));
+async function measureUploadCore(targetUrl, headers, onLive) {
+  const MEASURE_MS = 8000;
 
-  // DOĞRULUK DÜZELTMESİ: Bu yedek yol sabit 8 paralel akış kullanıyordu — bu,
-  // measureUploadCF'de (Cloudflare birincil yol) daha önce tespit edilip
-  // düzeltilen "zayıf bağlantıda gerçek tek-uygulama deneyiminin çok üzerinde
-  // toplam hız gösterme" hatasının AYNISI. Bu yedek yola sadece Cloudflare
-  // erişilemediğinde (örn. VPN/güvenlik duvarı/bazı ISS'lerin CDN engeli)
-  // düşülüyor — yani tam olarak "yanlış yüksek ölçüyor" şikayetinin en çok
-  // görüleceği senaryo. Cloudflare yolundaki ile aynı mantıkla, kısa bir
-  // tek-akışlı ön ölçüm yapılıp bağlantı hızına göre akış sayısı seçiliyor.
-  let PARALLEL_STREAMS = 4; // prob başarısız olursa ılımlı varsayılan
-  {
-    const probeStart = performance.now();
-    let probeSent = 0, probeDone = false;
-    await new Promise(res => {
-      const x = new XMLHttpRequest();
-      x.open('POST', `${TARGET_URL}?t=probe_${Date.now()}`);
-      x.timeout = 1200;
-      x.setRequestHeader('apikey', SB_KEY);
-      x.setRequestHeader('Content-Type', 'text/plain');
-      x.upload.onprogress = e => { probeSent = e.loaded; };
-      x.upload.onloadend = () => { probeDone = true; res(); };
-      x.onerror = x.ontimeout = () => res();
-      x.send(makeUploadBlob(3 * 1024 * 1024));
-    });
-    const probeElapsed = (performance.now() - probeStart) / 1000;
-    const probeMbps = (probeSent >= 50000 && probeElapsed > 0) ? (probeSent * 8) / probeElapsed / 1e6 : null;
-    // DOĞRULUK DÜZELTMESİ 2: Eşikler yükseltildi. 1 saniyelik kısa prob, jitter/buffer
-    // yüzünden gerçek hattan daha yüksek bir anlık değer okuyabiliyor (örn. 15 Mbps'lik
-    // bir paket, kısa patlamada 20+ Mbps gösterip "orta hız" kutusuna düşüyor ve 4 paralel
-    // akış seçiliyordu — bu da sonucu gerçek tek-bağlantı deneyiminden yukarı çekiyordu).
-    // Artık daha yüksek bir eşiğin altında kalan bağlantılar 2 akışta tutuluyor.
-    if (probeMbps === null) PARALLEL_STREAMS = 2;
-    else if (probeMbps < 25) PARALLEL_STREAMS = 2;   // yavaş/orta bağlantı — tek-uygulama deneyimine yakın tut
-    else if (probeMbps < 100) PARALLEL_STREAMS = 4;  // hızlı bağlantı
-    else PARALLEL_STREAMS = 6;                       // çok hızlı fiber
-    window.lastUploadProbeMbps = probeMbps ? Math.round(probeMbps) : null;
-  }
-
-  // 2) Ölçüm penceresi
-  const measureStart = performance.now();
-  const stopAt       = measureStart + MEASURE_MS;
-  let totalSent      = 0;   // tüm stream'ler tek ortak sayaç (JS single-thread → safe)
-
-  // 3) Merkezi sampler — download ile AYNI yaklaşım
-  let lastSampleBytes = 0, lastSampleAt = measureStart;
-  const sharedSamples = [];
-  const samplerId = setInterval(() => {
-    const now = performance.now();
-    const dt  = now - lastSampleAt;
-    if (dt <= 0) return;
-    const mbps = Math.round(((totalSent - lastSampleBytes) * 8) / (dt / 1000) / 1e6);
-    lastSampleBytes = totalSent;
-    lastSampleAt    = now;
-    if (mbps > 0) {
-      sharedSamples.push(mbps);
-      if (onLive) onLive(mbps);
-    }
-  }, SAMPLE_MS);
-
-  // 4) XHR stream — upload.onloadend ile rechaining
-  function xhrStream(n) {
-    return new Promise(resolve => {
-      let consecutiveErrors = 0;
-      function sendChunk() {
-        if (performance.now() >= stopAt) { resolve(); return; }
-        const x = new XMLHttpRequest();
-        let progressBytes = 0;
-        let settled = false;
-        const t0 = performance.now();
-
-        // onloadend = BODY tamamen gönderildiğinde VEYA hata durumunda tek çıkış noktası.
-        // Supabase fonksiyon bulunamadığında 404 döner, bu uploadın tamamlandığının kanıtıdır (başarı kabul edilir).
-        x.upload.onloadend = (e) => {
-          if (settled) return;
-          settled = true;
-          
-          const sent = (e && e.loaded > 0) ? e.loaded : 0;
-          const isSuccess = (x.status >= 200 && x.status < 300) || x.status === 404 || (x.status === 0 && (sent > 0 || progressBytes > 0));
-
-          if (sent > 0) {
-            const d = sent - progressBytes;
-            if (d > 0) totalSent += d;
-            if (isSuccess) consecutiveErrors = 0; // Başarıda hataları sıfırla
-          } else if (isSuccess) {
-            // İstek başarılı olduysa ama progress tetiklenmediyse tüm chunk'ı gönderilmiş say
-            totalSent += CHUNK_BYTES;
-            consecutiveErrors = 0;
-          } else {
-            // Gerçek ağ hatası veya bağlantı koptuysa hata sayacını artır
-            consecutiveErrors++;
-          }
-
-          if (consecutiveErrors >= 3) {
-            // Üst üste 3 kez başarısız olursa bu stream'i kapat
-            resolve();
-            return;
-          }
-
-          if (performance.now() < stopAt) sendChunk(); else resolve();
-        };
-
-        x.upload.onprogress = e => {
-          const d = e.loaded - progressBytes;
-          if (d > 0) { totalSent += d; progressBytes = e.loaded; }
-          if (performance.now() >= stopAt) x.abort();
-        };
-
-        x.upload.onerror = () => {};
-        x.onerror        = () => {};
-        x.ontimeout      = () => {};
-        x.onabort        = () => {};
-
-        x.timeout = 5000;
-        x.open('POST', `${TARGET_URL}?t=${Date.now()}_x${n}`);
-        x.setRequestHeader('apikey', SB_KEY);
-        x.setRequestHeader('Content-Type', 'text/plain');
-        x.send(makeUploadBlob(CHUNK_BYTES));
-      }
-      sendChunk();
-    });
-  }
-
-  // 5) 8 paralel XHR stream çalıştır
-  await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => xhrStream(i)));
-  clearInterval(samplerId);
-
-  // 6) Sonuç — download ile aynı mantık: p90 önce, fallback ortalama
-  const elapsed = (performance.now() - measureStart) / 1000;
-  window.lastUploadDebug = `[Supabase] akış sayısı: ${PARALLEL_STREAMS}${window.lastUploadProbeMbps ? ` (prob: ~${window.lastUploadProbeMbps} Mbps)` : ''}, gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
-  if (totalSent < 100_000 || elapsed <= 0) return null;
-  return Math.max(1, Math.round((totalSent * 8) / elapsed / 1e6));
-}
-
-// ── UPLOAD ÖLÇÜM MİMARİSİ — BİRİNCİL YOL (Cloudflare) ──────────────────────
-// NEDEN ARTIK CLOUDFLARE BİRİNCİL?
-// Supabase projesinin kendi alt alan adı (*.supabase.co) pek çok kurumsal
-// VPN/güvenlik duvarı ve antivirüs ürünü tarafından "sınıflandırılmamış bulut
-// depolama" olarak görülüp bloke edilebiliyor. Cloudflare ise dünya genelinde
-// neredeyse her ağda beyaz listede olan, tanınmış bir CDN/altyapı sağlayıcısı
-// olduğu için indirme testinde zaten sorunsuz çalışıyor. Yüklemede de aynı
-// güvenilirliği yakalamak için "simple request" kurallarına uyuyoruz: sadece
-// Content-Type: text/plain kullanıp özel header (apikey vb.) EKLEMİYORUZ —
-// böylece tarayıcı CORS preflight (OPTIONS) göndermiyor ve önceki 400 hatasına
-// yol açan senaryo (Cloudflare'ın OPTIONS'a düzgün yanıt vermemesi) devre dışı
-// kalıyor.
-//
-// DOĞRULUK NOTU: streaming body desteklenen tarayıcılarda (bkz.
-// supportsStreamingUploadBody) gerçek zamanlı, byte-hassasiyetli ölçüm
-// yapılır. Desteklenmeyen tarayıcılarda (Safari/Firefox) her isteğin TAM
-// gidiş-dönüşü beklenip öyle sayılır. Cloudflare'in kendi mühendislik
-// ekibinin belgelediğine göre (blog.cloudflare.com/how-does-cloudflares-
-// speed-test-really-work) TCP yavaş başlangıcı (slow start) nedeniyle
-// 10MB'ın ALTINDAKİ aktarımlar bağlantının tam bant genişliğini kullanamıyor
-// — bu yüzden chunk boyutu bu eşiğin üzerinde (12MB) ve paralel akış sayısı
-// yüksek (10) tutuluyor. Streaming yolunda ise gerçek bir ısınma (warmup)
-// turu yapılıyor: download ölçümündeki gibi, TCP pencerelerini ölçüm
-// başlamadan önce büyütmek için kısa bir yükleme yapılıp atılıyor —
-// aksi halde ilk 1-2 saniyedeki yavaş-başlangıç örnekleri yüksek hızlı
-// bağlantılarda sonucu yapay şekilde düşürebilirdi.
-async function measureUploadXHR(onLive) {
-  const CHUNK_BYTES      = 4 * 1024 * 1024;
-  const MEASURE_MS       = 9000;
-  const SAMPLE_MS        = 200;
-  const PARALLEL_STREAMS = 6;
-  const TARGET_URL       = SPEED_UPLOAD_URL;
-
+  // 1. Hat hızını anlamak için 512KB hızlı prob
+  const tProbe0 = performance.now();
   try {
-    await new Promise((resolve, reject) => {
-      const x = new XMLHttpRequest();
-      x.open('POST', `${TARGET_URL}?t=probe_${Date.now()}`);
-      x.timeout = 7000;
-      x.setRequestHeader('Content-Type', 'text/plain;charset=UTF-8');
-      x.onload = () => resolve();
-      x.onerror = x.ontimeout = () => reject(new Error('upload_probe_failed'));
-      x.send(makeUploadBlob(64 * 1024));
-    });
+    const probeRes = await fetchWithTimeout(`${targetUrl}?t=probe_${Date.now()}`, {
+      method: 'POST',
+      headers,
+      body: _uploadBlobs.k512
+    }, 4500);
+    if (!probeRes || (!probeRes.ok && probeRes.status !== 404)) return null;
   } catch (e) {
-    window.lastUploadDebug = `[XHR] erişilebilirlik kontrolü başarısız: ${e && e.message ? e.message : e}`;
     return null;
   }
+  const probeDt = (performance.now() - tProbe0) / 1000;
+  const probeMbps = (512 * 1024 * 8) / Math.max(probeDt, 0.1) / 1e6;
 
-  // Gerçek ısınma turu: TCP pencereleri ölçüm başlamadan büyüsün diye ~600ms
-  // boyunca paralel küçük istekler gönderip atıyoruz (CF yöntemiyle tutarlı).
-  const warmupStopAt = performance.now() + 600;
-  await Promise.all(Array.from({ length: PARALLEL_STREAMS }, () => new Promise(res => {
-    const x = new XMLHttpRequest();
-    x.open('POST', `${TARGET_URL}?t=wu_${Date.now()}_${Math.random()}`);
-    x.timeout = 2000;
-    x.setRequestHeader('Content-Type', 'text/plain;charset=UTF-8');
-    x.onloadend = x.onerror = x.ontimeout = res;
-    x.send(makeUploadBlob(256 * 1024));
-    if (performance.now() >= warmupStopAt) res();
-  })));
+  // Hatta göre ideal parça ve eşzamanlı işçi seçimi
+  let chunkBlob = _uploadBlobs.m1;
+  let chunkSize = 1024 * 1024;
+  let concurrency = 2;
 
-  const measureStart = performance.now();
-  const stopAt = measureStart + MEASURE_MS;
-  let totalSent = 0;
-  let lastSampleBytes = 0, lastSampleAt = measureStart;
-  const sharedSamples = [];
-  const samplerId = setInterval(() => {
-    const now = performance.now();
-    const dt = now - lastSampleAt;
-    if (dt <= 0) return;
-    const mbps = Math.round(((totalSent - lastSampleBytes) * 8) / (dt / 1000) / 1e6);
-    lastSampleBytes = totalSent;
-    lastSampleAt = now;
-    if (mbps > 0) {
-      sharedSamples.push(mbps);
-      if (onLive) onLive(mbps);
-    }
-  }, SAMPLE_MS);
-
-  function xhrStream(n) {
-    return new Promise(resolve => {
-      let consecutiveErrors = 0;
-      function sendChunk() {
-        if (performance.now() >= stopAt) { resolve(); return; }
-        const x = new XMLHttpRequest();
-        let progressBytes = 0;
-        let settled = false;
-        x.open('POST', `${TARGET_URL}?t=${Date.now()}_${n}_${Math.random()}`);
-        x.timeout = 6000;
-        x.setRequestHeader('Content-Type', 'text/plain;charset=UTF-8');
-        x.upload.onprogress = e => {
-          const loaded = e && e.loaded ? e.loaded : 0;
-          const delta = loaded - progressBytes;
-          if (delta > 0) {
-            totalSent += delta;
-            progressBytes = loaded;
-          }
-          if (performance.now() >= stopAt) {
-            try { x.abort(); } catch(e) {}
-          }
-        };
-        x.onloadend = () => {
-          if (settled) return;
-          settled = true;
-          const ok = (x.status >= 200 && x.status < 300) || x.status === 0 || progressBytes > 0;
-          consecutiveErrors = ok ? 0 : consecutiveErrors + 1;
-          if (consecutiveErrors >= 3 || performance.now() >= stopAt) resolve();
-          else sendChunk();
-        };
-        x.onerror = x.ontimeout = () => {};
-        x.send(makeUploadBlob(CHUNK_BYTES));
-      }
-      sendChunk();
-    });
-  }
-
-  await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => xhrStream(i)));
-  clearInterval(samplerId);
-
-  const elapsed = (performance.now() - measureStart) / 1000;
-  window.lastUploadDebug = `[XHR/Cloudflare] gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
-  if (totalSent < 100_000 || elapsed <= 0) return null;
-  return Math.max(1, Math.round((totalSent * 8) / elapsed / 1e6));
-}
-
-async function measureUploadCF(onLive) {
-  const MEASURE_MS       = 9000;
-  const PROBE_MS         = 1000;
-  const SAMPLE_MS        = 200;
-  const streaming        = supportsStreamingUploadBody();
-  const CHUNK_BYTES      = 512 * 1024; // DOĞRULUK + KULLANICI DENEYİMİ DÜZELTMESİ: eskiden 12MB,
-  // sonra 2MB idi — streaming desteklemeyen tarayıcılarda (ör. eski Safari) yavaş bağlantılarda tek
-  // chunk zamanında tamamlanamıyor ve her denemede saniyelerce boşa bekleniyordu (bu yol tam-tamamlanma
-  // bazlı sayıyor, fetch() ile kısmi ilerleme takibi mümkün değil). 512KB, gerçekçi en yavaş
-  // bağlantılarda bile (~0.5 Mbps) makul sürede tamamlanıyor; "toplam bayt/toplam süre" ortalamasını
-  // etkilemiyor çünkü chunk sayısı arttıkça sonuç aynı kalıyor.
-
-  // Isınma + erişilebilirlik kontrolü: bu istek başarısız/reddedilirse
-  // (ağ bu alan adını da engelliyorsa) hiç vakit kaybetmeden yedek yola geç.
-  try {
-    const warm = await fetchWithTimeout(`${SPEED_UPLOAD_URL}?t=wu_${Date.now()}`, {
-      method: 'POST', mode: 'cors', cache: 'no-store',
-      headers: { 'Content-Type': 'text/plain' },
-      body: makeUploadBlob(64 * 1024)
-    }, 6000);
-    if (!warm || !warm.ok) return null;
-  } catch (e) {
-    window.lastUploadDebug = `[Cloudflare] ısınma isteği başarısız: ${e && e.message ? e.message : e}`;
-    return null;
-  }
-
-  // ── UYARLANABİLİR PARALEL AKIŞ SAYISI ─────────────────────────────────
-  // DOĞRULUK DÜZELTMESİ: Sabit 6 (veya streaming desteklenmeyen tarayıcılarda
-  // 10!) paralel akış, zayıf/mobil bağlantılarda gerçek tek-uygulama deneyiminin
-  // (WhatsApp, Instagram vb. tek bağlantı kullanan uygulamalar) çok üzerinde bir
-  // "toplam" hız veriyordu — bu bir sayım hatası değil ama kullanıcı için "yanlış
-  // yüksek" gibi hissettiriyordu. Ookla/Fast.com gibi araçlar da bağlantı hızına
-  // göre akış sayısını uyarlar. Burada da aynı mantık: önce ~1 saniyelik TEK akışlı
-  // bir ön ölçüm yapılıyor (bu aynı zamanda TCP ısınması yerine geçiyor — Cloudflare
-  // HTTP/2 kullandığı için sonraki paralel istekler zaten aynı bağlantıyı
-  // paylaşacak), sonuca göre akış sayısı seçiliyor: yavaş bağlantıda az akış
-  // (gerçekçi tek-bağlantı deneyimine yakın), hızlı bağlantıda daha fazla akış
-  // (TCP pencere sınırını aşıp gerçek kapasiteyi ölçmek için).
-  let PARALLEL_STREAMS = streaming ? 4 : 8; // streaming desteklenmiyorsa prob atlanır, ılımlı sabit değer kullanılır
-  if (streaming) {
-    const probeStart = performance.now();
-    const probeStopAt = probeStart + PROBE_MS;
-    let probeSent = 0;
-    try {
-      const probeBody = makeUploadStream(probeStopAt, (b) => { probeSent += b; });
-      await fetchWithTimeout(`${SPEED_UPLOAD_URL}?t=probe_${Date.now()}`, {
-        method: 'POST', mode: 'cors', cache: 'no-store',
-        headers: { 'Content-Type': 'text/plain' },
-        body: probeBody, duplex: 'half'
-      }, 6000);
-    } catch (e) {}
-    const probeElapsed = (performance.now() - probeStart) / 1000;
-    const probeMbps = (probeSent >= 50000 && probeElapsed > 0) ? (probeSent * 8) / probeElapsed / 1e6 : null;
-    // DOĞRULUK DÜZELTMESİ 2: Eşikler yükseltildi. 1 saniyelik kısa prob, jitter/buffer
-    // yüzünden gerçek hattan daha yüksek bir anlık değer okuyabiliyor (örn. 15 Mbps'lik
-    // bir paket, kısa patlamada 20+ Mbps gösterip "orta hız" kutusuna düşüyor ve 4 paralel
-    // akış seçiliyordu — bu da sonucu gerçek tek-bağlantı deneyiminden yukarı çekiyordu).
-    // Artık daha yüksek bir eşiğin altında kalan bağlantılar 2 akışta tutuluyor.
-    if (probeMbps === null) PARALLEL_STREAMS = 2;       // prob başarısız oldu, ılımlı varsayılan
-    else if (probeMbps < 25) PARALLEL_STREAMS = 2;      // yavaş/orta bağlantı — tek-uygulama deneyimine yakın tut
-    else if (probeMbps < 100) PARALLEL_STREAMS = 4;     // orta/hızlı bağlantı
-    else if (probeMbps < 250) PARALLEL_STREAMS = 6;     // çok hızlı fiber
-    else PARALLEL_STREAMS = 8;                          // 1 Gbps Gigabit simetrik fiber — tam hat doyumuna ulaşmak için 8 akış
-    window.lastUploadProbeMbps = probeMbps ? Math.round(probeMbps) : null;
+  if (probeMbps < 6) {
+    chunkBlob = _uploadBlobs.k256; chunkSize = 256 * 1024; concurrency = 2;
+  } else if (probeMbps < 15) {
+    chunkBlob = _uploadBlobs.k512; chunkSize = 512 * 1024; concurrency = 2;
+  } else if (probeMbps < 45) {
+    chunkBlob = _uploadBlobs.m1; chunkSize = 1024 * 1024; concurrency = 2;
+  } else if (probeMbps < 120) {
+    chunkBlob = _uploadBlobs.m2; chunkSize = 2 * 1024 * 1024; concurrency = 3;
+  } else {
+    chunkBlob = _uploadBlobs.m4; chunkSize = 4 * 1024 * 1024; concurrency = 4;
   }
 
   const measureStart = performance.now();
   const stopAt = measureStart + MEASURE_MS;
-  let totalSent = 0;
-  let lastSampleBytes = 0, lastSampleAt = measureStart;
-  const sharedSamples = [];
+  let totalConfirmedBytes = 0;
+  let chunkHistory = [];
+
+  // Canlı ibre için 200ms aralıklı kayan pencere (rolling throughput)
   const samplerId = setInterval(() => {
     const now = performance.now();
-    const dt = now - lastSampleAt;
-    if (dt <= 0) return;
-    const mbps = Math.round(((totalSent - lastSampleBytes) * 8) / (dt / 1000) / 1e6);
-    lastSampleBytes = totalSent; lastSampleAt = now;
-    if (mbps > 0) { sharedSamples.push(mbps); if (onLive) onLive(mbps); }
-  }, SAMPLE_MS);
+    chunkHistory = chunkHistory.filter(e => now - e.t <= 2000);
+    if (chunkHistory.length >= 2) {
+      const windowBytes = chunkHistory.reduce((acc, e) => acc + e.bytes, 0);
+      const span = (now - chunkHistory[0].t) / 1000;
+      if (span > 0.3) {
+        const liveRate = Math.round((windowBytes * 8) / span / 1e6);
+        if (liveRate > 0 && onLive) onLive(liveRate);
+      }
+    }
+  }, 200);
 
-  // YOL A — Byte-hassasiyetli (streaming body destekleniyorsa)
-  async function cfStreamAccurate(n) {
-    try {
-      const body = makeUploadStream(stopAt, (b) => { totalSent += b; });
-      await fetchWithTimeout(`${SPEED_UPLOAD_URL}?t=${Date.now()}_${n}_${Math.random()}`, {
-        method: 'POST', mode: 'cors', cache: 'no-store',
-        headers: { 'Content-Type': 'text/plain' },
-        body, duplex: 'half'
-      }, MEASURE_MS + 5000);
-    } catch (e) { /* stream stopAt'te kapanınca bağlantı kesilmesi normaldir */ }
-  }
-
-  // YOL B — Tamamlanma-tabanlı (streaming desteklenmiyorsa)
-  async function cfStream(n) {
-    let consecutiveErrors = 0;
-    let chunkBytes = CHUNK_BYTES;
+  async function worker(id) {
     while (performance.now() < stopAt) {
-      const t0 = performance.now();
       try {
-        const r = await fetchWithTimeout(`${SPEED_UPLOAD_URL}?t=${Date.now()}_${n}_${Math.random()}`, {
-          method: 'POST', mode: 'cors', cache: 'no-store',
-          headers: { 'Content-Type': 'text/plain' },
-          body: makeUploadBlob(chunkBytes)
-        }, 10000);
-        if (r && (r.ok || r.status === 0)) {
-          totalSent += chunkBytes;
-          consecutiveErrors = 0;
-          // Gigabit/hızlı hatlarda chunk çok hızlı (<80ms) biterse boyutu 2MB'a kadar kademeli artır
-          const dt = performance.now() - t0;
-          if (dt < 80 && chunkBytes < 2 * 1024 * 1024) chunkBytes = Math.min(chunkBytes * 2, 2 * 1024 * 1024);
+        const res = await fetchWithTimeout(`${targetUrl}?t=${Date.now()}_w${id}_${Math.random()}`, {
+          method: 'POST',
+          headers,
+          body: chunkBlob
+        }, 9000);
+        if (res && (res.ok || res.status === 404)) {
+          totalConfirmedBytes += chunkSize;
+          chunkHistory.push({ bytes: chunkSize, t: performance.now() });
+        } else {
+          break;
         }
-        else { consecutiveErrors++; if (consecutiveErrors >= 2) break; }
       } catch (e) {
-        consecutiveErrors++;
-        if (consecutiveErrors >= 2) break;
+        break;
       }
     }
   }
 
-  const runStream = streaming ? cfStreamAccurate : cfStream;
-  await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => runStream(i)));
+  await Promise.all(Array.from({ length: concurrency }, (_, i) => worker(i)));
   clearInterval(samplerId);
 
-  const elapsed = (performance.now() - measureStart) / 1000;
-  window.lastUploadDebug = `[Cloudflare/${streaming ? 'streaming' : 'chunk'}] akış sayısı: ${PARALLEL_STREAMS}${window.lastUploadProbeMbps ? ` (prob: ~${window.lastUploadProbeMbps} Mbps)` : ''}, gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
-  if (totalSent < 100_000 || elapsed <= 0) return null;
-  return Math.max(1, Math.round((totalSent * 8) / elapsed / 1e6));
+  const totalElapsed = (performance.now() - measureStart) / 1000;
+  if (totalConfirmedBytes < 256 * 1024 || totalElapsed <= 0) return null;
+
+  // Kesin sonuç: Gerçekten iletilen toplam onaylı bayt / geçen toplam süre
+  return Math.max(1, Math.round((totalConfirmedBytes * 8) / totalElapsed / 1e6));
 }
 
-
-// ── UPLOAD ÖLÇÜM MİMARİSİ — YÖNLENDİRİCİ ────────────────────────────────────
-// DOĞRULUK DÜZELTMESİ: Bu fonksiyon eskiden önce measureUploadXHR'ı deniyordu.
-// Ama measureUploadXHR ve measureUploadCF AYNI Cloudflare adresine gidiyor —
-// aralarındaki tek fark ÖLÇÜM YÖNTEMİ: XHR, xhr.upload.onprogress ile "e.loaded"
-// değerini takip eder ve bu değer verinin AĞA GERÇEKTEN ÇIKTIĞINI değil,
-// tarayıcının/işletim sisteminin gönderim arabelleğine YAZILDIĞINI gösterir.
-// 4MB'lık büyük chunk'larla, hızlı bir yerel ağ arabirimi bu arabelleği neredeyse
-// anında doldurabiliyor — gerçek yükleme hızı çok daha düşük olsa bile — özellikle
-// her stream'in test sonunda abort() ile kesilen son chunk'ında, arabelleğe
-// yazılmış ama fiilen hiç iletilmemiş baytlar da sayılmış oluyordu. Bu da upload
-// sonucunun gerçek hızdan belirgin şekilde YÜKSEK çıkmasına yol açıyordu.
-// measureUploadCF ise streaming destekleyen tarayıcılarda gerçek geri-basınç
-// (backpressure) ile çalışan bir ReadableStream kullanır (pull() sadece taşıma
-// katmanı hazır olduğunda tetiklenir); desteklemeyen tarayıcılarda ise bir
-// chunk'ı yalnızca TAM round-trip tamamlandığında sayar. İkisi de gerçek iletim
-// hızını yansıtır. Bu yüzden artık ÖNCE measureUploadCF deneniyor; XHR sadece
-// CF'in fetch/duplex API'siyle ilgili bir tarayıcı tuhaflığı yüzünden tamamen
-// başarısız olursa yedek olarak kullanılıyor. Cloudflare'in her iki yöntemi de
-// tamamen başarısız olursa (VPN/güvenlik yazılımı alan adını engelliyorsa)
-// otomatik olarak Supabase üzerinden tekrar denenir.
 async function measureUpload(onLive) {
   window.lastUploadDebug = '';
-  window.lastUploadMethod = '';
 
-  const cfResult = await measureUploadCF(onLive);
-  if (cfResult) { window.lastUploadMethod = 'cloudflare-fetch'; return cfResult; }
-  const cfDebug = window.lastUploadDebug;
-
-  // KULLANICI DENEYİMİ DÜZELTMESİ: CF yolu (streaming desteklemeyen tarayıcılarda
-  // yavaş bağlantılarda birkaç deneme sonrası) başarısız olup burada XHR'a geçerken
-  // kullanıcıya hiçbir ara bilgi gösterilmiyordu — ekran, üst kısımda hâlâ "~10 sn"
-  // yazarken sessizce donmuş gibi görünebiliyordu. Artık geçiş anında bilgilendiriliyor.
-  const subElXhr = document.getElementById('stSub');
-  if (subElXhr) {
-    subElXhr.textContent = 'Yükleme hızı ölçülüyor (~10 sn) — alternatif yöntemle devam ediliyor...';
+  // 1. Birincil Yol: Cloudflare (İstanbul CDN Edge)
+  try {
+    const cfResult = await measureUploadCore(SPEED_UPLOAD_URL, { 'Content-Type': 'text/plain' }, onLive);
+    if (cfResult) {
+      window.lastUploadDebug = `Cloudflare onaylı yükleme: ${cfResult} Mbps`;
+      return cfResult;
+    }
+  } catch (e) {
+    window.lastUploadDebug = `Cloudflare hatası: ${e?.message || e}`;
   }
 
-  const xhrResult = await measureUploadXHR(onLive);
-  window.lastUploadDebug = `${cfDebug} || ${window.lastUploadDebug}`;
-  if (xhrResult) { window.lastUploadMethod = 'cloudflare-xhr-progress'; return xhrResult; }
-
+  // 2. Yedek Yol: Supabase Gateway (Cloudflare erişilemezse)
   const subEl = document.getElementById('stSub');
-  if (subEl) {
-    subEl.textContent = 'Birincil sunucudan yanıt alınamadı — yedek sunucu deneniyor...';
-  }
+  if (subEl) subEl.textContent = 'Yükleme hızı ölçülüyor — yedek sunucuya bağlanılıyor...';
 
-  const sbDebug = window.lastUploadDebug; // CF hata detayını koru
-  const sbResult = await measureUploadSupabase(onLive);
-  window.lastUploadDebug = `${sbDebug} || ${window.lastUploadDebug}`;
-  if (sbResult) { window.lastUploadMethod = 'supabase-yedek'; return sbResult; }
+  try {
+    const sbResult = await measureUploadCore(`${SB_URL}/rest/v1/rpc/speedtest_ping`, {
+      'apikey': SB_KEY,
+      'Content-Type': 'text/plain'
+    }, onLive);
+    if (sbResult) {
+      window.lastUploadDebug += ` || Supabase yedek onaylı yükleme: ${sbResult} Mbps`;
+      return sbResult;
+    }
+  } catch (e) {
+    window.lastUploadDebug += ` || Supabase hatası: ${e?.message || e}`;
+  }
 
   return null;
 }
