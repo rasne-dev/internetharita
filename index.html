@@ -1093,7 +1093,7 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
           <select class="fs" id="speedRankIlFilter" style="width:auto;max-width:130px;padding:3px 6px;font-size:9px;text-transform:none;letter-spacing:0;font-weight:600;" onchange="renderSpeedRankList(this.value)"><option value="">Tüm İller</option></select>
         </div>
         <div id="speedRankList"><div class="loading-text loading-dots">Yükleniyor</div></div>
-        <div style="font-size:9px;color:var(--text3);margin-top:8px;font-family:var(--font-mono);line-height:1.4;border-top:1px dashed var(--border);padding-top:6px;">ℹ️ Sıralamaya girmek için lokasyonda en az 2 onaylı ölçüm gereklidir.</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:8px;font-family:var(--font-mono);line-height:1.4;border-top:1px dashed var(--border);padding-top:6px;">ℹ️ Mahalle bazlı sıralamadır; sıralamaya girmek için ilgili mahallede en az 2 onaylı ölçüm gereklidir.</div>
       </div>
       <div class="stat-card"><div class="stat-title">Hız Bandı Dağılımı</div><div id="speedBandChart"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
     </div>
@@ -3118,7 +3118,8 @@ function populateSpeedRankIlFilter(pins) {
   const sel = document.getElementById('speedRankIlFilter');
   if (!sel) return;
   const current = sel.value;
-  const names = [...new Set(pins.filter(p => !p.is_altyapi_yok && p.il).map(p => p.il))].sort((a,b) => a.localeCompare(b,'tr'));
+  // Sadece gerçek mahalle bilgisi bulunan onaylı hız testlerinin illerini listele
+  const names = [...new Set(pins.filter(p => !p.is_altyapi_yok && p.il && p.mahalle && p.mahalle !== '?' && p.mahalle !== 'Bilinmeyen' && p.mahalle.trim() !== '').map(p => p.il.trim()))].sort((a,b) => a.localeCompare(b,'tr'));
   sel.innerHTML = '<option value="">Tüm İller</option>' + names.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
   if (names.includes(current)) sel.value = current;
 }
@@ -3127,9 +3128,9 @@ function populateSpeedRankIlFilter(pins) {
 function renderSpeedRankList(filterIl) {
   const speedRankEl = document.getElementById('speedRankList');
   if (!speedRankEl) return;
-  // "Altyapı Yok" bildirimleri gercek_dl=0 ile kayıtlı olduğundan hız istatistiklerine asla dahil edilmemeli
-  // (aksi halde ortalamaları ve "en hızlı konum" listesini yanlış şekilde aşağı çeker).
-  let speedEligiblePins = cleanPinsData.filter(p => !p.is_altyapi_yok);
+  // "Altyapı Yok" bildirimleri gercek_dl=0 ile kayıtlı olduğundan hız istatistiklerine asla dahil edilmemeli.
+  // Ayrıca mahalle bilgisi olmayan eski/eksik kayıtlar lokasyon sıralamasına dahil edilmez (kesin mahalle bazlı filtreleme).
+  let speedEligiblePins = cleanPinsData.filter(p => !p.is_altyapi_yok && p.mahalle && p.mahalle !== '?' && p.mahalle !== 'Bilinmeyen' && p.mahalle.trim() !== '');
   if (filterIl) speedEligiblePins = speedEligiblePins.filter(p => p.il === filterIl);
 
   const globalAvgSpeed = speedEligiblePins.length ? (speedEligiblePins.reduce((a,p)=>a+p.gercek_dl,0)/speedEligiblePins.length) : 100;
@@ -3137,9 +3138,10 @@ function renderSpeedRankList(filterIl) {
   function buildLocationMap(srcPins) {
     const lm = {};
     srcPins.forEach(p => {
-      const ilClean = (p.il && p.il !== '?' && p.il !== 'Bilinmeyen') ? p.il : '';
-      const ilceClean = (p.ilce && p.ilce !== '?' && p.ilce !== 'Bilinmeyen') ? p.ilce : '';
-      const mahalleClean = (p.mahalle && p.mahalle !== '?' && p.mahalle !== 'Bilinmeyen') ? p.mahalle : '';
+      const ilClean = (p.il && p.il !== '?' && p.il !== 'Bilinmeyen') ? p.il.trim() : '';
+      const ilceClean = (p.ilce && p.ilce !== '?' && p.ilce !== 'Bilinmeyen') ? p.ilce.trim() : '';
+      const mahalleClean = (p.mahalle && p.mahalle !== '?' && p.mahalle !== 'Bilinmeyen') ? p.mahalle.trim() : '';
+      if (!mahalleClean) return;
       const k = [ilClean, ilceClean, mahalleClean].filter(Boolean).join('_');
       if (!k) return;
       if (!lm[k]) lm[k] = { t:0, tul:0, c:0, il:ilClean, ilce:ilceClean, mahalle:mahalleClean, sumLat:0, sumLng:0, coordCount:0 };
@@ -3171,7 +3173,7 @@ function renderSpeedRankList(filterIl) {
   function locTitle(x) {
     const parts = filterIl ? [x.ilce, x.mahalle] : [x.il, x.ilce, x.mahalle];
     const cleanParts = parts.filter(p => p && p !== '?' && p !== 'Bilinmeyen');
-    return escHtml(cleanParts.join(' / ') || 'Bilinmeyen Bölge');
+    return escHtml(cleanParts.join(' / ') || x.mahalle || 'Bilinmeyen Mahalle');
   }
 
   const lm = buildLocationMap(speedEligiblePins);
