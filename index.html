@@ -490,8 +490,9 @@ html.light .sr-ping { background:#f5f7fa; }
 .sort-btn{padding:4px 10px;border-radius:5px;border:1px solid var(--border2);background:var(--surface2);color:var(--text3);font-size:10px;font-weight:700;font-family:var(--font-mono);cursor:pointer;transition:all .15s;}
 .sort-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
 .regions-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
-.region-card{ background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px; transition:all .2s;position:relative;overflow:hidden; }
+.region-card{ background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px; transition:all .2s;position:relative;overflow:hidden; cursor:pointer; }
 .region-card:hover{border-color:var(--border2);transform:translateY(-1px);}
+.region-card.active-region{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);background:var(--surface2);}
 .region-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
 
 /* ===== TEŞEKKÜR MODALI ===== */
@@ -1109,9 +1110,55 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
 </div>
 
 <div id="page-bolge" class="page">
-  <div class="page-header"><div class="page-title">Coğrafi Bölgeler</div><div class="page-sub">Türkiye'nin 7 coğrafi bölgesinin internet performansı</div></div>
-  <div class="sort-bar"><span>Sırala:</span><button class="sort-btn active" id="sortDL" onclick="sortRegions('dl')">↓ DL Hız</button><button class="sort-btn" id="sortMem" onclick="sortRegions('mem')">😊 Memnuniyet</button><button class="sort-btn" id="sortCount" onclick="sortRegions('count')">📊 Veri Sayısı</button></div>
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;">
+    <div>
+      <div class="page-title">Coğrafi Bölgeler</div>
+      <div class="page-sub">Türkiye'nin 7 coğrafi bölgesinin internet performansı, altyapı dağılımı ve il analizleri</div>
+    </div>
+    <div id="regionTotalSummary" style="font-size:11px;color:var(--text3);font-family:var(--font-mono);"></div>
+  </div>
+
+  <!-- 1. BÖLGESEL LİDERLER & ÖZET BANTI -->
+  <div id="regionHighlightCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:6px;"></div>
+
+  <!-- 2. SIRALAMA VE 7 BÖLGE KARTLARI -->
+  <div class="sort-bar" style="margin-top:4px;">
+    <span style="font-size:11px;font-weight:700;color:var(--text2);">Bölge Kartlarını Sırala:</span>
+    <button class="sort-btn active" id="sortDL" onclick="sortRegions('dl')">⚡ İndirme Hızı</button>
+    <button class="sort-btn" id="sortUL" onclick="sortRegions('ul')">🚀 Yükleme Hızı</button>
+    <button class="sort-btn" id="sortMem" onclick="sortRegions('mem')">😊 Memnuniyet</button>
+    <button class="sort-btn" id="sortCount" onclick="sortRegions('count')">📊 Ölçüm Sayısı</button>
+  </div>
   <div class="regions-grid" id="regionsGrid"><div class="loading-text loading-dots">Yükleniyor</div></div>
+
+  <!-- 3. İNTERAKTİF BÖLGE DETAYI & 7 BÖLGE KARŞILAŞTIRMA MATRİSİ -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;margin-top:14px;">
+    
+    <!-- SEÇİLİ BÖLGE İL DETAYI VE İSS DAĞILIMI -->
+    <div class="stat-card" style="display:flex;flex-direction:column;gap:12px;">
+      <div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <span id="selectedRegionTitle">📍 Bölge İl Detayları</span>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <select id="regionSelectDropdown" class="fs" style="padding:3px 8px;font-size:11px;" onchange="selectRegion(this.value)"></select>
+          <button class="btn-ghost" style="padding:3px 8px;font-size:10px;" onclick="goToSelectedRegionMap()">🗺️ Haritada Gör</button>
+        </div>
+      </div>
+      <div id="selectedRegionContent"></div>
+    </div>
+
+    <!-- 7 BÖLGE ALTYAPI & PERFORMANS KARŞILAŞTIRMASI -->
+    <div class="stat-card" style="display:flex;flex-direction:column;gap:12px;">
+      <div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>📊 7 Bölge Altyapı &amp; Hız Karşılaştırması</span>
+        <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);font-weight:normal;">Fiber &amp; Hız Kıyası</span>
+      </div>
+      <div id="regionComparisonTable"></div>
+    </div>
+
+  </div>
+
+  <!-- 4. DİJİTAL UÇURUM ANALİZİ NOTU -->
+  <div id="regionGapBanner" style="margin-top:4px;"></div>
 </div>
 
 <div id="page-istatistik" class="page">
@@ -3462,26 +3509,488 @@ function toggleHexPinsList() {
   }
 }
 
-const BOLGELER = { "Marmara":{iller:["İstanbul","Bursa","Kocaeli","Balıkesir","Tekirdağ","Sakarya","Çanakkale","Edirne","Kırklareli","Yalova","Bilecik"],color:'#00d4ff'}, "İç Anadolu":{iller:["Ankara","Konya","Kayseri","Eskişehir","Sivas","Kırıkkale","Aksaray","Karaman","Kırşehir","Niğde","Nevşehir","Yozgat","Çankırı"],color:'#a78bfa'}, "Ege":{iller:["İzmir","Manisa","Aydın","Denizli","Muğla","Afyonkarahisar","Kütahya","Uşak"],color:'#34d399'}, "Akdeniz":{iller:["Antalya","Adana","Mersin","Hatay","Isparta","Burdur","Osmaniye","Kahramanmaraş"],color:'#f59e0b'}, "Karadeniz":{iller:["Trabzon","Samsun","Zonguldak","Ordu","Rize","Giresun","Tokat","Bolu","Çorum","Sinop","Bartın","Kastamonu","Artvin","Gümüşhane","Bayburt","Amasya","Düzce","Karabük"],color:'#60a5fa'}, "Doğu Anadolu":{iller:["Erzurum","Malatya","Elazığ","Van","Erzincan","Kars","Ağrı","Iğdır","Ardahan","Bingöl","Muş","Bitlis","Hakkari","Tunceli"],color:'#fb923c'}, "Güneydoğu Anadolu":{iller:["Gaziantep","Diyarbakır","Şanlıurfa","Batman","Adıyaman","Siirt","Mardin","Kilis","Şırnak"],color:'#f472b6'} };
+const BOLGELER = {
+  "Marmara": {
+    iller: ["İstanbul","Bursa","Kocaeli","Balıkesir","Tekirdağ","Sakarya","Çanakkale","Edirne","Kırklareli","Yalova","Bilecik"],
+    color: '#00d4ff',
+    center: [40.7, 28.5],
+    zoom: 7,
+    icon: '🏙️'
+  },
+  "İç Anadolu": {
+    iller: ["Ankara","Konya","Kayseri","Eskişehir","Sivas","Kırıkkale","Aksaray","Karaman","Kırşehir","Niğde","Nevşehir","Yozgat","Çankırı"],
+    color: '#a78bfa',
+    center: [39.2, 33.2],
+    zoom: 7,
+    icon: '🏛️'
+  },
+  "Ege": {
+    iller: ["İzmir","Manisa","Aydın","Denizli","Muğla","Afyonkarahisar","Kütahya","Uşak"],
+    color: '#34d399',
+    center: [38.5, 28.2],
+    zoom: 7,
+    icon: '🌊'
+  },
+  "Akdeniz": {
+    iller: ["Antalya","Adana","Mersin","Hatay","Isparta","Burdur","Osmaniye","Kahramanmaraş"],
+    color: '#f59e0b',
+    center: [36.9, 32.8],
+    zoom: 7,
+    icon: '☀️'
+  },
+  "Karadeniz": {
+    iller: ["Trabzon","Samsun","Zonguldak","Ordu","Rize","Giresun","Tokat","Bolu","Çorum","Sinop","Bartın","Kastamonu","Artvin","Gümüşhane","Bayburt","Amasya","Düzce","Karabük"],
+    color: '#60a5fa',
+    center: [41.2, 36.3],
+    zoom: 7,
+    icon: '🌲'
+  },
+  "Doğu Anadolu": {
+    iller: ["Erzurum","Malatya","Elazığ","Van","Erzincan","Kars","Ağrı","Iğdır","Ardahan","Bingöl","Muş","Bitlis","Hakkari","Tunceli"],
+    color: '#fb923c',
+    center: [39.5, 41.5],
+    zoom: 7,
+    icon: '🏔️'
+  },
+  "Güneydoğu Anadolu": {
+    iller: ["Gaziantep","Diyarbakır","Şanlıurfa","Batman","Adıyaman","Siirt","Mardin","Kilis","Şırnak"],
+    color: '#f472b6',
+    center: [37.7, 39.5],
+    zoom: 7,
+    icon: '🏜️'
+  }
+};
+
+let selectedRegionName = 'Ege';
+
 function renderRegions() {
-  const grid = document.getElementById('regionsGrid'); const all = cleanPinsData;
-  if (!all.length) { grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🌍</div><div>Henüz veri yok</div></div>'; return; }
+  const grid = document.getElementById('regionsGrid');
+  const all = cleanPinsData;
+  if (!all.length) {
+    if (grid) grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🌍</div><div>Henüz veri yok</div></div>';
+    return;
+  }
+
+  // 1. Tüm 7 Bölge İstatistiklerini Hesapla
   const regions = Object.entries(BOLGELER).map(([name, info]) => {
     const pins = all.filter(p => info.iller.includes(p.il));
-    // "Altyapı Yok" bildirimleri gercek_dl/gercek_ul=0 ve otomatik 1/10 puanla kaydedilir —
-    // gerçek bir ölçüm değildir. İstatistikler sayfasıyla TUTARLI olması için (bkz. renderStats
-    // içindeki speedPins mantığı) bölge ortalamalarından da hariç tutuluyor; aksi halde bir
-    // bölgede çok sayıda "altyapı yok" bildirimi varsa ortalama hız/memnuniyet yapay şekilde düşer.
     const speedPins = pins.filter(p => !p.is_altyapi_yok);
     const avgDL = speedPins.length ? Math.round(speedPins.reduce((a,p)=>a+p.gercek_dl,0)/speedPins.length) : 0;
     const avgUL = speedPins.length ? Math.round(speedPins.filter(p=>p.gercek_ul>0).reduce((a,p)=>a+(p.gercek_ul||0),0)/Math.max(1,speedPins.filter(p=>p.gercek_ul>0).length)) : 0;
     const avgS = speedPins.length ? parseFloat((speedPins.reduce((a,p)=>a+p.puan,0)/speedPins.length).toFixed(1)) : null;
-    return { name, color:info.color, iller:info.iller, pins, avgDL, avgUL, avgS };
+
+    // Fiber & Altyapısızlık oranları
+    const fiberCount = pins.filter(p => p.baglanti_turu && p.baglanti_turu.toLowerCase().includes('fiber')).length;
+    const fiberPct = pins.length ? Math.round((fiberCount / pins.length) * 100) : 0;
+    const noInfraCount = pins.filter(p => p.is_altyapi_yok).length;
+    const noInfraPct = pins.length ? Math.round((noInfraCount / pins.length) * 100) : 0;
+
+    // İl bazında kırılım
+    const ilMap = {};
+    speedPins.forEach(p => {
+      if (!p.il) return;
+      if (!ilMap[p.il]) ilMap[p.il] = { totalDL: 0, totalUL: 0, totalPuan: 0, count: 0 };
+      ilMap[p.il].totalDL += p.gercek_dl;
+      ilMap[p.il].totalUL += (p.gercek_ul || 0);
+      ilMap[p.il].totalPuan += p.puan;
+      ilMap[p.il].count++;
+    });
+    const ilList = Object.entries(ilMap).map(([il, st]) => ({
+      il,
+      count: st.count,
+      avgDL: Math.round(st.totalDL / st.count),
+      avgUL: Math.round(st.totalUL / st.count),
+      avgS: parseFloat((st.totalPuan / st.count).toFixed(1))
+    })).sort((a,b) => b.avgDL - a.avgDL);
+    const topIl = ilList[0] || null;
+
+    // En yaygın İSS
+    const issMap = {};
+    pins.forEach(p => {
+      const iss = canonicalIssName(p.iss);
+      if (!iss || iss === 'Bilinmeyen' || !isApprovedPublicIss(iss)) return;
+      issMap[iss] = (issMap[iss] || 0) + 1;
+    });
+    const sortedIss = Object.entries(issMap).sort((a,b) => b[1] - a[1]);
+    const topIss = sortedIss[0] ? { name: sortedIss[0][0], count: sortedIss[0][1], pct: Math.round((sortedIss[0][1] / pins.length) * 100) } : null;
+
+    return {
+      name,
+      color: info.color,
+      center: info.center,
+      zoom: info.zoom,
+      icon: info.icon,
+      iller: info.iller,
+      pins,
+      speedPins,
+      avgDL,
+      avgUL,
+      avgS,
+      fiberPct,
+      fiberCount,
+      noInfraCount,
+      noInfraPct,
+      ilList,
+      topIl,
+      sortedIss,
+      topIss
+    };
   });
-  if (regionSortMode==='dl') regions.sort((a,b)=>b.avgDL-a.avgDL); else if (regionSortMode==='mem') regions.sort((a,b)=>(b.avgS||0)-(a.avgS||0)); else regions.sort((a,b)=>b.pins.length-a.pins.length);
-  grid.innerHTML = regions.map(r => `<div class="region-card"><div style="position:absolute;top:0;left:0;right:0;height:2px;background:${r.color}"></div><div class="region-name" style="color:${r.color}">${r.name} Bölgesi</div><div class="region-cities">${r.iller.slice(0,4).join(', ')} +${Math.max(0,r.iller.length-4)} il</div><div class="region-stats"><div class="rstat"><div class="rstat-val" style="color:${speedColor(r.avgDL)}">${r.avgDL ? speedShapeHtml(r.avgDL) + r.avgDL : '—'}</div><div class="rstat-label">Mbps ↓ İndirme</div></div><div class="rstat"><div class="rstat-val" style="color:${r.avgUL?speedColor(r.avgUL):'var(--text3)'}">${r.avgUL ? speedShapeHtml(r.avgUL) + r.avgUL : '—'}</div><div class="rstat-label">Mbps ↑ Yükleme</div></div><div class="rstat"><div class="rstat-val" style="color:${r.avgS!==null?memColor(r.avgS):'var(--text3)'}">${r.avgS!==null ? memShapeHtml(r.avgS) + r.avgS.toFixed(1) : '—'}</div><div class="rstat-label">/ 10 Memnuniyet</div></div></div><div class="region-count">${r.pins.length} ölçüm</div></div>`).join('');
+
+  const maxDL = Math.max(...regions.map(r => r.avgDL), 1);
+  const totalPinsCount = all.length;
+  const speedPinsTotal = all.filter(p => !p.is_altyapi_yok);
+  const nationalAvgDL = speedPinsTotal.length ? Math.round(speedPinsTotal.reduce((a,p)=>a+p.gercek_dl,0)/speedPinsTotal.length) : 0;
+  const nationalFiberPct = Math.round(all.filter(p => p.baglanti_turu && p.baglanti_turu.toLowerCase().includes('fiber')).length / Math.max(1, totalPinsCount) * 100);
+
+  // Başlık sağındaki toplam özet
+  const summaryEl = document.getElementById('regionTotalSummary');
+  if (summaryEl) {
+    summaryEl.innerHTML = `<span>Toplam: <b>${totalPinsCount}</b> ölçüm · TR Ort: <b>${nationalAvgDL} Mbps</b></span>`;
+  }
+
+  // 2. Üst Liderler / Özet Kartları
+  const fastest = [...regions].sort((a,b) => b.avgDL - a.avgDL)[0];
+  const highestUL = [...regions].sort((a,b) => b.avgUL - a.avgUL)[0];
+  const highestMem = [...regions].filter(r=>r.avgS!==null).sort((a,b) => b.avgS - a.avgS)[0] || fastest;
+  const highestFiber = [...regions].sort((a,b) => b.fiberPct - a.fiberPct)[0];
+
+  const highlightsContainer = document.getElementById('regionHighlightCards');
+  if (highlightsContainer) {
+    highlightsContainer.innerHTML = `
+      <div style="background:var(--surface2);border:1px solid rgba(0,212,255,0.3);border-radius:9px;padding:12px;display:flex;align-items:center;gap:10px;">
+        <div style="font-size:24px;line-height:1;">⚡</div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.3px;">En Hızlı Bölge</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:2px;">
+            <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${fastest.color};margin-right:5px;vertical-align:middle;"></span>${fastest.name} Bölgesi
+          </div>
+          <div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px;">${fastest.avgDL} Mbps indirme (${fastest.pins.length} ölçüm)</div>
+        </div>
+      </div>
+
+      <div style="background:var(--surface2);border:1px solid rgba(52,211,153,0.3);border-radius:9px;padding:12px;display:flex;align-items:center;gap:10px;">
+        <div style="font-size:24px;line-height:1;">🚀</div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.3px;">En Yüksek Yükleme</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:2px;">
+            <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${highestUL.color};margin-right:5px;vertical-align:middle;"></span>${highestUL.name} Bölgesi
+          </div>
+          <div style="font-size:11px;color:var(--success);font-weight:600;margin-top:2px;">${highestUL.avgUL} Mbps yükleme (${highestUL.pins.length} ölçüm)</div>
+        </div>
+      </div>
+
+      <div style="background:var(--surface2);border:1px solid rgba(245,158,11,0.3);border-radius:9px;padding:12px;display:flex;align-items:center;gap:10px;">
+        <div style="font-size:24px;line-height:1;">😊</div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.3px;">En Yüksek Memnuniyet</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:2px;">
+            <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${highestMem.color};margin-right:5px;vertical-align:middle;"></span>${highestMem.name} Bölgesi
+          </div>
+          <div style="font-size:11px;color:var(--warn);font-weight:600;margin-top:2px;">${highestMem.avgS ? highestMem.avgS.toFixed(1) : '—'} / 10 kullanıcı puanı</div>
+        </div>
+      </div>
+
+      <div style="background:var(--surface2);border:1px solid rgba(167,139,250,0.3);border-radius:9px;padding:12px;display:flex;align-items:center;gap:10px;">
+        <div style="font-size:24px;line-height:1;">🏢</div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.3px;">En Yüksek Fiber Oranı</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:2px;">
+            <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${highestFiber.color};margin-right:5px;vertical-align:middle;"></span>${highestFiber.name} Bölgesi
+          </div>
+          <div style="font-size:11px;color:#a78bfa;font-weight:600;margin-top:2px;">%${highestFiber.fiberPct} fiber altyapı payı</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // 3. Bölge Kartları Sıralaması
+  const sortedRegions = [...regions];
+  if (regionSortMode === 'dl') sortedRegions.sort((a,b) => b.avgDL - a.avgDL);
+  else if (regionSortMode === 'ul') sortedRegions.sort((a,b) => b.avgUL - a.avgUL);
+  else if (regionSortMode === 'mem') sortedRegions.sort((a,b) => (b.avgS||0) - (a.avgS||0));
+  else sortedRegions.sort((a,b) => b.pins.length - a.pins.length);
+
+  // Varsayılan seçili bölge doğrulaması
+  if (!BOLGELER[selectedRegionName]) {
+    selectedRegionName = sortedRegions[0]?.name || 'Marmara';
+  }
+
+  // 4. 7 Bölge Kartlarını Çiz
+  if (grid) {
+    grid.innerHTML = sortedRegions.map(r => {
+      const speedPctOfMax = Math.round((r.avgDL / maxDL) * 100);
+      const isSelected = r.name === selectedRegionName;
+
+      return `
+        <div class="region-card ${isSelected ? 'active-region' : ''}" onclick="selectRegion('${escAttr(r.name)}')">
+          <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${r.color};"></div>
+          
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <div class="region-name" style="color:${r.color};display:flex;align-items:center;gap:6px;">
+                <span>${r.icon}</span> <span>${r.name} Bölgesi</span>
+              </div>
+              <div class="region-cities" style="margin-top:2px;">${r.iller.slice(0, 4).join(', ')} +${Math.max(0, r.iller.length - 4)} il</div>
+            </div>
+            <div style="font-size:10px;font-family:var(--font-mono);font-weight:700;color:var(--text3);background:var(--surface2);padding:2px 6px;border-radius:4px;border:1px solid var(--border);">
+              ${r.pins.length} ölçüm
+            </div>
+          </div>
+
+          <div class="region-stats" style="margin-top:12px;">
+            <div class="rstat">
+              <div class="rstat-val" style="color:${speedColor(r.avgDL)}">${r.avgDL ? speedShapeHtml(r.avgDL) + r.avgDL : '—'}</div>
+              <div class="rstat-label">Mbps ↓ İndirme</div>
+            </div>
+            <div class="rstat">
+              <div class="rstat-val" style="color:${r.avgUL ? speedColor(r.avgUL) : 'var(--text3)'}">${r.avgUL ? speedShapeHtml(r.avgUL) + r.avgUL : '—'}</div>
+              <div class="rstat-label">Mbps ↑ Yükleme</div>
+            </div>
+            <div class="rstat">
+              <div class="rstat-val" style="color:${r.avgS !== null ? memColor(r.avgS) : 'var(--text3)'}">${r.avgS !== null ? memShapeHtml(r.avgS) + r.avgS.toFixed(1) : '—'}</div>
+              <div class="rstat-label">/ 10 Memnuniyet</div>
+            </div>
+          </div>
+
+          <!-- Relatif Hız Çubuğu -->
+          <div style="margin-top:10px;">
+            <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-bottom:3px;">
+              <span>Bölgesel Hız Skoru</span>
+              <span style="color:${r.color};font-weight:700;">%${speedPctOfMax}</span>
+            </div>
+            <div style="background:var(--surface3);height:4px;border-radius:2px;overflow:hidden;">
+              <div style="width:${speedPctOfMax}%;height:100%;background:${r.color};border-radius:2px;"></div>
+            </div>
+          </div>
+
+          <!-- Rozetler & İpuçları -->
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:12px;font-size:10px;">
+            ${r.topIl ? `<span style="background:var(--surface3);padding:2px 6px;border-radius:4px;color:var(--text2);" title="En hızlı il">🏆 <b>${r.topIl.il}:</b> ${r.topIl.avgDL}M</span>` : ''}
+            <span style="background:var(--surface3);padding:2px 6px;border-radius:4px;color:var(--accent);" title="Fiber altyapı payı">⚡ %${r.fiberPct} Fiber</span>
+            ${r.topIss ? `<span style="background:var(--surface3);padding:2px 6px;border-radius:4px;color:var(--text3);" title="En çok kullanılan operatör">🏢 ${escHtml(r.topIss.name)}</span>` : ''}
+          </div>
+
+          <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);display:flex;justify-content:space-between;align-items:center;font-size:10px;">
+            <span style="color:${isSelected ? 'var(--accent)' : 'var(--text3)'};font-weight:600;">
+              ${isSelected ? '✓ Seçili Bölge İnceleniyor' : '🔍 İlleri &amp; Detayı Gör →'}
+            </span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // 5. Seçili Bölge Detayı Paneli
+  const selRegionObj = regions.find(r => r.name === selectedRegionName) || regions[0];
+  const selTitleEl = document.getElementById('selectedRegionTitle');
+  if (selTitleEl) {
+    selTitleEl.innerHTML = `<span style="color:${selRegionObj.color};">${selRegionObj.icon} ${selRegionObj.name} Bölgesi İl Detayları</span>`;
+  }
+
+  // Dropdown seçeneklerini doldur
+  const selDropdown = document.getElementById('regionSelectDropdown');
+  if (selDropdown) {
+    selDropdown.innerHTML = Object.keys(BOLGELER).map(name => {
+      return `<option value="${name}" ${name === selectedRegionName ? 'selected' : ''}>${name} Bölgesi</option>`;
+    }).join('');
+  }
+
+  const selContentEl = document.getElementById('selectedRegionContent');
+  if (selContentEl && selRegionObj) {
+    // Bölge içindeki iller
+    const citiesWithData = selRegionObj.ilList;
+    const citiesWithoutData = selRegionObj.iller.filter(il => !citiesWithData.some(c => c.il === il));
+
+    let citiesHtml = '';
+    if (citiesWithData.length > 0) {
+      citiesHtml = `
+        <div style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;padding-right:4px;">
+          ${citiesWithData.map((c, idx) => `
+            <div style="display:grid;grid-template-columns:110px 1fr 65px 55px;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:11px;">
+              <div style="font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                <span style="color:var(--text3);font-family:var(--font-mono);font-size:10px;margin-right:4px;">#${idx+1}</span>${escHtml(c.il)}
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--font-mono);margin-bottom:2px;">
+                  <span style="color:${speedColor(c.avgDL)};font-weight:700;">${speedShapeHtml(c.avgDL)}${c.avgDL} Mbps</span>
+                  <span style="color:var(--text3);font-size:9px;">↑ ${c.avgUL}M</span>
+                </div>
+                <div style="background:var(--surface3);height:4px;border-radius:2px;overflow:hidden;">
+                  <div style="width:${Math.min(100, Math.round((c.avgDL / maxDL) * 100))}%;height:100%;background:${speedColor(c.avgDL)};border-radius:2px;"></div>
+                </div>
+              </div>
+              <div style="text-align:center;font-size:10px;color:${memColor(c.avgS)};font-weight:600;">
+                ${c.avgS ? c.avgS.toFixed(1) + '/10' : '—'}
+              </div>
+              <div style="text-align:right;font-size:10px;color:var(--text3);font-family:var(--font-mono);">
+                ${c.count} test
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } else {
+      citiesHtml = `<div style="text-align:center;padding:16px;color:var(--text3);font-size:11px;">Bu bölgedeki iller için henüz test verisi girilmemiş.</div>`;
+    }
+
+    // Henüz ölçümü olmayan iller
+    let emptyCitiesHtml = '';
+    if (citiesWithoutData.length > 0) {
+      emptyCitiesHtml = `
+        <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);font-size:10px;color:var(--text3);line-height:1.6;">
+          <span>📌 Henüz test girilmemiş iller (${citiesWithoutData.length}): </span>
+          <span style="color:var(--text2);">${citiesWithoutData.join(', ')}</span>
+        </div>
+      `;
+    }
+
+    // Bölgedeki Operatörler
+    let issBreakdownHtml = '';
+    if (selRegionObj.sortedIss && selRegionObj.sortedIss.length > 0) {
+      issBreakdownHtml = `
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px;">🏢 Bölgedeki Operatör Dağılımı:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            ${selRegionObj.sortedIss.slice(0, 4).map(([iss, cnt]) => {
+              const pct = Math.round((cnt / selRegionObj.pins.length) * 100);
+              return `
+                <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:10px;display:flex;align-items:center;gap:6px;">
+                  <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${ic(iss)};"></span>
+                  <span style="font-weight:600;color:var(--text);">${escHtml(iss)}</span>
+                  <span style="color:var(--text3);font-family:var(--font-mono);">${cnt} (%${pct})</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    selContentEl.innerHTML = `
+      <!-- Özet Şerit -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-bottom:10px;">
+        <div style="background:var(--surface2);padding:8px 10px;border-radius:6px;font-size:10px;">
+          <div style="color:var(--text3);">Ort. İndirme</div>
+          <div style="font-size:13px;font-weight:700;color:var(--accent);margin-top:2px;">${selRegionObj.avgDL} Mbps</div>
+        </div>
+        <div style="background:var(--surface2);padding:8px 10px;border-radius:6px;font-size:10px;">
+          <div style="color:var(--text3);">Ort. Yükleme</div>
+          <div style="font-size:13px;font-weight:700;color:var(--success);margin-top:2px;">${selRegionObj.avgUL} Mbps</div>
+        </div>
+        <div style="background:var(--surface2);padding:8px 10px;border-radius:6px;font-size:10px;">
+          <div style="color:var(--text3);">Fiber Penetrasyonu</div>
+          <div style="font-size:13px;font-weight:700;color:#a78bfa;margin-top:2px;">%${selRegionObj.fiberPct}</div>
+        </div>
+        <div style="background:var(--surface2);padding:8px 10px;border-radius:6px;font-size:10px;">
+          <div style="color:var(--text3);">Toplam Bildirim</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:2px;">${selRegionObj.pins.length} adet</div>
+        </div>
+      </div>
+
+      <!-- İller Listesi -->
+      ${citiesHtml}
+      ${emptyCitiesHtml}
+      ${issBreakdownHtml}
+    `;
+  }
+
+  // 6. 7 Bölge Altyapı & Performans Karşılaştırması Tablosu
+  const comparisonContainer = document.getElementById('regionComparisonTable');
+  if (comparisonContainer) {
+    const compRows = [...regions].sort((a,b) => b.avgDL - a.avgDL).map((r, idx) => {
+      const isSel = r.name === selectedRegionName;
+      const pct = Math.round((r.avgDL / maxDL) * 100);
+
+      return `
+        <div onclick="selectRegion('${escAttr(r.name)}')" style="display:grid;grid-template-columns:120px 1fr 65px 65px 50px;align-items:center;gap:8px;padding:8px;border-radius:6px;margin-bottom:4px;cursor:pointer;background:${isSel ? 'var(--surface2)' : 'transparent'};border:1px solid ${isSel ? r.color : 'transparent'};transition:all .15s;">
+          <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:var(--text);font-size:11px;">
+            <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${r.color};"></span>
+            <span>${r.name}</span>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--font-mono);margin-bottom:2px;">
+              <span style="color:${speedColor(r.avgDL)};font-weight:700;">${speedShapeHtml(r.avgDL)}${r.avgDL} Mbps</span>
+              <span style="color:var(--text3);font-size:9px;">↑ ${r.avgUL}M</span>
+            </div>
+            <div style="background:var(--surface3);height:5px;border-radius:3px;overflow:hidden;">
+              <div style="width:${pct}%;height:100%;background:${r.color};border-radius:3px;"></div>
+            </div>
+          </div>
+          <div style="text-align:center;font-size:10px;font-family:var(--font-mono);color:var(--accent);font-weight:600;">
+            %${r.fiberPct}
+          </div>
+          <div style="text-align:center;font-size:10px;font-family:var(--font-mono);color:${memColor(r.avgS)};font-weight:600;">
+            ${r.avgS ? r.avgS.toFixed(1) : '—'}
+          </div>
+          <div style="text-align:right;font-size:10px;color:var(--text3);font-family:var(--font-mono);">
+            ${r.pins.length}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    comparisonContainer.innerHTML = `
+      <div style="display:grid;grid-template-columns:120px 1fr 65px 65px 50px;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:6px;">
+        <div>Bölge</div>
+        <div>Hız Çubuğu</div>
+        <div style="text-align:center;">Fiber %</div>
+        <div style="text-align:center;">Puan</div>
+        <div style="text-align:right;">Ölçüm</div>
+      </div>
+      <div style="display:flex;flex-direction:column;">
+        ${compRows}
+      </div>
+      <div style="font-size:9px;color:var(--text3);margin-top:8px;font-family:var(--font-mono);text-align:right;">
+        * Sıralamayı değiştirmek veya ili incelemek için satırlara tıklayabilirsiniz.
+      </div>
+    `;
+  }
+
+  // 7. Dijital Uçurum & Bölgesel Denge Analizi Bandı
+  const gapContainer = document.getElementById('regionGapBanner');
+  if (gapContainer) {
+    const slowest = [...regions].sort((a,b) => a.avgDL - b.avgDL)[0];
+    const speedRatio = slowest.avgDL > 0 ? (fastest.avgDL / slowest.avgDL).toFixed(1) : '—';
+
+    gapContainer.innerHTML = `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--text2);line-height:1.6;">
+        <div style="font-size:28px;line-height:1;">🌍</div>
+        <div style="flex:1;min-width:260px;">
+          <div style="font-weight:700;color:var(--text);font-size:12px;margin-bottom:2px;">Bölgesel İnternet Dağılımı &amp; Sayısal Uçurum Analizi</div>
+          <div>
+            Türkiye genelinde en hızlı bölge <b>${fastest.name} (${fastest.avgDL} Mbps)</b> ile en yavaş bölge <b>${slowest.name} (${slowest.avgDL} Mbps)</b> arasında yaklaşık <b>${speedRatio} kat</b> hız farkı tespit edilmiştir. Türkiye geneli ortalama fiber penetrasyonu ise <b>%${nationalFiberPct}</b> seviyesindedir.
+          </div>
+        </div>
+      </div>
+    `;
+  }
 }
-function sortRegions(mode) { regionSortMode = mode;['sortDL','sortMem','sortCount'].forEach(id => document.getElementById(id)?.classList.remove('active')); document.getElementById(mode==='dl'?'sortDL':mode==='mem'?'sortMem':'sortCount')?.classList.add('active'); renderRegions(); }
+
+function sortRegions(mode) {
+  regionSortMode = mode;
+  ['sortDL','sortUL','sortMem','sortCount'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+  const activeBtnId = mode === 'dl' ? 'sortDL' : mode === 'ul' ? 'sortUL' : mode === 'mem' ? 'sortMem' : 'sortCount';
+  document.getElementById(activeBtnId)?.classList.add('active');
+  renderRegions();
+}
+
+function selectRegion(name) {
+  if (!BOLGELER[name]) return;
+  selectedRegionName = name;
+  renderRegions();
+}
+
+function goToSelectedRegionMap() {
+  const reg = BOLGELER[selectedRegionName];
+  if (!reg) return;
+  switchPage('harita');
+  setTimeout(() => {
+    if (maps.main) {
+      maps.main.setView(reg.center || [39, 35], reg.zoom || 7, { animate: true });
+    }
+  }, 120);
+}
 
 // İl filtresi dropdown'unu pinlerdeki gerçek il isimleriyle doldurur (seçili değeri korur)
 function populateSpeedRankIlFilter(pins) {
