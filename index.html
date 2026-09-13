@@ -524,6 +524,10 @@ html.light .sr-ping { background:#f5f7fa; }
 .rank-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
 .rank-num{font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--border2);width:22px;} .rank-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
 .rank-name{flex:1;font-size:13px;font-weight:600;} .rank-val{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--accent);}
+.rank-item.clickable, .speed-item.clickable, .trend-row.clickable, .il-item.clickable { cursor:pointer; transition:all .15s ease; user-select:none; }
+.rank-item.clickable:hover, .speed-item.clickable:hover, .trend-row.clickable:hover, .il-item.clickable:hover { background:var(--surface2); border-radius:6px; padding-left:6px; padding-right:6px; }
+.speed-spotlight.clickable { cursor:pointer; transition:all .2s ease; }
+.speed-spotlight.clickable:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 4px 14px rgba(0,212,255,.12); }
 
 /* En Hızlı Lokasyonlar Özelleştirilmiş Tasarım */
 .speed-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
@@ -1002,7 +1006,16 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   <div class="stats-grid">
     <div style="display:flex;flex-direction:column;gap:14px;">
       <div class="stat-card"><div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;"><span>ISS Memnuniyet Sıralaması</span><span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);font-weight:normal;">min. 5 ölçüm</span></div><div id="issRankList" style="max-height:330px;overflow-y:auto;"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
-      <div class="stat-card"><div class="stat-title">En Aktif İller</div><div id="activeIlList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
+      <div class="stat-card">
+        <div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+          <span id="activeIlTitle">En Hızlı İller</span>
+          <div style="display:flex;gap:4px;">
+            <button class="sort-btn active" id="ilSortSpeedBtn" style="padding:2px 7px;font-size:9px;text-transform:none;" onclick="setIlSortMode('speed')">⚡ Hız</button>
+            <button class="sort-btn" id="ilSortCountBtn" style="padding:2px 7px;font-size:9px;text-transform:none;" onclick="setIlSortMode('count')">📊 Test</button>
+          </div>
+        </div>
+        <div id="activeIlList"><div class="loading-text loading-dots">Yükleniyor</div></div>
+      </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;">
       <div class="stat-card"><div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;"><span>En Hızlı Lokasyonlar</span><select class="fs" id="speedRankIlFilter" style="width:auto;max-width:140px;padding:3px 6px;font-size:9px;text-transform:none;letter-spacing:0;font-weight:600;" onchange="renderSpeedRankList(this.value)"><option value="">Tüm İller</option></select></div><div id="speedRankList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
@@ -1981,6 +1994,51 @@ function focusOnMap(lat, lng) {
     }
   }, 300);
 }
+
+function focusProvinceOnMap(ilName) {
+  if (!ilName) return;
+  const coords = IL_COORDS[ilName] || (ilName === 'Mersin' ? IL_COORDS['İçel (Mersin)'] : null);
+  if (!coords) return showToast(`${ilName} için koordinat bulunamadı`, 'warn');
+  showPage('harita');
+  setTimeout(() => {
+    if (maps.main) {
+      maps.main.setView(coords, 9);
+      showToast(`🏙️ ${ilName} iline odaklanıldı`);
+    }
+  }, 250);
+}
+
+function focusLocationOnMap(lat, lng, label) {
+  if (!lat || !lng) return showToast('Konum koordinatı bulunamadı', 'warn');
+  showPage('harita');
+  setTimeout(() => {
+    if (maps.main) {
+      maps.main.setView([lat, lng], 14);
+      showToast(`📍 ${label || 'Lokasyon'} konumuna odaklanıldı`);
+    }
+  }, 250);
+}
+
+function filterMapByISS(rawIssName) {
+  const canon = canonicalIssName(rawIssName);
+  if (!canon) return;
+  activeISSFilters = new Set([canon]);
+  // Sidebar İSS çiplerinin görsel durumunu güncelle
+  document.querySelectorAll('#issChips .chip-iss').forEach(chip => {
+    const name = canonicalIssName(chip.dataset.iss || '');
+    if (name === canon) {
+      chip.classList.add('on');
+    } else {
+      chip.classList.remove('on');
+    }
+  });
+  showPage('harita');
+  setTimeout(() => {
+    renderHex();
+    renderModPins();
+    showToast(`🔍 Harita "${displayIssName(canon)}" için filtrelendi`);
+  }, 250);
+}
 function cleanPins(pins) { return pins.filter(p => !isSpam(p)); }
 function isPinVisibleOnMap(p) {
   return p.gorunur !== false && !p.is_quarantine && !isSpam(p) && isApprovedPublicIss(p.iss);
@@ -2799,41 +2857,62 @@ function renderSpeedRankList(filterIl) {
   let speedEligiblePins = cleanPinsData.filter(p => !p.is_altyapi_yok);
   if (filterIl) speedEligiblePins = speedEligiblePins.filter(p => p.il === filterIl);
 
+  const globalAvgSpeed = speedEligiblePins.length ? (speedEligiblePins.reduce((a,p)=>a+p.gercek_dl,0)/speedEligiblePins.length) : 100;
+
   function buildLocationMap(srcPins) {
     const lm = {};
     srcPins.forEach(p => {
-      const k = [p.il||'?', p.ilce||'?', p.mahalle||'?'].join('_');
-      if (!lm[k]) lm[k] = { t:0, tul:0, c:0, il:p.il, ilce:p.ilce, mahalle:p.mahalle };
+      const ilClean = (p.il && p.il !== '?' && p.il !== 'Bilinmeyen') ? p.il : '';
+      const ilceClean = (p.ilce && p.ilce !== '?' && p.ilce !== 'Bilinmeyen') ? p.ilce : '';
+      const mahalleClean = (p.mahalle && p.mahalle !== '?' && p.mahalle !== 'Bilinmeyen') ? p.mahalle : '';
+      const k = [ilClean, ilceClean, mahalleClean].filter(Boolean).join('_');
+      if (!k) return;
+      if (!lm[k]) lm[k] = { t:0, tul:0, c:0, il:ilClean, ilce:ilceClean, mahalle:mahalleClean, sumLat:0, sumLng:0, coordCount:0 };
       lm[k].t += p.gercek_dl;
       lm[k].tul += p.gercek_ul || 0;
       lm[k].c++;
+      if (p.lat && p.lng) {
+        lm[k].sumLat += p.lat;
+        lm[k].sumLng += p.lng;
+        lm[k].coordCount++;
+      }
     });
     return lm;
   }
 
-  // İndirme + yükleme ortalamasından dengeli karşılaştırma skoru
+  // İndirme + yükleme ortalamasından dengeli karşılaştırma skoru & Bayesian ağırlıklandırma
   function withScore(d) {
     const dl = Math.round(d.t / d.c), ul = Math.round(d.tul / d.c);
-    return { ...d, dl, ul, score: Math.round((dl + ul) / 2) };
+    const rawScore = Math.round((dl + ul) / 2);
+    // Bayesian Ağırlıklı Hız: Çok ölçümlü mahalleleri tekil ölçümlere karşı dengeler
+    const BAYES_LOC_M = 2;
+    const wr = (d.c / (d.c + BAYES_LOC_M)) * rawScore + (BAYES_LOC_M / (d.c + BAYES_LOC_M)) * globalAvgSpeed;
+    const lat = d.coordCount ? (d.sumLat / d.coordCount) : null;
+    const lng = d.coordCount ? (d.sumLng / d.coordCount) : null;
+    return { ...d, dl, ul, score: rawScore, bayesScore: wr, lat, lng };
   }
 
   // Filtre aktifken İl tekrar tekrar yazılmasın diye başlıkta sadece İlçe/Mahalle gösterilir
   function locTitle(x) {
     const parts = filterIl ? [x.ilce, x.mahalle] : [x.il, x.ilce, x.mahalle];
-    return escHtml(parts.filter(Boolean).join(' / ') || 'Bilinmeyen');
+    const cleanParts = parts.filter(p => p && p !== '?' && p !== 'Bilinmeyen');
+    return escHtml(cleanParts.join(' / ') || 'Bilinmeyen Bölge');
   }
 
   const lm = buildLocationMap(speedEligiblePins);
   const entries = Object.entries(lm)
     .map(([k,d]) => withScore(d))
-    .sort((a,b) => b.score - a.score)
+    .sort((a,b) => b.bayesScore - a.bayesScore)
     .slice(0, 8);
 
   function renderLocEntry(x, i) {
-    return `<div class="speed-item">
+    const clickAttr = (x.lat && x.lng)
+      ? `onclick="focusLocationOnMap(${x.lat}, ${x.lng}, '${escAttr(locTitle(x))}')"`
+      : (x.il ? `onclick="focusProvinceOnMap('${escAttr(x.il)}')"` : '');
+    return `<div class="speed-item clickable" ${clickAttr} title="${escHtml(locTitle(x))} — Haritada görmek için tıklayın">
       <div>
         <div class="speed-name"><span style="color:var(--text3);font-size:11px;margin-right:4px;">${i+1}.</span>${locTitle(x)}</div>
-        <div class="speed-loc" style="color:var(--text3);font-size:10px;">${x.c} ölçüm</div>
+        <div class="speed-loc" style="color:var(--text3);font-size:10px;">${x.c} ölçüm <span style="font-size:9px;color:var(--accent);margin-left:4px;">📍 Haritada gör</span></div>
       </div>
       <div style="text-align:right;">
         <div class="speed-val" style="color:${speedColor(x.dl)}">${speedShapeHtml(x.dl)}↓ ${x.dl}</div>
@@ -2847,9 +2926,13 @@ function renderSpeedRankList(filterIl) {
     const deltaHtml = (second && diff > 0)
       ? `<div class="spotlight-delta">▲ 2. sıradaki ${locTitle(second)} konumundan ortalama ${diff} Mbps önde</div>`
       : '';
-    return `<div class="speed-spotlight">
+    const clickAttr = (top.lat && top.lng)
+      ? `onclick="focusLocationOnMap(${top.lat}, ${top.lng}, '${escAttr(locTitle(top))}')"`
+      : (top.il ? `onclick="focusProvinceOnMap('${escAttr(top.il)}')"` : '');
+    return `<div class="speed-spotlight clickable" ${clickAttr} title="${escHtml(locTitle(top))} — Haritada görmek için tıklayın">
       <div class="spotlight-label">
         <span style="color:var(--text3);">🏆 EN HIZLI LOKASYON${filterIl ? ' · ' + escHtml(filterIl) : ''}</span>
+        <span style="font-size:9px;color:var(--accent);margin-left:auto;">📍 Haritada Gör</span>
       </div>
       <div class="spotlight-name">${locTitle(top)}</div>
       <div class="spotlight-stats">
@@ -2946,7 +3029,7 @@ async function renderStats() {
       };
     })
     .sort((a,b) => b.bayes - a.bayes)
-    .map((x,i) => `<div class="rank-item" title="${escHtml(displayIssName(x.iss))}: ${x.score} / 10 (${x.c} doğrulanmış ölçüm)"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${escHtml(displayIssName(x.iss))}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.score)}">${memShapeHtml(parseFloat(x.score))}${x.score}</div></div>`)
+    .map((x,i) => `<div class="rank-item clickable" onclick="filterMapByISS('${escAttr(x.iss)}')" title="${escHtml(displayIssName(x.iss))}: ${x.score} / 10 (${x.c} doğrulanmış ölçüm) — Haritada görmek için tıklayın"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${escHtml(displayIssName(x.iss))}</div><div class="rank-sub">${x.c} ölçüm · <span style="color:var(--accent);font-size:9px;">📍 Haritada Gör</span></div></div><div class="rank-val" style="color:${memColor(x.score)}">${memShapeHtml(parseFloat(x.score))}${x.score}</div></div>`)
     .join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok (min. 5 ölçüm gerekli)</div>';
   
   // EN HIZLI LOKASYONLAR (artık ISS filtresiyle de çağrılabilen bağımsız fonksiyon)
@@ -2985,11 +3068,28 @@ async function renderStats() {
     issSpeedMap[iss].total += p.gercek_dl;
     issSpeedMap[iss].count++;
   });
-  const issSpeedList = Object.entries(issSpeedMap)
+  // ISS BAŞINA ORTALAMA HIZ TREND CHART
+  const issSpeedMap = {};
+  speedPins.forEach(p => {
+    const iss = canonicalIssName(p.iss);
+    if (!iss) return;
+    if (!issSpeedMap[iss]) issSpeedMap[iss] = { total:0, count:0 };
+    issSpeedMap[iss].total += p.gercek_dl;
+    issSpeedMap[iss].count++;
+  });
+  // En az 3 ölçümü olan İSS'leri göster (tek ölçümle yapay liderliği önler)
+  let issSpeedList = Object.entries(issSpeedMap)
     .map(([iss, d]) => ({ iss, avg: Math.round(d.total/d.count), count: d.count }))
-    .filter(x => x.count >= 1)
+    .filter(x => x.count >= 3)
     .sort((a,b) => b.avg - a.avg)
     .slice(0, 10);
+  if (!issSpeedList.length) {
+    issSpeedList = Object.entries(issSpeedMap)
+      .map(([iss, d]) => ({ iss, avg: Math.round(d.total/d.count), count: d.count }))
+      .filter(x => x.count >= 1)
+      .sort((a,b) => b.avg - a.avg)
+      .slice(0, 10);
+  }
   const maxAvg = Math.max(...issSpeedList.map(x=>x.avg), 1);
   const trendEl = document.getElementById('issSpeedTrend');
   if (trendEl && issSpeedList.length) {
@@ -2999,7 +3099,7 @@ async function renderStats() {
       const label = escHtml(displayIssName(x.iss)
         .replace(' (Turkcell)','').replace(' (Türksat)',''));
       const speedLabel = x.avg >= 1000 ? (x.avg/1000).toFixed(1)+'G' : x.avg + ' Mbps';
-      return `<div class="trend-row">
+      return `<div class="trend-row clickable" onclick="filterMapByISS('${escAttr(x.iss)}')" title="${escHtml(displayIssName(x.iss))}: ${speedLabel} (${x.count} ölçüm) — Haritada filtrelemek için tıklayın" style="padding:4px 6px;border-radius:6px;">
         <div class="trend-label" title="${escHtml(displayIssName(x.iss))}">
           <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${col};margin-right:5px;vertical-align:middle;flex-shrink:0;"></span>${label}
         </div>
@@ -3012,7 +3112,7 @@ async function renderStats() {
         </div>
       </div>`;
     }).join('');
-    trendEl.innerHTML = '<div class="trend-title">İSS Başına Ort. İndirme Hızı</div>'
+    trendEl.innerHTML = '<div class="trend-title" style="display:flex;justify-content:space-between;align-items:center;"><span>İSS Başına Ort. İndirme Hızı</span><span style="font-size:9px;color:var(--text3);font-family:var(--font-mono);font-weight:normal;">min. 3 ölçüm · Harita filtresi için tıklayın</span></div>'
       + '<div class="trend-chart">' + rows + '</div>';
   }
 
@@ -3060,24 +3160,94 @@ async function renderStats() {
     }).join('');
   }
 
-  // EN AKTİF İLLER
+  // EN HIZLI / EN AKTİF İLLER
+  renderIlList();
+}
+
+let ilSortMode = 'speed';
+function setIlSortMode(mode) {
+  ilSortMode = mode;
+  document.getElementById('ilSortSpeedBtn')?.classList.toggle('active', mode === 'speed');
+  document.getElementById('ilSortCountBtn')?.classList.toggle('active', mode === 'count');
+  const titleEl = document.getElementById('activeIlTitle');
+  if (titleEl) titleEl.textContent = mode === 'speed' ? 'En Hızlı İller' : 'En Aktif İller';
+  renderIlList();
+}
+
+function renderIlList() {
+  const ilEl = document.getElementById('activeIlList');
+  if (!ilEl) return;
+  const pins = cleanPinsData;
+  if (!pins.length) {
+    ilEl.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz veri yok</div>';
+    return;
+  }
+
+  const speedPins = pins.filter(p => !p.is_altyapi_yok);
+  const globalAvgDL = speedPins.length ? (speedPins.reduce((a,p)=>a+p.gercek_dl,0)/speedPins.length) : 100;
+
   const ilMap = {};
   pins.forEach(p => {
-    const il = p.il || 'Bilinmeyen';
-    if (!ilMap[il]) ilMap[il] = { count:0, totalDL:0, dlCount:0 };
+    const il = p.il;
+    if (!il || il === 'Bilinmeyen' || il === '?') return;
+    if (!ilMap[il]) ilMap[il] = { il, count:0, totalDL:0, dlCount:0 };
     ilMap[il].count++;
-    if (!p.is_altyapi_yok) { ilMap[il].totalDL += p.gercek_dl; ilMap[il].dlCount++; }
+    if (!p.is_altyapi_yok) {
+      ilMap[il].totalDL += p.gercek_dl;
+      ilMap[il].dlCount++;
+    }
   });
-  const topIller = Object.entries(ilMap)
-    .map(([il, d]) => ({ il, count: d.count, dlCount: d.dlCount, avgDL: d.dlCount ? Math.round(d.totalDL / d.dlCount) : 0 }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 6);
-  const maxIlCount = Math.max(...topIller.map(x => x.count), 1);
-  const ilEl = document.getElementById('activeIlList');
-  if (ilEl) {
+
+  const BAYES_IL_M = 4;
+  const iller = Object.values(ilMap).map(d => {
+    const avgDL = d.dlCount ? Math.round(d.totalDL / d.dlCount) : 0;
+    const wr = (d.dlCount / (d.dlCount + BAYES_IL_M)) * avgDL + (BAYES_IL_M / (d.dlCount + BAYES_IL_M)) * globalAvgDL;
+    return {
+      ...d,
+      avgDL,
+      bayesSpeed: wr
+    };
+  });
+
+  let topIller = [];
+  if (ilSortMode === 'speed') {
+    // Hız sıralaması: En az 2 hız testi olan iller Bayesian ağırlıklı hızına göre
+    topIller = iller.filter(x => x.dlCount >= 2)
+      .sort((a,b) => b.bayesSpeed - a.bayesSpeed)
+      .slice(0, 6);
+    if (!topIller.length) {
+      topIller = iller.filter(x => x.dlCount >= 1).sort((a,b) => b.avgDL - a.avgDL).slice(0, 6);
+    }
+    const maxSpeed = Math.max(...topIller.map(x => x.avgDL), 1);
+
+    ilEl.innerHTML = topIller.map((x, i) => {
+      const pct = Math.round((x.avgDL / maxSpeed) * 100);
+      const col = speedColor(x.avgDL);
+      return `<div class="il-item clickable" onclick="focusProvinceOnMap('${escAttr(x.il)}')" title="${escHtml(x.il)}: ortalama ${x.avgDL} Mbps (${x.dlCount} hız testi) — Haritada görmek için tıklayın" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:4px 6px;border-radius:6px;">
+        <div style="width:14px;font-size:10px;color:var(--text3);font-family:var(--font-mono);flex-shrink:0;">${i+1}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(x.il)}</div>
+            <span style="font-size:9px;color:var(--text3);font-family:var(--font-mono);">(${x.count} test)</span>
+          </div>
+          <div style="background:var(--surface2);border-radius:3px;height:5px;margin-top:3px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:${col};border-radius:3px;transition:width .4s;"></div>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:11px;font-family:var(--font-mono);color:${col};font-weight:700;">${speedShapeHtml(x.avgDL)}${x.avgDL} <span style="font-size:9px;font-weight:400;">Mbps</span></div>
+          <div style="font-size:9px;color:var(--accent);font-family:var(--font-mono);">📍 Haritada Gör</div>
+        </div>
+      </div>`;
+    }).join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Yeterli hız verisi yok</div>';
+  } else {
+    // En Çok Test Yapılan İller
+    topIller = iller.sort((a,b) => b.count - a.count).slice(0, 6);
+    const maxIlCount = Math.max(...topIller.map(x => x.count), 1);
+
     ilEl.innerHTML = topIller.map((x, i) => {
       const pct = Math.round((x.count / maxIlCount) * 100);
-      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      return `<div class="il-item clickable" onclick="focusProvinceOnMap('${escAttr(x.il)}')" title="${escHtml(x.il)}: ${x.count} ölçüm — Haritada görmek için tıklayın" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:4px 6px;border-radius:6px;">
         <div style="width:14px;font-size:10px;color:var(--text3);font-family:var(--font-mono);flex-shrink:0;">${i+1}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(x.il)}</div>
@@ -3090,7 +3260,7 @@ async function renderStats() {
           <div style="font-size:9px;color:${x.dlCount?speedColor(x.avgDL):'var(--text3)'};font-family:var(--font-mono);">${x.dlCount ? 'ort. '+x.avgDL+' Mbps' : 'sadece altyapı bildirimi'}</div>
         </div>
       </div>`;
-    }).join('');
+    }).join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz veri yok</div>';
   }
 }
 
