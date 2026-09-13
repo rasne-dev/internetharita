@@ -1001,7 +1001,7 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   <div class="stats-top" id="sumGrid"></div>
   <div class="stats-grid">
     <div style="display:flex;flex-direction:column;gap:14px;">
-      <div class="stat-card"><div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;"><span>ISS Memnuniyet Sıralaması</span><span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);font-weight:normal;" title="IMDB / Bayesian Ağırlıklı Puanlama: min. 5 ölçüm ve en az 3 farklı lokasyon şartı">Adil Sıralama · min. 5 ölçüm / 3 konum</span></div><div id="issRankList" style="max-height:330px;overflow-y:auto;"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
+      <div class="stat-card"><div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;"><span>ISS Memnuniyet Sıralaması</span><span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);font-weight:normal;" title="Bayesian Modeli: min. 5 ölçüm, en az 3 farklı lokasyon (>=500m mesafe) ve en az 2 farklı günde test şartı">Adil Sıralama · min. 5 test / 3 konum / 2 gün</span></div><div id="issRankList" style="max-height:330px;overflow-y:auto;"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
       <div class="stat-card"><div class="stat-title">En Aktif İller</div><div id="activeIlList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;">
@@ -2896,26 +2896,41 @@ async function renderStats() {
   const im = {}; pins.forEach(p => {
     const iss = canonicalIssName(p.iss);
     if(!iss || !KNOWN_ISS_SET.has(iss) || !p.puan) return;
-    if(!im[iss]) im[iss]={t:0,c:0,locs:new Set()};
+    if(!im[iss]) im[iss] = { t:0, c:0, locList:[], days:new Set() };
     im[iss].t += p.puan;
     im[iss].c++;
-    const locKey = (p.lat && p.lng) ? (p.lat.toFixed(3) + ',' + p.lng.toFixed(3)) : (p.mahalle || p.id);
-    im[iss].locs.add(locKey);
+    if (p.created_at) im[iss].days.add(p.created_at.slice(0, 10));
+
+    // Lokasyon kaydı: Mahalle/ilçe farklıysa veya koordinat diğerlerinden en az 500m uzaktaysa yeni lokasyon sayılır
+    const nKey = [p.il, p.ilce, p.mahalle].filter(Boolean).join('_');
+    const isNewLoc = !im[iss].locList.some(loc => {
+      if (nKey && loc.nKey && nKey === loc.nKey) return true;
+      if (p.lat && p.lng && loc.lat && loc.lng) {
+        const dLat = (p.lat - loc.lat) * 111000;
+        const dLng = (p.lng - loc.lng) * 86000;
+        return (dLat * dLat + dLng * dLng) < (500 * 500); // 500 metreden yakınsa aynı hane/konum
+      }
+      return false;
+    });
+    if (isNewLoc) im[iss].locList.push({ nKey, lat: p.lat, lng: p.lng });
   });
-  // BAYESIAN AĞIRLIKLI PUANLAMA (IMDB Modeli) & MANİPÜLASYON ENGELİ:
-  // 1) Tekil Lokasyon Barajı: Bir kişinin aynı evden 5 kez test yapıp İSS'yi listeye sokmasını önlemek için
-  //    en az MIN_LOCS (3) farklı coğrafi konumdan (farklı hane/kullanıcı) ölçüm şartı aranır.
-  // 2) Minimum Ölçüm Barajı: En az MIN_COUNT (5) onaylı hız/memnuniyet testi olmalıdır.
-  // 3) Bayesian Dengeleme: WR = (v / (v + m)) * R + (m / (v + m)) * C
+
+  // BAYESIAN AĞIRLIKLI PUANLAMA (IMDB Modeli) & GELİŞMİŞ ANTİ-SPAM KURALLARI:
+  // 1) Tekil Lokasyon Barajı: Bir kişinin aynı evden test yapıp İSS'yi listeye sokmasını önlemek için
+  //    en az MIN_LOCS (3) farklı coğrafi konumdan (en az 500m mesafe / farklı mahalle) ölçüm şartı aranır.
+  // 2) Zaman / Gün Barajı: Aynı gün yapılan testlerin spam olmasını engellemek için testler en az MIN_DAYS (2) farklı güne yayılmalıdır.
+  // 3) Minimum Ölçüm Barajı: En az MIN_COUNT (5) onaylı hız/memnuniyet testi olmalıdır.
+  // 4) Bayesian Dengeleme: WR = (v / (v + m)) * R + (m / (v + m)) * C
   //    Az sayıda oyu olan İSS'lerin yapay 10.0 puanları Türkiye genel ortalamasına (C) çekilir;
   //    böylece 50-100 ölçümle 8.5 almış güvenilir İSS'lerin önüne haksızca geçemezler.
   const globalAvgS = speedPins.length ? (speedPins.reduce((a,p)=>a+p.puan,0)/speedPins.length) : 7.5;
   const BAYES_M = 7;
   const MIN_COUNT = 5;
   const MIN_LOCS = 3;
+  const MIN_DAYS = 2;
 
   document.getElementById('issRankList').innerHTML = Object.entries(im)
-    .filter(([_, d]) => d.c >= MIN_COUNT && d.locs.size >= MIN_LOCS)
+    .filter(([_, d]) => d.c >= MIN_COUNT && d.locList.length >= MIN_LOCS && d.days.size >= MIN_DAYS)
     .map(([iss, d]) => {
       const v = d.c;
       const R = d.t / d.c;
@@ -2925,13 +2940,14 @@ async function renderStats() {
         score: wr.toFixed(1),
         rawScore: R.toFixed(1),
         c: v,
-        locs: d.locs.size,
+        locs: d.locList.length,
+        days: d.days.size,
         bayes: wr
       };
     })
     .sort((a,b) => b.bayes - a.bayes)
-    .map((x,i) => `<div class="rank-item" title="Adil Skor: ${x.score} / 10 (Ham ortalama: ${x.rawScore}, ${x.c} ölçüm, ${x.locs} farklı lokasyon)"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${escHtml(displayIssName(x.iss))}</div><div class="rank-sub">${x.c} ölçüm · ${x.locs} farklı lokasyon</div></div><div class="rank-val" style="color:${memColor(x.score)}">${memShapeHtml(parseFloat(x.score))}${x.score}</div></div>`)
-    .join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok (min. 5 ölçüm ve 3 farklı lokasyon gerekli)</div>';
+    .map((x,i) => `<div class="rank-item" title="Adil Skor: ${x.score} / 10 (Ham ortalama: ${x.rawScore}, ${x.c} ölçüm, ${x.locs} farklı lokasyon [>500m], ${x.days} farklı gün)"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${escHtml(displayIssName(x.iss))}</div><div class="rank-sub">${x.c} ölçüm · ${x.locs} lokasyon · ${x.days} gün</div></div><div class="rank-val" style="color:${memColor(x.score)}">${memShapeHtml(parseFloat(x.score))}${x.score}</div></div>`)
+    .join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok (min. 5 test, 3 farklı lokasyon ve 2 farklı gün gerekli)</div>';
   
   // EN HIZLI LOKASYONLAR (artık ISS filtresiyle de çağrılabilen bağımsız fonksiyon)
   populateSpeedRankIlFilter(pins);
