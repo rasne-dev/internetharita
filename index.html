@@ -591,7 +591,7 @@ html.light .sr-ping { background:#f5f7fa; }
 .speed-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;} .score-row{display:flex;gap:4px;flex-wrap:wrap;}
 .sbtn{ flex:1;min-width:28px;min-height:38px;padding:8px 2px;border-radius:5px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:12px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center;display:flex;align-items:center;justify-content:center; } .sbtn.sel{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
 .cbtns{display:flex;gap:6px;} .cbtn{ flex:1;padding:8px;border-radius:6px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:11px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center; } .cbtn.fiber.sel{background:rgba(147,51,234,.12);border-color:#9333ea;color:#9333ea;} .cbtn.vdsl.sel{background:rgba(6,182,212,.12);border-color:#06b6d4;color:#06b6d4;} .cbtn.adsl.sel{background:rgba(229,57,53,.12);border-color:var(--s5);color:var(--s5);} .cbtn.docsis.sel{background:rgba(59,130,246,.12);border-color:#3b82f6;color:#3b82f6;} .cbtn.docsis:disabled,.fs:disabled{opacity:.55;cursor:not-allowed;}
-#extraAltyapiRows:empty::before, #editExtraAltyapiRows:empty::before { content: "Henüz sağlayıcı eklenmedi — aşağıdaki butonla ekleyin."; display:block; font-size:10px; color:var(--text3); font-style:italic; padding:2px 0 6px; }
+#editExtraAltyapiRows:empty::before { content: "Henüz sağlayıcı eklenmedi — aşağıdaki butonla ekleyin."; display:block; font-size:10px; color:var(--text3); font-style:italic; padding:2px 0 6px; }
 .loc-box{ background:var(--surface2);border:1px solid var(--border); border-radius:7px;padding:9px 12px;font-size:11px; color:var(--text3);display:flex;align-items:center;gap:8px; }
 .loc-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);flex-shrink:0;} .loc-dot.set{background:var(--success);box-shadow:0 0 8px var(--success);}
 .loc-actions{display:flex;gap:6px;margin-top:5px;} .btn-loc{ flex:1;padding:8px;border-radius:6px; border:1px solid rgba(0,212,255,.3); background:var(--accent-dim);color:var(--accent); font-size:11px;font-weight:700;cursor:pointer; text-align:center; }
@@ -1183,13 +1183,7 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
         <div id="docsisNote" style="display:none;font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">DOCSIS, Türksat'ın TV kablosu (coaxial) üzerinden verdiği internet türüdür. Türksat'tan fiber veya VDSL hizmeti alıyorsanız DOCSIS'i değil, "Fiber" veya "VDSL"yi seçin — DOCSIS sadece kablo TV hattından gelen Türksat bağlantıları içindir.</div>
       </div>
       <div class="fg">
-        <div class="fl">🏘️ Adreste BAŞKA Hangi Sağlayıcılar da Var? <span style="color:var(--text3);font-weight:400;">(siz kullanmıyorsunuz, sadece mevcut olan — opsiyonel)</span></div>
-        <div id="extraAltyapiRows"></div>
-        <div style="margin-top:6px;padding:7px;text-align:center;border-radius:6px;border:1px dashed var(--border);color:var(--text2);font-size:11px;cursor:pointer;" onclick="addExtraAltyapiRow()">+ Sağlayıcı / Altyapı Ekle</div>
-        <div style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">Örn. adreste siz TurkNet Fiber kullanıyorsanız ama Türk Telekom hem VDSL hem Fiber de çekiyorsa: "Türk Telekom"u ekleyip VDSL ve Fiber'in İKİSİNİ de işaretleyin. İstediğiniz kadar sağlayıcı satırı ekleyebilirsiniz.</div>
-      </div>
-      <div class="fg">
-        <div class="fl">Paket Hızı</div>
+        <div class="fl">Paket Hızı <span style="color:var(--text3);font-weight:400;">(tarifenizdeki hız — opsiyonel)</span></div>
         <div class="speed-row">
           <div class="fiu"><input type="number" placeholder="100" id="packageSpeedDL" min="0" step="1"><span class="fiu-unit">↓ DL</span></div>
           <div class="fiu"><input type="number" placeholder="20" id="packageSpeedUL" min="0" step="1"><span class="fiu-unit">↑ UL</span></div>
@@ -1207,11 +1201,18 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
         <div style="font-size:9px;color:var(--text3);margin-top:3px;font-family:var(--font-body);">Hız testi yapılmadan form gönderilemez. Verinin güvenilirliği için zorunludur.</div>
       </div>
       <div class="fg"><div class="fl">Memnuniyet Puanı (1–10)</div><div class="score-row" id="scoreRow"></div></div>
-      <div class="fg"><div class="fl">Kısa Yorum (opsiyonel)</div><textarea class="fta" placeholder="Fiber'e geçişten sonra çok iyi oldu..." id="commentInput"></textarea></div>
-      <div class="fg">
-        <div class="fl">🔧 SİZİN Bağlantınızın Fiziksel Altyapı Sahibi <span style="color:var(--text3);font-weight:400;">(biliyorsanız)</span></div>
-        <select class="fs" id="infraSelect"><option value="">Bilmiyorum</option><option>Türk Telekom (kiralık port)</option><option>TurkNet öz altyapı</option><option>Superonline öz altyapı</option><option>Türksat öz altyapı</option><option>Diğer öz altyapı</option></select>
-        <div style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">Bu, şu an test ettiğiniz TEK bağlantının fiziksel hattı kime ait (örn. İSS'niz TurkNet ama hat Türk Telekom'un kiralık portu olabilir). Adreste başka sağlayıcı/altyapı varsa onu aşağıdaki "Adreste Başka Sağlayıcılar" bölümüne ekleyin.</div>
+      <div class="fg"><div class="fl">Kısa Yorum <span style="color:var(--text3);font-weight:400;">(opsiyonel)</span></div><textarea class="fta" placeholder="Fiber'e geçişten sonra çok iyi oldu..." id="commentInput"></textarea></div>
+      <div class="fg" style="margin-top:4px;">
+        <div class="fl">Fiziksel Hat Sahibi <span style="color:var(--text3);font-weight:400;">(biliyorsanız — opsiyonel)</span></div>
+        <select class="fs" id="infraSelect">
+          <option value="">Bilmiyorum / Emin Değilim</option>
+          <option value="Türk Telekom (kiralık port)">Türk Telekom Hattı</option>
+          <option value="TurkNet öz altyapı">TurkNet Kendi Altyapısı (GigaFiber)</option>
+          <option value="Superonline öz altyapı">Superonline Kendi Fiberi</option>
+          <option value="Türksat öz altyapı">Türksat Kablo / Fiber</option>
+          <option value="Diğer öz altyapı">Diğer Altyapı</option>
+        </select>
+        <div style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">Hattınızın bina içi veya sokaktaki fiziksel kablosu hangi şirkete ait? Örn. TurkNet kullanıyor olabilirsiniz ama bina içi kablo Türk Telekom'a ait olabilir. Emin değilseniz boş bırakabilirsiniz.</div>
       </div>
       <div class="flag-note"><span>🚩</span><span>Yanlış veriler topluluk tarafından bildirilebilir ve moderatörler kaldırabilir.</span></div>
       
@@ -2284,12 +2285,8 @@ function onNoInfraChange(checked) {
   const speedRows = document.querySelectorAll('.speed-row');
   const issSelect = document.getElementById('issSelect');
   const connBtns = document.querySelectorAll('.cbtn');
-  const extraWrap = document.getElementById('extraAltyapiRows');
-  const extraAddBtn = extraWrap?.nextElementSibling;
   
   if (checked) {
-    if (extraWrap) { extraWrap.innerHTML=''; extraWrap.style.opacity='0.4'; extraWrap.style.pointerEvents='none'; }
-    if (extraAddBtn) { extraAddBtn.style.opacity='0.4'; extraAddBtn.style.pointerEvents='none'; }
     // Hız bölümlerini etkisizleştir
     if (speedBtn) speedBtn.disabled = true;
     document.getElementById('dlSpeed').value = '';
@@ -2297,16 +2294,18 @@ function onNoInfraChange(checked) {
     document.getElementById('packageSpeedDL').value = '';
     document.getElementById('packageSpeedUL').value = '';
     document.getElementById('speedVerifiedBadge').classList.remove('show');
-    
-    // Altyapı yoksa İSS ve Bağlantı Türü "Yok" / "Belirsiz" olabilir
+    speedVerifiedByTest = false;
+    // İSS ve Bağlantı türünü Altyapı Yok'a ayarla
     if (issSelect) {
-      // Eğer listede "Altyapı Yok" yoksa geçici ekle (ya da Diğer/Bilinmiyor kullan)
-      if (![...issSelect.options].some(o => o.value === 'Altyapı Yok')) {
-        const opt = new Option('Altyapı Yok', 'Altyapı Yok');
-        issSelect.add(opt, 1);
-      }
       issSelect.value = 'Altyapı Yok';
+      issSelect.disabled = true;
     }
+    connBtns.forEach(b => {
+      b.classList.remove('sel');
+      b.style.pointerEvents = 'none';
+      b.style.opacity = '0.4';
+    });
+    selConnVal = 'yok';
     // Puanı otomatik 1 yapabiliriz ya da kullanıcıya bırakabiliriz
     if (selScoreVal === 0) {
       const firstScore = document.querySelector('.sbtn');
@@ -2314,12 +2313,16 @@ function onNoInfraChange(checked) {
     }
     showToast('Altyapı yok seçildi: Hız testi gereksinimi kaldırıldı.', 'warn');
   } else {
-    if (extraWrap) { extraWrap.style.opacity=''; extraWrap.style.pointerEvents=''; }
-    if (extraAddBtn) { extraAddBtn.style.opacity=''; extraAddBtn.style.pointerEvents=''; }
     if (speedBtn) speedBtn.disabled = false;
     document.getElementById('dlSpeed').value = '';
     document.getElementById('ulSpeed').value = '';
     if (issSelect && issSelect.value === 'Altyapı Yok') issSelect.value = '';
+    if (issSelect) issSelect.disabled = false;
+    connBtns.forEach(b => {
+      b.style.pointerEvents = '';
+      b.style.opacity = '';
+    });
+    selConnVal = '';
   }
 }
 
@@ -4003,11 +4006,7 @@ function createExtraAltyapiRow(containerId, prefillIss, prefillTurs) {
   (prefillTurs || []).forEach(t => { row.querySelector(`.cbtn[data-tur="${t}"]`)?.classList.add('sel'); });
   return rowId;
 }
-function addExtraAltyapiRow() {
-  const issSel = document.getElementById('issSelect');
-  if (!issSel || issSel.options.length < 2) return showToast('⏳ Sağlayıcı listesi henüz yüklenmedi, birkaç saniye bekleyip tekrar deneyin', 'warn');
-  createExtraAltyapiRow('extraAltyapiRows');
-}
+function addExtraAltyapiRow() {}
 function addEditExtraAltyapiRow() {
   const issSel = document.getElementById('issSelect');
   if (!issSel || issSel.options.length < 2) return showToast('⏳ Sağlayıcı listesi henüz yüklenmedi, birkaç saniye bekleyip tekrar deneyin', 'warn');
@@ -4036,7 +4035,7 @@ function collectExtraAltyapiFrom(containerId) {
   });
   return out;
 }
-function collectExtraAltyapi() { return collectExtraAltyapiFrom('extraAltyapiRows'); }
+function collectExtraAltyapi() { return []; }
 function selScore(el,val) { document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); selScoreVal=val; }
 (function buildScoreRow() { const row = document.getElementById('scoreRow'); if(!row) return; for(let i=1;i<=10;i++){const b=document.createElement('div');b.className='sbtn';b.textContent=i;b.onclick=()=>selScore(b,i);row.appendChild(b);} })();
 
@@ -4500,7 +4499,7 @@ async function deleteUserPin(pinId) {
   }
 }
 
-function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; const extraRowsReset = document.getElementById('extraAltyapiRows'); if (extraRowsReset) extraRowsReset.innerHTML=''; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); speedVerifiedByTest = false; const kvkkCheck = document.getElementById('kvkkCheck');
+function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); speedVerifiedByTest = false; const kvkkCheck = document.getElementById('kvkkCheck');
   if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; }
   const noInfraCheck = document.getElementById('noInfraCheck');
   if (noInfraCheck && noInfraCheck.checked) { noInfraCheck.checked = false; onNoInfraChange(false); }
