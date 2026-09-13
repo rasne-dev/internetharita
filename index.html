@@ -371,6 +371,32 @@ html.light .map-info-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15
 .info-iss-item{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:11px;}
 .iss-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:6px;}
 
+/* ===== BÖLGESEL ALTYAPI & SAĞLAYICI MATRİSİ ===== */
+.infra-matrix-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; }
+.infra-matrix-title { font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; color: var(--accent); letter-spacing: 0.5px; text-transform: uppercase; }
+.infra-matrix-list { display: flex; flex-direction: column; gap: 7px; }
+.infra-provider-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; transition: border-color .15s; }
+.infra-provider-card:hover { border-color: var(--border2); }
+.infra-provider-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; font-size: 11px; }
+.infra-provider-left { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+.infra-provider-score { font-family: var(--font-mono); font-size: 10px; color: var(--warn); font-weight: 700; }
+.infra-badges-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.infra-badge { display: inline-flex; align-items: center; gap: 3px; font-family: var(--font-mono); font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 5px; border: 1px solid; line-height: 1.3; }
+.infra-badge.fiber  { color: #c084fc; background: rgba(147,51,234,0.12); border-color: rgba(147,51,234,0.35); }
+.infra-badge.vdsl   { color: #22d3ee; background: rgba(6,182,212,0.12); border-color: rgba(6,182,212,0.35); }
+.infra-badge.adsl   { color: #f87171; background: rgba(229,57,53,0.12); border-color: rgba(229,57,53,0.35); }
+.infra-badge.docsis { color: #60a5fa; background: rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.35); }
+.infra-badge.yok    { color: #9ca3af; background: rgba(156,163,175,0.1); border-color: rgba(156,163,175,0.3); }
+.ib-speed { color: var(--text); opacity: 0.85; font-size: 8.5px; font-weight: 600; margin-left: 1px; }
+.ib-unconfirmed { opacity: 0.7; border-style: dashed; }
+.ib-owner { font-size: 8px; opacity: 0.75; font-family: var(--font-body); font-weight: normal; margin-left: 2px; }
+html.light .infra-provider-card { background: #f8fafc; border-color: #e2e8f0; }
+html.light .infra-provider-card:hover { border-color: #cbd5e1; }
+html.light .infra-badge.fiber  { color: #7e22ce; background: rgba(147,51,234,0.08); border-color: rgba(147,51,234,0.3); }
+html.light .infra-badge.vdsl   { color: #0891b2; background: rgba(6,182,212,0.08); border-color: rgba(6,182,212,0.3); }
+html.light .infra-badge.adsl   { color: #dc2626; background: rgba(229,57,53,0.08); border-color: rgba(229,57,53,0.3); }
+html.light .infra-badge.docsis { color: #2563eb; background: rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.3); }
+
 /* ===== SAYFA İÇİ HIZ TESTİ ===== */
 .speedtest-modal { display:none; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center; }
 .speedtest-modal.open { display:flex; }
@@ -905,8 +931,9 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
           <div class="mode-tabs">
             <div class="mode-tab active" id="colorModeHiz" onclick="setColorMode('hiz',this)">⚡ Hız</div>
             <div class="mode-tab" id="colorModeMem" onclick="setColorMode('memnuniyet',this)">😊 Memnuniyet</div>
-            <div class="mode-tab" id="colorModeAltyapi" onclick="setColorMode('altyapi',this)">🏗 Altyapı <span style="opacity:.6;font-size:9px;">(deneysel)</span></div>
+            <div class="mode-tab" id="colorModeAltyapi" onclick="setColorMode('altyapi',this)">🏗 Altyapı</div>
           </div>
+          <div id="altyapiHint" style="display:none;font-size:9.5px;color:var(--accent);margin-top:7px;line-height:1.4;background:rgba(0,212,255,0.06);padding:6px 8px;border-radius:6px;border:1px solid rgba(0,212,255,0.18);">💡 <b>İpucu:</b> Aşağıdaki İSS filtresinden bir operatör seçerek (örn. TurkNet), o operatörün Fiber / VDSL haritasını görebilirsiniz.</div>
         </div>
 
         <!-- BAĞLANTI TÜRÜ -->
@@ -2278,6 +2305,8 @@ function setColorMode(m) {
   document.getElementById('colorModeHiz')?.classList.toggle('active', isHiz);
   document.getElementById('colorModeMem')?.classList.toggle('active', isMem);
   document.getElementById('colorModeAltyapi')?.classList.toggle('active', isAltyapi);
+  const hintEl = document.getElementById('altyapiHint');
+  if (hintEl) hintEl.style.display = isAltyapi ? 'block' : 'none';
   const items = document.getElementById('legendItems');
   if (!items) return renderHex();
   if (m === 'hiz') { items.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:#800080"></div>500+</div><div class="legend-item"><div class="legend-dot" style="background:#1E88E5"></div>200–500</div><div class="legend-item"><div class="legend-dot" style="background:#43A047"></div>100–200</div><div class="legend-item"><div class="legend-dot" style="background:#FB8C00"></div>25–100</div><div class="legend-item"><div class="legend-dot" style="background:#E53935"></div>&lt;25 Mbps</div>`; }
@@ -2507,13 +2536,123 @@ function showHexInfo(pins, hexId) {
   document.getElementById('infoUL').textContent = Math.round(pins.reduce((a,p)=>a+(p.gercek_ul||0),0)/pins.length)+' Mbps';
   document.getElementById('infoScore').textContent = avgS+'/10'; document.getElementById('infoScore').style.color = memColor(parseFloat(avgS));
   document.getElementById('infoCount').textContent = pins.length+' ölçüm';
-  const im={}; pins.forEach(p=>{ if(!im[p.iss]) im[p.iss]={c:0,t:0}; im[p.iss].c++; im[p.iss].t+=p.puan; });
-  const tc={}; pins.forEach(p=>{ const t=p.baglanti_turu; if(t && t!=='yok') tc[t]=(tc[t]||0)+1; parseDigerAltyapi(p.diger_altyapilar).forEach(e=>{ tc[e.tur]=(tc[e.tur]||0)+1; }); });
-  const showAltyapiInfo = colorMode === 'altyapi';
-  const altyapiHtml = (showAltyapiInfo && Object.keys(tc).length) ? `<div class="panel-title" style="margin:10px 0 6px;">Altyapı Dağılımı <span style="opacity:.6;font-weight:400;font-size:9px;">(kaç ölçümde mevcut)</span></div>`+Object.entries(tc).sort((a,b)=>b[1]-a[1]).map(([t,c])=>`<div class="info-iss-item"><span><span class="iss-dot" style="background:${cc(t)}"></span>${t.toUpperCase()}</span><span style="color:${cc(t)};font-weight:700;font-family:var(--font-mono)">${c}/${pins.length}</span></div>`).join('') : '';
-  const providerCombo = {}; if (showAltyapiInfo) pins.forEach(p=>parseDigerAltyapi(p.diger_altyapilar).forEach(e=>{ if(!e.iss) return; const k=e.iss+'|'+e.tur; providerCombo[k]=(providerCombo[k]||0)+1; }));
-  const providerHtml = (showAltyapiInfo && Object.keys(providerCombo).length) ? `<div class="panel-title" style="margin:10px 0 6px;">Bilinen Diğer Sağlayıcılar</div>`+Object.entries(providerCombo).sort((a,b)=>b[1]-a[1]).map(([k,c])=>{ const [iss,tur]=k.split('|'); return `<div class="info-iss-item"><span><span class="iss-dot" style="background:${cc(tur)}"></span>${escHtml(iss)} · ${tur.toUpperCase()}</span><span style="color:var(--text3);font-weight:700;font-family:var(--font-mono)">${c}</span></div>`; }).join('') : '';
-  document.getElementById('infoISS').innerHTML = `<div class="panel-title" style="margin-bottom:6px;">ISS Dağılımı</div>`+Object.entries(im).sort((a,b)=>b[1].c-a[1].c).slice(0,4).map(([iss,d])=>`<div class="info-iss-item"><span><span class="iss-dot" style="background:${ic(iss)}"></span>${escHtml(iss)}</span><span style="color:${ic(iss)};font-weight:700;font-family:var(--font-mono)">${(d.t/d.c).toFixed(1)}</span></div>`).join('') + altyapiHtml + providerHtml;
+  // BÖLGESEL SAĞLAYICI VE ALTYAPI MATRİSİ
+  // Hangi İSS'nin bu altıgende Fiber, VDSL, ADSL veya DOCSIS sunduğunu net eşleştir
+  const providerMatrix = {};
+  pins.forEach(p => {
+    const issName = canonicalIssName(p.iss);
+    if (!issName || issName === 'Bilinmeyen' || !isApprovedPublicIss(issName)) return;
+    if (!providerMatrix[issName]) {
+      providerMatrix[issName] = {
+        iss: issName,
+        totalPins: 0,
+        scoreSum: 0,
+        techs: {}
+      };
+    }
+    const entry = providerMatrix[issName];
+    entry.totalPins++;
+    if (p.puan) entry.scoreSum += p.puan;
+
+    const tur = (p.baglanti_turu && p.baglanti_turu !== 'yok') ? p.baglanti_turu.toLowerCase() : null;
+    if (tur) {
+      if (!entry.techs[tur]) {
+        entry.techs[tur] = { count: 0, dls: [], confirmed: true, infraOwners: new Set() };
+      }
+      entry.techs[tur].count++;
+      if (p.gercek_dl > 0) entry.techs[tur].dls.push(p.gercek_dl);
+      if (p.altyapi_sahibi) entry.techs[tur].infraOwners.add(p.altyapi_sahibi);
+    }
+
+    // Kullanıcının bildirdiği diğer altyapılar (aynı lokasyondaki yan altyapılar)
+    parseDigerAltyapi(p.diger_altyapilar).forEach(extra => {
+      const extraIss = canonicalIssName(extra.iss) || issName;
+      const extraTur = (extra.tur || '').toLowerCase();
+      if (!extraTur || extraTur === 'yok' || !isApprovedPublicIss(extraIss)) return;
+      if (!providerMatrix[extraIss]) {
+        providerMatrix[extraIss] = {
+          iss: extraIss,
+          totalPins: 0,
+          scoreSum: 0,
+          techs: {}
+        };
+      }
+      const extraEntry = providerMatrix[extraIss];
+      if (!extraEntry.techs[extraTur]) {
+        extraEntry.techs[extraTur] = { count: 0, dls: [], confirmed: false, infraOwners: new Set() };
+      }
+      extraEntry.techs[extraTur].count++;
+    });
+  });
+
+  const sortedProviders = Object.values(providerMatrix).sort((a,b) => b.totalPins - a.totalPins);
+  let matrixHtml = '';
+  if (sortedProviders.length) {
+    matrixHtml = `
+      <div class="infra-matrix-header">
+        <span class="infra-matrix-title">Bölgedeki Altyapı & Sağlayıcılar</span>
+      </div>
+      <div class="infra-matrix-list">
+    `;
+
+    sortedProviders.forEach(prov => {
+      const avgScore = prov.totalPins && prov.scoreSum ? (prov.scoreSum / prov.totalPins).toFixed(1) : null;
+      const techList = Object.entries(prov.techs).sort((a,b) => {
+        const order = { fiber: 1, docsis: 2, vdsl: 3, adsl: 4 };
+        return (order[a[0]] || 9) - (order[b[0]] || 9);
+      });
+
+      const badgesHtml = techList.map(([tur, data]) => {
+        const avgDl = data.dls.length ? Math.round(data.dls.reduce((a,b)=>a+b,0)/data.dls.length) : null;
+        const speedText = avgDl ? `↓ ~${avgDl}M` : '';
+        const turLabel = tur === 'fiber' ? 'FİBER' : tur === 'vdsl' ? 'VDSL' : tur === 'docsis' ? 'DOCSIS' : tur === 'adsl' ? 'ADSL' : tur.toUpperCase();
+        
+        let ownerTag = '';
+        if (data.infraOwners && data.infraOwners.size) {
+          const owners = Array.from(data.infraOwners);
+          if (owners.some(o => o.includes('Kendi') || o.includes('Bağımsız'))) {
+            ownerTag = `<span class="ib-owner" title="Kendi bağımsız altyapısı">⚡ Bağımsız</span>`;
+          } else if (owners.some(o => o.includes('Türk Telekom')) && prov.iss !== 'Türk Telekom') {
+            ownerTag = `<span class="ib-owner" title="Türk Telekom toptan altyapısı">🏢 TT Altyapı</span>`;
+          }
+        }
+
+        const unconfirmedClass = !data.confirmed ? 'ib-unconfirmed' : '';
+        const titleText = data.confirmed 
+          ? `Doğrulanmış ${turLabel} ölçümü (${data.count} test)` 
+          : `Kullanıcı beyanıyla eklenmiş ${turLabel} altyapısı`;
+
+        return `
+          <span class="infra-badge ${tur} ${unconfirmedClass}" title="${escAttr(titleText)}">
+            <span class="iss-dot" style="background:currentColor;width:4px;height:4px;margin:0 2px 0 0;"></span>
+            ${turLabel}${speedText ? `<span class="ib-speed">${speedText}</span>` : ''}
+            ${ownerTag}
+          </span>
+        `;
+      }).join('');
+
+      matrixHtml += `
+        <div class="infra-provider-card">
+          <div class="infra-provider-head">
+            <div class="infra-provider-left">
+              <span class="iss-dot" style="background:${ic(prov.iss)}"></span>
+              <span class="infra-provider-name">${escHtml(prov.iss)}</span>
+            </div>
+            ${avgScore ? `<span class="infra-provider-score" title="Kullanıcı memnuniyet puanı">★ ${avgScore}</span>` : ''}
+          </div>
+          <div class="infra-badges-row">
+            ${badgesHtml || '<span style="font-size:9px;color:var(--text3);font-style:italic;">Belirtilmemiş</span>'}
+          </div>
+        </div>
+      `;
+    });
+
+    matrixHtml += `</div>`;
+  } else {
+    matrixHtml = `<div style="font-size:11px;color:var(--text3);padding:8px 0;text-align:center;">Bu bölgede henüz altyapı verisi yok.</div>`;
+  }
+
+  document.getElementById('infoISS').innerHTML = matrixHtml;
   document.getElementById('mapInfo').classList.add('visible');
   const body = document.querySelector('.map-info-body'); if(body) body.scrollTop = 0;
   // Ölçüm listesini sıfırla
@@ -3799,8 +3938,7 @@ function closeUserEditModal() {
 }
 
 function openSpeedTestForUserEdit() {
-  speedTestTarget = 'userEdit';
-  openSpeedTestModal();
+  openSpeedTestModal('userEdit');
 }
 
 async function saveUserEdit() {
@@ -5306,7 +5444,8 @@ function setSpeedEntryMode(mode) {
   // gelecekteki bir mod geçişi için yer tutucu olarak güvenli şekilde durur.
 }
 
-function openSpeedTestModal() {
+function openSpeedTestModal(target = 'form') {
+  speedTestTarget = target;
   document.getElementById('speedTestModal').classList.add('open');
   resetSpeedTestUI();
 }
@@ -5335,7 +5474,7 @@ function resetSpeedTestUI() {
   document.getElementById('stUseBtn').style.display = 'none';
   document.getElementById('stRetryBtn').style.display = 'none';
   document.getElementById('stSub').style.color = '';
-  document.getElementById('stSub').textContent = 'Tarayıcı tabanlı ölçüm (Cloudflare — p90 yöntemi) | Sonuç forma otomatik aktarılır';
+  document.getElementById('stSub').textContent = 'Tarayıcı tabanlı ölçüm (Cloudflare) | Sonuç forma otomatik aktarılır';
   liveLogReset();
 }
 function setGauge(mbps, maxMbps, color) {
@@ -5536,7 +5675,7 @@ async function measureDownload(onLive) {
   // toplam alınan bayt / toplam geçen süre (gerçek ortalama). percentile90()
   // fonksiyonu geriye dönük uyumluluk ve olası UI/anlık ibre kullanımları için
   // korunuyor, sadece burada birincil sonuç hesaplamasında kullanılmıyor.
-  return Math.round((totalBytesGlobal * 8) / elapsed / 1e6);
+  return Math.max(1, Math.round((totalBytesGlobal * 8) / elapsed / 1e6));
 }
 
 async function measureUploadSupabase(onLive) {
@@ -5699,8 +5838,7 @@ async function measureUploadSupabase(onLive) {
   const elapsed = (performance.now() - measureStart) / 1000;
   window.lastUploadDebug = `[Supabase] akış sayısı: ${PARALLEL_STREAMS}${window.lastUploadProbeMbps ? ` (prob: ~${window.lastUploadProbeMbps} Mbps)` : ''}, gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
   if (totalSent < 100_000 || elapsed <= 0) return null;
-  // DOĞRULUK DÜZELTMESİ: bkz. measureUploadXHR — aynı sebepten p90 yerine gerçek ortalama kullanılıyor.
-  return Math.round((totalSent * 8) / elapsed / 1e6);
+  return Math.max(1, Math.round((totalSent * 8) / elapsed / 1e6));
 }
 
 // ── UPLOAD ÖLÇÜM MİMARİSİ — BİRİNCİL YOL (Cloudflare) ──────────────────────
@@ -5824,14 +5962,8 @@ async function measureUploadXHR(onLive) {
 
   const elapsed = (performance.now() - measureStart) / 1000;
   window.lastUploadDebug = `[XHR/Cloudflare] gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
-  if (totalSent < 300_000 || elapsed <= 0) return null;
-  // DOĞRULUK DÜZELTMESİ: Upload'ta x.upload.onprogress olayları download stream
-  // okumalarına göre çok daha seyrek/düzensiz tetiklenir (bazı 200ms pencerelerinde
-  // hiç event gelmez, biriken bytelar sonraki pencereye patlama şeklinde yansır).
-  // Bu yüzden o anlık pencerelere dayanan p90, gerçek sürdürülebilir hızdan
-  // belirgin şekilde YÜKSEK çıkıyordu. Artık birincil metrik: toplam gönderilen
-  // bayt / toplam geçen süre (gerçek ortalama). p90 sadece UI'daki anlık ibre içindir.
-  return Math.round((totalSent * 8) / elapsed / 1e6);
+  if (totalSent < 100_000 || elapsed <= 0) return null;
+  return Math.max(1, Math.round((totalSent * 8) / elapsed / 1e6));
 }
 
 async function measureUploadCF(onLive) {
@@ -5854,7 +5986,7 @@ async function measureUploadCF(onLive) {
       headers: { 'Content-Type': 'text/plain' },
       body: makeUploadBlob(64 * 1024)
     }, 6000);
-    if (!warm) return null;
+    if (!warm || !warm.ok) return null;
   } catch (e) {
     window.lastUploadDebug = `[Cloudflare] ısınma isteği başarısız: ${e && e.message ? e.message : e}`;
     return null;
@@ -5950,9 +6082,8 @@ async function measureUploadCF(onLive) {
 
   const elapsed = (performance.now() - measureStart) / 1000;
   window.lastUploadDebug = `[Cloudflare/${streaming ? 'streaming' : 'chunk'}] akış sayısı: ${PARALLEL_STREAMS}${window.lastUploadProbeMbps ? ` (prob: ~${window.lastUploadProbeMbps} Mbps)` : ''}, gönderilen: ${(totalSent/1024/1024).toFixed(2)}MB, süre: ${elapsed.toFixed(1)}sn, örnekler: [${sharedSamples.slice(0, 10).join(', ')}${sharedSamples.length > 10 ? '...' : ''}]`;
-  if (totalSent < 300_000 || elapsed <= 0) return null;
-  // DOĞRULUK DÜZELTMESİ: bkz. measureUploadXHR — aynı sebepten p90 yerine gerçek ortalama kullanılıyor.
-  return Math.round((totalSent * 8) / elapsed / 1e6);
+  if (totalSent < 100_000 || elapsed <= 0) return null;
+  return Math.max(1, Math.round((totalSent * 8) / elapsed / 1e6));
 }
 
 
@@ -6014,139 +6145,138 @@ async function measureUpload(onLive) {
 async function runSpeedTest() {
   if (stRunning) return;
 
-  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-  if (conn) {
-    const type = conn.type || '';
-    const effType = conn.effectiveType || '';
-    if (type === 'cellular' || effType === '2g' || effType === 'slow-2g') {
-      document.getElementById('stSub').textContent = '⚠ Mobil veri — sonuçlar gerçek hızı yansıtmayabilir';
-      document.getElementById('stSub').style.color = 'var(--warn)';
-    }
-  } else {
-    document.getElementById('stSub').style.color = '';
-  }
-  
-  stRunning = true;
-  const btn = document.getElementById('stStartBtn');
-  btn.disabled = true; btn.textContent = 'Ölçülüyor...';
-  liveLogReset();
-
-  // --- PING ---
-  document.getElementById('stPhase').textContent = 'PING';
-  document.getElementById('stSub').textContent = 'Gecikme ölçülüyor...';
-  const ping = await measurePing();
-  if (ping) { 
-    document.getElementById('stPingRow').style.display='flex'; 
-    document.getElementById('stPingVal').textContent=ping+' ms'; 
-  }
-
-  // --- DOWNLOAD ---
-  document.getElementById('stPhase').textContent = '↓ İNDİRME';
-  document.getElementById('stSub').textContent = 'İndirme hızı ölçülüyor (~10 sn)...';
-  document.getElementById('sgFill').style.stroke = 'var(--accent)';
-  document.getElementById('stVal').textContent = '…';
-  
-  let liveMax = 200; // 100 -> 200: 1Gbps baglantilarda ilk sample gauge'i doldurmasin
-  const dlSamples = [];
-  const dl = await measureDownload((instantMbps) => {
-    dlSamples.push(instantMbps);
-    liveLogAppend('↓', instantMbps);
-    if (instantMbps > liveMax) liveMax = Math.ceil(instantMbps * 1.3 / 50) * 50;
-    setGauge(instantMbps, liveMax, 'var(--accent)');
-  });
-  
-  // DOĞRULUK DÜZELTMESİ: bkz. measureUploadXHR/measureDownload — burada eskiden
-  // iki ayrı p90 hesabının BÜYÜĞÜ alınıyordu (Math.max), bu da sonucu bilerek
-  // yukarı çekip hız testinin normalden yüksek ölçmesine yol açıyordu. Artık
-  // measureDownload'ın döndürdüğü gerçek ortalama (toplam bayt/toplam süre)
-  // esas alınıyor; UI örnek ortalaması sadece o hiç dönmezse yedek olarak
-  // kullanılıyor (upload ile aynı mantık).
-  const dlSamplesAvg = dlSamples.length ? Math.round(dlSamples.reduce((a,b)=>a+b,0)/dlSamples.length) : 0;
-  const finalDL = dl || dlSamplesAvg || 0;
-  if (!finalDL) {
-    document.getElementById('stSub').style.color = 'var(--danger)';
-    document.getElementById('stSub').textContent = 'İndirme ölçümü başarısız oldu. Bağlantıyı kontrol edip tekrar deneyin.';
-    btn.disabled = false; btn.textContent = 'Tekrar Dene';
-    document.getElementById('stRetryBtn').style.display = 'block';
-    stRunning = false;
-    return;
-  }
-  const dlMax = Math.max(Math.ceil(finalDL * 1.15 / 50) * 50, 50);
-  setGauge(finalDL, dlMax, 'var(--accent)');
-  document.getElementById('stDLVal').textContent = formatMbps(finalDL);
-  
-  // İndirme ortalama etiketi — kullanıcı dostu
-  if (dlSamples.length > 1) {
-    const dlAvg = Math.round(dlSamples.reduce((a,b)=>a+b,0)/dlSamples.length);
-    const sampleCount = dlSamples.length;
-    if (dlAvg < finalDL * 0.85) {
-      document.getElementById('stDLAvg').textContent = `Ortalama: ${dlAvg} Mbps (Bağlantı Dalgalı · ${sampleCount} örnek)`;
+  try {
+    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (conn) {
+      const type = conn.type || '';
+      const effType = conn.effectiveType || '';
+      if (type === 'cellular' || effType === '2g' || effType === 'slow-2g') {
+        document.getElementById('stSub').textContent = '⚠ Mobil veri — sonuçlar gerçek hızı yansıtmayabilir';
+        document.getElementById('stSub').style.color = 'var(--warn)';
+      }
     } else {
-      document.getElementById('stDLAvg').textContent = `Ortalama: ${dlAvg} Mbps (${sampleCount} örnek)`;
+      document.getElementById('stSub').style.color = '';
     }
-  }
+    
+    stRunning = true;
+    const btn = document.getElementById('stStartBtn');
+    btn.disabled = true; btn.textContent = 'Ölçülüyor...';
+    liveLogReset();
 
-  // --- UPLOAD ---
-  liveLogReset();
-  document.getElementById('stPhase').textContent = '↑ YÜKLEME';
-  document.getElementById('stSub').textContent = 'Yükleme hızı ölçülüyor (~10 sn) — sunucuya veri gönderiliyor...';
-  document.getElementById('sgFill').style.stroke = 'var(--success)';
-  document.getElementById('stVal').textContent = '…';
-  
-  let ulLiveMax = Math.max(finalDL, 50);
-  const ulSamples = [];
-  const ul = await measureUpload((instantMbps) => {
-    ulSamples.push(instantMbps);
-    liveLogAppend('↑', instantMbps);
-    if (instantMbps > ulLiveMax) ulLiveMax = Math.ceil(instantMbps * 1.3 / 50) * 50;
-    setGauge(instantMbps, ulLiveMax, 'var(--success)');
-  });
-  
-  // DOĞRULUK DÜZELTMESİ: Önceden burada ulSamples'ın p90'ı önceliklendiriliyordu;
-  // upload progress event'leri seyrek/patlamalı geldiği için bu değer gerçek
-  // sürdürülebilir hızdan yüksek çıkıyordu. Artık ölçüm fonksiyonunun kendi
-  // toplam-bayt/toplam-süre ortalaması (ul) esas alınıyor; UI örnek ortalaması
-  // sadece o hiç dönmezse yedek olarak kullanılıyor.
-  const ulSamplesAvg = ulSamples.length ? Math.round(ulSamples.reduce((a,b)=>a+b,0)/ulSamples.length) : 0;
-  const finalUL = ul || ulSamplesAvg || 0;
-  if (!finalUL) {
+    // --- PING ---
+    document.getElementById('stPhase').textContent = 'PING';
+    document.getElementById('stSub').textContent = 'Gecikme ölçülüyor...';
+    const ping = await measurePing();
+    if (ping) { 
+      document.getElementById('stPingRow').style.display='flex'; 
+      document.getElementById('stPingVal').textContent=ping+' ms'; 
+    }
+
+    // --- DOWNLOAD ---
+    document.getElementById('stPhase').textContent = '↓ İNDİRME';
+    document.getElementById('stSub').textContent = 'İndirme hızı ölçülüyor (~10 sn)...';
+    document.getElementById('sgFill').style.stroke = 'var(--accent)';
+    document.getElementById('stVal').textContent = '…';
+    
+    let liveMax = 200; // 100 -> 200: 1Gbps baglantilarda ilk sample gauge'i doldurmasin
+    const dlSamples = [];
+    const dl = await measureDownload((instantMbps) => {
+      dlSamples.push(instantMbps);
+      liveLogAppend('↓', instantMbps);
+      if (instantMbps > liveMax) liveMax = Math.ceil(instantMbps * 1.3 / 50) * 50;
+      setGauge(instantMbps, liveMax, 'var(--accent)');
+    });
+    
+    const dlSamplesAvg = dlSamples.length ? Math.round(dlSamples.reduce((a,b)=>a+b,0)/dlSamples.length) : 0;
+    const finalDL = dl || dlSamplesAvg || 0;
+    if (!finalDL) {
+      document.getElementById('stSub').style.color = 'var(--danger)';
+      document.getElementById('stSub').textContent = 'İndirme ölçümü başarısız oldu. Bağlantıyı kontrol edip tekrar deneyin.';
+      btn.disabled = false; btn.textContent = 'Tekrar Dene';
+      document.getElementById('stRetryBtn').style.display = 'block';
+      return;
+    }
+    const dlMax = Math.max(Math.ceil(finalDL * 1.15 / 50) * 50, 50);
+    setGauge(finalDL, dlMax, 'var(--accent)');
+    document.getElementById('stDLVal').textContent = formatMbps(finalDL);
+    
+    // İndirme ortalama etiketi — kullanıcı dostu
+    if (dlSamples.length > 1) {
+      const dlAvg = Math.round(dlSamples.reduce((a,b)=>a+b,0)/dlSamples.length);
+      const sampleCount = dlSamples.length;
+      if (dlAvg < finalDL * 0.85) {
+        document.getElementById('stDLAvg').textContent = `Ortalama: ${dlAvg} Mbps (Bağlantı Dalgalı · ${sampleCount} örnek)`;
+      } else {
+        document.getElementById('stDLAvg').textContent = `Ortalama: ${dlAvg} Mbps (${sampleCount} örnek)`;
+      }
+    }
+
+    // --- UPLOAD ---
+    liveLogReset();
+    document.getElementById('stPhase').textContent = '↑ YÜKLEME';
+    document.getElementById('stSub').textContent = 'Yükleme hızı ölçülüyor (~10 sn) — sunucuya veri gönderiliyor...';
+    document.getElementById('sgFill').style.stroke = 'var(--success)';
+    document.getElementById('stVal').textContent = '…';
+    
+    let ulLiveMax = Math.max(finalDL, 50);
+    const ulSamples = [];
+    const ul = await measureUpload((instantMbps) => {
+      ulSamples.push(instantMbps);
+      liveLogAppend('↑', instantMbps);
+      if (instantMbps > ulLiveMax) ulLiveMax = Math.ceil(instantMbps * 1.3 / 50) * 50;
+      setGauge(instantMbps, ulLiveMax, 'var(--success)');
+    });
+    
+    const ulSamplesAvg = ulSamples.length ? Math.round(ulSamples.reduce((a,b)=>a+b,0)/ulSamples.length) : 0;
+    const finalUL = ul || ulSamplesAvg || 0;
+    if (!finalUL) {
+      document.getElementById('stPhase').textContent = 'HATA';
+      document.getElementById('stSub').style.color = 'var(--danger)';
+      const debugDetails = window.lastUploadDebug ? ` [Detay: ${window.lastUploadDebug}]` : '';
+      document.getElementById('stSub').textContent = 'Yükleme hızı ölçülemedi — hem birincil hem yedek sunucuya bağlantı başarısız oldu. VPN/güvenlik duvarı aktifse devre dışı bırakıp tekrar deneyin.' + debugDetails;
+      document.getElementById('stULVal').textContent = '—';
+      document.getElementById('stResults').classList.add('show');
+      btn.disabled = false; btn.textContent = 'Tekrar Dene';
+      document.getElementById('stRetryBtn').style.display = 'block';
+      return;
+    }
+    const ulMax = Math.max(Math.ceil(finalUL * 1.15 / 50) * 50, 50);
+    setGauge(finalUL, ulMax, 'var(--success)');
+    document.getElementById('stULVal').textContent = formatMbps(finalUL);
+    
+    // Yükleme ortalama etiketi — kullanıcı dostu
+    if (ulSamples.length > 1) {
+      const ulAvg = Math.round(ulSamples.reduce((a,b)=>a+b,0)/ulSamples.length);
+      const sampleCount = ulSamples.length;
+      if (ulAvg < finalUL * 0.85) {
+        document.getElementById('stULAvg').textContent = `Ortalama: ${ulAvg} Mbps (Bağlantı Dalgalı · ${sampleCount} örnek)`;
+      } else {
+        document.getElementById('stULAvg').textContent = `Ortalama: ${ulAvg} Mbps (${sampleCount} örnek)`;
+      }
+    }
+
+    // --- BİTİŞ ---
+    stResults = { dl:finalDL, ul:finalUL, ping };
+    document.getElementById('stPhase').textContent = 'TAMAMLANDI';
+    document.getElementById('stSub').style.color = '';
+    const fmtSub = v => v >= 1000 ? (v/1000).toFixed(2)+'G' : v;
+    document.getElementById('stSub').textContent = `↓ ${fmtSub(finalDL)} Mbps  ·  ↑ ${fmtSub(finalUL)} Mbps${ping?' · '+ping+' ms':''}`;
+    document.getElementById('stResults').classList.add('show');
+    
+    btn.style.display = 'none';
+    document.getElementById('stUseBtn').style.display = 'block';
+    document.getElementById('stRetryBtn').style.display = 'block';
+  } catch (err) {
+    console.error('Speed test error:', err);
     document.getElementById('stPhase').textContent = 'HATA';
     document.getElementById('stSub').style.color = 'var(--danger)';
-    const debugDetails = window.lastUploadDebug ? ` [Detay: ${window.lastUploadDebug}]` : '';
-    document.getElementById('stSub').textContent = 'Yükleme hızı ölçülemedi — hem birincil hem yedek sunucuya bağlantı başarısız oldu. VPN/güvenlik duvarı aktifse devre dışı bırakıp tekrar deneyin.' + debugDetails;
-    document.getElementById('stULVal').textContent = '—';
-    btn.disabled = false; btn.textContent = 'Tekrar Dene';
+    document.getElementById('stSub').textContent = 'Beklenmeyen bir hata oluştu: ' + (err?.message || 'Bağlantı hatası');
+    const btn = document.getElementById('stStartBtn');
+    if (btn) { btn.disabled = false; btn.textContent = 'Tekrar Dene'; }
     document.getElementById('stRetryBtn').style.display = 'block';
+  } finally {
     stRunning = false;
-    return;
   }
-  const ulMax = Math.max(Math.ceil(finalUL * 1.15 / 50) * 50, 50);
-  setGauge(finalUL, ulMax, 'var(--success)');
-  document.getElementById('stULVal').textContent = formatMbps(finalUL);
-  
-  // Yükleme ortalama etiketi — kullanıcı dostu
-  if (ulSamples.length > 1) {
-    const ulAvg = Math.round(ulSamples.reduce((a,b)=>a+b,0)/ulSamples.length);
-    const sampleCount = ulSamples.length;
-    if (ulAvg < finalUL * 0.85) {
-      document.getElementById('stULAvg').textContent = `Ortalama: ${ulAvg} Mbps (Bağlantı Dalgalı · ${sampleCount} örnek)`;
-    } else {
-      document.getElementById('stULAvg').textContent = `Ortalama: ${ulAvg} Mbps (${sampleCount} örnek)`;
-    }
-  }
-
-  // --- BİTİŞ ---
-  stResults = { dl:finalDL, ul:finalUL, ping };
-  document.getElementById('stPhase').textContent = 'TAMAMLANDI';
-  document.getElementById('stSub').style.color = '';
-  const fmtSub = v => v >= 1000 ? (v/1000).toFixed(2)+'G' : v;
-  document.getElementById('stSub').textContent = `↓ ${fmtSub(finalDL)} Mbps  ·  ↑ ${fmtSub(finalUL)} Mbps${ping?' · '+ping+' ms':''}`;
-  document.getElementById('stResults').classList.add('show');
-  
-  btn.style.display = 'none';
-  document.getElementById('stUseBtn').style.display = 'block';
-  document.getElementById('stRetryBtn').style.display = 'block';
-  stRunning = false;
 }
 function applySpeedResults() {
   if (!stResults || !stResults.dl || !stResults.ul) {
