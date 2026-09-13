@@ -5258,7 +5258,8 @@ function applyManualAddress() {
   document.getElementById('manualAddressWrap').style.display = 'none';
 }
 function checkSpeedAndConnSuggestion(silent = false) {
-  if (typeof isAltyapiYok !== 'undefined' && isAltyapiYok) return;
+  const isNoInfra = document.getElementById('noInfraCheck')?.checked;
+  if (isNoInfra) return;
   const pkgDL = parseInt(document.getElementById('packageSpeedDL')?.value) || 0;
   const dl = parseInt(document.getElementById('dlSpeed')?.value) || 0;
   const speed = Math.max(pkgDL, dl);
@@ -5553,12 +5554,14 @@ async function submitPin() {
   const capExceeded = !isAltyapiYok && TYPE_DL_CAP[selConnVal] && dl > TYPE_DL_CAP[selConnVal];
   const quarantine = !!(outlier || isCustomIss || rateQuarantine || isAltyapiYok || capExceeded);
 
-  // Konum bazlı tekrar giriş kontrolü — aynı FP, 500m, 24 saat
+  // Konum bazlı tekrar giriş kontrolü — aynı FP veya yerel pin, 500m, 24 saat
+  const myPinIdsList = getMyLocalPinIds();
   const nearbyRecent = cleanPinsData.find(p => {
     if (!p.lat || !p.lng) return false;
     const fp = p.browser_fp || p.ip_hash;
     const myFp = browserFingerprint;
-    if (!fp || !myFp || fp !== myFp) return false;
+    const isMine = p.is_own_pin || (myPinIdsList && myPinIdsList.includes(p.id)) || (fp && myFp && fp === myFp);
+    if (!isMine) return false;
     const dist = Math.sqrt(Math.pow((p.lat - pinLat)*111000, 2) + Math.pow((p.lng - pinLng)*111000*Math.cos(pinLat*Math.PI/180), 2));
     const age = (Date.now() - new Date(p.created_at).getTime()) / 3600000;
     return dist < 500 && age < 24;
