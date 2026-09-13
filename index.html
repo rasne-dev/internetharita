@@ -3263,6 +3263,17 @@ function showHexInfo(pins, hexId) {
             </div>
           </div>`;
         hexAnalysisEl.style.display = 'block';
+      } else if (counts.supportHard / total >= 0.4) {
+        const pct = Math.round((counts.supportHard / total) * 100);
+        hexAnalysisEl.innerHTML = `
+          <div class="hex-analysis-badge warn">
+            <span class="hab-icon">☎️</span>
+            <div>
+              <div class="hab-title">Bölge Deneyim Uyarısı (${total} Görüş)</div>
+              <div class="hab-desc">Bölgedeki kullanıcıların <b>%${pct}</b>'i <b>müşteri desteğine ulaşmakta zorluk</b> bildirdi.</div>
+            </div>
+          </div>`;
+        hexAnalysisEl.style.display = 'block';
       } else if (counts.noDrop / total >= 0.5) {
         const pct = Math.round((counts.noDrop / total) * 100);
         hexAnalysisEl.innerHTML = `
@@ -3296,14 +3307,27 @@ function showHexInfo(pins, hexId) {
             </div>
           </div>`;
         hexAnalysisEl.style.display = 'block';
+      } else if (counts.supportGood / total >= 0.5) {
+        const pct = Math.round((counts.supportGood / total) * 100);
+        hexAnalysisEl.innerHTML = `
+          <div class="hex-analysis-badge pos">
+            <span class="hab-icon">📞</span>
+            <div>
+              <div class="hab-title">Bölge Deneyim Özeti (${total} Görüş)</div>
+              <div class="hab-desc">Bölgedeki kullanıcıların <b>%${pct}</b>'i <b>müşteri hizmetlerinin ilgili olduğunu</b> bildirdi.</div>
+            </div>
+          </div>`;
+        hexAnalysisEl.style.display = 'block';
       } else {
         const allStats = [
           { name: 'akşam saatlerinde hız düşüşü', count: counts.eveningDrop, icon: '📉', warn: true },
           { name: 'ara ara kopmalar', count: counts.disconnect, icon: '⚠️', warn: true },
           { name: 'oyunlarda yüksek ping', count: counts.highPing, icon: '🎯', warn: true },
+          { name: 'müşteri desteğine ulaşmak zor', count: counts.supportHard, icon: '☎️', warn: true },
           { name: 'kesintisiz bağlantı', count: counts.noDrop, icon: '🟢', warn: false },
           { name: 'gün boyu stabil hız', count: counts.stable, icon: '⚡', warn: false },
-          { name: 'düşük ping', count: counts.lowPing, icon: '🎮', warn: false }
+          { name: 'düşük ping', count: counts.lowPing, icon: '🎮', warn: false },
+          { name: 'ilgili müşteri hizmetleri', count: counts.supportGood, icon: '📞', warn: false }
         ].sort((a,b) => b.count - a.count);
 
         if (allStats[0] && allStats[0].count >= 2) {
@@ -3854,7 +3878,7 @@ function renderOperatorExperienceReport() {
     issStats[iss] = stat;
   });
 
-  const list = Object.values(issStats).sort((a, b) => b.total - a.total);
+  const list = Object.values(issStats);
   if (!list.length) {
     container.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text3);font-size:11px;">Analiz edilecek operatör verisi bulunamadı.</div>`;
     return;
@@ -3868,13 +3892,16 @@ function renderOperatorExperienceReport() {
     const leastDisconnect = [...qualifiedList].sort((a, b) => {
       const scoreA = (a.noDrop / a.total) - (a.disconnect / a.total);
       const scoreB = (b.noDrop / b.total) - (b.disconnect / b.total);
-      return scoreB - scoreA;
+      return scoreB - scoreA || b.total - a.total;
     })[0];
 
-    const mostEveningDrop = [...qualifiedList].sort((a, b) => (b.eveningDrop / b.total) - (a.eveningDrop / a.total))[0];
-    const mostStable = [...qualifiedList].sort((a, b) => (b.stable / b.total) - (a.stable / a.total))[0];
+    const mostEveningDrop = [...qualifiedList].sort((a, b) => (b.eveningDrop / b.total) - (a.eveningDrop / a.total) || b.total - a.total)[0];
+    const mostStable = [...qualifiedList].sort((a, b) => (b.stable / b.total) - (a.stable / a.total) || b.total - a.total)[0];
+    const mostLowPing = [...qualifiedList].sort((a, b) => (b.lowPing / b.total) - (a.lowPing / a.total) || b.total - a.total)[0];
+    const mostSupportHard = [...qualifiedList].sort((a, b) => (b.supportHard / b.total) - (a.supportHard / a.total) || b.total - a.total)[0];
+    const mostSupportGood = [...qualifiedList].sort((a, b) => (b.supportGood / b.total) - (a.supportGood / a.total) || b.total - a.total)[0];
 
-    highlightsHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:10px;margin-bottom:14px;">';
+    highlightsHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:10px;margin-bottom:14px;">';
 
     if (leastDisconnect && (leastDisconnect.noDrop > 0 || leastDisconnect.disconnect === 0)) {
       const noDropPct = Math.round((leastDisconnect.noDrop / leastDisconnect.total) * 100);
@@ -3887,6 +3914,22 @@ function renderOperatorExperienceReport() {
               <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${ic(leastDisconnect.iss)};margin-right:5px;vertical-align:middle;"></span>${escHtml(leastDisconnect.iss)}
             </div>
             <div style="font-size:11px;color:var(--success);font-weight:600;margin-top:2px;">%${noDropPct} kesintisiz bildirim (${leastDisconnect.total} farklı adres)</div>
+          </div>
+        </div>
+      `;
+    }
+
+    if (mostStable && mostStable.stable > 0) {
+      const stablePct = Math.round((mostStable.stable / mostStable.total) * 100);
+      highlightsHtml += `
+        <div style="background:var(--surface2);border:1px solid rgba(0,212,255,0.3);border-radius:9px;padding:12px;display:flex;align-items:center;gap:10px;">
+          <div style="font-size:24px;line-height:1;">⚡</div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.3px;">En Gün Boyu Stabil Hız</div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:2px;">
+              <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${ic(mostStable.iss)};margin-right:5px;vertical-align:middle;"></span>${escHtml(mostStable.iss)}
+            </div>
+            <div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px;">%${stablePct} stabil bildirim (${mostStable.total} farklı adres)</div>
           </div>
         </div>
       `;
@@ -3908,21 +3951,53 @@ function renderOperatorExperienceReport() {
       `;
     }
 
-    if (mostStable && mostStable.stable > 0) {
-      const stablePct = Math.round((mostStable.stable / mostStable.total) * 100);
+    if (mostLowPing && mostLowPing.lowPing > 0) {
+      const pingPct = Math.round((mostLowPing.lowPing / mostLowPing.total) * 100);
       highlightsHtml += `
-        <div style="background:var(--surface2);border:1px solid rgba(0,212,255,0.3);border-radius:9px;padding:12px;display:flex;align-items:center;gap:10px;">
-          <div style="font-size:24px;line-height:1;">⚡</div>
+        <div style="background:var(--surface2);border:1px solid rgba(167,139,250,0.3);border-radius:9px;padding:12px;display:flex;align-items:center;gap:10px;">
+          <div style="font-size:24px;line-height:1;">🎮</div>
           <div>
-            <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.3px;">En Gün Boyu Stabil Hız</div>
+            <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.3px;">En Düşük & Sabit Ping</div>
             <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:2px;">
-              <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${ic(mostStable.iss)};margin-right:5px;vertical-align:middle;"></span>${escHtml(mostStable.iss)}
+              <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${ic(mostLowPing.iss)};margin-right:5px;vertical-align:middle;"></span>${escHtml(mostLowPing.iss)}
             </div>
-            <div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px;">%${stablePct} stabil bildirim (${mostStable.total} farklı adres)</div>
+            <div style="font-size:11px;color:#a78bfa;font-weight:600;margin-top:2px;">%${pingPct} düşük ping bildirimi (${mostLowPing.total} farklı adres)</div>
           </div>
         </div>
       `;
     }
+
+    // Müşteri Desteği Öne Çıkanı: Eğer destek zor bildirimi varsa uyarır, yoksa en ilgili operatörü tebrik eder
+    if (mostSupportHard && mostSupportHard.supportHard > 0) {
+      const hardPct = Math.round((mostSupportHard.supportHard / mostSupportHard.total) * 100);
+      highlightsHtml += `
+        <div style="background:var(--surface2);border:1px solid rgba(239,68,68,0.35);border-radius:9px;padding:12px;display:flex;align-items:center;gap:10px;">
+          <div style="font-size:24px;line-height:1;">☎️</div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.3px;">Desteğe Ulaşımı En Zor</div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:2px;">
+              <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${ic(mostSupportHard.iss)};margin-right:5px;vertical-align:middle;"></span>${escHtml(mostSupportHard.iss)}
+            </div>
+            <div style="font-size:11px;color:#f87171;font-weight:600;margin-top:2px;">%${hardPct} desteğe ulaşmak zor bildirdi (${mostSupportHard.total} farklı adres)</div>
+          </div>
+        </div>
+      `;
+    } else if (mostSupportGood && mostSupportGood.supportGood > 0) {
+      const goodPct = Math.round((mostSupportGood.supportGood / mostSupportGood.total) * 100);
+      highlightsHtml += `
+        <div style="background:var(--surface2);border:1px solid rgba(56,189,248,0.3);border-radius:9px;padding:12px;display:flex;align-items:center;gap:10px;">
+          <div style="font-size:24px;line-height:1;">📞</div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.3px;">Müşteri Hizmetleri En İlgili</div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:2px;">
+              <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${ic(mostSupportGood.iss)};margin-right:5px;vertical-align:middle;"></span>${escHtml(mostSupportGood.iss)}
+            </div>
+            <div style="font-size:11px;color:#38bdf8;font-weight:600;margin-top:2px;">%${goodPct} ilgili destek bildirdi (${mostSupportGood.total} farklı adres)</div>
+          </div>
+        </div>
+      `;
+    }
+
     highlightsHtml += '</div>';
   } else {
     highlightsHtml = `
@@ -3933,58 +4008,124 @@ function renderOperatorExperienceReport() {
     `;
   }
 
-  const tableRows = list.map(item => {
+  // Sıralama Mantığı
+  const sortedList = [...list].sort((a, b) => {
+    if (operatorReportSort !== 'total') {
+      if (a.isQualified && !b.isQualified) return -1;
+      if (!a.isQualified && b.isQualified) return 1;
+    }
+
+    if (operatorReportSort === 'noDrop') {
+      const scoreA = (a.noDrop / a.total) - (a.disconnect / a.total);
+      const scoreB = (b.noDrop / b.total) - (b.disconnect / b.total);
+      return scoreB - scoreA || b.total - a.total;
+    }
+    if (operatorReportSort === 'stable') {
+      return (b.stable / b.total) - (a.stable / a.total) || b.total - a.total;
+    }
+    if (operatorReportSort === 'eveningDrop') {
+      return (b.eveningDrop / b.total) - (a.eveningDrop / a.total) || b.total - a.total;
+    }
+    if (operatorReportSort === 'lowPing') {
+      return (b.lowPing / b.total) - (a.lowPing / a.total) || b.total - a.total;
+    }
+    if (operatorReportSort === 'supportHard') {
+      return (b.supportHard / b.total) - (a.supportHard / a.total) || b.total - a.total;
+    }
+    if (operatorReportSort === 'supportGood') {
+      return (b.supportGood / b.total) - (a.supportGood / a.total) || b.total - a.total;
+    }
+    return b.total - a.total;
+  });
+
+  const sortBar = `
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);display:flex;align-items:center;gap:6px;">
+        <span>🏆 Operatör Karşılaştırma & Sıralama:</span>
+        <span style="font-size:10px;font-weight:normal;color:var(--text3);">(Tüm 8 Deneyim Kriteri)</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;overflow-x:auto;max-width:100%;padding-bottom:2px;">
+        <button type="button" class="sort-btn ${operatorReportSort === 'total' ? 'active' : ''}" style="padding:3px 8px;font-size:9px;" onclick="setOperatorReportSort('total')">📊 Tümü (${list.length})</button>
+        <button type="button" class="sort-btn ${operatorReportSort === 'noDrop' ? 'active' : ''}" style="padding:3px 8px;font-size:9px;" onclick="setOperatorReportSort('noDrop')">🟢 Kesintisiz</button>
+        <button type="button" class="sort-btn ${operatorReportSort === 'stable' ? 'active' : ''}" style="padding:3px 8px;font-size:9px;" onclick="setOperatorReportSort('stable')">⚡ Hız Stabilitesi</button>
+        <button type="button" class="sort-btn ${operatorReportSort === 'eveningDrop' ? 'active' : ''}" style="padding:3px 8px;font-size:9px;" onclick="setOperatorReportSort('eveningDrop')">📉 Akşam Düşüşü</button>
+        <button type="button" class="sort-btn ${operatorReportSort === 'lowPing' ? 'active' : ''}" style="padding:3px 8px;font-size:9px;" onclick="setOperatorReportSort('lowPing')">🎮 Düşük Ping</button>
+        <button type="button" class="sort-btn ${operatorReportSort === 'supportHard' ? 'active' : ''}" style="padding:3px 8px;font-size:9px;" onclick="setOperatorReportSort('supportHard')">☎️ Destek Zor</button>
+        <button type="button" class="sort-btn ${operatorReportSort === 'supportGood' ? 'active' : ''}" style="padding:3px 8px;font-size:9px;" onclick="setOperatorReportSort('supportGood')">📞 İlgili Destek</button>
+      </div>
+    </div>
+  `;
+
+  const tableRows = sortedList.map(item => {
     const color = ic(item.iss);
 
     // Eğer en az 3 farklı adres varsa gerçek ortalamalar gösterilir
     if (item.isQualified) {
       const noDropPct = Math.round((item.noDrop / item.total) * 100);
-      const dropPct = Math.round((item.eveningDrop / item.total) * 100);
+      const disconnectPct = Math.round((item.disconnect / item.total) * 100);
+
       const stablePct = Math.round((item.stable / item.total) * 100);
+      const dropPct = Math.round((item.eveningDrop / item.total) * 100);
+
       const pingPct = Math.round((item.lowPing / item.total) * 100);
+      const highPingPct = Math.round((item.highPing / item.total) * 100);
+
+      const supportGoodPct = Math.round((item.supportGood / item.total) * 100);
+      const supportHardPct = Math.round((item.supportHard / item.total) * 100);
 
       return `
-        <div style="display:grid;grid-template-columns:140px repeat(4, 1fr) 70px;align-items:center;gap:8px;padding:9px 10px;border-bottom:1px solid var(--border);font-size:11px;">
+        <div style="display:grid;grid-template-columns:140px repeat(4, 1fr) 75px;align-items:center;gap:8px;padding:9px 10px;border-bottom:1px solid var(--border);font-size:11px;">
           <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
             <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;"></span>
             <span title="${escAttr(item.iss)}">${escHtml(item.iss)}</span>
           </div>
+
+          <!-- 1. KESİNTİSİZ & KOPMALAR -->
           <div>
-            <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;font-family:var(--font-mono);">
-              <span style="color:var(--text3);">Kesintisiz</span>
-              <span style="color:var(--success);font-weight:600;">%${noDropPct}</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:10px;margin-bottom:2px;font-family:var(--font-mono);">
+              <span style="color:var(--success);font-weight:600;">%${noDropPct} kesintisiz</span>
+              <span style="color:${disconnectPct > 0 ? '#f59e0b' : 'var(--text3)'};font-size:9px;" title="Ara ara kopma bildiren: ${item.disconnect} adres">⚠️ %${disconnectPct}</span>
             </div>
             <div style="background:var(--surface3);height:5px;border-radius:3px;overflow:hidden;">
               <div style="width:${noDropPct}%;height:100%;background:var(--success);border-radius:3px;"></div>
             </div>
           </div>
+
+          <!-- 2. HIZ STABİLİTESİ & AKŞAM DÜŞÜŞÜ -->
           <div>
-            <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;font-family:var(--font-mono);">
-              <span style="color:var(--text3);">Akşam Düşüşü</span>
-              <span style="color:var(--warn);font-weight:600;">%${dropPct}</span>
-            </div>
-            <div style="background:var(--surface3);height:5px;border-radius:3px;overflow:hidden;">
-              <div style="width:${dropPct}%;height:100%;background:var(--warn);border-radius:3px;"></div>
-            </div>
-          </div>
-          <div>
-            <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;font-family:var(--font-mono);">
-              <span style="color:var(--text3);">Stabil Hız</span>
-              <span style="color:var(--accent);font-weight:600;">%${stablePct}</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:10px;margin-bottom:2px;font-family:var(--font-mono);">
+              <span style="color:var(--accent);font-weight:600;">%${stablePct} stabil</span>
+              <span style="color:${dropPct > 0 ? '#f59e0b' : 'var(--text3)'};font-size:9px;" title="Akşam saatlerinde hız düşüşü bildiren: ${item.eveningDrop} adres">📉 %${dropPct}</span>
             </div>
             <div style="background:var(--surface3);height:5px;border-radius:3px;overflow:hidden;">
               <div style="width:${stablePct}%;height:100%;background:var(--accent);border-radius:3px;"></div>
             </div>
           </div>
+
+          <!-- 3. PİNG & OYUN -->
           <div>
-            <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;font-family:var(--font-mono);">
-              <span style="color:var(--text3);">Düşük Ping</span>
-              <span style="color:var(--text2);font-weight:600;">%${pingPct}</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:10px;margin-bottom:2px;font-family:var(--font-mono);">
+              <span style="color:#a78bfa;font-weight:600;">%${pingPct} düşük ping</span>
+              <span style="color:${highPingPct > 0 ? '#f43f5e' : 'var(--text3)'};font-size:9px;" title="Oyunlarda yüksek ping bildiren: ${item.highPing} adres">🎯 %${highPingPct}</span>
             </div>
             <div style="background:var(--surface3);height:5px;border-radius:3px;overflow:hidden;">
-              <div style="width:${pingPct}%;height:100%;background:var(--text2);border-radius:3px;"></div>
+              <div style="width:${pingPct}%;height:100%;background:#a78bfa;border-radius:3px;"></div>
             </div>
           </div>
+
+          <!-- 4. MÜŞTERİ HİZMETLERİ & DESTEK -->
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:10px;margin-bottom:2px;font-family:var(--font-mono);">
+              <span style="color:#38bdf8;font-weight:600;">%${supportGoodPct} ilgili</span>
+              <span style="color:${supportHardPct > 0 ? '#ef4444' : 'var(--text3)'};font-size:9px;font-weight:${supportHardPct > 0 ? '700' : 'normal'};" title="Müşteri desteğine ulaşmak zor bildiren: ${item.supportHard} adres">☎️ %${supportHardPct} zor</span>
+            </div>
+            <div style="background:var(--surface3);height:5px;border-radius:3px;overflow:hidden;display:flex;">
+              <div style="width:${supportGoodPct}%;height:100%;background:#38bdf8;border-radius:3px 0 0 3px;"></div>
+              <div style="width:${supportHardPct}%;height:100%;background:#ef4444;border-radius:0 3px 3px 0;"></div>
+            </div>
+          </div>
+
+          <!-- DOĞRULAMA -->
           <div style="text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--success);font-weight:600;" title="${item.total} farklı adresten onaylanmış bağımsız bildirim">
             ✓ ${item.total} adres
           </div>
@@ -3993,7 +4134,7 @@ function renderOperatorExperienceReport() {
     } else {
       // 3'ten az adres varsa yanıltıcı yüzde gösterme, şık bir yetersiz veri uyarısı göster
       return `
-        <div style="display:grid;grid-template-columns:140px 1fr 70px;align-items:center;gap:8px;padding:9px 10px;border-bottom:1px solid var(--border);font-size:11px;opacity:0.8;">
+        <div style="display:grid;grid-template-columns:140px 1fr 75px;align-items:center;gap:8px;padding:9px 10px;border-bottom:1px solid var(--border);font-size:11px;opacity:0.8;">
           <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
             <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;"></span>
             <span title="${escAttr(item.iss)}">${escHtml(item.iss)}</span>
@@ -4002,7 +4143,7 @@ function renderOperatorExperienceReport() {
             <span>⏳ Yetersiz veri (${item.total}/3 bildirim) — Tarafsız ortalama karne için en az 3 farklı adresten bildirim bekleniyor</span>
           </div>
           <div style="text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--text3);">
-            ${item.total}/3
+            ${item.total}/3 adres
           </div>
         </div>
       `;
@@ -4010,12 +4151,12 @@ function renderOperatorExperienceReport() {
   }).join('');
 
   const tableHeader = `
-    <div style="display:grid;grid-template-columns:140px repeat(4, 1fr) 70px;gap:8px;padding:6px 10px;background:var(--surface2);border-radius:6px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px;">
+    <div style="display:grid;grid-template-columns:140px repeat(4, 1fr) 75px;gap:8px;padding:7px 10px;background:var(--surface2);border-radius:6px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px;">
       <div>Sağlayıcı</div>
-      <div>🟢 Kesintisiz</div>
-      <div>📉 Akşam Düşüşü</div>
-      <div>⚡ Stabil Hız</div>
-      <div>🎮 Düşük Ping</div>
+      <div>🟢 Kesintisiz & Kopma</div>
+      <div>⚡ Hız & Akşam Düşüşü</div>
+      <div>🎮 Ping & Oyun</div>
+      <div>☎️ Müşteri Desteği</div>
       <div style="text-align:right;">Doğrulama</div>
     </div>
   `;
@@ -4023,11 +4164,17 @@ function renderOperatorExperienceReport() {
   const footerNote = `
     <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-top:10px;padding-top:6px;border-top:1px dashed var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
       <span>ℹ️ Tarafsız karne kuralı: Tek bir kullanıcının yanıltmasını önlemek için bir operatörün oranlarının hesaplanmasında en az 3 farklı adresten bağımsız bildirim şartı aranır.</span>
-      <span style="color:var(--accent);">✓ Otomatik De-duplication Aktif</span>
+      <span style="color:var(--accent);">✓ 8 Etiket Tam Analizi & De-duplication Aktif</span>
     </div>
   `;
 
-  container.innerHTML = highlightsHtml + '<div style="overflow-x:auto;min-width:100%;">' + tableHeader + tableRows + '</div>' + footerNote;
+  container.innerHTML = highlightsHtml + sortBar + '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;border:1px solid var(--border);"><div style="min-width:760px;background:var(--surface);">' + tableHeader + tableRows + '</div></div>' + footerNote;
+}
+
+let operatorReportSort = 'total';
+function setOperatorReportSort(mode) {
+  operatorReportSort = mode;
+  renderOperatorExperienceReport();
 }
 
 let ilSortMode = 'speed';
