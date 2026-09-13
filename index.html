@@ -592,6 +592,23 @@ html.light .sr-ping { background:#f5f7fa; }
 .sbtn{ flex:1;min-width:28px;min-height:38px;padding:8px 2px;border-radius:5px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:12px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center;display:flex;align-items:center;justify-content:center; } .sbtn.sel{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
 .cbtns{display:flex;gap:6px;} .cbtn{ flex:1;padding:8px;border-radius:6px; border:1px solid var(--border);background:var(--surface2); color:var(--text3);font-size:11px;font-weight:700;font-family:var(--font-mono); cursor:pointer;text-align:center; } .cbtn.fiber.sel{background:rgba(147,51,234,.12);border-color:#9333ea;color:#9333ea;} .cbtn.vdsl.sel{background:rgba(6,182,212,.12);border-color:#06b6d4;color:#06b6d4;} .cbtn.adsl.sel{background:rgba(229,57,53,.12);border-color:var(--s5);color:var(--s5);} .cbtn.docsis.sel{background:rgba(59,130,246,.12);border-color:#3b82f6;color:#3b82f6;} .cbtn.docsis:disabled,.fs:disabled{opacity:.55;cursor:not-allowed;}
 #editExtraAltyapiRows:empty::before { content: "Henüz sağlayıcı eklenmedi — aşağıdaki butonla ekleyin."; display:block; font-size:10px; color:var(--text3); font-style:italic; padding:2px 0 6px; }
+.feedback-tags-grid { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+.feedback-tag {
+  padding: 6px 11px; border-radius: 20px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text2); font-size: 11px; font-weight: 500;
+  cursor: pointer; user-select: none; transition: all 0.15s ease;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.feedback-tag:hover { border-color: var(--text3); color: var(--text); }
+.feedback-tag.sel {
+  background: var(--accent-dim); border-color: var(--accent); color: var(--accent);
+  font-weight: 600; box-shadow: 0 0 8px rgba(0,212,255,0.15);
+}
+.feedback-tag.tag-crit.sel {
+  background: rgba(245,158,11,0.12); border-color: var(--warn); color: var(--warn);
+  box-shadow: 0 0 8px rgba(245,158,11,0.15);
+}
 .loc-box{ background:var(--surface2);border:1px solid var(--border); border-radius:7px;padding:9px 12px;font-size:11px; color:var(--text3);display:flex;align-items:center;gap:8px; }
 .loc-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);flex-shrink:0;} .loc-dot.set{background:var(--success);box-shadow:0 0 8px var(--success);}
 .loc-actions{display:flex;gap:6px;margin-top:5px;} .btn-loc{ flex:1;padding:8px;border-radius:6px; border:1px solid rgba(0,212,255,.3); background:var(--accent-dim);color:var(--accent); font-size:11px;font-weight:700;cursor:pointer; text-align:center; }
@@ -1040,6 +1057,13 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
       <div class="info-row"><span class="info-label">Memnuniyet</span><span class="info-val" id="infoScore">—</span></div>
       <div class="info-row"><span class="info-label">Ölçüm</span><span class="info-val" id="infoCount">—</span></div>
       <div class="info-iss-list" id="infoISS"></div>
+      <div id="infoFeedbackSection" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">
+        <div style="font-size:11px;font-weight:700;font-family:var(--font-mono);color:var(--text);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+          <span>💬 Bölge Sakinlerinin Görüşleri</span>
+          <span id="infoFeedbackCount" style="font-size:9px;color:var(--accent);background:var(--accent-dim);padding:2px 7px;border-radius:10px;font-weight:600;"></span>
+        </div>
+        <div id="infoFeedbackList" style="display:flex;flex-direction:column;gap:7px;max-height:170px;overflow-y:auto;padding-right:2px;"></div>
+      </div>
       <button class="hex-pins-toggle" id="hexPinsToggleBtn" onclick="toggleHexPinsList()">▼ Tüm ölçümleri gör</button>
       <div class="hex-pins-list" id="hexPinsList" style="display:none;"></div>
       <button class="popup-btn popup-report" id="infoBildirBtn" onclick="openHexReport()" style="width:100%;margin-top:10px;padding:7px;">🚩 Bu Bölgeyi Bildir</button>
@@ -1201,7 +1225,20 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
         <div style="font-size:9px;color:var(--text3);margin-top:3px;font-family:var(--font-body);">Hız testi yapılmadan form gönderilemez. Verinin güvenilirliği için zorunludur.</div>
       </div>
       <div class="fg"><div class="fl">Memnuniyet Puanı (1–10)</div><div class="score-row" id="scoreRow"></div></div>
-      <div class="fg"><div class="fl">Kısa Yorum <span style="color:var(--text3);font-weight:400;">(opsiyonel)</span></div><textarea class="fta" placeholder="Fiber'e geçişten sonra çok iyi oldu..." id="commentInput"></textarea></div>
+      <div class="fg">
+        <div class="fl">Deneyim ve Görüşleriniz <span style="color:var(--text3);font-weight:400;">(uygun olanları seçin — opsiyonel)</span></div>
+        <div class="feedback-tags-grid" id="feedbackTags">
+          <div class="feedback-tag" data-val="⚡ Hız gün boyu stabil" onclick="toggleFeedbackTag(this)">⚡ Hız gün boyu stabil</div>
+          <div class="feedback-tag" data-val="🟢 Kesinti / kopma olmuyor" onclick="toggleFeedbackTag(this)">🟢 Kesinti / kopma olmuyor</div>
+          <div class="feedback-tag" data-val="🎮 Düşük ve sabit ping" onclick="toggleFeedbackTag(this)">🎮 Düşük ve sabit ping</div>
+          <div class="feedback-tag" data-val="📞 Müşteri hizmetleri ilgili" onclick="toggleFeedbackTag(this)">📞 Müşteri hizmetleri ilgili</div>
+          <div class="feedback-tag tag-crit" data-val="📉 Akşam saatlerinde hız düşüyor" onclick="toggleFeedbackTag(this)">📉 Akşam saatlerinde hız düşüyor</div>
+          <div class="feedback-tag tag-crit" data-val="⚠️ Ara ara kopmalar oluyor" onclick="toggleFeedbackTag(this)">⚠️ Ara ara kopmalar oluyor</div>
+          <div class="feedback-tag tag-crit" data-val="🎯 Oyunlarda yüksek ping" onclick="toggleFeedbackTag(this)">🎯 Oyunlarda yüksek ping</div>
+          <div class="feedback-tag tag-crit" data-val="☎️ Müşteri desteğine ulaşmak zor" onclick="toggleFeedbackTag(this)">☎️ Müşteri desteğine ulaşmak zor</div>
+        </div>
+        <input type="hidden" id="commentInput" value="">
+      </div>
       <div class="fg" style="margin-top:4px;">
         <div class="fl">Fiziksel Hat Sahibi <span style="color:var(--text3);font-weight:400;">(biliyorsanız — opsiyonel)</span></div>
         <select class="fs" id="infraSelect">
@@ -3022,6 +3059,53 @@ function showHexInfo(pins, hexId) {
   }
 
   document.getElementById('infoISS').innerHTML = matrixHtml;
+
+  // BÖLGE SAKİNLERİNİN DENEYİMLERİ (Yorum / Etiket Listesi)
+  const feedbackPins = pins.filter(p => p.yorum && p.yorum.trim());
+  const fbSec = document.getElementById('infoFeedbackSection');
+  const fbList = document.getElementById('infoFeedbackList');
+  const fbCount = document.getElementById('infoFeedbackCount');
+
+  if (fbSec && fbList) {
+    if (feedbackPins.length > 0) {
+      fbSec.style.display = 'block';
+      if (fbCount) fbCount.textContent = `${feedbackPins.length} görüş`;
+      fbList.innerHTML = feedbackPins.map(p => {
+        const mahalleStr = (p.mahalle && p.mahalle !== '?' && p.mahalle !== 'Bilinmeyen' && p.mahalle.trim())
+          ? `📍 ${escHtml(p.mahalle.trim())}`
+          : (p.ilce ? `📍 ${escHtml(p.ilce.trim())}` : '📍 Bu Bölge');
+        const c = ic(p.iss);
+        const issStr = `<span style="color:${c};font-weight:600;">● ${escHtml(p.iss || 'İSS')}</span> · <span style="color:var(--text3);">${(p.baglanti_turu||'').toUpperCase()}</span>`;
+        const scoreBadge = p.puan ? `<span style="font-size:9px;font-weight:700;color:${memColor(p.puan)}">${memShapeHtml(p.puan)}${p.puan}/10</span>` : '';
+        
+        const tags = p.yorum.split(',').map(t => t.trim()).filter(Boolean);
+        const tagsHtml = tags.map(tag => {
+          const isCrit = tag.includes('düşüyor') || tag.includes('kopma') || tag.includes('yüksek ping') || tag.includes('zor') || tag.includes('⚠️') || tag.includes('📉') || tag.includes('🎯') || tag.includes('☎️');
+          const badgeStyle = isCrit 
+            ? 'background:rgba(245,158,11,0.08);color:var(--warn);border:1px solid rgba(245,158,11,0.25);'
+            : 'background:var(--accent-dim);color:var(--accent);border:1px solid rgba(0,212,255,0.25);';
+          return `<span style="font-size:9px;padding:2px 7px;border-radius:12px;display:inline-block;${badgeStyle}">${escHtml(tag)}</span>`;
+        }).join(' ');
+
+        return `
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px;display:flex;flex-direction:column;gap:5px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:10px;">
+              <span style="font-weight:700;color:var(--text);">${mahalleStr}</span>
+              ${scoreBadge}
+            </div>
+            <div style="font-size:9px;display:flex;align-items:center;gap:4px;">${issStr}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;">
+              ${tagsHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+    } else {
+      fbSec.style.display = 'none';
+      fbList.innerHTML = '';
+    }
+  }
+
   document.getElementById('mapInfo').classList.add('visible');
   const body = document.querySelector('.map-info-body'); if(body) body.scrollTop = 0;
   // Ölçüm listesini sıfırla
@@ -4074,6 +4158,17 @@ function collectExtraAltyapi() { return []; }
 function selScore(el,val) { document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); selScoreVal=val; }
 (function buildScoreRow() { const row = document.getElementById('scoreRow'); if(!row) return; for(let i=1;i<=10;i++){const b=document.createElement('div');b.className='sbtn';b.textContent=i;b.onclick=()=>selScore(b,i);row.appendChild(b);} })();
 
+function toggleFeedbackTag(el) {
+  el.classList.toggle('sel');
+  const selTags = [];
+  document.querySelectorAll('#feedbackTags .feedback-tag.sel').forEach(t => {
+    const val = t.getAttribute('data-val') || t.textContent.trim();
+    if (val) selTags.push(val);
+  });
+  const input = document.getElementById('commentInput');
+  if (input) input.value = selTags.join(', ');
+}
+
 // ===== ALAN HATA VURGUSU =====
 // Boş/geçersiz bir form alanını görsel olarak vurgular:
 // - İlgili container'a .field-error ekler (kırmızı kenarlık + shake animasyonu)
@@ -4540,7 +4635,7 @@ async function deleteUserPin(pinId) {
   }
 }
 
-function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); selConnVal=''; selScoreVal=0; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); speedVerifiedByTest = false; const kvkkCheck = document.getElementById('kvkkCheck');
+function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); document.querySelectorAll('#feedbackTags .feedback-tag').forEach(t => t.classList.remove('sel')); selConnVal=''; selScoreVal=0; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); speedVerifiedByTest = false; const kvkkCheck = document.getElementById('kvkkCheck');
   if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; }
   const noInfraCheck = document.getElementById('noInfraCheck');
   if (noInfraCheck && noInfraCheck.checked) { noInfraCheck.checked = false; onNoInfraChange(false); }
@@ -5844,6 +5939,7 @@ function showSearchResultCard(targetLat, targetLng, title, sub) {
     `;
     const hexBtn = document.getElementById('hexPinsToggleBtn'); if (hexBtn) hexBtn.style.display = 'none';
     const hexList = document.getElementById('hexPinsList'); if (hexList) hexList.style.display = 'none';
+    const fbSec = document.getElementById('infoFeedbackSection'); if (fbSec) fbSec.style.display = 'none';
     const bildirBtn = document.getElementById('infoBildirBtn'); if (bildirBtn) bildirBtn.style.display = 'none';
     const infoEl = document.getElementById('mapInfo');
     if (infoEl) infoEl.classList.add('visible');
