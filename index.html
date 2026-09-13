@@ -3279,123 +3279,41 @@ function showHexInfo(pins, hexId) {
         if (tags.some(t => t.includes('Müşteri hizmetleri ilgili'))) counts.supportGood++;
       });
 
-      if (counts.eveningDrop / total >= 0.4) {
-        const pct = Math.round((counts.eveningDrop / total) * 100);
+      const allStats = [
+        { name: 'kesintisiz stabil bağlantı', count: counts.noDrop, icon: '🟢', warn: false, title: 'Bölge Deneyim Özeti' },
+        { name: 'hızın gün boyu stabil olduğunu', count: counts.stable, icon: '⚡', warn: false, title: 'Bölge Deneyim Özeti' },
+        { name: 'düşük ve sabit ping', count: counts.lowPing, icon: '🎮', warn: false, title: 'Bölge Deneyim Özeti' },
+        { name: 'müşteri hizmetlerinin ilgili olduğunu', count: counts.supportGood, icon: '📞', warn: false, title: 'Bölge Deneyim Özeti' },
+        { name: 'akşam saatlerinde hız düşüşü', count: counts.eveningDrop, icon: '📉', warn: true, title: 'Bölge Deneyim Uyarısı' },
+        { name: 'ara ara kopmalar', count: counts.disconnect, icon: '⚠️', warn: true, title: 'Bölge Deneyim Uyarısı' },
+        { name: 'oyunlarda yüksek ping', count: counts.highPing, icon: '🎯', warn: true, title: 'Bölge Deneyim Uyarısı' },
+        { name: 'müşteri desteğine ulaşmakta zorluk', count: counts.supportHard, icon: '☎️', warn: true, title: 'Bölge Deneyim Uyarısı' }
+      ].sort((a, b) => b.count - a.count);
+
+      if (allStats[0] && allStats[0].count > 0) {
+        const top = allStats[0];
+        const pct = Math.round((top.count / total) * 100);
+        const badgeClass = top.warn ? 'warn' : 'pos';
+
+        // İkincil belirgin deneyim varsa ekle
+        let secondaryText = '';
+        if (allStats[1] && allStats[1].count > 0 && Math.round((allStats[1].count / total) * 100) >= 30) {
+          const secondPct = Math.round((allStats[1].count / total) * 100);
+          secondaryText = ` (Ayrıca %${secondPct} ${allStats[1].icon} ${allStats[1].name})`;
+        }
+
         hexAnalysisEl.innerHTML = `
-          <div class="hex-analysis-badge warn">
-            <span class="hab-icon">📉</span>
+          <div class="hex-analysis-badge ${badgeClass}">
+            <span class="hab-icon">${top.icon}</span>
             <div>
-              <div class="hab-title">Bölge Deneyim Uyarısı (${total} Görüş)</div>
-              <div class="hab-desc">Bölgedeki kullanıcıların <b>%${pct}</b>'i <b>akşam saatlerinde hız düşüşü</b> bildirdi.</div>
-            </div>
-          </div>`;
-        hexAnalysisEl.style.display = 'block';
-      } else if (counts.disconnect / total >= 0.4) {
-        const pct = Math.round((counts.disconnect / total) * 100);
-        hexAnalysisEl.innerHTML = `
-          <div class="hex-analysis-badge warn">
-            <span class="hab-icon">⚠️</span>
-            <div>
-              <div class="hab-title">Bölge Deneyim Uyarısı (${total} Görüş)</div>
-              <div class="hab-desc">Bölgedeki kullanıcıların <b>%${pct}</b>'i <b>ara ara kopmalar</b> bildirdi.</div>
-            </div>
-          </div>`;
-        hexAnalysisEl.style.display = 'block';
-      } else if (counts.highPing / total >= 0.4) {
-        const pct = Math.round((counts.highPing / total) * 100);
-        hexAnalysisEl.innerHTML = `
-          <div class="hex-analysis-badge warn">
-            <span class="hab-icon">🎯</span>
-            <div>
-              <div class="hab-title">Bölge Deneyim Uyarısı (${total} Görüş)</div>
-              <div class="hab-desc">Bölgedeki kullanıcıların <b>%${pct}</b>'i <b>oyunlarda yüksek ping</b> bildirdi.</div>
-            </div>
-          </div>`;
-        hexAnalysisEl.style.display = 'block';
-      } else if (counts.supportHard / total >= 0.4) {
-        const pct = Math.round((counts.supportHard / total) * 100);
-        hexAnalysisEl.innerHTML = `
-          <div class="hex-analysis-badge warn">
-            <span class="hab-icon">☎️</span>
-            <div>
-              <div class="hab-title">Bölge Deneyim Uyarısı (${total} Görüş)</div>
-              <div class="hab-desc">Bölgedeki kullanıcıların <b>%${pct}</b>'i <b>müşteri desteğine ulaşmakta zorluk</b> bildirdi.</div>
-            </div>
-          </div>`;
-        hexAnalysisEl.style.display = 'block';
-      } else if (counts.noDrop / total >= 0.5) {
-        const pct = Math.round((counts.noDrop / total) * 100);
-        hexAnalysisEl.innerHTML = `
-          <div class="hex-analysis-badge pos">
-            <span class="hab-icon">🟢</span>
-            <div>
-              <div class="hab-title">Bölge Deneyim Özeti (${total} Görüş)</div>
-              <div class="hab-desc">Bölgedeki kullanıcıların <b>%${pct}</b>'i <b>kesintisiz stabil bağlantı</b> bildirdi.</div>
-            </div>
-          </div>`;
-        hexAnalysisEl.style.display = 'block';
-      } else if (counts.stable / total >= 0.5) {
-        const pct = Math.round((counts.stable / total) * 100);
-        hexAnalysisEl.innerHTML = `
-          <div class="hex-analysis-badge pos">
-            <span class="hab-icon">⚡</span>
-            <div>
-              <div class="hab-title">Bölge Deneyim Özeti (${total} Görüş)</div>
-              <div class="hab-desc">Bölgedeki kullanıcıların <b>%${pct}</b>'i <b>hızın gün boyu stabil olduğunu</b> bildirdi.</div>
-            </div>
-          </div>`;
-        hexAnalysisEl.style.display = 'block';
-      } else if (counts.lowPing / total >= 0.5) {
-        const pct = Math.round((counts.lowPing / total) * 100);
-        hexAnalysisEl.innerHTML = `
-          <div class="hex-analysis-badge pos">
-            <span class="hab-icon">🎮</span>
-            <div>
-              <div class="hab-title">Bölge Deneyim Özeti (${total} Görüş)</div>
-              <div class="hab-desc">Bölgedeki kullanıcıların <b>%${pct}</b>'i <b>düşük ve sabit ping</b> bildirdi.</div>
-            </div>
-          </div>`;
-        hexAnalysisEl.style.display = 'block';
-      } else if (counts.supportGood / total >= 0.5) {
-        const pct = Math.round((counts.supportGood / total) * 100);
-        hexAnalysisEl.innerHTML = `
-          <div class="hex-analysis-badge pos">
-            <span class="hab-icon">📞</span>
-            <div>
-              <div class="hab-title">Bölge Deneyim Özeti (${total} Görüş)</div>
-              <div class="hab-desc">Bölgedeki kullanıcıların <b>%${pct}</b>'i <b>müşteri hizmetlerinin ilgili olduğunu</b> bildirdi.</div>
+              <div class="hab-title">${top.title} (${total} Görüş)</div>
+              <div class="hab-desc">Bölgedeki kullanıcıların çoğunluğu (<b>%${pct}</b>) <b>${top.name}</b> bildirdi.${secondaryText}</div>
             </div>
           </div>`;
         hexAnalysisEl.style.display = 'block';
       } else {
-        const allStats = [
-          { name: 'akşam saatlerinde hız düşüşü', count: counts.eveningDrop, icon: '📉', warn: true },
-          { name: 'ara ara kopmalar', count: counts.disconnect, icon: '⚠️', warn: true },
-          { name: 'oyunlarda yüksek ping', count: counts.highPing, icon: '🎯', warn: true },
-          { name: 'müşteri desteğine ulaşmak zor', count: counts.supportHard, icon: '☎️', warn: true },
-          { name: 'kesintisiz bağlantı', count: counts.noDrop, icon: '🟢', warn: false },
-          { name: 'gün boyu stabil hız', count: counts.stable, icon: '⚡', warn: false },
-          { name: 'düşük ping', count: counts.lowPing, icon: '🎮', warn: false },
-          { name: 'ilgili müşteri hizmetleri', count: counts.supportGood, icon: '📞', warn: false }
-        ].sort((a,b) => b.count - a.count);
-
-        if (allStats[0] && allStats[0].count >= 2) {
-          const top = allStats[0];
-          const pct = Math.round((top.count / total) * 100);
-          const badgeClass = top.warn ? 'warn' : 'pos';
-          hexAnalysisEl.innerHTML = `
-            <div class="hex-analysis-badge ${badgeClass}">
-              <span class="hab-icon">${top.icon}</span>
-              <div>
-                <div class="hab-title">Bölge Deneyim Analizi (${total} Görüş)</div>
-                <div class="hab-desc">Bölgedeki kullanıcıların <b>%${pct}</b>'i <b>${top.name}</b> belirtti.</div>
-              </div>
-            </div>`;
-          hexAnalysisEl.style.display = 'block';
-        } else {
-          hexAnalysisEl.innerHTML = '';
-          hexAnalysisEl.style.display = 'none';
-        }
+        hexAnalysisEl.innerHTML = '';
+        hexAnalysisEl.style.display = 'none';
       }
     } else {
       hexAnalysisEl.innerHTML = '';
