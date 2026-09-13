@@ -5591,10 +5591,10 @@ function getUploadBytesFiller(size) {
   }
   return _uploadBytesFiller;
 }
-// Sabit boyutlu parçaları (küçük tutarak backpressure'ı = gerçek gönderim hızını
-// yakından takip ediyoruz) sürekli üreten bir akış; stopAt'e ulaşınca kapanır.
+// Sabit boyutlu parçaları (yüksek hızlı Gigabit bağlantılarda CPU/event-loop yükünü
+// minimize etmek ve backpressure'ı yakından takip etmek için 128KB) üreten akış.
 function makeUploadStream(stopAt, onBytes) {
-  const PIECE = 65536; // 64KB
+  const PIECE = 131072; // 128KB (1 Gbps yüklemede saniyede ~1000 yerine ~500 pull ile tam verim)
   const filler = getUploadBytesFiller(PIECE);
   return new ReadableStream({
     pull(controller) {
@@ -6068,8 +6068,9 @@ async function measureUploadCF(onLive) {
     // Artık daha yüksek bir eşiğin altında kalan bağlantılar 2 akışta tutuluyor.
     if (probeMbps === null) PARALLEL_STREAMS = 2;       // prob başarısız oldu, ılımlı varsayılan
     else if (probeMbps < 25) PARALLEL_STREAMS = 2;      // yavaş/orta bağlantı — tek-uygulama deneyimine yakın tut
-    else if (probeMbps < 100) PARALLEL_STREAMS = 4;     // hızlı bağlantı
-    else PARALLEL_STREAMS = 6;                          // çok hızlı fiber — TCP pencere sınırını aşmak için daha fazla akış gerekli
+    else if (probeMbps < 100) PARALLEL_STREAMS = 4;     // orta/hızlı bağlantı
+    else if (probeMbps < 250) PARALLEL_STREAMS = 6;     // çok hızlı fiber
+    else PARALLEL_STREAMS = 8;                          // 1 Gbps Gigabit simetrik fiber — tam hat doyumuna ulaşmak için 8 akış
     window.lastUploadProbeMbps = probeMbps ? Math.round(probeMbps) : null;
   }
 
@@ -6102,14 +6103,22 @@ async function measureUploadCF(onLive) {
   // YOL B — Tamamlanma-tabanlı (streaming desteklenmiyorsa)
   async function cfStream(n) {
     let consecutiveErrors = 0;
+    let chunkBytes = CHUNK_BYTES;
     while (performance.now() < stopAt) {
+      const t0 = performance.now();
       try {
         const r = await fetchWithTimeout(`${SPEED_UPLOAD_URL}?t=${Date.now()}_${n}_${Math.random()}`, {
           method: 'POST', mode: 'cors', cache: 'no-store',
           headers: { 'Content-Type': 'text/plain' },
-          body: makeUploadBlob(CHUNK_BYTES)
+          body: makeUploadBlob(chunkBytes)
         }, 10000);
-        if (r && (r.ok || r.status === 0)) { totalSent += CHUNK_BYTES; consecutiveErrors = 0; }
+        if (r && (r.ok || r.status === 0)) {
+          totalSent += chunkBytes;
+          consecutiveErrors = 0;
+          // Gigabit/hızlı hatlarda chunk çok hızlı (<80ms) biterse boyutu 2MB'a kadar kademeli artır
+          const dt = performance.now() - t0;
+          if (dt < 80 && chunkBytes < 2 * 1024 * 1024) chunkBytes = Math.min(chunkBytes * 2, 2 * 1024 * 1024);
+        }
         else { consecutiveErrors++; if (consecutiveErrors >= 2) break; }
       } catch (e) {
         consecutiveErrors++;
