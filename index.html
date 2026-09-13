@@ -4063,9 +4063,11 @@ async function deleteUserPin(pinId) {
     pinsData = pinsData.filter(p => p.id !== pinId);
     cleanPinsData = publicCleanPins(pinsData);
     renderHex();
+    if (document.getElementById('page-istatistik')?.classList.contains('active')) renderStats();
     showToast('🗑 Ölçümünüz silindi.');
     document.getElementById('mapInfo').classList.remove('visible');
     await loadPins(); // sunucu verisini de senkronize et
+    if (document.getElementById('page-istatistik')?.classList.contains('active')) renderStats();
   } catch(e) {
     showToast(friendlyDbError(e,'pins'), 'err');
   }
@@ -5069,7 +5071,7 @@ async function quickApproveEdit() {
 async function modDeletePin(id, permanent = false) {
   try { 
     if (permanent) await hardDelPin(id); else await delPin(id); 
-    document.getElementById('mc_'+id)?.remove(); document.getElementById('se_'+id)?.remove(); adminPinsCache = adminPinsCache.filter(p=>p.id!==id); pinsData = pinsData.filter(p=>p.id!==id); cleanPinsData = publicCleanPins(pinsData); if (maps.main) { renderHex(); renderModPins(); } showToast('🗑 Pin silindi'); loadAdminTable(); 
+    document.getElementById('mc_'+id)?.remove(); document.getElementById('se_'+id)?.remove(); adminPinsCache = adminPinsCache.filter(p=>p.id!==id); pinsData = pinsData.filter(p=>p.id!==id); cleanPinsData = publicCleanPins(pinsData); if (maps.main) { renderHex(); renderModPins(); } if (document.getElementById('page-istatistik')?.classList.contains('active')) renderStats(); showToast('🗑 Pin silindi'); loadAdminTable(); 
   } catch(e) { 
     if(e.message.includes("does not exist") || e.message.includes("schema cache")) showToast("Supabase Cache yenileniyor, birazdan tekrar dene.", "warn");
     else showToast('Hata: '+e.message,'err'); 
