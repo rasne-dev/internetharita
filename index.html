@@ -4133,7 +4133,7 @@ async function submitPin() {
   }
   
   const pkgDL = parseInt(document.getElementById('packageSpeedDL').value);
-  const pkgUL = parseInt(document.getElementById('packageSpeedUL').value);
+  const pkgUL = parseInt(document.getElementById('packageSpeedUL').value) || null;
   let dl = parseInt(document.getElementById('dlSpeed').value) || 0;
   let ul = parseInt(document.getElementById('ulSpeed').value) || 0;
   // DUZELTME: CSS class kontrolu bazen yanlis sonuc verebilir.
@@ -4232,7 +4232,7 @@ async function submitPin() {
     baglanti_turu:selConnVal || (isAltyapiYok ? 'yok' : null), 
     diger_altyapilar: extraAltyapiList.length ? JSON.stringify(extraAltyapiList) : null,
     altyapi_sahibi:document.getElementById('infraSelect').value||null, 
-    paket_hizi: pkgDL, paket_hizi_dl: pkgDL, paket_hizi_ul: pkgUL, 
+    paket_hizi: pkgDL, paket_hizi_dl: pkgDL, paket_hizi_ul: (pkgUL && pkgUL > 0) ? pkgUL : null, 
     gercek_dl:dl, gercek_ul:ul, 
     puan:selScoreVal, 
     yorum:document.getElementById('commentInput').value||null, 
@@ -5796,12 +5796,16 @@ self.addEventListener('fetch',e=>{
 <script>
 function showThankyou(data) {
   const isQ = data.quarantine;
+  const isAltyapiYok = !!data.isAltyapiYok;
   document.getElementById('tySubText').textContent = isQ
     ? '⚠ Veriniz incelemeye alındı. Onaylandıktan sonra haritada görünecek.'
     : 'Veriniz haritaya eklendi. Türkiye internet altyapısının belgelenmesine katkı sağladınız!';
+  
+  const dlDisplay = isAltyapiYok ? 'Yok' : (data.dl || '—');
+  const ulDisplay = isAltyapiYok ? 'Yok' : (data.ul || '—');
   document.getElementById('tyStatsGrid').innerHTML = `
-    <div class="ty-stat"><div class="ty-stat-val" style="color:${speedColor(data.dl)}">${data.dl}</div><div class="ty-stat-label">↓ Mbps İndirme</div></div>
-    <div class="ty-stat"><div class="ty-stat-val" style="color:${data.ul?speedColor(data.ul):'var(--text3)'}">${data.ul||'—'}</div><div class="ty-stat-label">↑ Mbps Yükleme</div></div>
+    <div class="ty-stat"><div class="ty-stat-val" style="color:${isAltyapiYok ? 'var(--text3)' : speedColor(data.dl)}">${dlDisplay}</div><div class="ty-stat-label">↓ Mbps İndirme</div></div>
+    <div class="ty-stat"><div class="ty-stat-val" style="color:${(isAltyapiYok || !data.ul) ? 'var(--text3)' : speedColor(data.ul)}">${ulDisplay}</div><div class="ty-stat-label">↑ Mbps Yükleme</div></div>
     <div class="ty-stat"><div class="ty-stat-val" style="color:var(--text2)">${escHtml(data.iss)||'—'}</div><div class="ty-stat-label">İSS</div></div>
     <div class="ty-stat"><div class="ty-stat-val" style="color:var(--success)">${escHtml(data.il)||'—'}</div><div class="ty-stat-label">Şehir</div></div>
   `;
@@ -5812,22 +5816,39 @@ function closeThankyou() {
 }
 
 // "Haritada Gör" — sayfayı harita görünümüne geçirir ve yeni eklenen pine
-// uçarak yakınlaştırır. Eskiden sadece showPage('harita') çağrılıyordu,
-// bu da haritayı varsayılan Türkiye genel görünümünde bırakıyordu —
-// kullanıcı eklediği bölgeyi görmüyordu.
+// uçarak yakınlaştırır.
 function goToSubmittedLocation() {
   closeThankyou();
   showPage('harita');
   if (!lastSubmittedLatLng) return;
   const target = lastSubmittedLatLng;
-  // showPage haritayı setTimeout(50ms) ile init ediyor; initMainMap içinde
-  // maps.main senkron olarak set edildiği için kısa bir polling ile
-  // hazır olduğu an flyTo çağırıyoruz (maks ~3 sn dene).
   let attempts = 0;
   const tryFly = () => {
     attempts++;
     if (maps.main) {
+      maps.main.invalidateSize();
       maps.main.flyTo([target.lat, target.lng], 14, { animate: true, duration: 1.5 });
+      
+      // Yeni eklenen pini cyan nabız halkasıyla vurgula
+      if (typeof locationFocusMarker !== 'undefined' && locationFocusMarker) {
+        maps.main.removeLayer(locationFocusMarker); locationFocusMarker = null;
+      }
+      if (typeof locationFocusTimer !== 'undefined' && locationFocusTimer) {
+        clearTimeout(locationFocusTimer); locationFocusTimer = null;
+      }
+      const icon = L.divIcon({
+        className: 'location-focus-div-icon',
+        html: `<div class="location-focus-container"><div class="location-focus-ripple"></div><div class="location-focus-core"></div></div>`,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+      });
+      locationFocusMarker = L.marker([target.lat, target.lng], { icon, zIndexOffset: 999, interactive: false }).addTo(maps.main);
+      locationFocusTimer = setTimeout(() => {
+        if (locationFocusMarker && maps.main) {
+          maps.main.removeLayer(locationFocusMarker);
+          locationFocusMarker = null;
+        }
+      }, 10000);
     } else if (attempts < 30) {
       setTimeout(tryFly, 100);
     }
