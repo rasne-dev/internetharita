@@ -1001,7 +1001,7 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   <div class="stats-top" id="sumGrid"></div>
   <div class="stats-grid">
     <div style="display:flex;flex-direction:column;gap:14px;">
-      <div class="stat-card"><div class="stat-title">ISS Memnuniyet Sıralaması</div><div id="issRankList" style="max-height:330px;overflow-y:auto;"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
+      <div class="stat-card"><div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;"><span>ISS Memnuniyet Sıralaması</span><span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);font-weight:normal;">min. 5 ölçüm</span></div><div id="issRankList" style="max-height:330px;overflow-y:auto;"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
       <div class="stat-card"><div class="stat-title">En Aktif İller</div><div id="activeIlList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;">
@@ -2900,13 +2900,13 @@ async function renderStats() {
     im[iss].t += p.puan;
     im[iss].c++;
   });
-  const MIN_COUNT = 1;
+  const MIN_COUNT = 5;
   document.getElementById('issRankList').innerHTML = Object.entries(im)
     .filter(([_, d]) => d.c >= MIN_COUNT)
     .map(([iss, d]) => ({ iss, s:(d.t/d.c).toFixed(1), c:d.c }))
     .sort((a,b) => b.s-a.s)
     .map((x,i) => `<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${escHtml(displayIssName(x.iss))}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.s)}">${memShapeHtml(parseFloat(x.s))}${x.s}</div></div>`)
-    .join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok</div>';
+    .join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok (min. 5 ölçüm gerekli)</div>';
   
   // EN HIZLI LOKASYONLAR (artık ISS filtresiyle de çağrılabilen bağımsız fonksiyon)
   populateSpeedRankIlFilter(pins);
