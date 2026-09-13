@@ -1001,7 +1001,10 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
       <div class="mlo-spinner" id="mloSpinner"></div>
       <div class="mlo-title" id="mloTitle">Harita Yükleniyor...</div>
       <div class="mlo-desc" id="mloDesc">Altyapı verileri ve harita katmanları hazırlanıyor</div>
-      <button class="mlo-btn" id="mloRetryBtn" onclick="retryLoadMap()" style="display:none;">↺ Yeniden Dene</button>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px;">
+        <button class="mlo-btn" id="mloRetryBtn" onclick="retryLoadMap()" style="display:none;">↺ Yeniden Dene</button>
+        <button class="mlo-btn" id="mloDismissBtn" onclick="hideMapLoading()" style="display:none;background:var(--card2);color:var(--text2);border:1px solid var(--border);">✕ Haritayı Aç</button>
+      </div>
     </div>
   </div>
   <div class="map-sidebar-toggle" id="sidebarToggle" onclick="toggleMapSidebar()">⚙ Filtreler</div>
@@ -1853,65 +1856,132 @@ let myPinsLayer = null;
 })();
 
 async function sbRest(path, opts = {}) {
-  let sess = null;
-  try {
-    const res = await Promise.race([
-      sbc.auth.getSession(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('session_timeout')), 2000))
-    ]);
-    sess = res?.data;
-  } catch(e) {}
-  const token = sess?.session?.access_token;
-  let preferHeader;
-  if (opts.prefer) {
-    preferHeader = opts.prefer;
-  } else if (opts.method === 'POST') {
-    preferHeader = 'return=minimal';
-  } else {
-    preferHeader = 'return=representation';
-  }
-  const headers = {
-    'apikey': SB_KEY,
-    'Content-Type': 'application/json',
-    'Prefer': preferHeader,
-    'X-Browser-FP': browserFingerprint || ''
-  };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), opts.timeout || 10000);
-  let r;
-  try {
-    r = await fetch(`${SB_URL}/rest/v1/${path}`, { headers, method: opts.method || 'GET', body: opts.body, signal: controller.signal });
-  } finally {
-    clearTimeout(timer);
-  }
+  const isGet = !opts.method || opts.method.toUpperCase() === 'GET';
+  const maxRetries = isGet ? 1 : 0;
+  let lastErr = null;
 
-  // POST minimal, DELETE, ve PATCH minimal: body okuma gerekmiyor, sadece ok/error
-  if (opts.method === 'DELETE' ||
-      (opts.method === 'PATCH' && opts.prefer?.includes('minimal')) ||
-      (opts.method === 'POST' && !opts.prefer)) {
-    if (!r.ok) { const err = await r.text(); throw new Error(err || 'İşlem başarısız'); }
-    return { ok: true };
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (attempt > 0) {
+      await new Promise(r => setTimeout(r, 800));
+    }
+    let sess = null;
+    try {
+      const res = await Promise.race([
+        sbc.auth.getSession(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('session_timeout')), 2000))
+      ]);
+      sess = res?.data;
+    } catch(e) {}
+    const token = sess?.session?.access_token;
+    let preferHeader;
+    if (opts.prefer) {
+      preferHeader = opts.prefer;
+    } else if (opts.method === 'POST') {
+      preferHeader = 'return=minimal';
+    } else {
+      preferHeader = 'return=representation';
+    }
+    const headers = {
+      'apikey': SB_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': preferHeader,
+      'X-Browser-FP': browserFingerprint || ''
+    };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), opts.timeout || 12000);
+    let r;
+    try {
+      r = await fetch(`${SB_URL}/rest/v1/${path}`, { headers, method: opts.method || 'GET', body: opts.body, signal: controller.signal });
+    } catch(fetchErr) {
+      clearTimeout(timer);
+      lastErr = fetchErr;
+      if (attempt < maxRetries) continue;
+      throw new Error(fetchErr.name === 'AbortError' ? 'Bağlantı zaman aşımına uğradı' : (fetchErr.message || 'Ağ bağlantısı kurulamadı'));
+    }
+    clearTimeout(timer);
+
+    // POST minimal, DELETE, ve PATCH minimal: body okuma gerekmiyor, sadece ok/error
+    if (opts.method === 'DELETE' ||
+        (opts.method === 'PATCH' && opts.prefer?.includes('minimal')) ||
+        (opts.method === 'POST' && !opts.prefer)) {
+      if (!r.ok) { const err = await r.text(); throw new Error(err || 'İşlem başarısız'); }
+      return { ok: true };
+    }
+    const t = await r.text();
+    if (!r.ok) {
+      // 401, 403, 404 gibi sunucu yanıtlarında yeniden denemeye gerek yok
+      throw new Error(t || `Sunucu hatası: ${r.status}`);
+    }
+    if (!t) return null;
+    try {
+      return JSON.parse(t);
+    } catch(pe) {
+      return null;
+    }
   }
-  const t = await r.text();
-  if (!r.ok) throw new Error(t);
-  return t ? JSON.parse(t) : null;
+  if (lastErr) throw lastErr;
+}
+
+// ===== YEREL KULLANICI PİN YÖNETİCİSİ =====
+function generateUuid() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+function getMyLocalPinIds() {
+  try { return JSON.parse(localStorage.getItem('ih_my_pin_ids') || '[]'); } catch(e) { return []; }
+}
+function saveMyPinId(id) {
+  if (!id) return;
+  try {
+    const ids = getMyLocalPinIds();
+    if (!ids.includes(id)) {
+      ids.push(id);
+      localStorage.setItem('ih_my_pin_ids', JSON.stringify(ids));
+    }
+  } catch(e) {}
+}
+function getMyLocalPins() {
+  try { return JSON.parse(localStorage.getItem('ih_my_pins') || '[]'); } catch(e) { return []; }
+}
+function saveMyPinLocal(pin) {
+  if (!pin || !pin.id) return;
+  saveMyPinId(pin.id);
+  try {
+    const list = getMyLocalPins();
+    const idx = list.findIndex(p => p.id === pin.id);
+    if (idx >= 0) list[idx] = { ...list[idx], ...pin };
+    else list.unshift(pin);
+    if (list.length > 50) list.splice(50);
+    localStorage.setItem('ih_my_pins', JSON.stringify(list));
+  } catch(e) {}
+}
+function removeMyPinLocal(pinId) {
+  if (!pinId) return;
+  try {
+    const ids = getMyLocalPinIds().filter(id => id !== pinId);
+    localStorage.setItem('ih_my_pin_ids', JSON.stringify(ids));
+    const list = getMyLocalPins().filter(p => p.id !== pinId);
+    localStorage.setItem('ih_my_pins', JSON.stringify(list));
+  } catch(e) {}
 }
 
 function toggleMyPinsUI() {
   if (!maps.main) return;
   
-  if (!browserFingerprint) {
-    return showToast('Cihaz kimliği henüz belirlenmedi, lütfen bekleyin...', 'warn');
-  }
-
-  const myPins = pinsData.filter(p => p.browser_fp === browserFingerprint);
+  const myPinIds = new Set(getMyLocalPinIds());
+  const myPins = pinsData.filter(p => p.is_own_pin || myPinIds.has(p.id) || (browserFingerprint && p.browser_fp === browserFingerprint));
   
   if (!isMyPinsVisible && myPins.length === 0) {
-    // Veriler yüklenmemiş olabilir, bir kez daha loadPins tetikle
     loadPins();
-    return showToast('Henüz ölçümünüz bulunmuyor veya yükleniyor. Ölçüm yaptıysanız lütfen 1-2 saniye bekleyin.', 'warn');
+    return showToast('Henüz bu cihazdan kayıtlı ölçümünüz bulunmuyor veya yükleniyor.', 'warn');
   }
 
   isMyPinsVisible = !isMyPinsVisible;
@@ -1927,13 +1997,14 @@ function renderMyPins() {
   if (!isMyPinsVisible) return;
   
   myPinsLayer = L.layerGroup().addTo(maps.main);
-  const myPins = pinsData.filter(p => p.browser_fp === browserFingerprint);
+  const myPinIds = new Set(getMyLocalPinIds());
+  const myPins = pinsData.filter(p => p.is_own_pin || myPinIds.has(p.id) || (browserFingerprint && p.browser_fp === browserFingerprint));
   
   myPins.forEach(p => {
     const isApproved = isPinPublic(p);
     const color = speedColor(p.gercek_dl);
     
-    // YENİ: DivIcon ile her zoomda görünür puls efektli marker
+    // DivIcon ile her zoomda görünür puls efektli marker
     const icon = L.divIcon({
       className: 'my-pin-div-icon',
       html: `<div class="my-pin-container">
@@ -1978,7 +2049,6 @@ const PUBLIC_PIN_COLUMNS = 'id,lat,lng,il,ilce,mahalle,iss,baglanti_turu,diger_a
 const getPins = async () => { 
   const res = await sbRest(`pins?select=${PUBLIC_PIN_COLUMNS}&gorunur=eq.true&order=created_at.desc&limit=3000`); 
   const p = (res||[]).filter(p=>!p.deleted_at);
-  // Yükleme bittiğinde user pinlerini de güncelle
   setTimeout(renderMyPins, 100);
   return p;
 };
@@ -1987,8 +2057,7 @@ const getPinById = async id => { const res = await sbRest(`pins?id=eq.${id}&sele
 
 
 // KULLANICI DOSTU HATA MESAJI: RLS (42501) ve benzeri sunucu hatalarını ham JSON
-// yerine anlaşılır bir mesaja çevirir. Kullanıcıya "code:42501,details:null..." gibi
-// teknik çıktı göstermek kafa karıştırıyor ve ne yapması gerektiğini belli etmiyordu.
+// yerine anlaşılır bir mesaja çevirir.
 function friendlyDbError(e, tableLabel) {
   const msg = e?.message || String(e);
   if (msg.includes('42501') || msg.includes('row-level security')) {
@@ -2001,21 +2070,28 @@ const addPin = d => sbRest('pins', { method:'POST', body:JSON.stringify(d) });
 const patchPin = (id,d) => sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
 // Kullanıcının "kendi ölçümünü düzenle" akışı için: RLS eşleşmezse (browser_fp uyuşmazsa)
 // sessizce 0 satır güncellenip "başarılı" gösterilmesin — gerçekten güncellenen satırı doğrula.
+// &select=id eklenerek PostgreSQL 42501 kolon izin hatası engellenir.
 async function patchPinOwn(id, d) {
-  const result = await sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=representation', body:JSON.stringify(d) });
+  const result = await sbRest(`pins?id=eq.${id}&select=id`, { method:'PATCH', prefer:'return=representation', body:JSON.stringify(d) });
   if (!result || result.length === 0) throw new Error('Bu ölçüm güncellenemedi (cihaz kimliğiniz değişmiş olabilir veya ölçüm artık mevcut değil).');
+  try {
+    const pins = getMyLocalPins();
+    const idx = pins.findIndex(p => p.id === id);
+    if (idx >= 0) {
+      pins[idx] = { ...pins[idx], ...d, updated_at: new Date().toISOString() };
+      localStorage.setItem('ih_my_pins', JSON.stringify(pins));
+    }
+  } catch(e) {}
   return result;
 }
 const delPin = id => sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false }) });
 const hardDelPin = id => delPin(id); // Kullanıcı verisini koru: kalıcı silme yerine soft delete.
 // Kullanıcının "kendi ölçümünü sil" akışı için: patchPinOwn ile AYNI sebepten ötürü
-// (RLS/browser_fp eşleşmezse sessizce 0 satır etkilenip "başarılı" gösterilmesin) —
-// gerçekten silinen satırı doğruluyoruz. Aksi halde: kullanıcı "Sil"e basar, pin
-// ekrandan anında kaybolur, "silindi" mesajı görür, ama arka planda silinmemiştir;
-// sonraki senkronizasyonda (loadPins) pin haritaya GERİ GELİR.
+// realmente silinen satırı doğrula. &select=id ile 42501 hatası önlenir.
 async function delPinOwn(id) {
-  const result = await sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=representation', body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false }) });
+  const result = await sbRest(`pins?id=eq.${id}&select=id`, { method:'PATCH', prefer:'return=representation', body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false }) });
   if (!result || result.length === 0) throw new Error('Bu ölçüm silinemedi (cihaz kimliğiniz değişmiş olabilir veya ölçüm artık mevcut değil).');
+  removeMyPinLocal(id);
   return result;
 }
 const getRaporlar = () => sbRest('raporlar?select=*&durum=eq.bekleyen&order=created_at.desc&limit=100');
@@ -2846,10 +2922,12 @@ function showMapLoading() {
   const title = document.getElementById('mloTitle');
   const desc = document.getElementById('mloDesc');
   const btn = document.getElementById('mloRetryBtn');
+  const dismissBtn = document.getElementById('mloDismissBtn');
   if (spinner) spinner.style.display = 'block';
   if (title) { title.textContent = 'Harita Yükleniyor...'; title.style.color = 'var(--text)'; }
   if (desc) desc.textContent = 'Altyapı verileri ve harita katmanları hazırlanıyor';
   if (btn) btn.style.display = 'none';
+  if (dismissBtn) dismissBtn.style.display = 'none';
 
   if (mapLoadingTimeout) clearTimeout(mapLoadingTimeout);
   mapLoadingTimeout = setTimeout(() => {
@@ -2857,8 +2935,9 @@ function showMapLoading() {
       if (title) { title.textContent = 'Bağlantı Bekleniyor'; title.style.color = 'var(--warn)'; }
       if (desc) desc.innerHTML = 'Harita verileri yüklenirken gecikme yaşandı.<br>Lütfen bekleyin veya yeniden deneyin.';
       if (btn) btn.style.display = 'inline-flex';
+      if (dismissBtn) dismissBtn.style.display = 'inline-flex';
     }
-  }, 5000);
+  }, 8000);
 }
 
 function hideMapLoading() {
@@ -2876,10 +2955,12 @@ function showMapLoadingError(msg) {
   const title = document.getElementById('mloTitle');
   const desc = document.getElementById('mloDesc');
   const btn = document.getElementById('mloRetryBtn');
+  const dismissBtn = document.getElementById('mloDismissBtn');
   if (spinner) spinner.style.display = 'none';
   if (title) { title.textContent = 'Harita Verileri Alınamadı'; title.style.color = 'var(--danger)'; }
-  if (desc) desc.textContent = msg || 'Sunucuya bağlanırken bir sorun oluştu. Lütfen bağlantınızı kontrol edip tekrar deneyin.';
+  if (desc) desc.textContent = msg || 'Sunucuya bağlanırken bir sorun oluştu. Lütfen bağlantınızı, DNS veya VPN ayarlarınızı kontrol edip tekrar deneyin.';
   if (btn) btn.style.display = 'inline-flex';
+  if (dismissBtn) dismissBtn.style.display = 'inline-flex';
 }
 
 async function retryLoadMap() {
@@ -2893,7 +2974,7 @@ async function retryLoadMap() {
       maps.main.invalidateSize();
     }
   } catch(err) {
-    showMapLoadingError('Bağlantı yeniden sağlanamadı. Lütfen sayfayı yenileyin veya birazdan tekrar deneyin.');
+    showMapLoadingError('Bağlantı yeniden sağlanamadı. Lütfen internet, DNS veya VPN bağlantınızı kontrol edin.');
   }
 }
 
@@ -2949,7 +3030,6 @@ async function initMainMap() {
     hideMapLoading();
   } catch(e) {
     console.error('loadPins error in initMainMap:', e);
-    showMapLoadingError('Veriler yüklenirken bir sorun oluştu.');
   }
 }
 
@@ -2959,24 +3039,61 @@ function onZoomEnd() {
   const found = Object.entries(hints).reverse().find(([k]) => z >= parseInt(k)); if (found) document.getElementById('zoomHint').textContent = found[1] + ' görünümü';
 }
 
-async function loadPins() {
+let _loadPinsPromise = null;
+function loadPins() {
+  if (_loadPinsPromise) return _loadPinsPromise;
+  _loadPinsPromise = _loadPinsCore().finally(() => {
+    _loadPinsPromise = null;
+  });
+  return _loadPinsPromise;
+}
+
+async function _loadPinsCore() {
   try {
-    // Kamu verileri + kullanıcının kendi verilerini (onay bekleyenler dahil) çek
-    const [publicRes, myRes] = await Promise.all([
-      getPins(),
-      browserFingerprint ? sbRest(`pins?select=*&browser_fp=eq.${browserFingerprint}&deleted_at=is.null&order=created_at.desc&limit=20`) : Promise.resolve([])
-    ]);
-    
+    // 1. Genel kamu pinlerini çek
+    const publicRes = await getPins();
     const all = publicRes || [];
-    // BUG FIX: publicRes'teki pinlerde browser_fp yok (PUBLIC_PIN_COLUMNS'da güvenlik
-    // gereği bulunmuyor). Kendi pinim zaten genel listede varsa sadece browser_fp'yi
-    // üzerine işaretle, yoksa myRes'teki tam veriyi ekle. Aksi halde "Ölçümlerimi
-    // Haritada Gör" onaylı pinleri hiç bulamıyordu.
-    (myRes || []).forEach(p => {
-      const idx = all.findIndex(x => x.id === p.id);
-      if (idx === -1) all.push(p);
-      else all[idx] = { ...all[idx], browser_fp: p.browser_fp };
+
+    // 2. Kullanıcının bu tarayıcıdan kaydettiği yerel pinlerini ve ID'lerini oku
+    const myPinIds = new Set(getMyLocalPinIds());
+    const myLocalPins = getMyLocalPins();
+
+    // Genel pinler içinde bu kullanıcının pinleri varsa işaretle
+    all.forEach(p => {
+      if (myPinIds.has(p.id) || (browserFingerprint && p.browser_fp && p.browser_fp === browserFingerprint)) {
+        p.is_own_pin = true;
+        p.browser_fp = browserFingerprint;
+      }
     });
+
+    // Kullanıcının henüz yayınlanmamış/karantinada olan yerel pinlerini de listeye ekle
+    myLocalPins.forEach(p => {
+      const idx = all.findIndex(x => x.id === p.id);
+      if (idx === -1) {
+        all.push({ ...p, is_own_pin: true, browser_fp: browserFingerprint });
+      } else {
+        all[idx] = { ...all[idx], is_own_pin: true, browser_fp: browserFingerprint };
+      }
+    });
+
+    // 3. Moderatör oturumu varsa, moderatörün pinlerini yetkili oturumla çekebilir
+    if (isModLoggedIn && browserFingerprint) {
+      try {
+        const myRes = await sbRest(`pins?select=*&browser_fp=eq.${encodeURIComponent(browserFingerprint)}&deleted_at=is.null&order=created_at.desc&limit=20`);
+        (myRes || []).forEach(p => {
+          const idx = all.findIndex(x => x.id === p.id);
+          if (idx === -1) all.push({ ...p, is_own_pin: true });
+          else all[idx] = { ...all[idx], ...p, is_own_pin: true };
+        });
+      } catch(err) {
+        // Moderatör sorgusu hata verse bile genel haritayı asla bozma
+      }
+    }
+
+    // Başarılı pinleri localStorage'a yedekle (çevrimdışı / zayıf ağ koruması)
+    try {
+      localStorage.setItem('ih_cached_pins', JSON.stringify({ ts: Date.now(), pins: all }));
+    } catch(err) {}
 
     pinsData = all; 
     cleanPinsData = publicCleanPins(all); 
@@ -2990,8 +3107,31 @@ async function loadPins() {
     document.getElementById('mapStats').innerHTML = `<span>${cnt}</span> ölçüm · ↓ <span>${avg}</span>${avgUL ? ` ↑ <span style="color:var(--text2)">${avgUL}</span>` : ''} Mbps`;
     hideMapLoading();
   } catch(e) {
-    document.getElementById('mapStats').textContent = 'Bağlanamadı';
-    showMapLoadingError('Sunucuya bağlanırken bir sorun oluştu. Lütfen bağlantınızı kontrol edip tekrar deneyin.');
+    console.warn('loadPins network failure, checking cache...', e);
+    let usedCache = false;
+    try {
+      const cached = JSON.parse(localStorage.getItem('ih_cached_pins') || 'null');
+      if (cached && Array.isArray(cached.pins) && cached.pins.length > 0) {
+        pinsData = cached.pins;
+        cleanPinsData = publicCleanPins(cached.pins);
+        renderHex(); renderModPins(); renderMyPins();
+        
+        const speedPins = cleanPinsData.filter(p => !p.is_altyapi_yok);
+        const cnt = cleanPinsData.length;
+        const avg = speedPins.length ? Math.round(speedPins.reduce((a,p) => a+p.gercek_dl, 0)/speedPins.length) : 0;
+        const ulPins = speedPins.filter(p => p.gercek_ul > 0);
+        const avgUL = ulPins.length ? Math.round(ulPins.reduce((a,p) => a+p.gercek_ul, 0)/ulPins.length) : 0;
+        document.getElementById('mapStats').innerHTML = `<span>${cnt}</span> ölçüm · ↓ <span>${avg}</span>${avgUL ? ` ↑ <span style="color:var(--text2)">${avgUL}</span>` : ''} Mbps <span style="font-size:10px;color:var(--warn);">(çevrimdışı)</span>`;
+        hideMapLoading();
+        showToast('⚠️ Bağlantı yavaş veya kesildi, veriler önbellekten gösteriliyor.', 'warn');
+        usedCache = true;
+      }
+    } catch(err) {}
+    
+    if (!usedCache) {
+      document.getElementById('mapStats').textContent = 'Bağlanamadı';
+      showMapLoadingError('Sunucuya bağlanırken bir sorun oluştu. Lütfen bağlantınızı, DNS veya VPN ayarlarınızı kontrol edip tekrar deneyin.');
+    }
   }
 }
 
@@ -3392,7 +3532,7 @@ function toggleHexPinsList() {
           const dlBand = p.gercek_dl >= 500 ? '500+' : p.gercek_dl >= 200 ? '200–500' : p.gercek_dl >= 100 ? '100–200' : p.gercek_dl >= 25 ? '25–100' : '<25';
           const ulText = p.gercek_ul > 0 ? `↑ ${p.gercek_ul} Mbps` : '';
           
-          const isOwnPin = browserFingerprint && p.browser_fp === browserFingerprint;
+          const isOwnPin = p.is_own_pin || (browserFingerprint && p.browser_fp === browserFingerprint);
           const ownPinBadge = isOwnPin ? `<span class="own-pin-badge">Senin Ölçümün</span>` : '';
           const extraBadges = parseDigerAltyapi(p.diger_altyapilar).map(e=>`<span style="font-size:8px;color:${cc(e.tur)};border:1px solid ${cc(e.tur)};border-radius:8px;padding:1px 5px;margin-left:4px;" title="${escAttr(e.iss||'')}">+${e.iss ? escHtml(e.iss)+' ' : ''}${e.tur.toUpperCase()}</span>`).join('');
           const actions = isOwnPin ? `
@@ -5446,7 +5586,9 @@ async function submitPin() {
   };
   
   const extraAltyapiList = isAltyapiYok ? [] : collectExtraAltyapi().filter(e => !(e.iss === finalIss && e.tur === selConnVal));
+  const newPinId = generateUuid();
   const pinPayload = { 
+    id: newPinId,
     lat:f.lat, lng:f.lng, 
     il:document.getElementById('ilInput').value||null, 
     ilce:document.getElementById('ilceInput').value||null, 
@@ -5471,6 +5613,7 @@ async function submitPin() {
   };
   try {
     await addPin(pinPayload);
+    saveMyPinLocal({ ...pinPayload, created_at: new Date().toISOString() });
     markSubmit(); 
     if (isAltyapiYok) markSubmitNoInfra();
     
@@ -5488,7 +5631,9 @@ async function submitPin() {
       const fb = { ...pinPayload, gorunur:false, is_quarantine:true };
       delete fb.is_altyapi_yok;
       try { 
-        await addPin(fb); markSubmit(); if (isAltyapiYok) markSubmitNoInfra();
+        await addPin(fb); 
+        saveMyPinLocal({ ...fb, created_at: new Date().toISOString() });
+        markSubmit(); if (isAltyapiYok) markSubmitNoInfra();
         showToast('⚠ Verini aldık — DB güncellemesi bekleniyor', 'warn'); 
         resetPinForm(); loadPins(); 
       } catch(e2) { showToast(friendlyDbError(e2,'pins'),'err'); }
