@@ -2923,20 +2923,18 @@ async function renderStats() {
   const KNOWN_ISS_SET = new Set([...knownFromCache, ...knownFromLocal]);
   const im = {}; pins.forEach(p => {
     const iss = canonicalIssName(p.iss);
-    if(!iss || !KNOWN_ISS_SET.has(iss)) return;
-    if(!im[iss]) im[iss]={t:0,c:0,fps:new Set()};
+    if(!iss || !KNOWN_ISS_SET.has(iss) || !p.puan) return;
+    if(!im[iss]) im[iss]={t:0,c:0};
     im[iss].t += p.puan;
     im[iss].c++;
-    const fp = p.browser_fp || p.ip_hash;
-    if(fp) im[iss].fps.add(fp);
   });
-  const MIN_UNIQUE = 3;
+  const MIN_COUNT = 1;
   document.getElementById('issRankList').innerHTML = Object.entries(im)
-    .map(([iss,d]) => ({ iss, s:(d.t/d.c).toFixed(1), c:d.c, u:d.fps.size }))
-    .filter(x => x.u >= MIN_UNIQUE)
+    .filter(([_, d]) => d.c >= MIN_COUNT)
+    .map(([iss, d]) => ({ iss, s:(d.t/d.c).toFixed(1), c:d.c }))
     .sort((a,b) => b.s-a.s)
     .map((x,i) => `<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${escHtml(displayIssName(x.iss))}</div><div class="rank-sub">${x.c} ölçüm</div></div><div class="rank-val" style="color:${memColor(x.s)}">${memShapeHtml(parseFloat(x.s))}${x.s}</div></div>`)
-    .join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok (min. 3 farklı kullanıcı gerekli)</div>';
+    .join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok</div>';
   
   // EN HIZLI LOKASYONLAR (artık ISS filtresiyle de çağrılabilen bağımsız fonksiyon)
   populateSpeedRankIlFilter(pins);
