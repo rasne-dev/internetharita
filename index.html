@@ -106,10 +106,53 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
 .page{position:fixed;inset:0;top:var(--nav-h);display:none;} .page.active{display:flex;}
 
 /* ===== MAP PAGE ===== */
-#page-harita{flex-direction:column;overflow:hidden;height:calc(100vh - var(--nav-h));} 
+#page-harita{flex-direction:column;overflow:hidden;height:calc(100vh - var(--nav-h));position:relative;} 
 #map{flex:1;z-index:1;min-height:0;min-width:0;width:100%;}
 .leaflet-container{background:#0d1318!important;}
 .leaflet-pane,.leaflet-map-pane{will-change:transform;}
+
+/* ===== MAP LOADING OVERLAY ===== */
+.map-loading-overlay {
+  position: absolute; inset: 0; z-index: 850;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(7, 11, 15, 0.82);
+  backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+  opacity: 1; transition: opacity 0.35s ease;
+  pointer-events: all;
+}
+.map-loading-overlay.hidden {
+  opacity: 0; pointer-events: none;
+}
+.mlo-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 22px 28px; max-width: 380px; width: 90%;
+  text-align: center; box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+}
+.mlo-spinner {
+  width: 36px; height: 36px; margin: 0 auto 14px;
+  border: 3px solid rgba(0, 212, 255, 0.2); border-top-color: var(--accent);
+  border-radius: 50%; animation: mloSpin 0.9s linear infinite;
+}
+@keyframes mloSpin { to { transform: rotate(360deg); } }
+.mlo-title {
+  font-size: 14px; font-weight: 700; color: var(--text);
+  margin-bottom: 6px; font-family: var(--font-body);
+}
+.mlo-desc {
+  font-size: 11px; color: var(--text2); line-height: 1.5; margin-bottom: 14px;
+}
+.mlo-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px; background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--accent); border-radius: 7px; font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; font-family: var(--font-body);
+}
+.mlo-btn:hover {
+  background: var(--accent-dim); border-color: var(--accent);
+}
+html.light .map-loading-overlay { background: rgba(238, 242, 246, 0.82); }
+html.light .mlo-box { background: #ffffff; border-color: #d0d7de; box-shadow: 0 12px 36px rgba(0,0,0,0.15); }
+
 /* ===== SIDEBAR YENİ TASARIM ===== */
 .map-sidebar {
   position: fixed;
@@ -895,6 +938,14 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
 
 <div id="page-harita" class="page active">
   <div id="map"></div>
+  <div id="mapLoadingOverlay" class="map-loading-overlay">
+    <div class="mlo-box">
+      <div class="mlo-spinner" id="mloSpinner"></div>
+      <div class="mlo-title" id="mloTitle">Harita Yükleniyor...</div>
+      <div class="mlo-desc" id="mloDesc">Altyapı verileri ve harita katmanları hazırlanıyor</div>
+      <button class="mlo-btn" id="mloRetryBtn" onclick="retryLoadMap()" style="display:none;">↺ Yeniden Dene</button>
+    </div>
+  </div>
   <div class="map-sidebar-toggle" id="sidebarToggle" onclick="toggleMapSidebar()">⚙ Filtreler</div>
   <div class="map-sidebar" id="mapSidebar">
     <div class="sidebar-panel">
@@ -1565,42 +1616,42 @@ let myPinsLayer = null;
 
 (async function initFingerprint() {
   try {
-    const fp = await FingerprintJS.load();
-    const result = await fp.get();
-    browserFingerprint = result.visitorId;
+    let result = null;
+    if (typeof FingerprintJS !== 'undefined') {
+      const fpPromise = FingerprintJS.load().then(fp => fp.get());
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('fp_timeout')), 2500));
+      result = await Promise.race([fpPromise, timeoutPromise]);
+    }
+    if (result && result.visitorId) {
+      browserFingerprint = result.visitorId;
+    } else {
+      throw new Error('fp_unavailable');
+    }
     localStorage.setItem('ih_browser_fp', browserFingerprint);
     fpReady = true;
-    document.getElementById('fpDot').classList.add('ready');
-    document.getElementById('fpText').textContent = 'Cihaz tanındı ✓';
+    document.getElementById('fpDot')?.classList.add('ready');
+    const fpEl = document.getElementById('fpText'); if (fpEl) fpEl.textContent = 'Cihaz tanındı ✓';
     loadPins();
   } catch(e) {
     browserFingerprint = localStorage.getItem('ih_browser_fp') || ('fp_' + Math.random().toString(36).substr(2, 9));
     localStorage.setItem('ih_browser_fp', browserFingerprint);
     fpReady = true;
-    document.getElementById('fpDot').classList.add('ready');
-    document.getElementById('fpText').textContent = 'Cihaz tanındı ✓';
+    document.getElementById('fpDot')?.classList.add('ready');
+    const fpEl = document.getElementById('fpText'); if (fpEl) fpEl.textContent = 'Cihaz tanındı ✓';
     loadPins();
   }
 })();
 
 async function sbRest(path, opts = {}) {
-  const { data: sess } = await sbc.auth.getSession();
-  // DUZELTME - APIKEY/AUTHORIZATION CAKISMASI (veri eklenememe sorunu):
-  // "sb_publishable_..." formatindaki yeni Supabase publishable key bir JWT
-  // DEGILDIR. Eskiden burada oturum yoksa (anonim kullanici) token = SB_KEY
-  // olup 'Authorization: Bearer sb_publishable_...' olarak gonderiliyordu.
-  // PostgREST/GoTrue bunu gecersiz bir JWT olarak parse etmeye calisip
-  // 401/403 dondurebiliyor -> anonim pin/rapor eklemeleri sessizce basarisiz
-  // oluyordu. Cozum: Authorization header'i SADECE gercek bir kullanici
-  // oturumu (moderator login) varsa eklenir. Anonim istekler icin sadece
-  // 'apikey' header'i yeterli ve dogru yontemdir.
+  let sess = null;
+  try {
+    const res = await Promise.race([
+      sbc.auth.getSession(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('session_timeout')), 2000))
+    ]);
+    sess = res?.data;
+  } catch(e) {}
   const token = sess?.session?.access_token;
-  // DUZELTME - VERi EKLENMiYOR SORUNU:
-  // POST isteklerinde varsayilan 'return=representation' Supabase'de anon rolunun
-  // SELECT yetkisi gerektiriyor. Anon SELECT yetkisi olmayan tablolarda 42501 (RLS)
-  // hatasi firlatip veri eklenememesine yol aciyor. POST icin 'return=minimal'
-  // kullan; basarili insert 201 + bos body dondurur, bu yeterli.
-  // GET ve PATCH icin representation korunuyor.
   let preferHeader;
   if (opts.prefer) {
     preferHeader = opts.prefer;
@@ -1616,7 +1667,16 @@ async function sbRest(path, opts = {}) {
     'X-Browser-FP': browserFingerprint || ''
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const r = await fetch(`${SB_URL}/rest/v1/${path}`, { headers, method: opts.method || 'GET', body: opts.body });
+  
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), opts.timeout || 10000);
+  let r;
+  try {
+    r = await fetch(`${SB_URL}/rest/v1/${path}`, { headers, method: opts.method || 'GET', body: opts.body, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+
   // POST minimal, DELETE, ve PATCH minimal: body okuma gerekmiyor, sadece ok/error
   if (opts.method === 'DELETE' ||
       (opts.method === 'PATCH' && opts.prefer?.includes('minimal')) ||
@@ -2005,26 +2065,52 @@ function focusOnMap(lat, lng) {
   }, 300);
 }
 
+function resetISSFiltersToAll() {
+  const chips = document.querySelectorAll('#issChips .chip-iss');
+  let hadFiltered = false;
+  chips.forEach(chip => {
+    if (!chip.classList.contains('on')) hadFiltered = true;
+    chip.classList.add('on');
+    const name = canonicalIssName(chip.dataset.iss || '');
+    if (name) activeISSFilters.add(name);
+  });
+  activeISSFilters.add('Diğer');
+  if (issListCache && issListCache.length) {
+    issListCache.forEach(i => activeISSFilters.add(canonicalIssName(i.name)));
+  }
+  return hadFiltered;
+}
+
 function focusProvinceOnMap(ilName) {
   if (!ilName) return;
   const coords = IL_COORDS[ilName] || (ilName === 'Mersin' ? IL_COORDS['İçel (Mersin)'] : null);
   if (!coords) return showToast(`${ilName} için koordinat bulunamadı`, 'warn');
+  const wasFiltered = resetISSFiltersToAll();
   showPage('harita');
   setTimeout(() => {
     if (maps.main) {
       maps.main.setView(coords, 9);
-      showToast(`🏙️ ${ilName} iline odaklanıldı`);
+      if (wasFiltered) {
+        renderHex();
+        renderModPins();
+      }
+      showToast(`🏙️ ${ilName} iline odaklanıldı${wasFiltered ? ' (tüm sağlayıcılar)' : ''}`);
     }
   }, 250);
 }
 
 function focusLocationOnMap(lat, lng, label) {
   if (!lat || !lng) return showToast('Konum koordinatı bulunamadı', 'warn');
+  const wasFiltered = resetISSFiltersToAll();
   showPage('harita');
   setTimeout(() => {
     if (maps.main) {
       maps.main.setView([lat, lng], 14);
-      showToast(`📍 ${label || 'Lokasyon'} konumuna odaklanıldı`);
+      if (wasFiltered) {
+        renderHex();
+        renderModPins();
+      }
+      showToast(`📍 ${label || 'Lokasyon'} konumuna odaklanıldı${wasFiltered ? ' (tüm sağlayıcılar)' : ''}`);
     }
   }, 250);
 }
@@ -2334,21 +2420,32 @@ function toggleColorblindMode() {
 let maps = {}, pinsData =[], cleanPinsData =[], activeFilters = new Set(['fiber','vdsl','adsl','docsis']);
 let activeISSFilters = new Set(); // iss_list tablosundan doldurulacak
 
+const BASE_DEFAULT_ISS = [
+  {name:'Türk Telekom', color:'#005ea6'},
+  {name:'Superonline (Turkcell)', color:'#00d4ff'},
+  {name:'TurkNet', color:'#5d1a89'},
+  {name:'Vodafone', color:'#e60000'},
+  {name:'Türksat Kablonet', color:'#003087'},
+  {name:'Millenicom', color:'#20b2aa'},
+  {name:'Netspeed', color:'#f59e0b'},
+];
+
 async function loadIssListAndRenderChips() {
+  // İlk anda ağ beklemeden anında varsayılan çipleri ekrana bas (sidebar asla boş kalmaz)
+  if (!issListCache.length) {
+    issListCache = BASE_DEFAULT_ISS;
+    activeISSFilters = new Set(BASE_DEFAULT_ISS.map(i => i.name));
+    activeISSFilters.add('Diğer');
+    renderISSChips(BASE_DEFAULT_ISS);
+  }
+
   try {
-    issListCache = await getIssList() || [];
+    const fetched = await getIssList();
+    if (fetched && fetched.length) {
+      issListCache = fetched;
+    }
   } catch(e) {
-    // Tablo henüz yoksa fallback
-    issListCache = [
-      {name:'Türk Telekom', color:'#005ea6'},
-      {name:'Superonline (Turkcell)', color:'#f5a623'},
-      {name:'TurkNet', color:'#7b2d8b'},
-      {name:'Vodafone', color:'#e60000'},
-      {name:'Türksat', color:'#003087'},
-      {name:'Kablonet (Türksat)', color:'#00a86b'},
-      {name:'Millenicom', color:'#fbbf24'},
-      {name:'Netspeed', color:'#f97316'},
-    ];
+    // Supabase ulaşılamazsa varsayılan liste korunur
   }
   const activeMap = new Map();
   issListCache.filter(i => i.active !== false).forEach(i => {
@@ -2453,7 +2550,72 @@ function showPage(id) {
   setTimeout(async () => { if (id==='harita') { if (!maps.main) await initMainMap(); else maps.main.invalidateSize(); } if (id==='pin') { if (!maps.pin) initPinMap(); else maps.pin.invalidateSize(); renderISSChips(issListCache.filter(i=>i.active!==false)); } if (id==='bolge') renderRegions(); if (id==='istatistik') renderStats(); if (id==='mod' && isModLoggedIn) refreshModData(); }, 50);
 }
 
+let mapLoadingTimeout = null;
+function showMapLoading() {
+  const overlay = document.getElementById('mapLoadingOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('hidden');
+  const spinner = document.getElementById('mloSpinner');
+  const title = document.getElementById('mloTitle');
+  const desc = document.getElementById('mloDesc');
+  const btn = document.getElementById('mloRetryBtn');
+  if (spinner) spinner.style.display = 'block';
+  if (title) { title.textContent = 'Harita Yükleniyor...'; title.style.color = 'var(--text)'; }
+  if (desc) desc.textContent = 'Altyapı verileri ve harita katmanları hazırlanıyor';
+  if (btn) btn.style.display = 'none';
+
+  if (mapLoadingTimeout) clearTimeout(mapLoadingTimeout);
+  mapLoadingTimeout = setTimeout(() => {
+    if (!overlay.classList.contains('hidden')) {
+      if (title) { title.textContent = 'Bağlantı Bekleniyor'; title.style.color = 'var(--warn)'; }
+      if (desc) desc.innerHTML = 'Harita verileri yüklenirken gecikme yaşandı.<br>Lütfen bekleyin veya yeniden deneyin.';
+      if (btn) btn.style.display = 'inline-flex';
+    }
+  }, 5000);
+}
+
+function hideMapLoading() {
+  if (mapLoadingTimeout) { clearTimeout(mapLoadingTimeout); mapLoadingTimeout = null; }
+  const overlay = document.getElementById('mapLoadingOverlay');
+  if (overlay) overlay.classList.add('hidden');
+}
+
+function showMapLoadingError(msg) {
+  if (mapLoadingTimeout) { clearTimeout(mapLoadingTimeout); mapLoadingTimeout = null; }
+  const overlay = document.getElementById('mapLoadingOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('hidden');
+  const spinner = document.getElementById('mloSpinner');
+  const title = document.getElementById('mloTitle');
+  const desc = document.getElementById('mloDesc');
+  const btn = document.getElementById('mloRetryBtn');
+  if (spinner) spinner.style.display = 'none';
+  if (title) { title.textContent = 'Harita Verileri Alınamadı'; title.style.color = 'var(--danger)'; }
+  if (desc) desc.textContent = msg || 'Sunucuya bağlanırken bir sorun oluştu. Lütfen bağlantınızı kontrol edip tekrar deneyin.';
+  if (btn) btn.style.display = 'inline-flex';
+}
+
+async function retryLoadMap() {
+  showMapLoading();
+  try {
+    if (!maps.main) {
+      await initMainMap();
+    } else {
+      updateMapTiles();
+      await loadPins();
+      maps.main.invalidateSize();
+    }
+  } catch(err) {
+    showMapLoadingError('Bağlantı yeniden sağlanamadı. Lütfen sayfayı yenileyin veya birazdan tekrar deneyin.');
+  }
+}
+
 async function initMainMap() { 
+  if (maps.main) {
+    maps.main.invalidateSize();
+    return;
+  }
+  showMapLoading();
   // Türkiye + çevre — kenarlar rahat görünsün, dünya tekrarlaması olmasın
   const TR_BOUNDS = L.latLngBounds([34.0, 22.0], [44.5, 48.0]);
   const m = L.map('map', { 
@@ -2463,10 +2625,20 @@ async function initMainMap() {
     worldCopyJump: false,
     minZoom: 5
   }).setView([38.8, 37.5], 6);  // merkez biraz sağa kaydı — sol panel hesaba katıldı
-  L.tileLayer(getMapTileUrl(), { 
+
+  const tileLayer = L.tileLayer(getMapTileUrl(), { 
     maxZoom: 19,
     noWrap: true
-  }).addTo(m); 
+  });
+  // Yedek basemap: Carto tile erişilemezse otomatik OSM'ye geç
+  tileLayer.on('tileerror', function() {
+    if (!this._osmFallback) {
+      this._osmFallback = true;
+      this.setUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+    }
+  });
+  tileLayer.addTo(m); 
+
   L.control.zoom({ position:'bottomright' }).addTo(m); 
   maps.main = m; 
   m.on('zoomend', onZoomEnd); 
@@ -2475,7 +2647,23 @@ async function initMainMap() {
     const container = document.getElementById('map');
     if(container) ro.observe(container);
   }
-  await loadPins(); 
+
+  // İlk boyutlandırma garantisi (arka sekme veya render gecikmelerine karşı)
+  setTimeout(() => { if (maps.main) maps.main.invalidateSize(); }, 150);
+  setTimeout(() => { if (maps.main) maps.main.invalidateSize(); }, 600);
+
+  // Zaten pin verisi çekildiyse anında bas
+  if (cleanPinsData && cleanPinsData.length) {
+    renderHex(); renderModPins(); renderMyPins();
+  }
+
+  try {
+    await loadPins();
+    hideMapLoading();
+  } catch(e) {
+    console.error('loadPins error in initMainMap:', e);
+    showMapLoadingError('Veriler yüklenirken bir sorun oluştu.');
+  }
 }
 
 function onZoomEnd() {
@@ -2513,7 +2701,11 @@ async function loadPins() {
     const ulPins = speedPins.filter(p => p.gercek_ul > 0);
     const avgUL = ulPins.length ? Math.round(ulPins.reduce((a,p) => a+p.gercek_ul, 0)/ulPins.length) : 0;
     document.getElementById('mapStats').innerHTML = `<span>${cnt}</span> ölçüm · ↓ <span>${avg}</span>${avgUL ? ` ↑ <span style="color:var(--text2)">${avgUL}</span>` : ''} Mbps`;
-  } catch(e) { document.getElementById('mapStats').textContent = 'Bağlanamadı'; }
+    hideMapLoading();
+  } catch(e) {
+    document.getElementById('mapStats').textContent = 'Bağlanamadı';
+    showMapLoadingError('Sunucuya bağlanırken bir sorun oluştu. Lütfen bağlantınızı kontrol edip tekrar deneyin.');
+  }
 }
 
 function renderHex() {
@@ -5341,10 +5533,12 @@ async function checkPublicMaintenance() {
 }
 
 checkSession(); checkPublicMaintenance(); loadSubmissionPauseState();
-(async () => {
-  await loadIssListAndRenderChips();
-  setTimeout(()=>initMainMap(), 100);
-})();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => initMainMap());
+} else {
+  initMainMap();
+}
+loadIssListAndRenderChips();
 
 // ===== TEMA =====
 function applyTheme(theme) {
@@ -5404,7 +5598,14 @@ function updateMapTiles() {
   [maps.main, maps.pin].forEach(m => {
     if (!m) return;
     m.eachLayer(l => { if (l._url && (l._url.includes('cartocdn') || l._url.includes('openstreetmap.org'))) m.removeLayer(l); });
-    L.tileLayer(url, { maxZoom:19, noWrap:true }).addTo(m);
+    const tl = L.tileLayer(url, { maxZoom:19, noWrap:true });
+    tl.on('tileerror', function() {
+      if (!this._osmFallback) {
+        this._osmFallback = true;
+        this.setUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+      }
+    });
+    tl.addTo(m);
   });
 }
 
