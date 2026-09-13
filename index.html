@@ -1185,7 +1185,7 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
       <div class="fg">
         <div class="fl">Paket Hızı <span style="color:var(--text3);font-weight:400;">(tarifenizdeki hız — opsiyonel)</span></div>
         <div class="speed-row">
-          <div class="fiu"><input type="number" placeholder="100" id="packageSpeedDL" min="0" step="1"><span class="fiu-unit">↓ DL</span></div>
+          <div class="fiu"><input type="number" placeholder="100" id="packageSpeedDL" min="0" step="1" oninput="checkSpeedAndConnSuggestion()"><span class="fiu-unit">↓ DL</span></div>
           <div class="fiu"><input type="number" placeholder="20" id="packageSpeedUL" min="0" step="1"><span class="fiu-unit">↑ UL</span></div>
         </div>
       </div>
@@ -3945,7 +3945,42 @@ function applyManualAddress() {
   }
   document.getElementById('manualAddressWrap').style.display = 'none';
 }
-function selConn(el,type) {
+function checkSpeedAndConnSuggestion(silent = false) {
+  if (typeof isAltyapiYok !== 'undefined' && isAltyapiYok) return;
+  const pkgDL = parseInt(document.getElementById('packageSpeedDL')?.value) || 0;
+  const dl = parseInt(document.getElementById('dlSpeed')?.value) || 0;
+  const speed = Math.max(pkgDL, dl);
+  if (!speed) return;
+
+  const fiberBtn = document.querySelector('#page-pin .cbtn.fiber');
+  const vdslBtn = document.querySelector('#page-pin .cbtn.vdsl');
+
+  if (speed > 100) {
+    // DOCSIS muaftır (Türksat kablo TV üzerinden 100+ verebilir)
+    if (selConnVal === 'adsl' || selConnVal === 'vdsl') {
+      if (fiberBtn) selConn(fiberBtn, 'fiber', true);
+      if (!silent) showToast(`💡 ${speed} Mbps hız bakır kablo (VDSL/ADSL) ile sunulamaz. Bağlantı türü "Fiber" olarak seçildi.`, 'warn');
+    } else if (!selConnVal && fiberBtn) {
+      selConn(fiberBtn, 'fiber', true);
+      if (!silent) showToast(`💡 ${speed} Mbps hız için bağlantı türü otomatik "Fiber" seçildi.`, 'warn');
+    }
+  } else if (speed > 24 && selConnVal === 'adsl') {
+    if (vdslBtn) selConn(vdslBtn, 'vdsl', true);
+    if (!silent) showToast(`💡 ADSL en fazla 16–24 Mbps destekler. ${speed} Mbps için bağlantı türü "VDSL" olarak seçildi.`, 'warn');
+  }
+}
+
+function selConn(el,type,fromAuto = false) {
+  if (!fromAuto) {
+    const pkgDL = parseInt(document.getElementById('packageSpeedDL')?.value) || 0;
+    const dl = parseInt(document.getElementById('dlSpeed')?.value) || 0;
+    const speed = Math.max(pkgDL, dl);
+    if (type === 'adsl' && speed > 24) {
+      showToast(`⚠ ADSL en fazla 16–24 Mbps destekler. Belirttiğiniz ${speed} Mbps hız için paketiniz muhtemelen VDSL veya Fiber'dir.`, 'warn');
+    } else if (type === 'vdsl' && speed > 100) {
+      showToast(`⚠ VDSL (bakır hat) en fazla 100 Mbps destekler. Belirttiğiniz ${speed} Mbps hız Fiber altyapıdır.`, 'warn');
+    }
+  }
   el.parentElement.querySelectorAll('.cbtn').forEach(b=>b.className=b.className.replace(/ sel/g,''));
   el.classList.add('sel');
   selConnVal=type;
@@ -4120,7 +4155,7 @@ async function submitPin() {
     return showToast('Bağlantı türü seçin','err');
   }
   
-  const pkgDL = parseInt(document.getElementById('packageSpeedDL').value);
+  let pkgDL = parseInt(document.getElementById('packageSpeedDL').value) || 0;
   const pkgUL = parseInt(document.getElementById('packageSpeedUL').value) || null;
   let dl = parseInt(document.getElementById('dlSpeed').value) || 0;
   let ul = parseInt(document.getElementById('ulSpeed').value) || 0;
@@ -4129,10 +4164,6 @@ async function submitPin() {
   const speedVerified = speedVerifiedByTest || document.getElementById('speedVerifiedBadge').classList.contains('show');
 
   if (!isAltyapiYok) {
-    if (!pkgDL) {
-      highlightRequired('packageSpeedDL');
-      return showToast('Lütfen paket (taahhüt edilen) indirme hızınızı girin','err');
-    }
     if (!dl || !speedVerified) {
       const speedBtn = document.querySelector('.btn-run-speedtest');
       if (speedBtn) {
@@ -4142,6 +4173,16 @@ async function submitPin() {
       }
       highlightRequired('dlSpeed', false);
       return showToast(!dl ? 'Önce hız testi yapın — "⚡ Hız Testi Yap" butonuna basın' : 'Hız testi tamamlanmadan veri gönderilemez','err');
+    }
+    // Paket hızı girilmemişse ölçülen gerçek hızı varsayılan paket hızı olarak kabul et (opsiyonel alan uyumu)
+    if (!pkgDL) pkgDL = dl;
+
+    const maxSpeed = Math.max(pkgDL, dl);
+    if (maxSpeed > 100 && (selConnVal === 'adsl' || selConnVal === 'vdsl')) {
+      return showToast('100 Mbps üzeri hızlar VDSL/ADSL olamaz — lütfen "Fiber" seçin','err');
+    }
+    if (maxSpeed > 24 && selConnVal === 'adsl') {
+      return showToast('24 Mbps üzeri hızlar ADSL olamaz — lütfen "VDSL" veya "Fiber" seçin','err');
     }
     if (dl < 0.5 || dl > 2500) return showToast('Geçersiz download hızı (0.5–2500 Mbps)','err');
     if (ul > 2500) return showToast('Geçersiz upload hızı (max 2500 Mbps)','err');
@@ -6870,6 +6911,7 @@ function applySpeedResults() {
     document.getElementById('ulSpeed').value = stResults.ul;
     document.getElementById('speedVerifiedBadge').classList.add('show');
     speedVerifiedByTest = true; // JS state guncelle
+    checkSpeedAndConnSuggestion();
     showToast(`✅ ↓${stResults.dl} Mbps · ↑${stResults.ul} Mbps — forma yazıldı`);
   }
   closeSpeedTestModal();
