@@ -2798,10 +2798,6 @@ function renderSpeedRankList(filterIl) {
   // (aksi halde ortalamaları ve "en hızlı konum" listesini yanlış şekilde aşağı çeker).
   let speedEligiblePins = cleanPinsData.filter(p => !p.is_altyapi_yok);
   if (filterIl) speedEligiblePins = speedEligiblePins.filter(p => p.il === filterIl);
-  // Katman 1: speed_test_verified=true — yerleşik testle doğrulanmış, güvenilir veriler
-  const testedPins = speedEligiblePins.filter(p => p.speed_test_verified === true);
-  // Katman 2: doğrulanmış yoksa tüm temiz pinlerden referans gösterimi
-  const fallbackPins = speedEligiblePins;
 
   function buildLocationMap(srcPins) {
     const lm = {};
@@ -2815,9 +2811,7 @@ function renderSpeedRankList(filterIl) {
     return lm;
   }
 
-  // İndirme + yükleme ortalamasından tek bir karşılaştırma skoru üretir.
-  // Böylece "1000↓/50↑" gibi tek yönlü yüksek bir değer, "999↓/999↑" gibi
-  // dengeli ve gerçekte daha güçlü bir bağlantıyı haksız yere geride bırakmaz.
+  // İndirme + yükleme ortalamasından dengeli karşılaştırma skoru
   function withScore(d) {
     const dl = Math.round(d.t / d.c), ul = Math.round(d.tul / d.c);
     return { ...d, dl, ul, score: Math.round((dl + ul) / 2) };
@@ -2829,17 +2823,17 @@ function renderSpeedRankList(filterIl) {
     return escHtml(parts.filter(Boolean).join(' / ') || 'Bilinmeyen');
   }
 
-  const verifiedLm = buildLocationMap(testedPins);
-  const verifiedEntries = Object.entries(verifiedLm)
+  const lm = buildLocationMap(speedEligiblePins);
+  const entries = Object.entries(lm)
     .map(([k,d]) => withScore(d))
     .sort((a,b) => b.score - a.score)
     .slice(0, 8);
 
-  function renderLocEntry(x, i, badge) {
+  function renderLocEntry(x, i) {
     return `<div class="speed-item">
       <div>
         <div class="speed-name"><span style="color:var(--text3);font-size:11px;margin-right:4px;">${i+1}.</span>${locTitle(x)}</div>
-        <div class="speed-loc" style="color:var(--text3);font-size:10px;">${x.c} ölçüm${badge||''}</div>
+        <div class="speed-loc" style="color:var(--text3);font-size:10px;">${x.c} ölçüm</div>
       </div>
       <div style="text-align:right;">
         <div class="speed-val" style="color:${speedColor(x.dl)}">${speedShapeHtml(x.dl)}↓ ${x.dl}</div>
@@ -2848,56 +2842,34 @@ function renderSpeedRankList(filterIl) {
     </div>`;
   }
 
-  function renderSpotlight(top, verified, second) {
-    const badgeColor = verified ? 'var(--success)' : 'var(--warn)';
-    const badgeBg = verified ? 'rgba(34,197,94,.15)' : 'rgba(245,158,11,.15)';
-    const badgeBorder = verified ? 'var(--success)' : 'rgba(245,158,11,.4)';
-    const badgeText = verified ? '✅ DOĞRULANMIŞ' : '📊 REFERANS';
+  function renderSpotlight(top, second) {
     const diff = second ? Math.max(top.score - second.score, 0) : 0;
     const deltaHtml = (second && diff > 0)
       ? `<div class="spotlight-delta">▲ 2. sıradaki ${locTitle(second)} konumundan ortalama ${diff} Mbps önde</div>`
       : '';
     return `<div class="speed-spotlight">
       <div class="spotlight-label">
-        <span style="color:var(--text3);">🏆 EN HIZLI KONUM${filterIl ? ' · ' + escHtml(filterIl) : ''}</span>
-        <span style="background:${badgeBg};border:1px solid ${badgeBorder};color:${badgeColor};padding:1px 7px;border-radius:4px;">${badgeText}</span>
+        <span style="color:var(--text3);">🏆 EN HIZLI LOKASYON${filterIl ? ' · ' + escHtml(filterIl) : ''}</span>
       </div>
       <div class="spotlight-name">${locTitle(top)}</div>
       <div class="spotlight-stats">
         <div><span class="spotlight-val" style="color:${speedColor(top.dl)}">${speedShapeHtml(top.dl)}${top.dl}</span><span class="spotlight-unit">Mbps ↓</span></div>
         <div><span class="spotlight-val" style="color:var(--text2);font-size:16px;">${top.ul}</span><span class="spotlight-unit">Mbps ↑</span></div>
       </div>
-      <div class="spotlight-sub">${top.c} ölçüm${verified ? ' · yerleşik hız testi ile doğrulanmış' : ''}</div>
+      <div class="spotlight-sub">${top.c} ölçüm ortalaması</div>
       ${deltaHtml}
     </div>`;
   }
 
-  if (verifiedEntries.length) {
-    // Doğrulanmış veri var — #1 spotlight, #2+ liste
-    const [top, ...rest] = verifiedEntries;
-    speedRankEl.innerHTML =
-      renderSpotlight(top, true, rest[0]) +
-      rest.map((x, i) => renderLocEntry(x, i + 1, '')).join('');
+  if (!entries.length) {
+    speedRankEl.innerHTML = filterIl
+      ? `<div style="color:var(--text3);font-size:11px;padding:8px 0;">${escHtml(filterIl)} için henüz veri yok</div>`
+      : '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz veri yok</div>';
   } else {
-    // Doğrulanmış veri yok — tüm ölçümlerden referans göster + bilgi notu
-    const allLm = buildLocationMap(fallbackPins);
-    const allEntries = Object.entries(allLm)
-      .map(([k,d]) => withScore(d))
-      .sort((a,b) => b.score - a.score)
-      .slice(0, 8);
-    if (!allEntries.length) {
-      speedRankEl.innerHTML = filterIl
-        ? `<div style="color:var(--text3);font-size:11px;padding:8px 0;">${escHtml(filterIl)} için henüz veri yok</div>`
-        : '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz veri yok</div>';
-    } else {
-      const [top, ...rest] = allEntries;
-      speedRankEl.innerHTML =
-        renderSpotlight(top, false, rest[0]) +
-        `<div style="font-size:10px;color:var(--text3);margin-bottom:8px;line-height:1.5;">
-          Yerleşik hız testi doğrulaması henüz yok. Mod paneli → İSS Yönetimi → <b>Toplu Onayla</b> ile eski pinleri doğrulayın.
-        </div>` +
-        rest.map((x, i) => renderLocEntry(x, i + 1, '')).join('');
-    }
+    const [top, ...rest] = entries;
+    speedRankEl.innerHTML =
+      renderSpotlight(top, rest[0]) +
+      rest.map((x, i) => renderLocEntry(x, i + 1)).join('');
   }
 }
 
