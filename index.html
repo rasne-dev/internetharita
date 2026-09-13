@@ -1018,7 +1018,17 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;">
-      <div class="stat-card"><div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;"><span>En Hızlı Lokasyonlar</span><select class="fs" id="speedRankIlFilter" style="width:auto;max-width:140px;padding:3px 6px;font-size:9px;text-transform:none;letter-spacing:0;font-weight:600;" onchange="renderSpeedRankList(this.value)"><option value="">Tüm İller</option></select></div><div id="speedRankList"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
+      <div class="stat-card">
+        <div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span>En Hızlı Lokasyonlar</span>
+            <span style="font-size:9px;color:var(--text3);font-family:var(--font-mono);font-weight:normal;text-transform:none;">min. 2 ölçüm</span>
+          </div>
+          <select class="fs" id="speedRankIlFilter" style="width:auto;max-width:130px;padding:3px 6px;font-size:9px;text-transform:none;letter-spacing:0;font-weight:600;" onchange="renderSpeedRankList(this.value)"><option value="">Tüm İller</option></select>
+        </div>
+        <div id="speedRankList"><div class="loading-text loading-dots">Yükleniyor</div></div>
+        <div style="font-size:9px;color:var(--text3);margin-top:8px;font-family:var(--font-mono);line-height:1.4;border-top:1px dashed var(--border);padding-top:6px;">ℹ️ Sıralamaya girmek için lokasyonda en az 2 onaylı ölçüm gereklidir.</div>
+      </div>
       <div class="stat-card"><div class="stat-title">Hız Bandı Dağılımı</div><div id="speedBandChart"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
     </div>
     <div class="stat-card" style="grid-column:1/-1"><div class="stat-title">Bağlantı Türü Dağılımı</div><div id="connChart"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
@@ -2900,8 +2910,10 @@ function renderSpeedRankList(filterIl) {
   }
 
   const lm = buildLocationMap(speedEligiblePins);
-  const entries = Object.entries(lm)
-    .map(([k,d]) => withScore(d))
+  const allEntries = Object.entries(lm).map(([k,d]) => withScore(d));
+  // Sıralamaya girmek için en az 2 onaylı ölçüm şartı
+  let entries = allEntries
+    .filter(x => x.c >= 2)
     .sort((a,b) => b.bayesScore - a.bayesScore)
     .slice(0, 8);
 
@@ -2946,8 +2958,8 @@ function renderSpeedRankList(filterIl) {
 
   if (!entries.length) {
     speedRankEl.innerHTML = filterIl
-      ? `<div style="color:var(--text3);font-size:11px;padding:8px 0;">${escHtml(filterIl)} için henüz veri yok</div>`
-      : '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz veri yok</div>';
+      ? `<div style="color:var(--text3);font-size:11px;padding:8px 0;">${escHtml(filterIl)} için henüz yeterli veri yok (min. 2 ölçüm gerekli)</div>`
+      : '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok (min. 2 ölçüm gerekli)</div>';
   } else {
     const [top, ...rest] = entries;
     speedRankEl.innerHTML =
