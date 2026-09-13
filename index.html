@@ -827,6 +827,21 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   animation: report-target-ripple 1.4s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
 }
 
+/* LOKASYON ODAKLAMA: Haritada Gör tıklandığında hedef noktayı vurgulayan şık cyan halka */
+.location-focus-container { position: relative; width: 22px; height: 22px; }
+.location-focus-core {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(0, 212, 255, 0.25); border: 2.5px solid var(--accent);
+  box-shadow: 0 0 16px var(--accent-glow);
+  position: relative; z-index: 2;
+}
+.location-focus-ripple {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  border-radius: 50%; border: 2px solid var(--accent);
+  opacity: 0; z-index: 1;
+  animation: report-target-ripple 1.5s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
 @media(max-width:768px){
   nav .nav-tabs { display:none; } nav .btn-ghost { display:none; } .mobile-nav { display:flex; } .page { bottom:56px; } .toast { bottom:72px; }
   nav { padding:0 10px; gap:6px; }
@@ -2081,38 +2096,88 @@ function resetISSFiltersToAll() {
   return hadFiltered;
 }
 
+function getProvinceCoords(ilName) {
+  if (!ilName) return null;
+  const clean = String(ilName).trim();
+  if (typeof IL_COORDS !== 'undefined') {
+    if (IL_COORDS[clean]) return IL_COORDS[clean];
+    if (clean === 'Mersin' || clean === 'İçel') return IL_COORDS['İçel (Mersin)'];
+    if (clean === 'Afyon') return IL_COORDS['Afyonkarahisar'];
+    if (clean === 'Kocaeli (İzmit)') return IL_COORDS['Kocaeli'];
+    if (clean === 'Sakarya (Adapazarı)') return IL_COORDS['Sakarya'];
+    if (clean === 'Maraş') return IL_COORDS['Kahramanmaraş'];
+    if (clean === 'Urfa') return IL_COORDS['Şanlıurfa'];
+    if (clean === 'Antep') return IL_COORDS['Gaziantep'];
+    const lower = clean.toLocaleLowerCase('tr-TR');
+    const foundKey = Object.keys(IL_COORDS).find(k => {
+      const kLower = k.toLocaleLowerCase('tr-TR');
+      return kLower === lower || kLower.includes(lower) || lower.includes(kLower);
+    });
+    if (foundKey) return IL_COORDS[foundKey];
+  }
+  return null;
+}
+
+let locationFocusMarker = null, locationFocusTimer = null;
+
 function focusProvinceOnMap(ilName) {
   if (!ilName) return;
-  const coords = IL_COORDS[ilName] || (ilName === 'Mersin' ? IL_COORDS['İçel (Mersin)'] : null);
+  const coords = getProvinceCoords(ilName);
   if (!coords) return showToast(`${ilName} için koordinat bulunamadı`, 'warn');
   const wasFiltered = resetISSFiltersToAll();
   showPage('harita');
-  setTimeout(() => {
+  let attempts = 0;
+  const tryFly = () => {
+    attempts++;
     if (maps.main) {
-      maps.main.setView(coords, 9);
-      if (wasFiltered) {
-        renderHex();
-        renderModPins();
-      }
+      maps.main.invalidateSize();
+      maps.main.flyTo(coords, 9, { animate: true, duration: 1.2 });
+      renderHex();
+      renderModPins();
       showToast(`🏙️ ${ilName} iline odaklanıldı${wasFiltered ? ' (tüm sağlayıcılar)' : ''}`);
+    } else if (attempts < 30) {
+      setTimeout(tryFly, 100);
     }
-  }, 250);
+  };
+  setTimeout(tryFly, 80);
 }
 
 function focusLocationOnMap(lat, lng, label) {
   if (!lat || !lng) return showToast('Konum koordinatı bulunamadı', 'warn');
   const wasFiltered = resetISSFiltersToAll();
   showPage('harita');
-  setTimeout(() => {
+  let attempts = 0;
+  const tryFly = () => {
+    attempts++;
     if (maps.main) {
-      maps.main.setView([lat, lng], 14);
-      if (wasFiltered) {
-        renderHex();
-        renderModPins();
-      }
+      maps.main.invalidateSize();
+      maps.main.flyTo([lat, lng], 14, { animate: true, duration: 1.2 });
+      renderHex();
+      renderModPins();
+
+      // Odaklanan lokasyonu harita üzerinde cyan halkayla vurgula
+      if (locationFocusMarker) { maps.main.removeLayer(locationFocusMarker); locationFocusMarker = null; }
+      if (locationFocusTimer) { clearTimeout(locationFocusTimer); locationFocusTimer = null; }
+      const icon = L.divIcon({
+        className: 'location-focus-div-icon',
+        html: `<div class="location-focus-container"><div class="location-focus-ripple"></div><div class="location-focus-core"></div></div>`,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+      });
+      locationFocusMarker = L.marker([lat, lng], { icon, zIndexOffset: 999, interactive: false }).addTo(maps.main);
+      locationFocusTimer = setTimeout(() => {
+        if (locationFocusMarker && maps.main) {
+          maps.main.removeLayer(locationFocusMarker);
+          locationFocusMarker = null;
+        }
+      }, 10000);
+
       showToast(`📍 ${label || 'Lokasyon'} konumuna odaklanıldı${wasFiltered ? ' (tüm sağlayıcılar)' : ''}`);
+    } else if (attempts < 30) {
+      setTimeout(tryFly, 100);
     }
-  }, 250);
+  };
+  setTimeout(tryFly, 80);
 }
 
 function filterMapByISS(rawIssName) {
@@ -2129,11 +2194,19 @@ function filterMapByISS(rawIssName) {
     }
   });
   showPage('harita');
-  setTimeout(() => {
-    renderHex();
-    renderModPins();
-    showToast(`🔍 Harita "${displayIssName(canon)}" için filtrelendi`);
-  }, 250);
+  let attempts = 0;
+  const tryFilter = () => {
+    attempts++;
+    if (maps.main) {
+      maps.main.invalidateSize();
+      renderHex();
+      renderModPins();
+      showToast(`🔍 Harita "${displayIssName(canon)}" için filtrelendi`);
+    } else if (attempts < 30) {
+      setTimeout(tryFilter, 100);
+    }
+  };
+  setTimeout(tryFilter, 80);
 }
 function cleanPins(pins) { return pins.filter(p => !isSpam(p)); }
 function isPinVisibleOnMap(p) {
