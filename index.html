@@ -3058,28 +3058,15 @@ async function renderStats() {
     ...(cm.yok > 0 ? [{l:'Altyapı Yok',v:cm.yok,c:'#6b7280'}] : [])
   ].map(t=>{
     const pct = pins.length ? (t.v/pins.length*100) : 0;
-    // Küçük ama sıfır olmayan oranlar (örn. %0.6) tam sayıya yuvarlanınca "%0" görünüyor ve
-    // çubuk da %0 genişlikte (görünmez) oluyor — sanki o türden hiç veri yokmuş gibi yanıltıyor.
-    // <%1 oranlar ondalıklı gösterilir, çubuğa da en az %1 görünür genişlik verilir.
-    // NOT: Önceki haliyle <%1 değerler 1 ondalıkla (örn. "0.9%"), >=%1 değerler ise
-    // tam sayıya yuvarlanarak (örn. "70%") gösteriliyordu — bu farklı hassasiyetleri
-    // karıştırmak toplamın 100%'den belirgin şekilde sapmasına sebep oluyordu
-    // (örn. 70+29+0.9+0.5 = 100.4). Artık HEPSİ aynı hassasiyetle (1 ondalık)
-    // gösteriliyor; bağımsız yuvarlamanın doğal sapması en fazla ±0.1-0.2 puana iner.
-    const displayPct = pct.toFixed(1);
+    // Hibrit yuvarlama: %1 ve üzeriyse tam sayı (%70), %1 altı ve sıfırdan büyükse <%1
+    let displayPct = '%0';
+    if (t.v > 0) {
+      displayPct = pct < 1 ? '<%1' : '%' + Math.round(pct);
+    }
     const barWidth = pct > 0 ? Math.max(pct, 1) : 0;
-    return `<div class="ct-row"><div class="ct-label">${t.l}</div><div class="ct-track"><div class="ct-fill" style="width:${barWidth}%;background:${t.c}"></div></div><div class="ct-pct">${displayPct}%</div></div>`;
+    return `<div class="ct-row"><div class="ct-label">${t.l}</div><div class="ct-track"><div class="ct-fill" style="width:${barWidth}%;background:${t.c}"></div></div><div class="ct-pct">${displayPct}</div></div>`;
   }).join('');
 
-  // ISS BAŞINA ORTALAMA HIZ TREND CHART
-  const issSpeedMap = {};
-  speedPins.forEach(p => {
-    const iss = canonicalIssName(p.iss);
-    if (!iss) return;
-    if (!issSpeedMap[iss]) issSpeedMap[iss] = { total:0, count:0 };
-    issSpeedMap[iss].total += p.gercek_dl;
-    issSpeedMap[iss].count++;
-  });
   // ISS BAŞINA ORTALAMA HIZ TREND CHART
   const issSpeedMap = {};
   speedPins.forEach(p => {
@@ -3158,15 +3145,17 @@ async function renderStats() {
   if (bandEl) {
     bandEl.innerHTML = bandCounts.map(b => {
       const pct = Math.round((b.count / maxBand) * 100);
-      // connChart'taki ile AYNI payda (pins.length) kullanılıyor - artık iki
-      // grafik dogrudan karsilastirilabilir, yuzdeler tutarli.
       const ratio = pins.length ? (b.count / pins.length * 100) : 0;
+      let displayRatio = '%0';
+      if (b.count > 0) {
+        displayRatio = ratio < 1 ? '<%1' : '%' + Math.round(ratio);
+      }
       return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
         <div style="width:70px;font-size:10px;font-family:var(--font-mono);color:var(--text2);flex-shrink:0;">${b.label}</div>
         <div style="flex:1;background:var(--surface2);border-radius:3px;height:8px;overflow:hidden;">
           <div style="width:${pct}%;height:100%;background:${b.color};border-radius:3px;transition:width .4s;"></div>
         </div>
-        <div style="width:40px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--text3);">${ratio.toFixed(1)}%</div>
+        <div style="width:40px;text-align:right;font-size:10px;font-family:var(--font-mono);color:var(--text3);">${displayRatio}</div>
         <div style="width:28px;text-align:right;font-size:10px;color:var(--text3);">${b.count}</div>
       </div>`;
     }).join('');
