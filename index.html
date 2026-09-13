@@ -1366,8 +1366,8 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
     <!-- 4 SADE ANA SEKME -->
     <div class="mod-tabs">
       <button class="mod-tab-btn active" id="modTabBtn-inbox" onclick="switchModTab('inbox')">📥 Bekleyen İşlemler <span class="mod-tab-count" id="inboxBadge" style="background:var(--warn);color:#000;"></span></button>
-      <button class="mod-tab-btn" id="modTabBtn-tumPinler" onclick="switchModTab('tumPinler')">📋 Tüm Pinler &amp; Arama <span class="mod-tab-count" id="pinCount"></span></button>
-      <button class="mod-tab-btn" id="modTabBtn-yorumlar" onclick="switchModTab('yorumlar')">💬 Kullanıcı Yorumları &amp; İstatistik <span class="mod-tab-count" id="yorumCount"></span></button>
+      <button class="mod-tab-btn" id="modTabBtn-tumPinler" onclick="switchModTab('tumPinler')">📋 Tüm Pinler &amp; Arama</button>
+      <button class="mod-tab-btn" id="modTabBtn-yorumlar" onclick="switchModTab('yorumlar')">💬 Kullanıcı Yorumları &amp; İstatistik</button>
       <button class="mod-tab-btn" id="modTabBtn-settings" onclick="switchModTab('settings')">⚙️ İSS &amp; Sistem Yönetimi</button>
       <!-- Gizli butonlar (eski çağrılar için uyumluluk) -->
       <button id="modTabBtn-sikayetler" style="display:none;" onclick="switchModTab('inbox')"></button>
@@ -1375,6 +1375,8 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
       <button id="modTabBtn-statEdit" style="display:none;" onclick="switchModTab('settings')"></button>
       <span id="raporCount" style="display:none;"></span>
       <span id="onayCount" style="display:none;"></span>
+      <span id="pinCount" style="display:none;"></span>
+      <span id="yorumCount" style="display:none;"></span>
     </div>
 
     <!-- SEKME 1: GELEN KUTUSU & BEKLEYEN İŞLEMLER (ACTION CENTER) -->
