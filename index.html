@@ -198,6 +198,17 @@ html.light .mlo-box { background: #ffffff; border-color: #d0d7de; box-shadow: 0 
   transition: all .2s; flex-shrink: 0;
 }
 .sidebar-collapse-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+.sidebar-header-actions { display: flex; align-items: center; gap: 6px; }
+.sidebar-reset-btn {
+  height: 20px; padding: 0 8px; border-radius: 5px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text3); font-size: 9px; font-weight: 700; font-family: var(--font-mono);
+  cursor: pointer; display: flex; align-items: center; gap: 4px;
+  transition: all .2s; flex-shrink: 0; white-space: nowrap;
+}
+.sidebar-reset-btn:hover { background: rgba(239,68,68,0.12); border-color: var(--danger); color: var(--danger); }
+html.light .sidebar-reset-btn { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); color: rgba(0,0,0,0.4); }
+html.light .sidebar-reset-btn:hover { background: rgba(239,68,68,0.1); border-color: var(--danger); color: var(--danger); }
 .sidebar-body {
   display: flex; flex-direction: column;
   overflow-y: auto; overflow-x: hidden;
@@ -917,6 +928,14 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   .settings-dropdown { right:-8px; }
   .pform-steps-indicator { margin:12px 0 2px; }
   .pf-step-dot .pf-step-label { font-size:8px; }
+  /* iOS Safari'de 16px altı font-size inputlara odaklanınca otomatik yakınlaştırma yapar — engelle (inline stil override'ları dahil) */
+  .fi, .fs, .fta, .search-input, input[type="text"], input[type="email"], input[type="password"], input[type="number"], select, textarea { font-size:16px !important; }
+  /* Dokunma hedeflerini büyüt */
+  .chip { padding:6px 10px; font-size:11px; }
+  .mode-tab { padding:10px 6px; }
+  .sidebar-reset-btn { height:26px; padding:0 10px; font-size:10px; }
+  .my-pins-toggle { padding:10px; }
+  .search-btn { padding:10px; right:0; }
 }
 /* Çok dar ekranlar (iPhone SE, eski Android'ler ~320-380px) */
 @media(max-width:400px){
@@ -971,6 +990,10 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
           </label>
         </div>
         <div class="settings-item-hint">Açıkken hız/memnuniyet renklerine ek şekil işaretleri (◆■▲●▼) eklenir.</div>
+        <a class="settings-item" href="https://github.com/rasne-dev/internetharita" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
+          <span class="settings-item-label">💻 GitHub Projesi</span>
+          <span style="color:var(--text3);font-size:11px;">↗</span>
+        </a>
       </div>
     </div>
     <label class="maintenance-toggle" id="headerMaintenanceToggle" style="display:none; margin-right: 15px; padding: 4px 10px; height: 32px;">
@@ -1016,7 +1039,10 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
           <div class="sidebar-logo-icon">iH</div>
           Filtreler
         </div>
-        <div class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Gizle / Göster">▲</div>
+        <div class="sidebar-header-actions">
+          <button class="sidebar-reset-btn" id="sidebarResetBtn" onclick="resetAllFilters(event)" title="Tüm filtreleri temizle">↺ Temizle</button>
+          <div class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Gizle / Göster">▲</div>
+        </div>
       </div>
 
       <div class="sidebar-body" id="sidebarBody">
@@ -2882,6 +2908,31 @@ function setColorMode(m) {
 }
 
 function toggleChip(el, type) { el.classList.toggle('on'); if (activeFilters.has(type)) activeFilters.delete(type); else activeFilters.add(type); renderHex(); renderModPins(); }
+function resetAllFilters(e) {
+  if (e) e.stopPropagation();
+  // Bağlantı türü çipleri — hepsini aç
+  activeFilters = new Set(['fiber','vdsl','adsl','docsis']);
+  document.querySelectorAll('#page-harita .chip-fiber, #page-harita .chip-vdsl, #page-harita .chip-adsl, #page-harita .chip-docsis').forEach(c => c.classList.add('on'));
+  // İSS çipleri — hepsini aç
+  activeISSFilters = new Set(issListCache.map(i => canonicalIssName(i.name)));
+  activeISSFilters.add('Diğer');
+  document.querySelectorAll('#issChips .chip-iss').forEach(c => c.classList.add('on'));
+  // Renk modu — varsayılana (Hız) dön
+  setColorMode('hiz');
+  // Arama kutusu
+  const searchInput = document.getElementById('mapSearchInput');
+  if (searchInput) searchInput.value = '';
+  document.getElementById('searchResults')?.classList.remove('open');
+  // Kendi ölçümlerim katmanı
+  if (isMyPinsVisible) {
+    isMyPinsVisible = false;
+    document.getElementById('myPinsToggle')?.classList.remove('active');
+    renderMyPins();
+  }
+  renderHex();
+  renderModPins();
+  showToast('🧹 Filtreler temizlendi');
+}
 function toggleMapSidebar() { const sb = document.getElementById('mapSidebar'), btn = document.getElementById('sidebarToggle'); sb.classList.toggle('mobile-open'); btn.textContent = sb.classList.contains('mobile-open') ? '✕ Kapat' : '⚙ Filtreler'; }
 function toggleSidebarCollapse() { 
   const body = document.getElementById('sidebarBody');
