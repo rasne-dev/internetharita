@@ -393,7 +393,13 @@ html.light #mapStats { color: rgba(0,0,0,0.6); }
 .legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
 html.light .map-legend-box { background:rgba(255,255,255,0.93); border-color:rgba(0,0,0,0.08); }
 html.light .zoom-hint { background:rgba(255,255,255,0.92); border-color:rgba(0,0,0,0.08); color:rgba(0,0,0,0.5); }
-@media(max-width:768px){ .map-legend-box { bottom:66px; right:14px; } .zoom-hint { bottom:66px; } }
+@media(max-width:768px){
+  .map-legend-box { bottom:66px; right:14px; }
+  .zoom-hint { bottom:66px; }
+  /* Sidebar açıkken legend ve zoom-hint gizlensin (çakışma önleme) */
+  .map-sidebar.mobile-open ~ .map-legend-box,
+  .map-sidebar.mobile-open ~ .zoom-hint { display:none !important; }
+}
 .map-info { 
   position:fixed;
   top:calc(var(--nav-h) + 14px);
@@ -907,16 +913,21 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
     width:calc(100vw - 28px);
     top: calc(var(--nav-h) + 14px);
     max-height:calc(100vh - var(--nav-h) - 56px - 28px);
+    z-index:600;
   }
   .map-sidebar.mobile-open .sidebar-panel {
     display:flex; flex-direction:column;
     max-height:inherit; overflow:hidden;
   }
   .map-sidebar.mobile-open .sidebar-body {
-    max-height:calc(100vh - var(--nav-h) - 56px - 28px - 44px); /* - header yüksekliği */
+    max-height:calc(100vh - var(--nav-h) - 56px - 28px - 44px);
     overflow-y:auto; -webkit-overflow-scrolling:touch;
   }
   .map-sidebar-toggle { display:block; }
+  /* Sidebar açıkken "Filtreler" toggle butonu gizlensin — zaten sidebar'ın içinde kapama var */
+  .map-sidebar.mobile-open ~ .map-sidebar-toggle { display:none; }
+  /* Sidebar içindeki mobil X kapat butonu sadece mobilde görünür */
+  #mobileSidebarCloseBtn { display:flex !important; }
   .map-info { width:calc(100vw - 28px); right:14px; top:calc(var(--nav-h) + 8px); max-height:calc(100vh - var(--nav-h) - 80px); }
   .pin-layout { grid-template-columns:1fr; grid-template-rows:40vh 1fr; } 
   #pin-map { height:100%; } 
@@ -948,7 +959,55 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   .logo-text { font-size:13px; }
   .settings-dropdown { min-width:190px; right:-12px; }
 }
-</style>
+
+/* ===== MOBİL SİDEBAR BACKDROP ===== */
+.sidebar-backdrop {
+  display:none; position:fixed; inset:0; z-index:499;
+  background:rgba(0,0,0,0.55); backdrop-filter:blur(2px);
+  -webkit-backdrop-filter:blur(2px);
+  transition:opacity .25s;
+}
+.sidebar-backdrop.active { display:block; }
+
+/* ===== PWA INSTALL BANNER ===== */
+.pwa-install-banner {
+  display:none; position:fixed; bottom:66px; left:12px; right:12px; z-index:1100;
+  background:var(--surface); border:1px solid var(--border2);
+  border-radius:14px; padding:14px 16px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  flex-direction:row; align-items:center; gap:12px;
+  animation:pwaSlideUp .35s cubic-bezier(.4,0,.2,1);
+}
+.pwa-install-banner.visible { display:flex; }
+@keyframes pwaSlideUp {
+  from { transform:translateY(24px); opacity:0; }
+  to   { transform:translateY(0);    opacity:1; }
+}
+.pwa-install-icon {
+  width:44px; height:44px; border-radius:12px; flex-shrink:0;
+  background:linear-gradient(135deg, var(--accent), #0080ff);
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; font-family:var(--font-mono); font-weight:700; color:#000;
+  box-shadow:0 0 16px var(--accent-glow);
+}
+.pwa-install-text { flex:1; min-width:0; }
+.pwa-install-title { font-size:13px; font-weight:700; color:var(--text); margin-bottom:2px; }
+.pwa-install-sub { font-size:11px; color:var(--text3); line-height:1.4; }
+.pwa-install-actions { display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
+.pwa-btn-install {
+  padding:8px 14px; background:var(--accent); color:#000;
+  border:none; border-radius:8px; font-size:12px; font-weight:700;
+  cursor:pointer; font-family:var(--font-body); white-space:nowrap;
+  transition:all .2s;
+}
+.pwa-btn-install:hover { background:#33deff; }
+.pwa-btn-dismiss {
+  padding:4px 8px; background:none; border:none;
+  color:var(--text3); font-size:11px; cursor:pointer;
+  text-align:center; font-family:var(--font-body); transition:color .2s;
+}
+.pwa-btn-dismiss:hover { color:var(--text); }
+html.light .pwa-install-banner { background:var(--surface); border-color:var(--border); box-shadow:0 8px 32px rgba(0,0,0,0.18); }</style>
 <!-- Tema erken init — flash önleme -->
 <script>
   (function(){
@@ -1017,6 +1076,19 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   <button class="mob-btn mod-mob" id="mob-mod" onclick="showPage('mod')"><span class="mob-icon">🔧</span><span class="mob-label">Mod</span></button>
 </nav>
 
+<!-- PWA: Ana Ekrana Ekle Banner -->
+<div class="pwa-install-banner" id="pwaInstallBanner">
+  <div class="pwa-install-icon">iH</div>
+  <div class="pwa-install-text">
+    <div class="pwa-install-title">Ana Ekrana Ekle</div>
+    <div class="pwa-install-sub">internetHarita'yı uygulaması gibi kullan — tek tıkla açılır</div>
+  </div>
+  <div class="pwa-install-actions">
+    <button class="pwa-btn-install" id="pwaInstallBtn" onclick="pwaInstall()">Ekle</button>
+    <button class="pwa-btn-dismiss" onclick="pwaDismiss()">Belki sonra</button>
+  </div>
+</div>
+
 <div id="page-harita" class="page active">
   <div id="map"></div>
   <div id="mapLoadingOverlay" class="map-loading-overlay">
@@ -1030,6 +1102,8 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
       </div>
     </div>
   </div>
+  <!-- Sidebar backdrop — mobilde sidebar açıkken haritayı karartır, tıklanınca kapatır -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleMapSidebar()"></div>
   <div class="map-sidebar-toggle" id="sidebarToggle" onclick="toggleMapSidebar()">⚙ Filtreler</div>
   <div class="map-sidebar" id="mapSidebar">
     <div class="sidebar-panel">
@@ -1041,6 +1115,8 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
         </div>
         <div class="sidebar-header-actions">
           <button class="sidebar-reset-btn" id="sidebarResetBtn" onclick="resetAllFilters(event)" title="Tüm filtreleri temizle">↺ Temizle</button>
+          <!-- Mobilde sidebar'ı tamamen kapatmak için X butonu -->
+          <div class="sidebar-collapse-btn" id="mobileSidebarCloseBtn" title="Kapat" onclick="event.stopPropagation();toggleMapSidebar()" style="display:none;">✕</div>
           <div class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Gizle / Göster">▲</div>
         </div>
       </div>
@@ -2933,7 +3009,21 @@ function resetAllFilters(e) {
   renderModPins();
   showToast('🧹 Filtreler temizlendi');
 }
-function toggleMapSidebar() { const sb = document.getElementById('mapSidebar'), btn = document.getElementById('sidebarToggle'); sb.classList.toggle('mobile-open'); btn.textContent = sb.classList.contains('mobile-open') ? '✕ Kapat' : '⚙ Filtreler'; }
+function toggleMapSidebar() {
+  const sb = document.getElementById('mapSidebar');
+  const btn = document.getElementById('sidebarToggle');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  const isOpen = sb.classList.toggle('mobile-open');
+  if (btn) btn.textContent = isOpen ? '✕ Kapat' : '⚙ Filtreler';
+  if (backdrop) backdrop.classList.toggle('active', isOpen);
+  // Mobilde sidebar açıkken legend ve zoom-hint'i gizle
+  if (window.innerWidth <= 768) {
+    const legendBox = document.getElementById('mapLegendBox');
+    const zoomHint = document.getElementById('zoomHint');
+    if (legendBox) legendBox.style.display = isOpen ? 'none' : '';
+    if (zoomHint)  zoomHint.style.display  = isOpen ? 'none' : '';
+  }
+}
 function toggleSidebarCollapse() { 
   const body = document.getElementById('sidebarBody');
   const btn = document.getElementById('sidebarCollapseBtn');
@@ -8368,6 +8458,60 @@ function applySpeedResults() {
     showToast(`✅ ↓${stResults.dl} Mbps · ↑${stResults.ul} Mbps — forma yazıldı`);
   }
   closeSpeedTestModal();
+}
+
+// ===== PWA: ANA EKRANA EKLE =====
+let _pwaPrompt = null;
+(function initPWA() {
+  // Kullanıcı daha önce "belki sonra" dediyse ve 7 gün geçmediyse gösterme
+  const dismissed = localStorage.getItem('ih_pwa_dismissed');
+  if (dismissed && Date.now() - parseInt(dismissed) < 7 * 24 * 60 * 60 * 1000) return;
+  // Zaten kuruluysa gösterme (standalone mode)
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    _pwaPrompt = e;
+    // Banner'ı 2 saniye sonra göster (sayfa yüklenmesine zaman tanı)
+    setTimeout(function() {
+      const banner = document.getElementById('pwaInstallBanner');
+      if (banner) banner.classList.add('visible');
+    }, 2000);
+  });
+
+  // iOS Safari: beforeinstallprompt yok, elle rehber göster
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+  if (isIOS && !isStandalone && !dismissed) {
+    setTimeout(function() {
+      const banner = document.getElementById('pwaInstallBanner');
+      const sub = banner && banner.querySelector('.pwa-install-sub');
+      const btn = banner && banner.querySelector('.pwa-btn-install');
+      if (!banner) return;
+      if (sub) sub.textContent = 'Safari\'de "Paylaş" → "Ana Ekrana Ekle" seçeneğiyle uygulamaya ekleyin.';
+      if (btn) { btn.textContent = 'Nasıl?'; btn.onclick = function() { showToast('Safari\'de alttaki Paylaş (↑) butonuna dokun, ardından "Ana Ekrana Ekle" seçeneğini seç.', 'info'); }; }
+      banner.classList.add('visible');
+    }, 3000);
+  }
+})();
+
+function pwaInstall() {
+  if (!_pwaPrompt) return;
+  _pwaPrompt.prompt();
+  _pwaPrompt.userChoice.then(function(choice) {
+    if (choice.outcome === 'accepted') {
+      const banner = document.getElementById('pwaInstallBanner');
+      if (banner) banner.classList.remove('visible');
+      localStorage.setItem('ih_pwa_dismissed', Date.now().toString());
+    }
+    _pwaPrompt = null;
+  });
+}
+
+function pwaDismiss() {
+  const banner = document.getElementById('pwaInstallBanner');
+  if (banner) banner.classList.remove('visible');
+  localStorage.setItem('ih_pwa_dismissed', Date.now().toString());
 }
 </script>
 </body>
