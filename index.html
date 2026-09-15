@@ -1020,7 +1020,29 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   text-align:center; font-family:var(--font-body); transition:color .2s;
 }
 .pwa-btn-dismiss:hover { color:var(--text); }
-html.light .pwa-install-banner { background:var(--surface); border-color:var(--border); box-shadow:0 8px 32px rgba(0,0,0,0.18); }</style>
+html.light .pwa-install-banner { background:var(--surface); border-color:var(--border); box-shadow:0 8px 32px rgba(0,0,0,0.18); }
+
+/* ===== ÇEREZ & ŞEFFAFLIK BİLDİRİMİ ===== */
+.cookie-consent-banner {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  z-index: 2000; width: calc(100% - 32px); max-width: 680px;
+  background: rgba(13, 19, 24, 0.95); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border2); border-radius: 14px;
+  padding: 14px 18px; box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  animation: pwaSlideUp .35s ease;
+}
+@media(max-width: 768px) {
+  .cookie-consent-banner {
+    bottom: 68px; flex-direction: column; align-items: flex-start; gap: 12px;
+    padding: 14px 16px;
+  }
+  .cookie-consent-banner .ccb-actions { width: 100%; display: flex; justify-content: flex-end; }
+}
+.ccb-content { display: flex; align-items: center; gap: 12px; font-size: 11px; line-height: 1.5; color: var(--text2); }
+.ccb-icon { font-size: 24px; flex-shrink: 0; }
+html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); border-color: var(--border); box-shadow: 0 12px 40px rgba(0,0,0,0.15); }
+</style>
 <!-- Tema erken init — flash önleme -->
 <script>
   (function(){
@@ -1107,6 +1129,20 @@ html.light .pwa-install-banner { background:var(--surface); border-color:var(--b
   <div class="pwa-install-actions">
     <button class="pwa-btn-install" id="pwaInstallBtn" onclick="pwaInstall()">Ekle</button>
     <button class="pwa-btn-dismiss" onclick="pwaDismiss()">Belki sonra</button>
+  </div>
+</div>
+
+<!-- ŞEFFAF ÇEREZ & DESTEK BİLDİRİMİ -->
+<div id="cookieConsentBanner" class="cookie-consent-banner" style="display:none;">
+  <div class="ccb-content">
+    <div class="ccb-icon">🍪</div>
+    <div class="ccb-text">
+      <strong style="color:var(--text);">Şeffaf Çerez &amp; Destek Bildirimi:</strong> Sitemizde, alan adı, sunucu ve harita altyapı masraflarını karşılayabilmek amacıyla Google standart reklam çerezleri kullanılmaktadır. Hiçbir kişisel kimlik veriniz toplanmaz veya paylaşılmaz. Anlayışınız ve desteğiniz için teşekkür ederiz!
+      <a href="javascript:void(0)" onclick="openKvkkModal()" style="color:var(--accent); text-decoration:underline; margin-left:4px;">Aydınlatma Metni</a>
+    </div>
+  </div>
+  <div class="ccb-actions">
+    <button class="btn-primary" onclick="acceptCookieConsent()" style="padding:8px 18px; font-size:11px; white-space:nowrap;">Anladım &amp; Kabul Et</button>
   </div>
 </div>
 
@@ -8574,6 +8610,27 @@ function pwaDismiss() {
   const banner = document.getElementById('pwaInstallBanner');
   if (banner) banner.classList.remove('visible');
   localStorage.setItem('ih_pwa_dismissed', Date.now().toString());
+}
+
+// ===== ÇEREZ & ŞEFFAFLIK BİLDİRİMİ YÖNETİMİ =====
+(function initCookieConsent() {
+  const consented = localStorage.getItem('ih_cookie_consent');
+  if (!consented) {
+    setTimeout(function() {
+      const banner = document.getElementById('cookieConsentBanner');
+      if (banner) banner.style.display = 'flex';
+    }, 1500);
+  }
+})();
+
+function acceptCookieConsent() {
+  localStorage.setItem('ih_cookie_consent', 'true');
+  const banner = document.getElementById('cookieConsentBanner');
+  if (banner) {
+    banner.style.opacity = '0';
+    banner.style.transition = 'opacity 0.3s ease';
+    setTimeout(function() { banner.style.display = 'none'; }, 300);
+  }
 }
 </script>
 </body>
