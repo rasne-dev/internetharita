@@ -80,13 +80,13 @@
 <!-- FingerprintJS for browser fingerprinting -->
 <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 <!-- PWA -->
-<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22internetHarita%22%2C%22short_name%22%3A%22iHarita%22%2C%22description%22%3A%22T%C3%BCrkiye%20%C4%B0nternet%20Altyap%C4%B1%20Haritas%C4%B1%22%2C%22start_url%22%3A%22%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23070b0f%22%2C%22theme_color%22%3A%22%2300d4ff%22%2C%22orientation%22%3A%22any%22%2C%22lang%22%3A%22tr%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%2520viewBox%3D'0%25200%2520100%2520100'%253E%253Crect%2520width%3D'100'%2520height%3D'100'%2520rx%3D'22'%2520fill%3D'%2523070b0f'%2F%253E%253Ctext%2520y%3D'.9em'%2520font-size%3D'72'%2520x%3D'50%2525'%2520text-anchor%3D'middle'%2520fill%3D'%252300d4ff'%2520font-family%3D'monospace'%2520font-weight%3D'700'%253EiH%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22internetHarita%22%2C%22short_name%22%3A%22iHarita%22%2C%22description%22%3A%22T%C3%BCrkiye%20%C4%B0nternet%20Altyap%C4%B1%20Haritas%C4%B1%22%2C%22start_url%22%3A%22%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23070b0f%22%2C%22theme_color%22%3A%22%2300d4ff%22%2C%22orientation%22%3A%22any%22%2C%22lang%22%3A%22tr%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22%2Flogo.svg%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
 <meta name="theme-color" id="themeColorMeta" content="#070b0f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="internetHarita">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23070b0f'/%3E%3Ctext y='.9em' font-size='72' x='50%25' text-anchor='middle' fill='%2300d4ff' font-family='monospace' font-weight='700'%3EiH%3C/text%3E%3C/svg%3E">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23070b0f'/%3E%3Ctext y='.9em' font-size='72' x='50%25' text-anchor='middle' fill='%2300d4ff' font-family='monospace' font-weight='700'%3EiH%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="/logo.svg">
+<link rel="icon" type="image/svg+xml" href="/logo.svg">
 <style>
 /* ===== DESIGN TOKENS ===== */
 :root {
@@ -109,7 +109,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 /* ===== NAV ===== */
 nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:var(--nav-h); background:rgba(7,11,15,0.96); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); display:flex;align-items:center;padding:0 16px;gap:0; }
 .logo { display:flex;align-items:center;gap:10px; margin-right:24px;cursor:pointer; text-decoration:none; flex-shrink:0; }
-.logo-icon { width:32px;height:32px;border-radius:8px; background:linear-gradient(135deg, var(--accent), #0080ff); display:flex;align-items:center;justify-content:center; font-size:14px;font-family:var(--font-mono);font-weight:700;color:#000; box-shadow:0 0 16px var(--accent-glow); flex-shrink:0; }
+.logo-icon { width:32px;height:32px;border-radius:8px; display:flex;align-items:center;justify-content:center; box-shadow:0 0 16px var(--accent-glow); flex-shrink:0; overflow:hidden; }
 .logo-text { font-family:var(--font-mono);font-size:13px;font-weight:700; color:var(--text);letter-spacing:-0.3px; }
 .logo-text span{color:var(--accent);}
 .nav-tabs{display:flex;gap:2px;}
@@ -241,9 +241,9 @@ html.light .mlo-box { background: #ffffff; border-color: #d0d7de; box-shadow: 0 
   color: var(--accent); letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;
 }
 .sidebar-logo-icon {
-  width: 20px; height: 20px; background: var(--accent);
+  width: 20px; height: 20px;
   border-radius: 5px; display: flex; align-items: center; justify-content: center;
-  font-size: 9px; color: #000; font-weight: 900;
+  overflow: hidden; flex-shrink: 0;
 }
 .sidebar-collapse-btn {
   width: 20px; height: 20px; border-radius: 5px;
@@ -1107,7 +1107,21 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
 
 <nav>
   <div class="logo" onclick="showPage('harita')">
-    <div class="logo-icon">iH</div>
+    <div class="logo-icon" title="internetHarita">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+        <defs>
+          <linearGradient id="logoGradNav" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#00e5ff"/>
+            <stop offset="100%" stop-color="#0066ff"/>
+          </linearGradient>
+        </defs>
+        <rect width="92" height="92" x="4" y="4" rx="22" fill="url(#logoGradNav)"/>
+        <path d="M 23 28 A 38 38 0 0 1 77 28" fill="none" stroke="#070b0f" stroke-width="7.5" stroke-linecap="round"/>
+        <path d="M 33 40 A 24 24 0 0 1 67 40" fill="none" stroke="#070b0f" stroke-width="7.5" stroke-linecap="round"/>
+        <circle cx="50" cy="50" r="5" fill="#070b0f"/>
+        <text x="50" y="84" font-family="'Space Mono', monospace, sans-serif" font-size="34" font-weight="900" fill="#070b0f" text-anchor="middle" letter-spacing="3">İH</text>
+      </svg>
+    </div>
     <div class="logo-text">internet<span>Harita</span></div>
   </div>
   <div class="nav-tabs">
@@ -1211,7 +1225,21 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
       <!-- HEADER / COLLAPSE -->
       <div class="sidebar-header" onclick="toggleSidebarCollapse()">
         <div class="sidebar-logo">
-          <div class="sidebar-logo-icon">iH</div>
+          <div class="sidebar-logo-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+              <defs>
+                <linearGradient id="logoGradSb" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#00e5ff"/>
+                  <stop offset="100%" stop-color="#0066ff"/>
+                </linearGradient>
+              </defs>
+              <rect width="92" height="92" x="4" y="4" rx="22" fill="url(#logoGradSb)"/>
+              <path d="M 23 28 A 38 38 0 0 1 77 28" fill="none" stroke="#070b0f" stroke-width="8" stroke-linecap="round"/>
+              <path d="M 33 40 A 24 24 0 0 1 67 40" fill="none" stroke="#070b0f" stroke-width="8" stroke-linecap="round"/>
+              <circle cx="50" cy="50" r="5" fill="#070b0f"/>
+              <text x="50" y="84" font-family="'Space Mono', monospace, sans-serif" font-size="34" font-weight="900" fill="#070b0f" text-anchor="middle" letter-spacing="3">İH</text>
+            </svg>
+          </div>
           Filtreler
         </div>
         <div class="sidebar-header-actions">
