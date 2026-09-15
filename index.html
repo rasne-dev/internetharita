@@ -4094,9 +4094,13 @@ function renderRegions() {
   }
 
   // 2. Üst Liderler / Özet Kartları
+  // Memnuniyet için güvenilirlik filtresi: En az 5 ölçüm almış bölgeler önceliklidir
+  const qualifiedForMem = regions.filter(r => r.pins.length >= 5);
+  const memPool = qualifiedForMem.length > 0 ? qualifiedForMem : regions;
+
   const fastest = [...regions].sort((a,b) => b.avgDL - a.avgDL)[0];
   const highestUL = [...regions].sort((a,b) => b.avgUL - a.avgUL)[0];
-  const highestMem = [...regions].filter(r=>r.avgS!==null).sort((a,b) => b.avgS - a.avgS)[0] || fastest;
+  const highestMem = [...memPool].filter(r=>r.avgS!==null).sort((a,b) => b.avgS - a.avgS)[0] || fastest;
   const highestFiber = [...regions].sort((a,b) => b.fiberPct - a.fiberPct)[0];
 
   const highlightsContainer = document.getElementById('regionHighlightCards');
@@ -4105,22 +4109,22 @@ function renderRegions() {
       <div style="background:var(--surface2);border:1px solid rgba(0,212,255,0.3);border-radius:9px;padding:12px;display:flex;align-items:center;gap:10px;">
         <div style="font-size:24px;line-height:1;">⚡</div>
         <div>
-          <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.3px;">En Hızlı Bölge</div>
+          <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.3px;">En Hızlı İndirme</div>
           <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:2px;">
             <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${fastest.color};margin-right:5px;vertical-align:middle;"></span>${fastest.name} Bölgesi
           </div>
-          <div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px;">${fastest.avgDL} Mbps indirme (${fastest.pins.length} ölçüm)</div>
+          <div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:2px;">${fastest.avgDL} Mbps indirme (${fastest.speedPins.length} test)</div>
         </div>
       </div>
 
       <div style="background:var(--surface2);border:1px solid rgba(52,211,153,0.3);border-radius:9px;padding:12px;display:flex;align-items:center;gap:10px;">
         <div style="font-size:24px;line-height:1;">🚀</div>
         <div>
-          <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.3px;">En Yüksek Yükleme</div>
+          <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.3px;">En Hızlı Yükleme</div>
           <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:2px;">
             <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${highestUL.color};margin-right:5px;vertical-align:middle;"></span>${highestUL.name} Bölgesi
           </div>
-          <div style="font-size:11px;color:var(--success);font-weight:600;margin-top:2px;">${highestUL.avgUL} Mbps yükleme (${highestUL.pins.length} ölçüm)</div>
+          <div style="font-size:11px;color:var(--success);font-weight:600;margin-top:2px;">${highestUL.avgUL} Mbps yükleme (${highestUL.speedPins.filter(p=>p.gercek_ul>0).length || highestUL.speedPins.length} test)</div>
         </div>
       </div>
 
@@ -4131,7 +4135,7 @@ function renderRegions() {
           <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:2px;">
             <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${highestMem.color};margin-right:5px;vertical-align:middle;"></span>${highestMem.name} Bölgesi
           </div>
-          <div style="font-size:11px;color:var(--warn);font-weight:600;margin-top:2px;">${highestMem.avgS ? highestMem.avgS.toFixed(1) : '—'} / 10 kullanıcı puanı</div>
+          <div style="font-size:11px;color:var(--warn);font-weight:600;margin-top:2px;">${highestMem.avgS ? highestMem.avgS.toFixed(1) : '—'} / 10 puan (${highestMem.speedPins.length} değerlendirme)</div>
         </div>
       </div>
 
@@ -4142,7 +4146,7 @@ function renderRegions() {
           <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:2px;">
             <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${highestFiber.color};margin-right:5px;vertical-align:middle;"></span>${highestFiber.name} Bölgesi
           </div>
-          <div style="font-size:11px;color:#a78bfa;font-weight:600;margin-top:2px;">%${highestFiber.fiberPct} fiber altyapı payı</div>
+          <div style="font-size:11px;color:#a78bfa;font-weight:600;margin-top:2px;">%${highestFiber.fiberPct} fiber altyapı (${highestFiber.pins.length} ölçüm)</div>
         </div>
       </div>
     `;
@@ -4428,7 +4432,7 @@ function selectRegion(name) {
 function goToSelectedRegionMap() {
   const reg = BOLGELER[selectedRegionName];
   if (!reg) return;
-  switchPage('harita');
+  showPage('harita');
   setTimeout(() => {
     if (maps.main) {
       maps.main.setView(reg.center || [39, 35], reg.zoom || 7, { animate: true });
