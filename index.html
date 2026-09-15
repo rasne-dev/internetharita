@@ -1062,6 +1062,14 @@ html.light .pwa-install-banner { background:var(--surface); border-color:var(--b
           </label>
         </div>
         <div class="settings-item-hint">Açıkken hız/memnuniyet renklerine ek şekil işaretleri (◆■▲●▼) eklenir.</div>
+        <div class="settings-item" onclick="openKvkkModal(); document.getElementById('settingsDropdown').classList.remove('open');" style="cursor:pointer;">
+          <span class="settings-item-label">🔒 Gizlilik &amp; Çerez Politikası</span>
+          <span style="color:var(--text3);font-size:11px;">📄</span>
+        </div>
+        <div class="settings-item" onclick="openAboutModal(); document.getElementById('settingsDropdown').classList.remove('open');" style="cursor:pointer;">
+          <span class="settings-item-label">ℹ️ Hakkında &amp; İletişim</span>
+          <span style="color:var(--text3);font-size:11px;">ℹ️</span>
+        </div>
         <a class="settings-item" href="https://github.com/rasne-dev/internetharita" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
           <span class="settings-item-label">💻 GitHub Projesi</span>
           <span style="color:var(--text3);font-size:11px;">↗</span>
@@ -1758,18 +1766,53 @@ html.light .pwa-install-banner { background:var(--surface); border-color:var(--b
 </div>
 
 <div class="modal-bg" id="kvkkModal" onclick="if(event.target===this)closeKvkkModal()">
-  <div class="modal" style="max-width:560px; max-height:80vh; overflow-y:auto;">
+  <div class="modal" style="max-width:580px; max-height:85vh; overflow-y:auto;">
     <span class="modal-close" onclick="closeKvkkModal()">×</span>
-    <div class="modal-title">🔒 KVKK / GDPR Aydınlatma Metni ve Gizlilik Bildirimi</div>
-    <div style="font-size:11px; color:var(--text2); line-height:1.6;">
-      <p><b style="color:var(--text);">1) Veri Sorumlusu:</b> Bu platform, gönüllü katkıcılar tarafından geliştirilen açık kaynaklı, kâr amacı gütmeyen bağımsız bir topluluk projesidir (İnternetHarita). Ticari bir tüzel kişilik veya reklam hedefli veri toplayıcısı bulunmamaktadır; proje kodu GitHub üzerinde kamuya açık olarak yürütülür.</p>
-      <p><b style="color:var(--text);">2) İşlenen Veriler:</b> Yaklaşık konum (H3 altıgen hücresi ve ~100m rastgele kaydırma ile bulanıklaştırılmış), seçtiğiniz İSS/altyapı sağlayıcısı, hız testi ölçüm sonuçları (download/upload), memnuniyet puanı (1–10), seçilen deneyim etiketleri (örn. akşam düşüşü, stabil hız vb.) ve kötüye kullanımı önlemek amacıyla oluşturulan teknik tarayıcı parmak izi (fingerprint).</p>
-      <p><b style="color:var(--text);">3) İşleme Amacı:</b> Türkiye genelinde bölgesel internet altyapı ve hız dağılımını gösteren bağımsız, şeffaf ve anonimleştirilmiş bir harita sunmak; spam/bot veri girişlerini ve aynı adresten mükerrer ölçümleri engellemek.</p>
-      <p><b style="color:var(--text);">4) Hukuki Sebep ve Konum Gizliliği:</b> KVKK m.5/1 ve GDPR m.6/1-a kapsamında açık rızanız. Konum verisi cihazınızdan çıkmadan önce matematiksel olarak ~100m kaydırılır (fuzzing). Kesin sokak/bina adresiniz hiçbir aşamada sunucuya iletilmez ve saklanmaz; bu sayede kişisel veri niteliği önlenir.</p>
-      <p><b style="color:var(--text);">5) Veri Güvenliği ve Açık API İzolasyonu:</b> Paylaştığınız ölçüm verileri (hız, sağlayıcı, puan, etiketler, bulanık konum) haritada herkese açık gösterilir. Ancak <b>tarayıcı parmak izi (fingerprint)</b> gibi teknik alanlar herkese açık API sorgularına veritabanı seviyesinde tamamen kapatılmıştır (kamuya açık değildir). Yalnızca arka planda bot/spam engelleme ve moderasyon denetimi amacıyla güvenle işlenir.</p>
-      <p><b style="color:var(--text);">6) Kendi Ölçümünüzü Yönetme ve Unutulma Hakkı:</b> Tarayıcınızdan eklediğiniz ölçümler yerel depolamanızda (<code>localStorage</code>) tutulur. Harita üzerinden ölçümünüze tıklayarak veya "Ölçümlerimi Haritada Gör" menüsünden dilediğiniz zaman <b>"✏️ Düzenle"</b> ile bilgilerinizi güncelleyebilir veya <b>"🗑 Sil"</b> butonuyla ölçümünüzü haritadan anında kaldırabilirsiniz.</p>
-      <p><b style="color:var(--text);">7) İlgili Kişi Hakları (KVKK m.11 &amp; GDPR):</b> Verilerinizin durumunu öğrenme, düzeltilmesini veya silinmesini isteme hakkına sahipsiniz. Haritadaki şüpheli veya istemediğiniz verileri 🚩 "Bildir" butonuyla moderatörlere iletebilir, ayrıca GitHub Issues üzerinden de doğrudan talepte bulunabilirsiniz.</p>
-      <p><b style="color:var(--text);">8) Çerezler ve Yerel Depolama:</b> Platformda üçüncü taraf takip, reklam veya pazarlama çerezi kesinlikle kullanılmaz. Tarayıcınızın yerel depolama alanı (<code>localStorage</code>) yalnızca tema tercihiniz (karanlık/aydınlık), renk körü modu, hız limiti sayaçları ve kendi ölçümlerinizi size gösterebilmek için teknik olarak zorunlu kapsamda kullanılır.</p>
+    <div class="modal-title">🔒 Gizlilik Politikası, KVKK / GDPR ve Çerez Bildirimi</div>
+    <div style="font-size:11px; color:var(--text2); line-height:1.65;">
+      <p style="margin-bottom:8px;"><b style="color:var(--text);">1) Veri Sorumlusu &amp; Kapsam:</b> Bu platform (<b>internetharita.com.tr</b>), Türkiye genelinde kullanıcıların internet altyapı ve hız memnuniyetini sergileyen açık kaynaklı, bağımsız bir topluluk girişimidir. 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) ve Avrupa Genel Veri Koruma Tüzüğü (GDPR) uyarınca veri sorumlusu sıfatıyla hareket edilmektedir.</p>
+      
+      <p style="margin-bottom:8px;"><b style="color:var(--text);">2) İşlenen Veriler &amp; Konum Bulanıklaştırma (~100m Fuzzing):</b> Haritada seçtiğiniz konum koordinatları veritabanına aktarılmadan önce istemci tarafında algoritmik olarak rastgele ~100 metre kaydırılır (fuzzing). Kesin bina/kapı adresiniz sunucuya asla iletilmez ve saklanmaz. Toplanan diğer veriler: Hız testi sonuçları (indirme/yükleme/ping), seçilen İSS/altyapı türü (Fiber, VDSL vb.), memnuniyet puanı (1–10), deneyim etiketleri ve bot/spam engelleme amaçlı anonimleştirilmiş teknik tarayıcı parmak izidir.</p>
+      
+      <p style="margin-bottom:8px;"><b style="color:var(--text);">3) Sıfır Kişisel Kimlik Bilgisi (Zero PII):</b> İsim, soyisim, T.C. kimlik numarası, telefon numarası veya e-posta adresi gibi hiçbir kişisel kimlik verisi talep edilmez, toplanmaz ve saklanmaz.</p>
+
+      <p style="margin-bottom:8px;"><b style="color:var(--text);">4) Çerezler ve Üçüncü Taraf Reklam Ortaklıkları (Google AdSense):</b>
+      <br>• <b>Teknik Çerezler &amp; Yerel Depolama:</b> Tarayıcınızın yerel depolama alanı (<code>localStorage</code>), yalnızca tema tercihiniz (karanlık/aydınlık), renk körü modu, hız limiti sayaçları ve kendi ölçümlerinizi yönetebilmeniz için zorunlu olarak kullanılır.
+      <br>• <b>Google Reklam Çerezleri:</b> Platformun alan adı, sunucu ve harita altyapı işletim masraflarını karşılamak amacıyla Google AdSense ve sertifikalı üçüncü taraf reklam sağlayıcılarının çerezleri kullanılabilir. Google, kullanıcıların bu siteye veya internetteki diğer sitelere yaptıkları önceki ziyaretlere dayanarak reklam sunmak için çerezlerden yararlanır. Kullanıcılar, kişiselleştirilmiş reklamcılığı devre dışı bırakmak için <a href="https://myadcenter.google.com" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">Google Reklam Merkezi</a> veya <a href="https://www.aboutads.info" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">www.aboutads.info</a> adreslerini ziyaret edebilirler.</p>
+
+      <p style="margin-bottom:8px;"><b style="color:var(--text);">5) Veri Güvenliği ve Açık API İzolasyonu:</b> Paylaştığınız hız ve memnuniyet ölçümleri haritada herkese açık olarak derlenir. Ancak spam/bot engelleme amacıyla alınan teknik parmak izi verileri veritabanı seviyesinde açık API sorgularına tamamen kapatılmıştır; üçüncü taraflarla ticari olarak paylaşılmaz.</p>
+
+      <p style="margin-bottom:8px;"><b style="color:var(--text);">6) Kendi Ölçümünüzü Yönetme ve Unutulma Hakkı:</b> Tarayıcınızdan eklediğiniz ölçümler yerel depolamanızda tutulur. Harita üzerinden kendi pininize tıklayarak veya sol menüdeki "Ölçümlerimi Haritada Gör" bölümünden dilediğiniz an <b>"✏️ Düzenle"</b> ile güncelleyebilir veya <b>"🗑 Sil"</b> butonuyla ölçümünüzü veritabanından kalıcı olarak silebilirsiniz.</p>
+
+      <p style="margin-bottom:8px;"><b style="color:var(--text);">7) İlgili Kişi Hakları ve İletişim:</b> KVKK m.11 ve GDPR kapsamında verileriniz hakkında bilgi alma, düzeltilmesini veya silinmesini talep etme hakkına sahipsiniz. Talep ve geri bildirimleriniz için <a href="https://github.com/rasne-dev/internetharita/issues" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">GitHub Issues</a> üzerinden veya <b>contact@internetharita.com.tr</b> adresinden bizimle iletişime geçebilirsiniz.</p>
+    </div>
+  </div>
+</div>
+
+<!-- HAKKINDA & İLETİŞİM MODALI -->
+<div class="modal-bg" id="aboutModal" onclick="if(event.target===this)closeAboutModal()">
+  <div class="modal" style="max-width:540px; max-height:85vh; overflow-y:auto;">
+    <span class="modal-close" onclick="closeAboutModal()">×</span>
+    <div class="modal-title">ℹ️ internetHarita Hakkında &amp; İletişim</div>
+    <div style="font-size:12px; color:var(--text2); line-height:1.7;">
+      <p style="margin-bottom:12px;"><b>internetHarita</b>, Türkiye genelinde gerçek kullanıcıların ev ve iş yerlerindeki internet bağlantı hızlarını, fiber altyapı dağılımını ve servis sağlayıcı memnuniyetini şeffaf bir şekilde belgeleyen bağımsız bir topluluk projesidir.</p>
+      
+      <div style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:14px;">
+        <div style="font-size:11px; font-weight:700; color:var(--accent); font-family:var(--font-mono); margin-bottom:6px; text-transform:uppercase;">🎯 Misyonumuz</div>
+        <p style="font-size:11px; margin:0;">Yeni bir mahalleye taşınırken gerçek internet altyapısını öğrenmek isteyen vatandaşlara tarafsız rehberlik etmek ve altyapısı bulunmayan bölgelerdeki sayısal uçurumu harita üzerinde görünür kılarak kamuoyu oluşturmaktır.</p>
+      </div>
+
+      <div style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:14px;">
+        <div style="font-size:11px; font-weight:700; color:var(--success); font-family:var(--font-mono); margin-bottom:6px; text-transform:uppercase;">💻 Açık Kaynak &amp; Şeffaflık</div>
+        <p style="font-size:11px; margin:0;">Proje kodu tamamen açık kaynaklı olup <a href="https://github.com/rasne-dev/internetharita" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">GitHub</a> üzerinde kamuya açık olarak geliştirilmektedir. Hiçbir internet servis sağlayıcısıyla organik veya ticari bir bağı bulunmamaktadır.</p>
+      </div>
+
+      <div style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px;">
+        <div style="font-size:11px; font-weight:700; color:var(--warn); font-family:var(--font-mono); margin-bottom:6px; text-transform:uppercase;">📬 İletişim</div>
+        <p style="font-size:11px; margin-bottom:4px;">Görüş, öneri, iş birliği ve moderasyon talepleriniz için:</p>
+        <p style="font-size:11px; margin:0;">• E-posta: <a href="mailto:contact@internetharita.com.tr" style="color:var(--accent); font-family:var(--font-mono);">contact@internetharita.com.tr</a></p>
+        <p style="font-size:11px; margin:0;">• Geliştirici &amp; Hata Bildirimi: <a href="https://github.com/rasne-dev/internetharita/issues" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">GitHub Issues</a></p>
+      </div>
     </div>
   </div>
 </div>
@@ -7994,6 +8037,8 @@ function openSpeedTestModal(target = 'form') {
 }
 function openKvkkModal() { document.getElementById('kvkkModal').classList.add('open'); }
 function closeKvkkModal() { document.getElementById('kvkkModal').classList.remove('open'); }
+function openAboutModal() { document.getElementById('aboutModal').classList.add('open'); }
+function closeAboutModal() { document.getElementById('aboutModal').classList.remove('open'); }
 function closeSpeedTestModal() {
   if (stRunning) return;
   document.getElementById('speedTestModal').classList.remove('open');

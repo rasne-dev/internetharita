@@ -2,7 +2,8 @@
 
 **Türkiye'nin bağımsız, kullanıcı kaynaklı internet hız ve altyapı memnuniyet haritası.**
 
-🔗 **Canlı Site:** [rasne-dev.github.io/internetharita](https://rasne-dev.github.io/internetharita)
+🔗 **Canlı Site:** [https://internetharita.com.tr](https://internetharita.com.tr)  
+📦 **Açık Kaynak Kod:** [github.com/rasne-dev/internetharita](https://github.com/rasne-dev/internetharita)
 
 ---
 
@@ -17,6 +18,8 @@ Taşınmadan önce yeni mahallenizdeki gerçek internet hızlarını ve fiber or
 ## 🚀 Öne Çıkan Özellikler
 
 * ⚡ **Dahili Doğrulanmış Hız Testi:** Harita içerisinden tek tıkla indirme (download), yükleme (upload) ve gecikme (ping) testi yapabilirsiniz. Test sonuçları `⚡ Doğrulandı` rozetiyle kaydedilerek verilerin güvenilirliği artırılır.
+* 📶 **Wi-Fi Odaklı Doğru Ölçüm:** Mobil verinin sabit internet ölçümlerini yanıltmasını önlemek için kullanıcılar ev/iş yeri Wi-Fi bağlantısıyla teste yönlendirilir.
+* 📱 **PWA & Mobil Uyum (Ana Ekrana Ekle):** Progressive Web App (PWA) altyapısı sayesinde mobil tarayıcılardan tek tıkla ana ekrana uygulama gibi eklenebilir, tam ekran uygulama deneyimi sunar.
 * 🏷️ **Hazır Deneyim Etiketleri:** Yalnızca hız rakamları değil; *"Akşam saatlerinde hız düşüyor"*, *"Oyunlarda ping yüksek"*, *"Kesinti çok sık"*, *"Fiyat/Performans iyi"*, *"Müşteri hizmetleri ilgisiz"* gibi hazır etiketlerle gerçek kullanıcı deneyiminizi aktarabilirsiniz.
 * 🚫 **"Altyapı Yok" Bildirimi:** İnternet altyapısı bulunmayan bölgeler için bildirim bırakabilir, mahallenizdeki sayısal uçurumu ve altyapı talebini harita üzerinde belgeleyebilirsiniz.
 * ✏️ **Ölçümlerinizi Yönetin (Düzenle & Sil):** Haritaya eklediğiniz ölçümler kendi tarayıcınızda özel olarak işaretlenir (`📍 Sizin Ölçümünüz`). İstediğiniz zaman etiketi güncelleyebilir veya ölçümünüzü haritadan tamamen silebilirsiniz (*Unutulma Hakkı*).
@@ -40,11 +43,12 @@ Haritadaki altıgenlere veya pinlere tıklayarak o bölgenin ortalama hızını,
 | 🔴 Kırmızı | 25 Mbps ve altı / Altyapı Yok |
 
 ### 2. Kendi Ölçümünüzü Ekleyin
-1. Sağ üstteki **+ Veri Ekle** butonuna tıklayın.
-2. Haritadan konumunuzu seçin veya GPS butonuna basarak konumunuzu otomatik belirleyin.
-3. Dahili hız testini başlatın ya da harici hız testi sonucunuzu girin.
-4. İSS'nizi, altyapı tipinizi ve 1–10 arası memnuniyet puanınızı seçin.
-5. Varsa durumunuza uygun **hazır etiketleri** işaretleyip gönderin.
+1. Ev veya iş yeri **Wi-Fi** ağınıza bağlı olduğunuzdan emin olun.
+2. Sağ üstteki **+ Veri Ekle** butonuna tıklayın.
+3. Haritadan konumunuzu seçin veya GPS butonuna basarak konumunuzu otomatik belirleyin.
+4. Dahili hız testini başlatın ya da harici hız testi sonucunuzu girin.
+5. İSS'nizi, altyapı tipinizi ve 1–10 arası memnuniyet puanınızı seçin.
+6. Varsa durumunuza uygun **hazır etiketleri** işaretleyip gönderin.
 
 ### 3. Şüpheli Veri Bildirimi (Moderasyon)
 Haritada tutarsız veya sahte olduğunu düşündüğünüz bir kayıt görürseniz, bölge detayındaki **"Bu Bölgeyi Bildir"** seçeneğiyle gönüllü moderasyon ekibimize bildirebilirsiniz.
@@ -59,7 +63,7 @@ Haritada tutarsız veya sahte olduğunu düşündüğünüz bir kayıt görürse
 2. 👤 **Sıfır Kişisel Veri:** İsim, soyisim, telefon numarası, e-posta adresi veya T.C. kimlik numarası gibi hiçbir kişisel kimlik verisi (PII) istenmez, toplanmaz ve saklanmaz.
 3. 🛡️ **Anti-Spam & Hız Sınırlaması (Rate Limiting):** Sahte veri girişini ve bot saldırılarını engellemek için IP karması (hash) ve anonimleştirilmiş tarayıcı parmak izi (fingerprint) yalnızca güvenlik doğrulamasında kullanılır. Bu teknik veriler harita ziyaretçilerine **asla açık API üzerinden sunulmaz veya üçüncü taraflarla paylaşılmaz**.
 4. 🗑️ **Unutulma Hakkı:** Kendi eklediğiniz ölçümleri dilediğiniz an haritadan tek tıkla silebilirsiniz.
-5. 🍪 **Sıfır Reklam / Sıfır Takip Çerezi:** Platformda herhangi bir reklam ağı veya ticari kullanıcı takip çerezi bulunmaz.
+5. 🍪 **Çerezler ve Reklam İlkeleri:** Platformun alan adı ve sunucu işletim masraflarını karşılamak amacıyla standart üçüncü taraf reklam ortakları (Google AdSense) çerezlerinden faydalanılabilir. Kişisel kimlik verileriniz asla reklam verenlerle paylaşılmaz.
 
 ---
 
@@ -77,7 +81,8 @@ Haritada tutarsız veya sahte olduğunu düşündüğünüz bir kayıt görürse
 
 **A community-driven, crowdsourced internet speed and infrastructure satisfaction map of Turkey.**
 
-🔗 **Live Site:** [rasne-dev.github.io/internetharita](https://rasne-dev.github.io/internetharita)
+🔗 **Live Site:** [https://internetharita.com.tr](https://internetharita.com.tr)  
+📦 **Source Code:** [github.com/rasne-dev/internetharita](https://github.com/rasne-dev/internetharita)
 
 ---
 
@@ -92,6 +97,8 @@ Before moving to a new neighborhood, you can verify genuine connection speeds, c
 ## 🚀 Key Features
 
 * ⚡ **Integrated Speed Test:** Perform download, upload, and ping tests directly on the map. Results measured on-site earn a `⚡ Verified` badge.
+* 📶 **Wi-Fi Focused Accurate Measurements:** Directs users to run tests via home/office Wi-Fi networks to prevent cellular data from skewing broadband statistics.
+* 📱 **PWA & Mobile Install Ready:** Progressive Web App support allows instant "Add to Home Screen" installation on mobile devices for an app-like experience.
 * 🏷️ **Experience Tags:** Share qualitative feedback with single-click preset tags (e.g., *"Speed drops during evenings"*, *"High ping in games"*, *"Frequent disconnections"*, *"Good value for price"*).
 * 🚫 **"No Infrastructure" Reporting:** Users without broadband access can flag their location, highlighting digital divide zones and underserved neighborhoods.
 * ✏️ **Manage Your Measurements:** Pins created on your device are labeled as `📍 Your Measurement`. You can update tags or delete your measurement at any time (*Right to be Forgotten*).
@@ -101,10 +108,10 @@ Before moving to a new neighborhood, you can verify genuine connection speeds, c
 
 ---
 
-## 🔒 Privacy & Data Protection (GDPR Compliant)
+## 🔒 Privacy & Data Protection (GDPR & KVKK Compliant)
 
 1. 📍 **Location Fuzzing (~100m):** Pinned coordinates are mathematically fuzzed by approximately 100 meters before being saved. Exact door/building addresses are never stored.
 2. 👤 **Zero Personal Data:** No names, emails, phone numbers, or user accounts are required or collected.
 3. 🛡️ **Spam Prevention & Rate Limiting:** Anonymized browser fingerprinting and salted IP hashes are utilized strictly for rate-limiting and anti-abuse verification. These technical identifiers are **never exposed to public APIs or third parties**.
 4. 🗑️ **Right to be Forgotten:** You can edit or permanently delete your submitted pins directly from the map interface.
-5. 🍪 **No Tracking / No Ads:** Free of commercial tracking cookies and third-party advertising scripts.
+5. 🍪 **Cookies & Advertising Transparency:** Standard advertising cookies (e.g., Google AdSense) may be used to help support server and infrastructure costs. Personal identification information is never shared with advertisers.
