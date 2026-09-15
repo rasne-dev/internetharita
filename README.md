@@ -61,18 +61,19 @@ Haritada tutarsız veya sahte olduğunu düşündüğünüz bir kayıt görürse
 
 1. 📍 **Konum Şaşırtma (~100m Fuzzing):** Haritada seçtiğiniz konum koordinatları veritabanına kaydedilmeden önce algoritmik olarak rastgele ~100 metre kaydırılır. Moderatörler dahil hiç kimse kesin ev adresinize veya kapı numaranıza ulaşamaz.
 2. 👤 **Sıfır Kişisel Veri:** İsim, soyisim, telefon numarası, e-posta adresi veya T.C. kimlik numarası gibi hiçbir kişisel kimlik verisi (PII) istenmez, toplanmaz ve saklanmaz.
-3. 🛡️ **Anti-Spam & Hız Sınırlaması (Rate Limiting):** Sahte veri girişini ve bot saldırılarını engellemek için IP karması (hash) ve anonimleştirilmiş tarayıcı parmak izi (fingerprint) yalnızca güvenlik doğrulamasında kullanılır. Bu teknik veriler harita ziyaretçilerine **asla açık API üzerinden sunulmaz veya üçüncü taraflarla paylaşılmaz**.
+3. 🛡️ **Anti-Spam, Hız Sınırlaması ve Görünmez Tuzak (Honeypot):** Sahte veri girişini ve bot saldırılarını engellemek için formda insan gözünün görmediği görünmez tuzak alanları (honeypot), IP karması ve anonimleştirilmiş teknik oturum kodu (üyeliksiz kendi ölçümünüzü haritada silebilmeniz için cihaz özellikleri üzerinden üretilen rastgele teknik kimlik; fiziksel/biyometrik parmak iziyle hiçbir ilgisi yoktur) kullanılır. Bu teknik veriler harita ziyaretçilerine **asla açık API üzerinden sunulmaz veya üçüncü taraflarla paylaşılmaz**.
 4. 🗑️ **Unutulma Hakkı:** Kendi eklediğiniz ölçümleri dilediğiniz an haritadan tek tıkla silebilirsiniz.
 5. 🍪 **Çerezler ve Reklam İlkeleri:** Platformun alan adı ve sunucu işletim masraflarını karşılamak amacıyla standart üçüncü taraf reklam ortakları (Google AdSense) çerezlerinden faydalanılabilir. Kişisel kimlik verileriniz asla reklam verenlerle paylaşılmaz.
 
 ---
 
-## ⚠️ Sorumluluk Reddi (Disclaimer)
+## ⚠️ Sorumluluk Reddi & Üçüncü Taraf Servisler (Disclaimer)
 
 İnternetHarita tamamen bağımsız ve açık kaynaklı bir topluluk projesidir.
+* **Üçüncü Taraf Altyapı Sağlayıcıları ve Sorumluluk Sınırı:** Platformumuz; veritabanı barındırma için **Supabase Inc.**, hız testi sinyalleri için **Cloudflare Inc.** ve harita görselleştirmesi için **OpenStreetMap Foundation** küresel bulut altyapılarından faydalanmaktadır. Bahsi geçen üçüncü taraf servislerin teknik bakım, kesinti, siber saldırı veya altyapı aksaklıklarından kaynaklanabilecek veri kayıplarından, erişim problemlerinden veya dolaylı zararlardan platform geliştiricileri hukuken ve cezai olarak sorumlu tutulamaz.
 * Haritada sunulan tüm veriler kullanıcıların sağladığı beyan ve testlere dayanmaktadır; verilerin mutlak doğruluğu hukuken garanti edilemez.
 * Sitedeki hız ve altyapı verileri resmi veya bağlayıcı nitelik taşımaz; ticari veya yasal uyuşmazlıklarda delil teşkil etmez.
-* Verilerden doğabilecek herhangi bir doğrudan veya dolaylı aksaklıktan platform geliştiricileri sorumlu tutulamaz.
+* İletişim & Geri Bildirim: `rasne.app@gmail.com`
 
 ---
 ---
@@ -112,6 +113,7 @@ Before moving to a new neighborhood, you can verify genuine connection speeds, c
 
 1. 📍 **Location Fuzzing (~100m):** Pinned coordinates are mathematically fuzzed by approximately 100 meters before being saved. Exact door/building addresses are never stored.
 2. 👤 **Zero Personal Data:** No names, emails, phone numbers, or user accounts are required or collected.
-3. 🛡️ **Spam Prevention & Rate Limiting:** Anonymized browser fingerprinting and salted IP hashes are utilized strictly for rate-limiting and anti-abuse verification. These technical identifiers are **never exposed to public APIs or third parties**.
+3. 🛡️ **Spam Prevention, Rate Limiting & Honeypots:** Invisible honeypot form fields, salted IP hashes, and anonymous technical session tokens (used exclusively so you can edit/delete your own pin without an account — zero biometric data) are utilized strictly for rate-limiting and anti-abuse verification. These technical identifiers are **never exposed to public APIs or third parties**.
 4. 🗑️ **Right to be Forgotten:** You can edit or permanently delete your submitted pins directly from the map interface.
 5. 🍪 **Cookies & Advertising Transparency:** Standard advertising cookies (e.g., Google AdSense) may be used to help support server and infrastructure costs. Personal identification information is never shared with advertisers.
+6. ⚠️ **Third-Party Infrastructure Disclaimer:** The platform utilizes Supabase Inc., Cloudflare Inc., and OpenStreetMap Foundation services. Developers shall not be held liable for third-party service outages or network failures. Contact: `rasne.app@gmail.com`.
