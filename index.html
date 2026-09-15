@@ -15,6 +15,51 @@
 <meta property="og:description" content="Türkiye'nin mahalle ve ilçe bazlı bağımsız internet altyapı ve hız haritası. Hızını test et, mahallenin altyapısını gör!">
 <meta property="og:url" content="https://internetharita.com.tr/">
 <meta property="og:type" content="website">
+<!-- Google & Arama Motorları İçin Yapısal Veri (JSON-LD Schema) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://internetharita.com.tr/#website",
+      "url": "https://internetharita.com.tr/",
+      "name": "İnternetHarita",
+      "description": "Türkiye'nin mahalle ve ilçe bazlı bağımsız internet altyapı ve hız haritası.",
+      "inLanguage": "tr-TR"
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://internetharita.com.tr/#app",
+      "name": "İnternetHarita — Türkiye İnternet Altyapı Haritası",
+      "url": "https://internetharita.com.tr/",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "All",
+      "browserRequirements": "HTML5, JavaScript",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "TRY"
+      },
+      "featureList": [
+        "Entegre İnternet Hız Testi (Download, Upload, Ping)",
+        "Türkiye Geneli İlçe ve Mahalle Bazlı Altyapı Haritası",
+        "Fiber, VDSL ve Kablonet Kapsama Alanları",
+        "İnternet Servis Sağlayıcı (İSS) Memnuniyet ve Kalite Karşılaştırması"
+      ],
+      "areaServed": {
+        "@type": "Country",
+        "name": "Türkiye"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "İnternetHarita Topluluğu",
+        "url": "https://github.com/rasne-dev/internetharita"
+      }
+    }
+  ]
+}
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&amp;family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&amp;display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous"/>
 <!-- GÜVENLİK: Subresource Integrity (SRI) eklendi. SRI olmadan, unpkg/jsdelivr CDN'i
