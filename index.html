@@ -637,11 +637,11 @@ html.light .sr-ping { background:#f5f7fa; }
 .spotlight-unit{font-size:10px;color:var(--text3);margin-left:3px;font-weight:600;}
 .spotlight-sub{font-size:10px;color:var(--text3);margin-top:7px;position:relative;z-index:1;}
 .spotlight-delta{font-size:10px;color:var(--success);margin-top:5px;font-weight:700;position:relative;z-index:1;display:flex;align-items:center;gap:4px;}
-.rank-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
-.rank-num{font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--border2);width:22px;} .rank-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
-.rank-name{flex:1;font-size:13px;font-weight:600;} .rank-val{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--accent);}
+.rank-item{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--border);}
+.rank-num{font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--border2);width:22px;flex-shrink:0;} .rank-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
+.rank-name{flex:1;font-size:13px;font-weight:600;} .rank-val{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--accent);margin-right:6px;flex-shrink:0;}
 .rank-item.clickable, .speed-item.clickable, .trend-row.clickable, .il-item.clickable { cursor:pointer; transition:all .15s ease; user-select:none; }
-.rank-item.clickable:hover, .speed-item.clickable:hover, .trend-row.clickable:hover, .il-item.clickable:hover { background:var(--surface2); border-radius:6px; padding-left:6px; padding-right:6px; }
+.rank-item.clickable:hover, .speed-item.clickable:hover, .trend-row.clickable:hover, .il-item.clickable:hover { background:var(--surface2); border-radius:6px; }
 .speed-spotlight.clickable { cursor:pointer; transition:all .2s ease; }
 .speed-spotlight.clickable:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 4px 14px rgba(0,212,255,.12); }
 
@@ -1401,7 +1401,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
   <div class="stats-top" id="sumGrid"></div>
   <div class="stats-grid">
     <div style="display:flex;flex-direction:column;gap:14px;">
-      <div class="stat-card"><div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;"><span>ISS Memnuniyet Sıralaması</span><span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);font-weight:normal;">min. 5 ölçüm</span></div><div id="issRankList" style="max-height:330px;overflow-y:auto;"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
+      <div class="stat-card"><div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;"><span>ISS Memnuniyet Sıralaması</span><span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);font-weight:normal;">min. 5 ölçüm</span></div><div id="issRankList" style="max-height:330px;overflow-y:auto;padding-right:12px;scrollbar-gutter:stable;"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
       <div class="stat-card">
         <div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
           <span id="activeIlTitle">En Hızlı İller</span>
