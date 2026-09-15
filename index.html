@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://openfpcdn.io https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://*.openstreetmap.org https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.googleadservices.com; connect-src 'self' https://vpnaxxxoiomorcvloend.supabase.co https://speed.cloudflare.com https://nominatim.openstreetmap.org https://turkiyeapi.dev https://api.turkiyeapi.dev https://openfpcdn.io https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com; frame-src 'self' https://googleads.g.doubleclick.net https://*.googlesyndication.com https://*.google.com; worker-src 'self' blob:; manifest-src 'self' data:; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://openfpcdn.io https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://*.openstreetmap.org https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.googleadservices.com; connect-src 'self' https://vpnaxxxoiomorcvloend.supabase.co https://speed.cloudflare.com https://nominatim.openstreetmap.org https://turkiyeapi.dev https://api.turkiyeapi.dev https://openfpcdn.io https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com; frame-src 'self' https://googleads.g.doubleclick.net https://*.googlesyndication.com https://*.google.com; worker-src 'self' blob:; manifest-src 'self' data:; base-uri 'none'; object-src 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- Google AdSense Doğrulama ve Reklam Kodu -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9484247825024770" crossorigin="anonymous"></script>
@@ -78,7 +78,7 @@
 <script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js" integrity="sha384-nKUDlg+fT0U/eEt4KWP9n034kLe/eVj6k7CVjbu6qfRhJdEyinlGajS9+9AU+UZ5" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js" integrity="sha384-3wY11tldQ5+yWqAvmTN4XtQvnjoTva0cV15O/O/O5NTtp0ivVopSzLOzsVXWZse9" crossorigin="anonymous"></script>
 <!-- FingerprintJS for browser fingerprinting -->
-<script src="https://openfpcdn.io/fingerprintjs/v3/iife.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 <!-- PWA -->
 <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22internetHarita%22%2C%22short_name%22%3A%22iHarita%22%2C%22description%22%3A%22T%C3%BCrkiye%20%C4%B0nternet%20Altyap%C4%B1%20Haritas%C4%B1%22%2C%22start_url%22%3A%22%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23070b0f%22%2C%22theme_color%22%3A%22%2300d4ff%22%2C%22orientation%22%3A%22any%22%2C%22lang%22%3A%22tr%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%2520viewBox%3D'0%25200%2520100%2520100'%253E%253Crect%2520width%3D'100'%2520height%3D'100'%2520rx%3D'22'%2520fill%3D'%2523070b0f'%2F%253E%253Ctext%2520y%3D'.9em'%2520font-size%3D'72'%2520x%3D'50%2525'%2520text-anchor%3D'middle'%2520fill%3D'%252300d4ff'%2520font-family%3D'monospace'%2520font-weight%3D'700'%253EiH%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
 <meta name="theme-color" id="themeColorMeta" content="#070b0f">
@@ -86,6 +86,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="internetHarita">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23070b0f'/%3E%3Ctext y='.9em' font-size='72' x='50%25' text-anchor='middle' fill='%2300d4ff' font-family='monospace' font-weight='700'%3EiH%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23070b0f'/%3E%3Ctext y='.9em' font-size='72' x='50%25' text-anchor='middle' fill='%2300d4ff' font-family='monospace' font-weight='700'%3EiH%3C/text%3E%3C/svg%3E">
 <style>
 /* ===== DESIGN TOKENS ===== */
 :root {
@@ -2064,6 +2065,8 @@ let adminPinsCache =[];
 let pageLoadTime = Date.now();
 let isMyPinsVisible = false;
 let myPinsLayer = null;
+var _loadPinsPromise = null;
+var mapLoadingTimeout = null;
 
 (async function initFingerprint() {
   try {
@@ -2082,14 +2085,18 @@ let myPinsLayer = null;
     fpReady = true;
     document.getElementById('fpDot')?.classList.add('ready');
     const fpEl = document.getElementById('fpText'); if (fpEl) fpEl.textContent = 'Cihaz tanındı ✓';
-    loadPins();
+    if (typeof renderMyPins === 'function' && typeof maps !== 'undefined' && maps.main) {
+      renderMyPins();
+    }
   } catch(e) {
     browserFingerprint = localStorage.getItem('ih_browser_fp') || ('fp_' + Math.random().toString(36).substr(2, 9));
     localStorage.setItem('ih_browser_fp', browserFingerprint);
     fpReady = true;
     document.getElementById('fpDot')?.classList.add('ready');
     const fpEl = document.getElementById('fpText'); if (fpEl) fpEl.textContent = 'Cihaz tanındı ✓';
-    loadPins();
+    if (typeof renderMyPins === 'function' && typeof maps !== 'undefined' && maps.main) {
+      renderMyPins();
+    }
   }
 })();
 
@@ -3095,8 +3102,8 @@ function toggleColorblindMode() {
   showToast(colorblindMode ? '👁️ Renk körü modu açık — güvenli renk paleti ve şekil işaretleri aktif' : '👁️ Renk körü modu kapatıldı');
 }
 
-let maps = {}, pinsData =[], cleanPinsData =[], activeFilters = new Set(['fiber','vdsl','adsl','docsis']);
-let activeISSFilters = new Set(); // iss_list tablosundan doldurulacak
+var maps = {}, pinsData =[], cleanPinsData =[], activeFilters = new Set(['fiber','vdsl','adsl','docsis']);
+var activeISSFilters = new Set(); // iss_list tablosundan doldurulacak
 
 const BASE_DEFAULT_ISS = [
   {name:'Türk Telekom', color:'#005ea6'},
@@ -3262,7 +3269,7 @@ function showPage(id) {
   setTimeout(async () => { if (id==='harita') { if (!maps.main) await initMainMap(); else maps.main.invalidateSize(); } if (id==='pin') { if (!maps.pin) initPinMap(); else maps.pin.invalidateSize(); renderISSChips(issListCache.filter(i=>i.active!==false)); } if (id==='bolge') renderRegions(); if (id==='istatistik') renderStats(); if (id==='mod' && isModLoggedIn) refreshModData(); }, 50);
 }
 
-let mapLoadingTimeout = null;
+// mapLoadingTimeout is declared globally
 function showMapLoading() {
   const overlay = document.getElementById('mapLoadingOverlay');
   if (!overlay) return;
@@ -3390,7 +3397,7 @@ function onZoomEnd() {
   const found = Object.entries(hints).reverse().find(([k]) => z >= parseInt(k)); if (found) document.getElementById('zoomHint').textContent = found[1] + ' görünümü';
 }
 
-let _loadPinsPromise = null;
+// _loadPinsPromise is declared globally (avoid TDZ if called early)
 function loadPins() {
   if (_loadPinsPromise) return _loadPinsPromise;
   _loadPinsPromise = _loadPinsCore().finally(() => {
