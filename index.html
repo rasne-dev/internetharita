@@ -2305,13 +2305,22 @@ const getPinById = async id => { const res = await sbRest(`pins?id=eq.${id}&sele
 function friendlyDbError(e, tableLabel) {
   const msg = e?.message || String(e);
   if (msg.includes('42501') || msg.includes('row-level security')) {
-    console.error(`[internetHarita] "${tableLabel}" tablosunda RLS (42501) hatası — Supabase SQL Editor'da anon politikalarını kontrol edin. Detay:`, msg);
+    console.error(`[internetHarita] "${tableLabel}" tablosunda RLS (42501) hatası. Detay:`, msg);
+    if (typeof isModLoggedIn !== 'undefined' && isModLoggedIn) {
+      return `⚠ Supabase RLS Hatası (42501): Moderatör hesabının "${tableLabel}" tablosunda güncelleme yetkisi yok. Supabase SQL Editor üzerinden 'authenticated' rolüne UPDATE yetkisi verilmelidir.`;
+    }
     return '⚠ Veri kaydedilemedi (sunucu izin hatası). Bu bizim tarafımızdaki bir ayar sorunu — birazdan tekrar deneyin, sorun devam ederse lütfen bize bildirin.';
   }
   return 'Hata: ' + msg;
 }
 const addPin = d => sbRest('pins', { method:'POST', body:JSON.stringify(d) });
-const patchPin = (id,d) => sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
+async function patchPin(id, d) {
+  const result = await sbRest(`pins?id=eq.${id}&select=id`, { method:'PATCH', prefer:'return=representation', body:JSON.stringify(d) });
+  if (!result || (Array.isArray(result) && result.length === 0)) {
+    throw new Error('42501 RLS: Pin veritabanında güncellenemedi (0 satır etkilendi). Lütfen Supabase SQL Editor\'da authenticated kullanıcılar için UPDATE yetkisini tanımlayın.');
+  }
+  return result;
+}
 // Kullanıcının "kendi ölçümünü düzenle" akışı için: RLS eşleşmezse (browser_fp uyuşmazsa)
 // sessizce 0 satır güncellenip "başarılı" gösterilmesin — gerçekten güncellenen satırı doğrula.
 // &select=id eklenerek PostgreSQL 42501 kolon izin hatası engellenir.
@@ -2328,7 +2337,13 @@ async function patchPinOwn(id, d) {
   } catch(e) {}
   return result;
 }
-const delPin = id => sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false }) });
+async function delPin(id) {
+  const result = await sbRest(`pins?id=eq.${id}&select=id`, { method:'PATCH', prefer:'return=representation', body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false }) });
+  if (!result || (Array.isArray(result) && result.length === 0)) {
+    throw new Error('42501 RLS: Pin veritabanında silinemedi (0 satır etkilendi). Lütfen Supabase SQL Editor\'da authenticated kullanıcılar için UPDATE yetkisini tanımlayın.');
+  }
+  return result;
+}
 const hardDelPin = id => delPin(id); // Kullanıcı verisini koru: kalıcı silme yerine soft delete.
 // Kullanıcının "kendi ölçümünü sil" akışı için: patchPinOwn ile AYNI sebepten ötürü
 // realmente silinen satırı doğrula. &select=id ile 42501 hatası önlenir.
@@ -2622,6 +2637,8 @@ function getSpamReason(p) {
 
 function isSpam(p) {
   if (p.is_altyapi_yok) return false;
+  // Moderatör tarafından onaylanmış ve yayına alınmış pini (yeni kullanıcı şikayeti gelmedikçe) spam sayma
+  if (p.gorunur === true && !p.is_quarantine && !(p.sikayet_sayisi > 0)) return false;
   const reason = getSpamReason(p);
   return reason !== "" && reason !== "Karantina İncelemesi";
 }
