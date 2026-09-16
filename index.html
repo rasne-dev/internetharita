@@ -1592,7 +1592,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
   <div id="modAuthScreen" class="mod-auth">
     <div class="mod-auth-card">
       <div class="mod-auth-title">🔧 Moderatör Girişi</div>
-      <div class="mod-auth-sub">:)</div>
+      <div class="mod-auth-sub">Hop hemşerim nereye? Buraya sadece yetkili moderasyon ekibi girebilir ✋</div>
       <div class="fg" style="margin-bottom:10px;"><input class="fi" type="email" id="modEmail" placeholder="E-posta" autocomplete="email"></div>
       <div class="fg" style="margin-bottom:16px;"><input class="fi" type="password" id="modPw" placeholder="Şifre" onkeydown="if(event.key==='Enter')modLogin()" autocomplete="current-password"></div>
       <button class="btn-primary" style="width:100%;padding:11px;" onclick="modLogin()">Giriş Yap</button>
@@ -1616,20 +1616,19 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
         </label>
         <button class="btn-ghost" id="clearSubmissionsPausedBtn" style="display:none;border-color:var(--danger);color:var(--danger);padding:5px 10px;font-size:10px;" onclick="clearSubmissionsPaused()" title="Otomatik burst korumasını kaldır">🚨 Otomatik Duraklatmayı Kaldır</button>
         <button class="btn-ghost" style="padding:6px 12px;font-size:10px;" onclick="refreshModData()">🔄 Yenile</button>
-        <button class="btn-ghost" id="modPinsToggleBtn" style="border-color:var(--accent); color:var(--accent);padding:6px 12px;font-size:10px;" onclick="toggleModPinsVisibility()" title="Harita üzerinde altıgenlerin yanı sıra tüm tekil pin noktalarını ve karantina/spam durumlarını gösterir/gizler">📍 Harita Pin Noktaları: AÇIK</button>
         <button class="btn-ghost" style="border-color:var(--danger);color:var(--danger);padding:6px 12px;font-size:10px;" onclick="modLogout()">Çıkış</button>
       </div>
     </div>
 
     <!-- CANLI DURUM SAYACI BANNERI -->
     <div class="mod-stat-banner" id="modStatsBanner">
-      <div class="mod-stat-pill" style="cursor:pointer;" onclick="switchModTab('inbox')" title="İnceleme bekleyen şikayetler, şüpheli veriler ve İSS teklifleri">
-        <span class="mod-stat-pill-label">📥 Bekleyen İnceleme</span>
-        <span class="mod-stat-pill-val" id="sbPendingTotal" style="color:var(--warn)">0</span>
-      </div>
       <div class="mod-stat-pill" style="cursor:pointer;" onclick="switchModTab('tumPinler')" title="Tüm kayıtları ara ve incele">
         <span class="mod-stat-pill-label">📋 Toplam / Yayında</span>
         <span class="mod-stat-pill-val"><span id="sbVisiblePins" style="color:var(--success)">—</span> <span style="font-size:11px;color:var(--text3);font-weight:400;">/ <span id="sbTotalPins">—</span></span></span>
+      </div>
+      <div class="mod-stat-pill" style="cursor:pointer;" onclick="switchModTab('inbox')" title="İnceleme bekleyen şikayetler, şüpheli veriler ve İSS teklifleri">
+        <span class="mod-stat-pill-label">📥 Bekleyen İnceleme</span>
+        <span class="mod-stat-pill-val" id="sbPendingTotal" style="color:var(--warn)">0</span>
       </div>
       <div class="mod-stat-pill" style="cursor:pointer;" onclick="switchModTab('yorumlar')" title="Kullanıcı deneyim ve hazır etiketlerini incele">
         <span class="mod-stat-pill-label">💬 Deneyim / Yorum</span>
@@ -1646,10 +1645,10 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
       <span id="sbCustomIssCount" style="display:none;"></span>
     </div>
 
-    <!-- 4 SADE ANA SEKME -->
+    <!-- 4 SADE ANA SEKME (VARSAYILAN: TÜM PİNLER) -->
     <div class="mod-tabs">
-      <button class="mod-tab-btn active" id="modTabBtn-inbox" onclick="switchModTab('inbox')">📥 Bekleyen İşlemler <span class="mod-tab-count" id="inboxBadge" style="background:var(--warn);color:#000;"></span></button>
-      <button class="mod-tab-btn" id="modTabBtn-tumPinler" onclick="switchModTab('tumPinler')">📋 Tüm Pinler &amp; Arama</button>
+      <button class="mod-tab-btn active" id="modTabBtn-tumPinler" onclick="switchModTab('tumPinler')">📋 Tüm Pinler &amp; Arama</button>
+      <button class="mod-tab-btn" id="modTabBtn-inbox" onclick="switchModTab('inbox')">📥 Bekleyen İşlemler <span class="mod-tab-count" id="inboxBadge" style="background:var(--warn);color:#000;"></span></button>
       <button class="mod-tab-btn" id="modTabBtn-yorumlar" onclick="switchModTab('yorumlar')">💬 Kullanıcı Yorumları &amp; İstatistik</button>
       <button class="mod-tab-btn" id="modTabBtn-settings" onclick="switchModTab('settings')">⚙️ İSS &amp; Sistem Yönetimi</button>
       <!-- Gizli butonlar (eski çağrılar için uyumluluk) -->
@@ -1662,8 +1661,8 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
       <span id="yorumCount" style="display:none;"></span>
     </div>
 
-    <!-- SEKME 1: GELEN KUTUSU & BEKLEYEN İŞLEMLER (ACTION CENTER) -->
-    <div id="modTab-inbox">
+    <!-- SEKME: GELEN KUTUSU & BEKLEYEN İŞLEMLER (ACTION CENTER) -->
+    <div id="modTab-inbox" style="display:none;">
       <!-- BOŞ DURUM (İncelenecek hiçbir şey yoksa) -->
       <div id="inboxEmptyState" class="empty-state" style="display:none;padding:45px 20px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:16px;">
         <div style="font-size:36px;margin-bottom:10px;">🎉</div>
@@ -1707,8 +1706,8 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
       </div>
     </div>
 
-    <!-- SEKME 2: TÜM PİNLER (ARAMA & VERİ TABANI) -->
-    <div id="modTab-tumPinler" style="display:none;">
+    <!-- SEKME: TÜM PİNLER (ARAMA & VERİ TABANI — VARSAYILAN) -->
+    <div id="modTab-tumPinler">
       <div style="font-size:10px;color:var(--text3);margin-bottom:10px;font-family:var(--font-mono);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
         <div>
           <span style="color:var(--success);">⚡ Doğrulandı</span> = sayfa içi hız testi &nbsp;·&nbsp;
@@ -1834,41 +1833,13 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
         <div id="issManagerList"><div class="loading-dots">Yükleniyor</div></div>
       </div>
 
-      <!-- En Hızlı Lokasyonlar Sıralama Yönetimi -->
-      <div class="mod-section">
-        <div class="mod-section-title">⚡ En Hızlı Lokasyonlar — Sıralama Yönetimi</div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">
-          İstatistikler sayfasındaki <b>"🏆 En Hızlı Lokasyonlar"</b> tablosunu buradan yönetin.<br>
-          <b style="color:var(--success)">✓ Ekle</b> basılan kaliteli pinler sıralamaya girer · <b style="color:var(--danger)">✕ Çıkar</b> ile sıralamadan çıkarılır.
-        </div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-          <input type="text" class="fi" id="speedRankSearch" placeholder="İl, ilçe veya İSS ara..." style="flex:1;min-width:140px;" oninput="debouncedLoadSpeedRankEditor(this.value)">
-          <button class="btn-ghost" onclick="loadSpeedRankEditor(document.getElementById('speedRankSearch').value||'')">🔄 Yenile</button>
-          <button class="btn-approve" style="padding:6px 12px;" onclick="document.getElementById('speedRankSearch').value='';loadSpeedRankEditor('')">Tümünü Getir</button>
-          <button class="btn-approve" style="padding:6px 12px;background:rgba(34,197,94,.15);border-color:var(--success);color:var(--success);" onclick="bulkVerifySpeedRank()" id="bulkVerifyBtn" title="Tabloda görünen sıralamada olmayan tüm kaliteli pinleri toplu ekle">⚡ Toplu Onayla</button>
-        </div>
-        <div class="mod-table-wrap">
-          <table class="mod-table">
-            <thead>
-              <tr>
-                <th>Lokasyon</th>
-                <th>İSS</th>
-                <th>↓ DL</th>
-                <th>↑ UL</th>
-                <th>Hız Testi</th>
-                <th>İşlem</th>
-              </tr>
-            </thead>
-            <tbody id="speedRankEditorBody">
-              <tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px;">Yükleniyor...</td></tr>
-            </tbody>
-          </table>
-        </div>
+      <!-- En Hızlı Lokasyonlar manuel yönetimi kaldırıldı — doğrulanmış kaliteli ölçümler istatistiklere otomatik yansır -->
+      <div style="display:none;">
+        <input type="text" id="speedRankSearch">
+        <tbody id="speedRankEditorBody"></tbody>
+        <input type="hidden" id="statEditSearch">
+        <tbody id="statEditBody"></tbody>
       </div>
-
-      <!-- Gizli uyumluluk elemanları -->
-      <input type="hidden" id="statEditSearch">
-      <table style="display:none;"><tbody id="statEditBody"></tbody></table>
     </div>
 
   </div>
@@ -2441,7 +2412,7 @@ function escAttr(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 }
-const BASE_ISS = ['Türk Telekom','Superonline (Turkcell)','TurkNet','Vodafone','Millenicom','Netspeed'];
+const BASE_ISS = ['Türk Telekom','Superonline (Turkcell)','TurkNet','Vodafone','Türksat Kablonet','Millenicom','Netspeed'];
 const ISS_ALIASES = {
   'TTNet': 'Türk Telekom',
   'TTNet (Türk Telekom)': 'Türk Telekom',
@@ -2462,11 +2433,47 @@ function canonicalIssName(name) {
 function displayIssName(name) {
   return canonicalIssName(name);
 }
+
+// Moderatör tarafından onaylanan veya yerelde tanınan İSS'leri hafızada/localStorage'da tut
+function registerLocalApprovedIss(issName) {
+  if (!issName) return;
+  const canonical = canonicalIssName(issName);
+  try {
+    const existing = JSON.parse(localStorage.getItem('ih_local_approved_iss') || '[]');
+    if (!existing.includes(canonical)) {
+      existing.push(canonical);
+      localStorage.setItem('ih_local_approved_iss', JSON.stringify(existing));
+    }
+  } catch(e) {}
+  
+  if (typeof issListCache !== 'undefined') {
+    const found = issListCache.find(i => canonicalIssName(i.name) === canonical);
+    if (!found) {
+      issListCache.push({ name: canonical, color: typeof issHashColor === 'function' ? issHashColor(canonical) : '#3b82f6', active: true, sort_order: 99 });
+    } else {
+      found.active = true;
+    }
+  }
+  if (typeof activeISSFilters !== 'undefined') {
+    activeISSFilters.add(canonical);
+  }
+}
+
 function approvedIssNames() {
   const active = issListCache
     .filter(i => i.active !== false)
     .map(i => canonicalIssName(i.name))
     .filter(Boolean);
+  
+  // LocalStorage'daki onaylı İSS'leri de listeye dahil et (RLS hatası durumunda dahi onaylanan pinler haritada görünür)
+  try {
+    const local = JSON.parse(localStorage.getItem('ih_local_approved_iss') || '[]');
+    local.forEach(l => {
+      const c = canonicalIssName(l);
+      if (c && !active.includes(c)) active.push(c);
+    });
+  } catch(e) {}
+
   return new Set(active.length ? active : BASE_ISS);
 }
 function isApprovedPublicIss(name) {
@@ -2619,6 +2626,134 @@ function isSpam(p) {
   return reason !== "" && reason !== "Karantina İncelemesi";
 }
 
+// Moderatör paneli için: Pin'in karantinaya düşme ve inceleme gerekçelerini detaylı tespit et
+function getQuarantineReasons(p, groupPins = null) {
+  const reasons = [];
+  if (!p) return reasons;
+  const pins = (groupPins && groupPins.length) ? groupPins : [p];
+
+  // 1. Yeni / Onaysız İSS ("Diğer" seçilerek girilenler)
+  const isUnapproved = !isApprovedPublicIss(p.iss);
+  if (p.custom_iss || isUnapproved) {
+    reasons.push({
+      type: 'iss',
+      icon: '🏷️',
+      title: 'Özel / Yeni İSS',
+      detail: `"${p.iss}" onaylı sağlayıcı listesinde henüz yok (kullanıcı "Diğer" seçerek girdi).`
+    });
+  }
+
+  // 2. Altyapı Yok Bildirimi
+  if (p.is_altyapi_yok) {
+    reasons.push({
+      type: 'altyapi_yok',
+      icon: '🚫',
+      title: 'Altyapı Yok Bildirimi',
+      detail: 'Kullanıcı bölgede sabit altyapı olmadığını bildirdi.'
+    });
+  }
+
+  // 3. Hız Anormallikleri ve Aşırılıklar
+  if (!p.is_altyapi_yok) {
+    const conn = (p.baglanti_turu || '').toLowerCase();
+    const cap = TYPE_DL_CAP[conn];
+    if (cap && p.gercek_dl > cap) {
+      reasons.push({
+        type: 'cap_exceeded',
+        icon: '⚡',
+        title: `${conn.toUpperCase()} Hız Sınırı Aşımı`,
+        detail: `${conn.toUpperCase()} için ${p.gercek_dl} Mbps fiziksel/teknik sınırın (${cap} Mbps) üzerinde.`
+      });
+    }
+
+    if (p.gercek_dl > SPAM_DL_MAX) {
+      reasons.push({
+        type: 'spam_dl',
+        icon: '⚡',
+        title: 'Aşırı Download Hızı',
+        detail: `${p.gercek_dl} Mbps indirme hızı genel sınırın (${SPAM_DL_MAX} Mbps) üzerinde.`
+      });
+    }
+
+    if (p.gercek_ul > SPAM_UL_MAX) {
+      reasons.push({
+        type: 'spam_ul',
+        icon: '⚡',
+        title: 'Aşırı Upload Hızı',
+        detail: `${p.gercek_ul} Mbps yükleme hızı genel sınırın (${SPAM_UL_MAX} Mbps) üzerinde.`
+      });
+    }
+
+    if (p.gercek_ul > p.gercek_dl * 3 && p.gercek_dl > 10) {
+      reasons.push({
+        type: 'asymmetric',
+        icon: '⚠️',
+        title: 'Şüpheli Simetrik Oran',
+        detail: `Upload (${p.gercek_ul} Mbps), Download'dan (${p.gercek_dl} Mbps) 3 kat fazla.`
+      });
+    }
+
+    if (typeof isOutlier === 'function' && isOutlier(p.gercek_dl, p.lat, p.lng)) {
+      reasons.push({
+        type: 'outlier',
+        icon: '📈',
+        title: 'Bölge Ortalamasından Belirgin Sapma',
+        detail: 'Çevredeki diğer ölçümlerin ortalamasından çok farklı hız tespit edildi.'
+      });
+    }
+
+    if (!p.speed_test_verified) {
+      reasons.push({
+        type: 'unverified',
+        icon: '🔍',
+        title: 'Doğrulanmamış Ölçüm',
+        detail: 'Dahili hız testi yapılmamış veya manuel değer girilmiş.'
+      });
+    }
+  }
+
+  // 4. Şikayet ve Raporlar
+  if ((p.sikayet_sayisi || 0) > 0) {
+    reasons.push({
+      type: 'report',
+      icon: '🚩',
+      title: `${p.sikayet_sayisi} Kullanıcı Bildirimi`,
+      detail: 'Harita kullanıcıları tarafından bu ölçüm için şüpheli/hatalı veri raporlandı.'
+    });
+  }
+
+  // 5. Cihaz / Hızlı Gönderim
+  if (pins.length > 1) {
+    reasons.push({
+      type: 'device_cluster',
+      icon: '👥',
+      title: `Aynı Cihazdan ${pins.length} Kayıt`,
+      detail: 'Aynı cihaz kimliğinden (parmak izi) birden fazla pin gönderilmiş.'
+    });
+  }
+
+  if (p.client_metadata?.load_time_ms && p.client_metadata.load_time_ms < 5000) {
+    reasons.push({
+      type: 'fast_submit',
+      icon: '⏳',
+      title: 'Hızlı Form Gönderimi',
+      detail: `Sayfa açıldıktan ${Math.round(p.client_metadata.load_time_ms/1000)} sn sonra gönderildi (bot şüphesi).`
+    });
+  }
+
+  // Eğer hiçbir sebep tespit edilemediyse ama karantinadaysa
+  if (!reasons.length && (p.is_quarantine || p.gorunur === false)) {
+    reasons.push({
+      type: 'manual_quarantine',
+      icon: '🔒',
+      title: 'Karantina İncelemesi',
+      detail: 'Kayıt moderatör incelemesi bekliyor veya manuel olarak gizlenmiş.'
+    });
+  }
+
+  return reasons;
+}
+
 let reportTargetMarker = null, reportTargetTimer = null;
 function focusOnMap(lat, lng) {
   if (!lat || !lng) return showToast("Koordinat bulunamadı", "err");
@@ -2652,13 +2787,8 @@ function resetISSFiltersToAll() {
   chips.forEach(chip => {
     if (!chip.classList.contains('on')) hadFiltered = true;
     chip.classList.add('on');
-    const name = canonicalIssName(chip.dataset.iss || '');
-    if (name) activeISSFilters.add(name);
   });
-  activeISSFilters.add('Diğer');
-  if (issListCache && issListCache.length) {
-    issListCache.forEach(i => activeISSFilters.add(canonicalIssName(i.name)));
-  }
+  activeISSFilters = new Set([...POPULAR_ISS_NAMES, 'Diğer']);
   return hadFiltered;
 }
 
@@ -2755,15 +2885,21 @@ function syncMapToUrl() {
     try {
       const center = maps.main.getCenter();
       const zoom = maps.main.getZoom();
-      // Türkiye geneli varsayılan merkez ve zoom ise URL'yi sadeleştir
-      if (zoom === 6 && Math.abs(center.lat - 38.8) < 0.4 && Math.abs(center.lng - 37.5) < 0.4) {
-        if (window.location.search && !window.location.search.includes('pin=') && !window.location.search.includes('il=')) {
-          window.history.replaceState(null, '', window.location.pathname);
+      const params = new URLSearchParams(window.location.search);
+
+      // Ülke / genel bakış seviyesinde (zoom < 10) URL'yi tertemiz tut
+      if (zoom < 10) {
+        if (params.has('lat') || params.has('lng') || params.has('z')) {
+          params.delete('lat');
+          params.delete('lng');
+          params.delete('z');
+          const remaining = params.toString();
+          window.history.replaceState(null, '', remaining ? ('?' + remaining) : window.location.pathname);
         }
         return;
       }
-      const params = new URLSearchParams(window.location.search);
-      // Kullanıcı doğrudan il/ilçe ile geldiyse il parametresini silme
+
+      // Kullanıcı bir şehre, ilçeye veya mahalleye bilhassa yaklaştığında (zoom >= 10) konumu URL'de koru
       if (!params.get('il')) {
         params.set('lat', center.lat.toFixed(4));
         params.set('lng', center.lng.toFixed(4));
@@ -2811,7 +2947,15 @@ function handleUrlParamsOnStartup() {
     }
 
     if (!isNaN(lat) && !isNaN(lng) && maps.main) {
-      maps.main.setView([lat, lng], !isNaN(z) ? z : 13);
+      const targetZoom = !isNaN(z) ? z : 13;
+      maps.main.setView([lat, lng], targetZoom);
+      if (targetZoom < 10) {
+        params.delete('lat');
+        params.delete('lng');
+        params.delete('z');
+        const remaining = params.toString();
+        window.history.replaceState(null, '', remaining ? ('?' + remaining) : window.location.pathname);
+      }
     }
   } catch(e) {
     console.error('URL parse hatası:', e);
@@ -2821,11 +2965,16 @@ function handleUrlParamsOnStartup() {
 function filterMapByISS(rawIssName) {
   const canon = canonicalIssName(rawIssName);
   if (!canon) return;
-  activeISSFilters = new Set([canon]);
+  const isPop = isPopularIss(canon);
+  if (isPop) {
+    activeISSFilters = new Set([canon]);
+  } else {
+    activeISSFilters = new Set(['Diğer']);
+  }
   // Sidebar İSS çiplerinin görsel durumunu güncelle
   document.querySelectorAll('#issChips .chip-iss').forEach(chip => {
     const name = canonicalIssName(chip.dataset.iss || '');
-    if (name === canon) {
+    if ((isPop && name === canon) || (!isPop && name === 'Diğer')) {
       chip.classList.add('on');
     } else {
       chip.classList.remove('on');
@@ -3131,7 +3280,24 @@ function toggleColorblindMode() {
 }
 
 var maps = {}, pinsData =[], cleanPinsData =[], activeFilters = new Set(['fiber','vdsl','adsl','docsis']);
-var activeISSFilters = new Set(); // iss_list tablosundan doldurulacak
+
+// Popüler sağlayıcılar (harita ana sayfa filtresinde doğrudan gösterilir)
+const POPULAR_ISS_LIST = [
+  { name: 'Türk Telekom', color: '#005ea6' },
+  { name: 'Superonline (Turkcell)', color: '#00d4ff' },
+  { name: 'TurkNet', color: '#5d1a89' },
+  { name: 'Vodafone', color: '#e60000' },
+  { name: 'Türksat Kablonet', color: '#003087' },
+  { name: 'Millenicom', color: '#20b2aa' },
+  { name: 'Netspeed', color: '#f59e0b' },
+];
+const POPULAR_ISS_NAMES = new Set(POPULAR_ISS_LIST.map(i => canonicalIssName(i.name)));
+function isPopularIss(name) {
+  return POPULAR_ISS_NAMES.has(canonicalIssName(name));
+}
+
+// Varsayılan aktif filtreler: popüler sağlayıcılar + 'Diğer'
+var activeISSFilters = new Set([...POPULAR_ISS_NAMES, 'Diğer']);
 
 const BASE_DEFAULT_ISS = [
   {name:'Türk Telekom', color:'#005ea6'},
@@ -3147,8 +3313,6 @@ async function loadIssListAndRenderChips() {
   // İlk anda ağ beklemeden anında varsayılan çipleri ekrana bas (sidebar asla boş kalmaz)
   if (!issListCache.length) {
     issListCache = BASE_DEFAULT_ISS;
-    activeISSFilters = new Set(BASE_DEFAULT_ISS.map(i => i.name));
-    activeISSFilters.add('Diğer');
     renderISSChips(BASE_DEFAULT_ISS);
   }
 
@@ -3168,8 +3332,6 @@ async function loadIssListAndRenderChips() {
   });
   const active = [...activeMap.values()];
   issListCache = active;
-  activeISSFilters = new Set(active.map(i => i.name));
-  activeISSFilters.add('Diğer');
   renderISSChips(active);
   if (pinsData.length) {
     cleanPinsData = publicCleanPins(pinsData);
@@ -3183,26 +3345,57 @@ function issColor(item) {
 }
 
 function renderISSChips(list) {
+  // 1. Harita Sol Filtre Paneli: Sadece 6 popüler sağlayıcı + 'Diğer' çipi (sade, düzenli görünüm)
   const container = document.getElementById('issChips');
-  if (!container) return;
-  const chips = list.map(item => {
-    const c = issColor(item);
-    const name = displayIssName(item.name);
-    const label = name.replace(' (Turkcell)','').replace(' (Türksat)','');
-    return `<div class="chip chip-iss on" data-iss="${escHtml(name)}"
-      style="color:${c};border-color:${c};"
-      onclick="toggleISSChip(this,'${escAttr(name)}')">
-      ${escHtml(label)}
-    </div>`;
-  });
-  // "Diğer" chip filtreden kaldırıldı — sadece veri ekleme formunda gösteriliyor
-  container.innerHTML = chips.join('');
-  // Dropdown'u da güncelle (Diğer seçeneği formda kalıyor)
+  if (container) {
+    const chipsHtml = POPULAR_ISS_LIST.map(item => {
+      const c = item.color;
+      const name = displayIssName(item.name);
+      const label = name.replace(' (Turkcell)','').replace(' (Türksat)','');
+      const isOn = activeISSFilters.has(name);
+      return `<div class="chip chip-iss ${isOn ? 'on' : ''}" data-iss="${escHtml(name)}"
+        style="color:${c};border-color:${c};"
+        onclick="toggleISSChip(this,'${escAttr(name)}')">
+        ${escHtml(label)}
+      </div>`;
+    });
+
+    // "Diğer" çipi (tüm diğer sağlayıcıları topluca filtreler)
+    const isDigerOn = activeISSFilters.has('Diğer');
+    chipsHtml.push(`<div class="chip chip-iss ${isDigerOn ? 'on' : ''}" data-iss="Diğer"
+      style="color:var(--text2);border-color:var(--border2);"
+      onclick="toggleISSChip(this,'Diğer')">
+      Diğer
+    </div>`);
+
+    container.innerHTML = chipsHtml.join('');
+  }
+
+  // 2. Veri Ekleme Formu (#issSelect): Kullanıcı veri eklerken TÜM sağlayıcıları eksiksiz görebilsin
   const sel = document.getElementById('issSelect');
   if (sel) {
     const cur = sel.value;
+    const allIss = (list && list.length ? list : BASE_DEFAULT_ISS)
+      .filter(i => i && i.active !== false && i.name)
+      .map(i => ({ name: displayIssName(i.name), color: issColor(i) }));
+    
+    // Tekilleştirme
+    const uniqueMap = new Map();
+    allIss.forEach(item => {
+      const k = item.name.toLocaleLowerCase('tr-TR');
+      if (!uniqueMap.has(k)) uniqueMap.set(k, item);
+    });
+    const uniqueList = [...uniqueMap.values()];
+
+    // Popüler olanları başa al, geri kalanları alfabetik sırala
+    const populars = uniqueList.filter(i => isPopularIss(i.name));
+    const others = uniqueList.filter(i => !isPopularIss(i.name))
+      .sort((a,b) => a.name.localeCompare(b.name, 'tr-TR'));
+    
+    const combined = [...populars, ...others];
+
     sel.innerHTML = '<option value="">Seçin...</option>' +
-      list.map(i => `<option value="${escHtml(displayIssName(i.name))}">${escHtml(displayIssName(i.name))}</option>`).join('') +
+      combined.map(i => `<option value="${escHtml(i.name)}">${escHtml(i.name)}</option>`).join('') +
       '<option value="Diğer">Diğer (İSS adını girin)</option>';
     if (cur) sel.value = canonicalIssName(cur);
   }
@@ -3232,9 +3425,8 @@ function resetAllFilters(e) {
   // Bağlantı türü çipleri — hepsini aç
   activeFilters = new Set(['fiber','vdsl','adsl','docsis']);
   document.querySelectorAll('#page-harita .chip-fiber, #page-harita .chip-vdsl, #page-harita .chip-adsl, #page-harita .chip-docsis').forEach(c => c.classList.add('on'));
-  // İSS çipleri — hepsini aç
-  activeISSFilters = new Set(issListCache.map(i => canonicalIssName(i.name)));
-  activeISSFilters.add('Diğer');
+  // İSS çipleri — popülerleri ve Diğer'i aç
+  activeISSFilters = new Set([...POPULAR_ISS_NAMES, 'Diğer']);
   document.querySelectorAll('#issChips .chip-iss').forEach(c => c.classList.add('on'));
   // Renk modu — varsayılana (Hız) dön
   setColorMode('hiz');
@@ -3534,7 +3726,18 @@ function renderHex() {
   // (daha ince) değerlerine geri alındı.
   const res = z<=5 ? 3 : z<=6 ? 4 : z<=7 ? 5 : z<=9 ? 6 : z<=11 ? 7 : z<=13 ? 8 : z<=15 ? 9 : 10;
   const hexMap = {};
-  cleanPinsData.forEach(p => { if (!p.lat) return; const matchesTypeFilter = activeFilters.has(p.baglanti_turu) || parseDigerAltyapi(p.diger_altyapilar).some(e => activeFilters.has(e.tur)); if (!matchesTypeFilter) return; const canonicalIss = canonicalIssName(p.iss); if (!isApprovedPublicIss(canonicalIss) || !activeISSFilters.has(canonicalIss)) return; try { const h = h3.latLngToCell(p.lat, p.lng, res); if (!hexMap[h]) hexMap[h]=[]; hexMap[h].push(p); } catch(e) {} });
+  cleanPinsData.forEach(p => { 
+    if (!p.lat) return; 
+    const matchesTypeFilter = activeFilters.has(p.baglanti_turu) || parseDigerAltyapi(p.diger_altyapilar).some(e => activeFilters.has(e.tur)); 
+    if (!matchesTypeFilter) return; 
+    const canonicalIss = canonicalIssName(p.iss); 
+    if (!isApprovedPublicIss(canonicalIss)) return; 
+    const isPop = isPopularIss(canonicalIss);
+    const matchesIss = isPop ? activeISSFilters.has(canonicalIss) : activeISSFilters.has('Diğer');
+    if (!matchesIss) return;
+    try { const h = h3.latLngToCell(p.lat, p.lng, res); if (!hexMap[h]) hexMap[h]=[]; hexMap[h].push(p); } 
+    catch(e) {} 
+  });
   Object.entries(hexMap).forEach(([hex, pins]) => {
     try {
       const coords = h3.cellToBoundary(hex).map(([lat,lng]) =>[lat,lng]);
@@ -6193,7 +6396,7 @@ async function modLogin() {
     document.getElementById('headerMaintenanceToggle').style.display='flex'; 
     const emailBadge = document.getElementById('modUserEmailBadge');
     if (emailBadge) emailBadge.textContent = data.user.email;
-    showToast('✅ Giriş başarılı'); switchModTab('inbox'); refreshModData(); if(maps.main) renderModPins(); loadMaintenanceState();
+    showToast('✅ Giriş başarılı'); switchModTab('tumPinler'); refreshModData(); if(maps.main) renderModPins(); loadMaintenanceState();
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 async function modLogout() {
@@ -6332,8 +6535,13 @@ async function approveCustomIss(iss, normalizedName, color) {
   if (!finalName) return showToast('İSS adı boş olamaz', 'err');
   const finalColor = color || issHashColor(finalName);
   try {
-    // 1. iss_list tablosuna ekle (zaten varsa güncelle)
-    await addIssToList({ name: finalName, color: finalColor, active: true, sort_order: 99 });
+    // 1. iss_list tablosuna ekle (RLS kısıtlaması olsa bile pin onayını engelleme)
+    try {
+      await addIssToList({ name: finalName, color: finalColor, active: true, sort_order: 99 });
+    } catch(issErr) {
+      console.warn('[internetHarita] iss_list tablosuna eklenemedi (RLS kısıtlaması), yerel listeye kaydedildi:', issErr);
+    }
+    registerLocalApprovedIss(finalName);
     // 2. Tüm ilgili pinleri düzelt ve yayınla
     const pins = await getAllPinsAdmin() || [];
     const targets = pins.filter(p => p.iss === iss && p.is_quarantine);
@@ -6999,16 +7207,31 @@ async function loadSikayetler() {
         const locStr = escHtml([p.il, p.ilce, p.mahalle].filter(Boolean).join(' › '));
         const allSame = gPins.every(x => x.iss === p.iss && x.baglanti_turu === p.baglanti_turu && x.gercek_dl === p.gercek_dl);
 
+        const reasons = getQuarantineReasons(p, gPins);
+        const reasonsHtml = reasons.length ? `
+          <div style="margin:8px 0;padding:7px 10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.28);border-radius:6px;font-size:11px;line-height:1.4;">
+            <div style="font-weight:700;font-size:10px;color:var(--warn);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;display:flex;align-items:center;gap:4px;">
+              <span>🔍 Karantina / İnceleme Sebebi:</span>
+            </div>
+            ${reasons.map(r => `
+              <div style="color:var(--text2);margin-top:2px;">
+                <b style="color:var(--text);">${r.icon} ${escHtml(r.title)}:</b> ${escHtml(r.detail)}
+              </div>
+            `).join('')}
+          </div>
+        ` : '';
+
         return `<div class="mod-card" id="mc_${p.id}" style="${spam||quarantine?'border-color:rgba(239,68,68,.4);':''}">
-          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;">
             <div style="flex:1">
               ${header}
               ${spam?'<div style="color:var(--danger);font-size:9px;font-family:var(--font-mono);margin-bottom:4px;">⚠ SPAM/ŞÜPHELİ</div>':''}${quarantine?'<div style="color:var(--warn);font-size:9px;font-family:var(--font-mono);margin-bottom:4px;">🔒 KARANTİNA</div>':''}
               <div class="mod-info">${escHtml(p.iss)} · ${(p.baglanti_turu||'').toUpperCase()} · ${p.gercek_dl}↓ / ${p.gercek_ul||0}↑ Mbps${allSame&&isMulti?' <span style="color:var(--text3);font-size:9px">(tümü aynı)</span>':''}</div>
               <div class="mod-meta">📍 ${locStr||'?'}<br>🔑 FP: ${escHtml(fp.slice(0,12))}...<br>${p.gorunur?'👁 Görünür':'🙈 Gizli'} · ${gPins.length} pin</div>
+              ${reasonsHtml}
               ${p.yorum?`<div class="user-comment-box">${escHtml(p.yorum)}</div>`:''}
             </div>
-            <div class="mod-badge" style="${isMulti?'background:rgba(245,158,11,.2);color:var(--warn);border-color:var(--warn);':''}">🚩 ${gPins.length}</div>
+            <div class="mod-badge" style="flex-shrink:0;align-self:flex-start;${isMulti?'background:rgba(245,158,11,.2);color:var(--warn);border-color:var(--warn);':''}">🚩 ${gPins.length}</div>
           </div>
           <div class="mod-actions">
             ${!isMulti ? `<button class="btn-edit" onclick="openEditModal('${p.id}')">✏️ Düzenle</button>` : ''}
@@ -7028,11 +7251,16 @@ async function groupAction(idsJson, approve) {
       const targetPins = await sbRest(`pins?id=in.(${ids.join(',')})&select=id,iss`) || [];
       const unapprovedIss = [...new Set(targetPins.map(p => p.iss).filter(iss => iss && !isApprovedPublicIss(iss)))];
       for (const iss of unapprovedIss) {
-        await addIssToList({ name: iss, color: issHashColor(iss), active: true, sort_order: 99 });
+        try {
+          await addIssToList({ name: iss, color: issHashColor(iss), active: true, sort_order: 99 });
+        } catch(issErr) {
+          console.warn('[internetHarita] iss_list tablosuna eklenemedi (RLS kısıtlaması), yerel listeye eklendi:', issErr);
+        }
+        registerLocalApprovedIss(iss);
       }
       if (unapprovedIss.length) {
         await loadIssListAndRenderChips();
-        showToast(`🏷 ${unapprovedIss.length} yeni İSS listeye otomatik eklendi`, 'warn');
+        showToast(`🏷 ${unapprovedIss.length} yeni İSS listeye eklendi`, 'info');
       }
     }
     await Promise.all(ids.map(id => patchPin(id, { gorunur: approve, sikayet_sayisi: approve ? 0 : 99, is_quarantine: approve ? false : true })));
@@ -7041,7 +7269,7 @@ async function groupAction(idsJson, approve) {
     await loadPins(); loadSikayetler();
     updateInboxSummary();
     updateModStatsSummary();
-  } catch(e) { showToast('Hata: '+e.message,'err'); }
+  } catch(e) { showToast('Hata: '+friendlyDbError(e, 'pins'),'err'); }
 }
 
 async function groupDelete(idsJson) {
@@ -7078,7 +7306,12 @@ async function quickApprovePinRow(id) {
     const p = adminPinsCache.find(x => x.id === id);
     if (!p) return;
     if (!isApprovedPublicIss(p.iss)) {
-      await addIssToList({ name: p.iss, color: issHashColor(p.iss), active: true, sort_order: 99 });
+      try {
+        await addIssToList({ name: p.iss, color: issHashColor(p.iss), active: true, sort_order: 99 });
+      } catch(issErr) {
+        console.warn('[internetHarita] iss_list tablosuna eklenemedi (RLS kısıtlaması), yerel listeye kaydedildi:', issErr);
+      }
+      registerLocalApprovedIss(p.iss);
       await loadIssListAndRenderChips();
     }
     await patchPin(id, { gorunur: true, is_quarantine: false, sikayet_sayisi: 0 });
@@ -7090,7 +7323,7 @@ async function quickApprovePinRow(id) {
     filterAdminTable(document.getElementById('tableSearch')?.value || '');
     updateModStatsSummary();
   } catch (err) {
-    showToast('Onaylama hatası: ' + err.message, 'err');
+    showToast('Onaylama hatası: ' + friendlyDbError(err, 'pins'), 'err');
   }
 }
 
@@ -7144,7 +7377,10 @@ function renderAdminTable(pins) {
       durumLabel = '✅ Yayında'; durumColor = 'var(--success)'; rowBg = '';
     }
     
-    const reasonText = reason ? `<div style="font-size:9px;color:var(--danger);margin-top:2px;font-weight:600;">• ${escHtml(reason)}</div>` : '';
+    const reasons = (p.is_quarantine || spam || !isApprovedPublicIss(p.iss)) ? getQuarantineReasons(p) : [];
+    const reasonText = reasons.length 
+      ? `<div style="font-size:9px;color:var(--warn);margin-top:3px;font-weight:600;line-height:1.3;" title="${escHtml(reasons.map(r=>`${r.title}: ${r.detail}`).join('\n'))}">${reasons.slice(0, 2).map(r => `<div>${r.icon} ${escHtml(r.title)}</div>`).join('')}</div>`
+      : (reason ? `<div style="font-size:9px;color:var(--danger);margin-top:2px;font-weight:600;">• ${escHtml(reason)}</div>` : '');
     const modNot = p.mod_notu ? `<div style="font-size:9px;color:var(--accent);margin-top:3px;" title="${escHtml(p.mod_notu)}">📝 ${escHtml(p.mod_notu.length>25 ? p.mod_notu.slice(0,25)+'…' : p.mod_notu)}</div>` : '';
     const locStr = [p.il, p.ilce, p.mahalle].filter(Boolean).map(s => escHtml(s.trim())).join(' › ') || '—';
     
@@ -7346,11 +7582,13 @@ async function openEditModal(id) {
     const statusEl = document.getElementById('editPinStatus');
     if (statusEl) {
       const spam = isSpam(p); const quar = p.is_quarantine; const unkIss = !isApprovedPublicIss(p.iss);
-      if (spam) { statusEl.style.display='block'; statusEl.style.background='rgba(239,68,68,.1)'; statusEl.style.color='var(--danger)'; statusEl.style.border='1px solid var(--danger)'; statusEl.textContent='⚠ SPAM — hız değerleri geçersiz'; }
-      else if (quar) { statusEl.style.display='block'; statusEl.style.background='rgba(245,158,11,.1)'; statusEl.style.color='var(--warn)'; statusEl.style.border='1px solid var(--warn)'; statusEl.textContent='🔒 KARANTİNA — moderatör incelemesi gerekli'; }
-      else if (unkIss) { statusEl.style.display='block'; statusEl.style.background='rgba(168,85,247,.1)'; statusEl.style.color='#a855f7'; statusEl.style.border='1px solid #a855f7'; statusEl.textContent='❓ BİLİNMEYEN İSS — haritada gözükmüyor, İSS değiştirip ✅ Onayla ya bas'; }
-      else if (!p.gorunur) { statusEl.style.display='block'; statusEl.style.background='rgba(74,98,120,.1)'; statusEl.style.color='var(--text3)'; statusEl.style.border='1px solid var(--border2)'; statusEl.textContent='🙈 GİZLİ — moderatör tarafından gizlendi'; }
-      else { statusEl.style.display='block'; statusEl.style.background='rgba(34,197,94,.08)'; statusEl.style.color='var(--success)'; statusEl.style.border='1px solid var(--success)'; statusEl.textContent='✅ ONAYLI — haritada görünüyor'; }
+      const reasons = getQuarantineReasons(p);
+      const reasonDetail = reasons.length ? `: ${reasons.map(r => r.title).join(', ')}` : '';
+      if (spam) { statusEl.style.display='block'; statusEl.style.background='rgba(239,68,68,.1)'; statusEl.style.color='var(--danger)'; statusEl.style.border='1px solid var(--danger)'; statusEl.textContent='⚠ SPAM' + (reasonDetail || ' - hız değerleri geçersiz'); }
+      else if (quar) { statusEl.style.display='block'; statusEl.style.background='rgba(245,158,11,.1)'; statusEl.style.color='var(--warn)'; statusEl.style.border='1px solid var(--warn)'; statusEl.textContent='🔒 KARANTİNA' + (reasonDetail || ' - moderatör incelemesi gerekli'); }
+      else if (unkIss) { statusEl.style.display='block'; statusEl.style.background='rgba(168,85,247,.1)'; statusEl.style.color='#a855f7'; statusEl.style.border='1px solid #a855f7'; statusEl.textContent='❓ BİLİNMEYEN İSS - haritada gözükmüyor, İSS değiştirip ✅ Onayla\'ya bas'; }
+      else if (!p.gorunur) { statusEl.style.display='block'; statusEl.style.background='rgba(74,98,120,.1)'; statusEl.style.color='var(--text3)'; statusEl.style.border='1px solid var(--border2)'; statusEl.textContent='🙈 GİZLİ - moderatör tarafından gizlendi'; }
+      else { statusEl.style.display='block'; statusEl.style.background='rgba(34,197,94,.08)'; statusEl.style.color='var(--success)'; statusEl.style.border='1px solid var(--success)'; statusEl.textContent='✅ ONAYLI - haritada görünüyor'; }
     }
     const editIssSel = document.getElementById('editIss');
     const currentIss = p.iss || '';
@@ -7398,10 +7636,15 @@ async function saveEdit() {
     let issNowApproved = isApprovedPublicIss(newIss);
     // Moderatör görünür yaptıysa ama ISS listede yoksa → otomatik ekle
     if (isGorunur && !issNowApproved) {
-      await addIssToList({ name: newIss, color: issHashColor(newIss), active: true, sort_order: 99 });
+      try {
+        await addIssToList({ name: newIss, color: issHashColor(newIss), active: true, sort_order: 99 });
+      } catch(issErr) {
+        console.warn('[internetHarita] iss_list tablosuna eklenemedi (RLS kısıtlaması), yerel listeye eklendi:', issErr);
+      }
+      registerLocalApprovedIss(newIss);
       await loadIssListAndRenderChips();
       issNowApproved = true;
-      showToast(`🏷 "${newIss}" İSS listesine otomatik eklendi`,'warn');
+      showToast(`🏷 "${newIss}" İSS listesine eklendi`,'info');
     }
     const editPkgDLVal = parseInt(document.getElementById('editPkgDL').value)||null;
     const editPkgULVal = parseInt(document.getElementById('editPkgUL').value)||null;
@@ -7497,6 +7740,7 @@ async function bulkApprovePins() {
   });
   for (const iss of unapprovedIssNames) {
     try { await addIssToList({ name: iss, color: issHashColor(iss), active: true, sort_order: 99 }); } catch(e) {}
+    registerLocalApprovedIss(iss);
   }
   if (unapprovedIssNames.size > 0) await loadIssListAndRenderChips();
 
