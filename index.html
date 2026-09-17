@@ -2415,9 +2415,12 @@ async function patchPin(id, d) {
   let updatedRow = null;
   let lastError = null;
 
+  // Doğrulama için select edilecek alanlar: id + güncellenen tüm alanlar
+  const verifyFields = ['id', ...Object.keys(d)].join(',');
+
   // 1. Supabase Client üzerinden dene
   try {
-    const { data, error } = await sbc.from('pins').update(d).eq('id', id).select('id');
+    const { data, error } = await sbc.from('pins').update(d).eq('id', id).select(verifyFields);
     if (error) {
       lastError = error;
       console.warn('[internetHarita] sbc.update hatası:', error);
@@ -2432,7 +2435,7 @@ async function patchPin(id, d) {
   // 2. Yedek olarak REST API (sbRest) üzerinden dene
   if (!updatedRow) {
     try {
-      const result = await sbRest(`pins?id=eq.${id}&select=id`, {
+      const result = await sbRest(`pins?id=eq.${id}&select=${verifyFields}`, {
         method: 'PATCH',
         prefer: 'return=representation',
         body: JSON.stringify(d)
@@ -2450,6 +2453,23 @@ async function patchPin(id, d) {
   if (!updatedRow) {
     const errMsg = lastError?.message || '42501 RLS: Pin veritabanında güncellenemedi (0 satır etkilendi). Moderatör hesabınızın yetkisini (RLS) kontrol edin.';
     throw new Error(errMsg);
+  }
+
+  // Güncellenen alanları doğrula — RLS sessizce engelleme yapıyorsa burada yakala
+  const failedFields = [];
+  for (const [key, val] of Object.entries(d)) {
+    if (updatedRow[key] !== undefined && updatedRow[key] !== val) {
+      // Boolean ve sayısal karşılaştırmaları tolere et (JSON dönüşüm farkları)
+      if (typeof val === 'boolean' && updatedRow[key] === val) continue;
+      if (val === null && (updatedRow[key] === null || updatedRow[key] === undefined)) continue;
+      if (typeof val === 'number' && Number(updatedRow[key]) === val) continue;
+      if (String(updatedRow[key]) === String(val)) continue;
+      failedFields.push(key);
+    }
+  }
+  if (failedFields.length > 0) {
+    console.error('[internetHarita] patchPin doğrulama hatası — alanlar güncellenmedi:', failedFields, 'Beklenen:', d, 'Dönen:', updatedRow);
+    throw new Error(`RLS kısıtlaması: ${failedFields.join(', ')} alanları veritabanında güncellenemedi. Supabase RLS politikasında bu alanlar için UPDATE yetkisi tanımlayın.`);
   }
 
   // 1. Canlı bellek cache'lerini anında güncelle
@@ -7531,12 +7551,12 @@ async function quickApprovePinRow(id) {
     }
     await patchPin(id, { gorunur: true, is_quarantine: false, sikayet_sayisi: 0 });
     showToast(`✅ "${p.iss}" pini onaylandı ve haritada yayına alındı!`);
-    adminPinsCache = adminPinsCache.map(x => x.id === id ? { ...x, gorunur: true, is_quarantine: false, sikayet_sayisi: 0 } : x);
-    pinsData = pinsData.map(x => x.id === id ? { ...x, gorunur: true, is_quarantine: false, sikayet_sayisi: 0 } : x);
-    cleanPinsData = publicCleanPins(pinsData);
-    if (maps.main) { renderHex(); renderModPins(); }
+    // Veritabanından taze veri çek ve tüm listeleri güncelle
+    await loadPins();
+    loadSikayetler();
     filterAdminTable(document.getElementById('tableSearch')?.value || '');
     updateModStatsSummary();
+    updateInboxSummary();
   } catch (err) {
     showToast('Onaylama hatası: ' + friendlyDbError(err, 'pins'), 'err');
   }
@@ -7546,12 +7566,12 @@ async function quickHidePinRow(id) {
   try {
     await patchPin(id, { gorunur: false });
     showToast(`👁 Pin gizlendi`);
-    adminPinsCache = adminPinsCache.map(x => x.id === id ? { ...x, gorunur: false } : x);
-    pinsData = pinsData.map(x => x.id === id ? { ...x, gorunur: false } : x);
-    cleanPinsData = publicCleanPins(pinsData);
-    if (maps.main) { renderHex(); renderModPins(); }
+    // Veritabanından taze veri çek ve tüm listeleri güncelle
+    await loadPins();
+    loadSikayetler();
     filterAdminTable(document.getElementById('tableSearch')?.value || '');
     updateModStatsSummary();
+    updateInboxSummary();
   } catch (err) {
     showToast('Gizleme hatası: ' + err.message, 'err');
   }
