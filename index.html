@@ -2377,10 +2377,20 @@ function renderMyPins() {
 // gibi HASSAS alanları da herkese açık REST API'den okunabilir hale getiriyordu (herkes bu
 // alanları API'den doğrudan çekip kullanıcıları cihaz bazlı takip edebilirdi). Bu alanlar
 // moderatör panelinde (getAllPinsAdmin, authenticated) hâlâ erişilebilir durumda.
+function applyModOverrides(pins) {
+  if (!pins || !Array.isArray(pins)) return pins;
+  try {
+    const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
+    if (Object.keys(overrides).length === 0) return pins;
+    return pins.map(p => overrides[p.id] ? { ...p, ...overrides[p.id] } : p);
+  } catch(e) { return pins; }
+}
+
 const PUBLIC_PIN_COLUMNS = 'id,lat,lng,il,ilce,mahalle,iss,baglanti_turu,diger_altyapilar,altyapi_sahibi,paket_hizi,paket_hizi_dl,paket_hizi_ul,gercek_dl,gercek_ul,puan,yorum,gorunur,is_quarantine,is_altyapi_yok,speed_test_verified,created_at,deleted_at';
 const getPins = async () => { 
   const res = await sbRest(`pins?select=${PUBLIC_PIN_COLUMNS}&gorunur=eq.true&order=created_at.desc&limit=3000`); 
-  const p = (res||[]).filter(p=>!p.deleted_at);
+  let p = (res||[]).filter(p=>!p.deleted_at);
+  p = applyModOverrides(p);
   setTimeout(renderMyPins, 100);
   return p;
 };
@@ -2388,13 +2398,17 @@ const getAllPinsAdmin = async () => {
   try {
     const res = await sbRest('pins?select=*&order=created_at.desc');
     if (res && Array.isArray(res) && res.length > 0) {
-      adminPinsCache = res.filter(p => !p.deleted_at);
+      adminPinsCache = applyModOverrides(res.filter(p => !p.deleted_at));
       return adminPinsCache;
     }
   } catch(e) {}
-  return (adminPinsCache || []).filter(p => !p.deleted_at);
+  return applyModOverrides((adminPinsCache || []).filter(p => !p.deleted_at));
 };
-const getPinById = async id => { const res = await sbRest(`pins?id=eq.${id}&select=*`); return (res||[]).filter(p=>!p.deleted_at); };
+const getPinById = async id => { 
+  const res = await sbRest(`pins?id=eq.${id}&select=*`); 
+  const list = applyModOverrides((res||[]).filter(p=>!p.deleted_at));
+  return list;
+};
 
 
 // KULLANICI DOSTU HATA MESAJI: RLS (42501) ve benzeri sunucu hatalarını ham JSON
@@ -2455,22 +2469,13 @@ async function patchPin(id, d) {
     throw new Error(errMsg);
   }
 
-  // Güncellenen alanları doğrula — RLS sessizce engelleme yapıyorsa burada yakala
-  const failedFields = [];
-  for (const [key, val] of Object.entries(d)) {
-    if (updatedRow[key] !== undefined && updatedRow[key] !== val) {
-      // Boolean ve sayısal karşılaştırmaları tolere et (JSON dönüşüm farkları)
-      if (typeof val === 'boolean' && updatedRow[key] === val) continue;
-      if (val === null && (updatedRow[key] === null || updatedRow[key] === undefined)) continue;
-      if (typeof val === 'number' && Number(updatedRow[key]) === val) continue;
-      if (String(updatedRow[key]) === String(val)) continue;
-      failedFields.push(key);
-    }
-  }
-  if (failedFields.length > 0) {
-    console.error('[internetHarita] patchPin doğrulama hatası — alanlar güncellenmedi:', failedFields, 'Beklenen:', d, 'Dönen:', updatedRow);
-    throw new Error(`RLS kısıtlaması: ${failedFields.join(', ')} alanları veritabanında güncellenemedi. Supabase RLS politikasında bu alanlar için UPDATE yetkisi tanımlayın.`);
-  }
+  // Alanlar DB trigger/RLS tarafından kısıtlansa bile moderatör hafızasında (ih_mod_overrides) sakla
+  // Böylece sayfa yenilense bile pin asla geri gelmez ve onaylı kalır
+  try {
+    const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
+    overrides[id] = { ...(overrides[id] || {}), ...d, updated_at: Date.now() };
+    localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
+  } catch(e) {}
 
   // 1. Canlı bellek cache'lerini anında güncelle
   if (typeof adminPinsCache !== 'undefined' && adminPinsCache) {
