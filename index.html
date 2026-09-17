@@ -2382,7 +2382,16 @@ function applyModOverrides(pins) {
   try {
     const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
     if (Object.keys(overrides).length === 0) return pins;
-    return pins.map(p => overrides[p.id] ? { ...p, ...overrides[p.id] } : p);
+    const updated = pins.map(p => overrides[p.id] ? { ...p, ...overrides[p.id] } : p);
+    if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
+      adminPinsCache.forEach(ap => {
+        const ov = overrides[ap.id];
+        if (ov && ov.gorunur === true && !updated.some(u => u.id === ap.id)) {
+          updated.push({ ...ap, ...ov });
+        }
+      });
+    }
+    return updated;
   } catch(e) { return pins; }
 }
 
@@ -5020,10 +5029,8 @@ async function renderStats() {
   const avgS = speedPins.length ? (speedPins.reduce((a,p)=>a+p.puan,0)/speedPins.length).toFixed(1) : '—';
   document.getElementById('sumGrid').innerHTML = `<div class="sum-card"><div class="sum-val">${pins.length}</div><div class="sum-label">Onaylı Veri</div></div><div class="sum-card"><div class="sum-val" style="color:${speedColor(avgDL)}">${speedShapeHtml(avgDL)}${avgDL}</div><div class="sum-label">Ort. İndirme (↓ Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgUL?speedColor(avgUL):'var(--text3)'}">${avgUL?speedShapeHtml(avgUL):''}${avgUL||'—'}</div><div class="sum-label">Ort. Yükleme (↑ Mbps)</div></div><div class="sum-card"><div class="sum-val" style="color:${avgS!=='—'?memColor(avgS):'var(--text3)'}">${avgS!=='—'?memShapeHtml(parseFloat(avgS)):''}${avgS}</div><div class="sum-label">Ort. Memnuniyet</div></div>`;
 
-  // issListCache (Supabase) + getAllIss() (BASE_ISS + localStorage) birleşimi — hiçbir onaylı ISS atlanmasın
-  const knownFromCache = issListCache.map(i => canonicalIssName(i.name));
-  const knownFromLocal = getAllIss();
-  const KNOWN_ISS_SET = new Set([...knownFromCache, ...knownFromLocal]);
+  // approvedIssNames() (issListCache + ih_local_approved_iss) + getAllIss() birleşimi — yeni eklenen hiçbir onaylı ISS atlanmasın
+  const KNOWN_ISS_SET = new Set([...approvedIssNames(), ...getAllIss()]);
   const im = {}; pins.forEach(p => {
     const iss = canonicalIssName(p.iss);
     if(!iss || !KNOWN_ISS_SET.has(iss) || !p.puan) return;
