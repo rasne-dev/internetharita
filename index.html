@@ -2388,6 +2388,10 @@ function friendlyDbError(e, tableLabel) {
 }
 const addPin = d => sbRest('pins', { method:'POST', body:JSON.stringify(d) });
 async function patchPin(id, d) {
+  try {
+    const { data, error } = await sbc.from('pins').update(d).eq('id', id).select('id');
+    if (!error && data && data.length > 0) return data;
+  } catch(e) {}
   const result = await sbRest(`pins?id=eq.${id}&select=id`, { method:'PATCH', prefer:'return=representation', body:JSON.stringify(d) });
   if (!result || (Array.isArray(result) && result.length === 0)) {
     throw new Error('42501 RLS: Pin veritabanında güncellenemedi (0 satır etkilendi). Lütfen Supabase SQL Editor\'da authenticated kullanıcılar için UPDATE yetkisini tanımlayın.');
