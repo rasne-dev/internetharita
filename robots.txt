@@ -1,4 +1,9 @@
-﻿User-agent: *
+User-agent: *
 Allow: /
 Disallow: /?mod
+
+User-agent: Googlebot-Image
+Allow: /
+
 Sitemap: https://internetharita.com.tr/sitemap.xml
+
