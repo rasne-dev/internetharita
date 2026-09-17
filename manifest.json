@@ -1,0 +1,31 @@
+{
+  "name": "internetHarita — Türkiye İnternet Altyapı Haritası ve Altyapı Sorgulama",
+  "short_name": "internetHarita",
+  "description": "Türkiye'nin mahalle ve ilçe bazlı bağımsız internet altyapı ve hız haritası.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070b0f",
+  "theme_color": "#00d4ff",
+  "orientation": "any",
+  "lang": "tr",
+  "icons": [
+    {
+      "src": "/favicon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
