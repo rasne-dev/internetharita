@@ -2401,10 +2401,10 @@ const getPinById = async id => { const res = await sbRest(`pins?id=eq.${id}&sele
 // yerine anlaşılır bir mesaja çevirir.
 function friendlyDbError(e, tableLabel) {
   const msg = e?.message || String(e);
-  if (msg.includes('42501') || msg.includes('row-level security')) {
+  if (msg.includes('42501') || msg.includes('row-level security') || msg.includes('0 satır')) {
     console.error(`[internetHarita] "${tableLabel}" tablosunda RLS (42501) hatası. Detay:`, msg);
     if (typeof isModLoggedIn !== 'undefined' && isModLoggedIn) {
-      return `⚠ Supabase RLS Hatası (42501): Moderatör hesabının "${tableLabel}" tablosunda güncelleme yetkisi yok. Supabase SQL Editor üzerinden 'authenticated' rolüne UPDATE yetkisi verilmelidir.`;
+      return `⚠ Supabase RLS Hatası (42501): Moderatör hesabının "${tableLabel}" tablosunda güncelleme yetkisi yok (0 satır etkilendi). Supabase SQL Editor üzerinden 'authenticated' rolü için RLS güncelleme kuralı tanımlanmalıdır.`;
     }
     return '⚠ Veri kaydedilemedi (sunucu izin hatası). Bu bizim tarafımızdaki bir ayar sorunu — birazdan tekrar deneyin, sorun devam ederse lütfen bize bildirin.';
   }
@@ -2412,16 +2412,44 @@ function friendlyDbError(e, tableLabel) {
 }
 const addPin = d => sbRest('pins', { method:'POST', body:JSON.stringify(d) });
 async function patchPin(id, d) {
-  let success = false;
+  let updatedRow = null;
+  let lastError = null;
+
+  // 1. Supabase Client üzerinden dene
   try {
-    const { error } = await sbc.from('pins').update(d).eq('id', id);
-    if (!error) success = true;
-  } catch(e) {}
-  if (!success) {
+    const { data, error } = await sbc.from('pins').update(d).eq('id', id).select('id');
+    if (error) {
+      lastError = error;
+      console.warn('[internetHarita] sbc.update hatası:', error);
+    } else if (data && data.length > 0) {
+      updatedRow = data[0];
+    }
+  } catch(e) {
+    lastError = e;
+    console.warn('[internetHarita] sbc.update istisnası:', e);
+  }
+
+  // 2. Yedek olarak REST API (sbRest) üzerinden dene
+  if (!updatedRow) {
     try {
-      const result = await sbRest(`pins?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
-      if (result && result.ok === true) success = true;
-    } catch(e) {}
+      const result = await sbRest(`pins?id=eq.${id}&select=id`, {
+        method: 'PATCH',
+        prefer: 'return=representation',
+        body: JSON.stringify(d)
+      });
+      if (Array.isArray(result) && result.length > 0) {
+        updatedRow = result[0];
+      }
+    } catch(e) {
+      lastError = e;
+      console.error('[internetHarita] sbRest.patch hatası:', e);
+    }
+  }
+
+  // Veritabanında satır güncellenemediyse HATA FIRLAT (sahte başarı veya arayüzde yanıltıcı onay verilmesin)
+  if (!updatedRow) {
+    const errMsg = lastError?.message || '42501 RLS: Pin veritabanında güncellenemedi (0 satır etkilendi). Moderatör hesabınızın yetkisini (RLS) kontrol edin.';
+    throw new Error(errMsg);
   }
 
   // 1. Canlı bellek cache'lerini anında güncelle
