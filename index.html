@@ -375,6 +375,11 @@ html.light .sidebar-reset-btn:hover { background: rgba(239,68,68,0.1); border-co
   outline: none; transition: border-color .2s;
   box-sizing: border-box;
 }
+.search-input::-webkit-search-cancel-button,
+.search-input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
 .search-input::placeholder { color: rgba(255,255,255,0.2); }
 .search-input:focus { border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.03); }
 .search-btn {
@@ -1332,7 +1337,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
         <div class="sidebar-section">
           <div class="sidebar-section-title">Şehir / İlçe Ara</div>
           <div class="search-wrap">
-            <input class="search-input" type="text" id="mapSearchInput" placeholder="Beykoz, Konya, İzmir..." onkeydown="if(event.key==='Enter')searchLocation()">
+            <input class="search-input" type="search" id="mapSearchInput" name="map_search_query" placeholder="Beykoz, Konya, İzmir..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" onkeydown="if(event.key==='Enter')searchLocation()">
             <button class="search-btn" onclick="searchLocation()">🔍</button>
             <div class="search-results" id="searchResults"></div>
           </div>
@@ -1667,9 +1672,11 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
     <div class="mod-auth-card">
       <div class="mod-auth-title">🔧 Moderatör Girişi</div>
       <div class="mod-auth-sub">Hop hemşerim nereye? Buraya sadece yetkili moderasyon ekibi girebilir ✋</div>
-      <div class="fg" style="margin-bottom:12px;"><input class="fi" type="email" id="modEmail" placeholder="E-posta" autocomplete="email"></div>
-      <div class="fg" style="margin-bottom:18px;"><input class="fi" type="password" id="modPw" placeholder="Şifre" onkeydown="if(event.key==='Enter')modLogin()" autocomplete="current-password"></div>
-      <button class="btn-primary" style="width:100%;padding:12px;font-size:14px;font-weight:600;" onclick="modLogin()">Giriş Yap</button>
+      <form id="modLoginForm" name="modLoginForm" onsubmit="event.preventDefault();modLogin();" autocomplete="on">
+        <div class="fg" style="margin-bottom:12px;"><input class="fi" type="email" id="modEmail" name="username" placeholder="E-posta" autocomplete="username" required></div>
+        <div class="fg" style="margin-bottom:18px;"><input class="fi" type="password" id="modPw" name="password" placeholder="Şifre" autocomplete="current-password" required></div>
+        <button type="submit" class="btn-primary" style="width:100%;padding:12px;font-size:14px;font-weight:600;">Giriş Yap</button>
+      </form>
     </div>
   </div>
 
@@ -3569,19 +3576,64 @@ function initSidebarState() {
 }
 initSidebarState();
 
-function showPage(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+function showPage(id, updateUrl = true) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-'+id)?.classList.add('active');
-  const idx =['harita','bolge','istatistik','mod'].indexOf(id); if (idx >= 0) document.querySelectorAll('.nav-tab')[idx]?.classList.add('active');
-  document.querySelectorAll('.mob-btn').forEach(b => b.classList.remove('active')); const mob = document.getElementById('mob-'+id); if (mob) mob.classList.add('active');
+  const idx = ['harita','bolge','istatistik','mod'].indexOf(id); 
+  if (idx >= 0) document.querySelectorAll('.nav-tab')[idx]?.classList.add('active');
+  document.querySelectorAll('.mob-btn').forEach(b => b.classList.remove('active')); 
+  const mob = document.getElementById('mob-'+id); 
+  if (mob) mob.classList.add('active');
+
+  // URL Hash senkronizasyonu
+  if (updateUrl) {
+    const targetHash = id === 'mod' ? '#mod'
+      : id === 'bolge' ? '#bolgeler'
+      : id === 'istatistik' ? '#istatistikler'
+      : id === 'pin' ? '#ekle'
+      : '';
+    if (targetHash) {
+      if (window.location.hash !== targetHash) {
+        window.location.hash = targetHash;
+      }
+    } else {
+      if (window.location.hash) {
+        history.pushState(null, '', window.location.pathname + window.location.search);
+      }
+    }
+  }
+
   // Lejant ve zoom-hint sadece harita sayfasında görünsün
   const onlyMap = id === 'harita';
   const lb = document.getElementById('mapLegendBox'); if (lb) lb.style.display = onlyMap ? '' : 'none';
   const zh = document.getElementById('zoomHint'); if (zh) zh.style.display = onlyMap ? '' : 'none';
   const sb = document.getElementById('mapSidebar'); if (sb) sb.style.display = onlyMap ? '' : 'none';
   const st = document.getElementById('sidebarToggle'); if (st) st.style.display = onlyMap ? '' : 'none';
-  setTimeout(async () => { if (id==='harita') { if (!maps.main) await initMainMap(); else maps.main.invalidateSize(); } if (id==='pin') { if (!maps.pin) initPinMap(); else maps.pin.invalidateSize(); renderISSChips(issListCache.filter(i=>i.active!==false)); } if (id==='bolge') renderRegions(); if (id==='istatistik') renderStats(); if (id==='mod' && isModLoggedIn) refreshModData(); }, 50);
+  setTimeout(async () => { 
+    if (id==='harita') { if (!maps.main) await initMainMap(); else maps.main.invalidateSize(); } 
+    if (id==='pin') { if (!maps.pin) initPinMap(); else maps.pin.invalidateSize(); renderISSChips(issListCache.filter(i=>i.active!==false)); } 
+    if (id==='bolge') renderRegions(); 
+    if (id==='istatistik') renderStats(); 
+    if (id==='mod' && isModLoggedIn) refreshModData(); 
+  }, 50);
 }
+
+function handleHashRoute() {
+  const rawHash = (window.location.hash || '').replace(/^#\/?/, '').trim().toLowerCase();
+  if (rawHash === 'mod' || rawHash === 'moderator') {
+    showPage('mod', false);
+  } else if (rawHash === 'bolge' || rawHash === 'bolgeler') {
+    showPage('bolge', false);
+  } else if (rawHash === 'istatistik' || rawHash === 'istatistikler') {
+    showPage('istatistik', false);
+  } else if (rawHash === 'pin' || rawHash === 'ekle' || rawHash === 'veriekle') {
+    showPage('pin', false);
+  } else if (!rawHash || rawHash === 'harita') {
+    showPage('harita', false);
+  }
+}
+window.addEventListener('hashchange', handleHashRoute);
 
 // mapLoadingTimeout is declared globally
 function showMapLoading() {
@@ -6502,6 +6554,7 @@ async function modLogout() {
   document.getElementById('headerMaintenanceToggle').style.display='none'; 
   pinMarkerLayers.forEach(l=>maps.main?.removeLayer(l)); pinMarkerLayers=[]; 
   showToast('Çıkış yapıldı');
+  showPage('harita');
 }
 function switchModTab(tab) {
   // Geriye dönük uyumluluk takma adları:
@@ -7965,10 +8018,18 @@ async function checkPublicMaintenance() {
 }
 
 checkSession(); checkPublicMaintenance(); loadSubmissionPauseState();
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => initMainMap());
-} else {
+function startupApp() {
   initMainMap();
+  const mapSearch = document.getElementById('mapSearchInput');
+  if (mapSearch && mapSearch.value && mapSearch.value.includes('@')) {
+    mapSearch.value = '';
+  }
+  handleHashRoute();
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startupApp);
+} else {
+  startupApp();
 }
 loadIssListAndRenderChips();
 
