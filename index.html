@@ -172,18 +172,28 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
 
 /* ===== NAV ===== */
-nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:var(--nav-h); background:rgba(7,11,15,0.96); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); display:flex;align-items:center;padding:0 16px;gap:0; }
-.logo { display:flex;align-items:center;gap:10px; margin-right:24px;cursor:pointer; text-decoration:none; flex-shrink:0; }
-.logo-icon { width:32px;height:32px;border-radius:8px; display:flex;align-items:center;justify-content:center; box-shadow:0 0 16px var(--accent-glow); flex-shrink:0; overflow:hidden; }
-.logo-text { font-family:var(--font-mono);font-size:13px;font-weight:700; color:var(--text);letter-spacing:-0.3px; }
+nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:var(--nav-h); background:rgba(7,11,15,0.96); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); display:flex;align-items:center;padding:0 12px;gap:0; }
+.logo { display:flex;align-items:center;gap:8px; margin-right:12px;cursor:pointer; text-decoration:none; flex-shrink:0; }
+.logo-icon { width:30px;height:30px;border-radius:8px; display:flex;align-items:center;justify-content:center; box-shadow:0 0 16px var(--accent-glow); flex-shrink:0; overflow:hidden; }
+.logo-text { font-family:var(--font-mono);font-size:12.5px;font-weight:700; color:var(--text);letter-spacing:-0.3px; }
 .logo-text span{color:var(--accent);}
-.nav-tabs{display:flex;gap:2px;}
-.nav-tab { padding:7px 14px;border-radius:6px; cursor:pointer;font-size:12px;font-weight:600;font-family:var(--font-body); color:var(--text3);transition:all .2s;border:none;background:none; white-space:nowrap; }
+.nav-tabs{display:flex;gap:2px;align-items:center;}
+.nav-tab { padding:6px 9px;border-radius:6px; cursor:pointer;font-size:11.5px;font-weight:600;font-family:var(--font-body); color:var(--text3);transition:all .2s;border:none;background:none; white-space:nowrap; }
 .nav-tab:hover{color:var(--text2);background:var(--surface2);}
 .nav-tab.active{color:var(--accent);background:var(--accent-dim);}
 .nav-tab.mod-tab{color:var(--warn);} .nav-tab.mod-tab.active{color:var(--warn);background:rgba(245,158,11,.1);}
-.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px; flex-shrink:0;}
-.nav-badge { font-size:10px;font-family:var(--font-mono); padding:2px 8px;border-radius:20px; background:var(--accent-dim);border:1px solid rgba(0,212,255,.3); color:var(--accent);display:none; }
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:6px; flex-shrink:0;}
+.nav-badge { font-size:10px;font-family:var(--font-mono); padding:2px 7px;border-radius:20px; background:var(--accent-dim);border:1px solid rgba(0,212,255,.3); color:var(--accent);display:none; }
+@media(max-width:1250px) and (min-width:769px) {
+  nav { padding:0 8px; }
+  .logo { margin-right:8px; }
+  .nav-tab { padding:5px 6px; font-size:11px; }
+  .header-mtoggle-text { display:none; }
+}
+@media(max-width:1050px) and (min-width:769px) {
+  .logo-text { display:none; }
+}
+
 
 /* ===== MAINTENANCE ===== */
 .maintenance-banner { position:fixed;top:var(--nav-h);left:0;right:0;z-index:999; background:rgba(245,158,11,.15);border-bottom:1px solid var(--warn); padding:8px 16px;text-align:center;font-size:11px;color:var(--warn);font-weight:700; display:none; }
@@ -1199,8 +1209,8 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
     <button class="nav-tab active" onclick="showPage('harita')">🗺 Harita</button>
     <button class="nav-tab" onclick="showPage('bolge')">🌍 Bölgeler</button>
     <button class="nav-tab" onclick="showPage('istatistik')">📊 İstatistikler</button>
-    <a href="/hiz-atlasi.html" class="nav-tab" style="text-decoration:none;display:inline-flex;align-items:center;">📡 Speedtest Verileri</a>
-    <a href="/rehber.html" class="nav-tab" style="text-decoration:none;display:inline-flex;align-items:center;">📖 Rehber &amp; SSS</a>
+    <a href="/hiz-atlasi.html" class="nav-tab" style="text-decoration:none;display:inline-flex;align-items:center;">📡 Speedtest</a>
+    <a href="/rehber.html" class="nav-tab" style="text-decoration:none;display:inline-flex;align-items:center;">📖 Rehber</a>
     <button class="nav-tab mod-tab" id="navModBtn" onclick="showPage('mod')">🔧 Moderatör</button>
   </div>
   <div class="nav-right">
@@ -1220,7 +1230,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
         </div>
         <div class="settings-item-hint">Açıkken hız/memnuniyet renklerine ek şekil işaretleri (◆■▲●▼) eklenir.</div>
         <a href="/hiz-atlasi.html" class="settings-item" style="text-decoration:none;cursor:pointer;">
-          <span class="settings-item-label">📡 Speedtest Verileri (Dünya &amp; TR)</span>
+          <span class="settings-item-label">📡 Speedtest (Dünya &amp; TR)</span>
           <span style="color:var(--text3);font-size:11px;">↗</span>
         </a>
         <a href="/rehber.html" class="settings-item" style="text-decoration:none;cursor:pointer;">
@@ -1237,16 +1247,16 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
         </div>
       </div>
     </div>
-    <label class="maintenance-toggle" id="headerMaintenanceToggle" style="display:none; margin-right: 15px; padding: 4px 10px; height: 32px;">
-      <div class="toggle-switch">
+    <label class="maintenance-toggle" id="headerMaintenanceToggle" style="display:none; padding: 4px 8px; height: 30px;">
+      <div class="toggle-switch" style="width:32px;height:18px;">
         <input type="checkbox" id="headerMaintenanceCheck" onchange="toggleMaintenanceMode(this.checked)">
         <span class="toggle-slider"></span>
       </div>
-      <div class="header-mtoggle-text" style="font-size:10px;font-weight:700;color:var(--warn);margin-left:6px;white-space:nowrap;">BAKIM MODU</div>
+      <div class="header-mtoggle-text" style="font-size:10px;font-weight:700;color:var(--warn);margin-left:5px;white-space:nowrap;">BAKIM MODU</div>
     </label>
     <span class="nav-badge" id="modBadge">MOD</span>
-    <button class="btn-ghost" id="navModLogoutBtn" style="display:none; border-color:var(--danger); color:var(--danger); margin-right:8px;" onclick="modLogout()">Çıkış Yap</button>
-    <button class="btn-ghost" onclick="showPage('pin')">+ Veri Ekle</button>
+    <button class="btn-ghost" id="navModLogoutBtn" style="display:none; border-color:var(--danger); color:var(--danger); padding:5px 9px; font-size:11px;" onclick="modLogout()">Çıkış</button>
+    <button class="btn-ghost" onclick="showPage('pin')" style="padding:6px 12px; font-size:11.5px; white-space:nowrap;">+ Veri Ekle</button>
   </div>
 </nav>
 
