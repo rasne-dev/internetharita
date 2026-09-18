@@ -1199,6 +1199,8 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
     <button class="nav-tab active" onclick="showPage('harita')">🗺 Harita</button>
     <button class="nav-tab" onclick="showPage('bolge')">🌍 Bölgeler</button>
     <button class="nav-tab" onclick="showPage('istatistik')">📊 İstatistikler</button>
+    <a href="/hiz-atlasi.html" class="nav-tab" style="text-decoration:none;display:inline-flex;align-items:center;">🌐 Hız Sıralaması</a>
+    <a href="/rehber.html" class="nav-tab" style="text-decoration:none;display:inline-flex;align-items:center;">📖 Rehber &amp; SSS</a>
     <button class="nav-tab mod-tab" id="navModBtn" onclick="showPage('mod')">🔧 Moderatör</button>
   </div>
   <div class="nav-right">
@@ -1217,6 +1219,14 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
           </label>
         </div>
         <div class="settings-item-hint">Açıkken hız/memnuniyet renklerine ek şekil işaretleri (◆■▲●▼) eklenir.</div>
+        <a href="/hiz-atlasi.html" class="settings-item" style="text-decoration:none;cursor:pointer;">
+          <span class="settings-item-label">🌐 Dünya &amp; TR Hız Sıralaması</span>
+          <span style="color:var(--text3);font-size:11px;">↗</span>
+        </a>
+        <a href="/rehber.html" class="settings-item" style="text-decoration:none;cursor:pointer;">
+          <span class="settings-item-label">📖 Altyapı Rehberi &amp; SSS</span>
+          <span style="color:var(--text3);font-size:11px;">↗</span>
+        </a>
         <div class="settings-item" onclick="openKvkkModal(); document.getElementById('settingsDropdown').classList.remove('open');" style="cursor:pointer;">
           <span class="settings-item-label">🔒 Gizlilik &amp; Çerez Politikası</span>
           <span style="color:var(--text3);font-size:11px;">📄</span>
@@ -5257,9 +5267,11 @@ function renderOperatorExperienceReport() {
   const issStats = {};
   Object.entries(issUserMap).forEach(([iss, usersMap]) => {
     const distinctUsersCount = usersMap.size;
+    const totalPinsForIss = (cleanPinsData || []).filter(p => canonicalIssName(p.iss) === iss).length;
     const stat = {
       iss,
       total: distinctUsersCount,
+      totalPins: totalPinsForIss,
       isQualified: distinctUsersCount >= 3, // EN AZ 3 FARKLI KULLANICI / ADRES
       noDrop: 0,
       eveningDrop: 0,
@@ -5292,10 +5304,33 @@ function renderOperatorExperienceReport() {
     return;
   }
 
-  // Dereceye girecek operatörler: Öncelikle en az 3 adresli operatörler; eğer hiçbiri 3'e ulaşmadıysa mevcut bildirimler ön izleme olarak gösterilir
+  // BAYESIAN DENGELEME (Laplace / Bayesian Smoothing):
+  // Az veri girilen operatörlerin 2-3 bildirimle %67, %100 gibi uçuk oranlara fırlamasını önler
+  const totalAllFeedbackUsers = Object.values(issUserMap).reduce((sum, m) => sum + m.size, 0) || 1;
+  let gNoDrop = 0, gDisconnect = 0, gStable = 0, gDrop = 0, gLowPing = 0, gSuppGood = 0, gSuppHard = 0;
+  list.forEach(s => {
+    gNoDrop += s.noDrop; gDisconnect += s.disconnect; gStable += s.stable;
+    gDrop += s.eveningDrop; gLowPing += s.lowPing; gSuppGood += s.supportGood; gSuppHard += s.supportHard;
+  });
+
+  const priorNoDrop = gNoDrop / totalAllFeedbackUsers;
+  const priorDisconnect = gDisconnect / totalAllFeedbackUsers;
+  const priorStable = gStable / totalAllFeedbackUsers;
+  const priorDrop = gDrop / totalAllFeedbackUsers;
+  const priorLowPing = gLowPing / totalAllFeedbackUsers;
+  const priorSuppGood = gSuppGood / totalAllFeedbackUsers;
+  const priorSuppHard = gSuppHard / totalAllFeedbackUsers;
+
+  const BAYES_EXP_M = 3; // Bayesyen güven ağırlığı
+  function bayesExpPct(count, total, prior) {
+    if (total <= 0) return 0;
+    return Math.round(((count + (BAYES_EXP_M * prior)) / (total + BAYES_EXP_M)) * 100);
+  }
+
+  // Dereceye girecek operatörler: Öncelikle en az 3 adresli operatörler
   const qualifiedList = list.filter(x => x.isQualified);
 
-  // Yeterli bağımsız bildirim toplanana kadar cafcaflı ve yanıltıcı ön izleme gösterme (Madde 2 & 3)
+  // Yeterli bağımsız bildirim toplanana kadar cafcaflı ve yanıltıcı ön izleme gösterme
   if (!qualifiedList.length) {
     container.innerHTML = `
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:20px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
@@ -5314,21 +5349,21 @@ function renderOperatorExperienceReport() {
     return;
   }
 
-  // Yeterli veri toplandığında gösterilecek sade ve minimalist karne (Cafcaflı kartlar ve neon çubuklar kaldırıldı)
+  // Bayesian ağırlıklı sıralama
   const sortedList = [...qualifiedList].sort((a, b) => {
-    if (operatorReportSort === 'noDrop') return (b.noDrop / b.total) - (a.noDrop / a.total) || b.total - a.total;
-    if (operatorReportSort === 'stable') return (b.stable / b.total) - (a.stable / a.total) || b.total - a.total;
-    if (operatorReportSort === 'eveningDrop') return (b.eveningDrop / b.total) - (a.eveningDrop / a.total) || b.total - a.total;
-    if (operatorReportSort === 'lowPing') return (b.lowPing / b.total) - (a.lowPing / a.total) || b.total - a.total;
-    if (operatorReportSort === 'supportHard') return (b.supportHard / b.total) - (a.supportHard / a.total) || b.total - a.total;
-    if (operatorReportSort === 'supportGood') return (b.supportGood / b.total) - (a.supportGood / a.total) || b.total - a.total;
-    return b.total - a.total;
+    if (operatorReportSort === 'noDrop') return bayesExpPct(b.noDrop, b.total, priorNoDrop) - bayesExpPct(a.noDrop, a.total, priorNoDrop) || b.totalPins - a.totalPins;
+    if (operatorReportSort === 'stable') return bayesExpPct(b.stable, b.total, priorStable) - bayesExpPct(a.stable, a.total, priorStable) || b.totalPins - a.totalPins;
+    if (operatorReportSort === 'eveningDrop') return bayesExpPct(b.eveningDrop, b.total, priorDrop) - bayesExpPct(a.eveningDrop, a.total, priorDrop) || b.totalPins - a.totalPins;
+    if (operatorReportSort === 'lowPing') return bayesExpPct(b.lowPing, b.total, priorLowPing) - bayesExpPct(a.lowPing, a.total, priorLowPing) || b.totalPins - a.totalPins;
+    if (operatorReportSort === 'supportHard') return bayesExpPct(b.supportHard, b.total, priorSuppHard) - bayesExpPct(a.supportHard, a.total, priorSuppHard) || b.totalPins - a.totalPins;
+    if (operatorReportSort === 'supportGood') return bayesExpPct(b.supportGood, b.total, priorSuppGood) - bayesExpPct(a.supportGood, a.total, priorSuppGood) || b.totalPins - a.totalPins;
+    return b.totalPins - a.totalPins || b.total - a.total;
   });
 
   const sortBar = `
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
       <div style="font-size:11px;color:var(--text3);font-weight:600;">
-        Doğrulanmış Operatör Deneyimleri (En az 3 bağımsız adres):
+        Doğrulanmış Operatör Deneyimleri (Bayesian Dengelemeli):
       </div>
       <div style="display:flex;align-items:center;gap:4px;overflow-x:auto;max-width:100%;padding-bottom:2px;">
         <button type="button" class="sort-btn ${operatorReportSort === 'total' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('total')">📊 Tümü</button>
@@ -5352,23 +5387,23 @@ function renderOperatorExperienceReport() {
 
   const tableRows = sortedList.map(item => {
     const color = ic(item.iss);
-    const noDropPct = Math.round((item.noDrop / item.total) * 100);
-    const disconnectPct = Math.round((item.disconnect / item.total) * 100);
-    const stablePct = Math.round((item.stable / item.total) * 100);
-    const dropPct = Math.round((item.eveningDrop / item.total) * 100);
-    const pingPct = Math.round((item.lowPing / item.total) * 100);
-    const supportGoodPct = Math.round((item.supportGood / item.total) * 100);
-    const supportHardPct = Math.round((item.supportHard / item.total) * 100);
+    const noDropPct = bayesExpPct(item.noDrop, item.total, priorNoDrop);
+    const disconnectPct = bayesExpPct(item.disconnect, item.total, priorDisconnect);
+    const stablePct = bayesExpPct(item.stable, item.total, priorStable);
+    const dropPct = bayesExpPct(item.eveningDrop, item.total, priorDrop);
+    const pingPct = bayesExpPct(item.lowPing, item.total, priorLowPing);
+    const supportGoodPct = bayesExpPct(item.supportGood, item.total, priorSuppGood);
+    const supportHardPct = bayesExpPct(item.supportHard, item.total, priorSuppHard);
 
-    const qualityBadge = noDropPct >= 50
+    const qualityBadge = noDropPct >= 40
       ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;background:rgba(34,197,94,0.12);color:var(--success);font-size:10px;font-weight:600;">🟢 %${noDropPct} Kesintisiz</span>`
       : (disconnectPct > 0 ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;background:rgba(245,158,11,0.12);color:var(--warn);font-size:10px;font-weight:600;">⚠️ %${disconnectPct} Kopma</span>` : `<span style="color:var(--text3);font-size:10px;">—</span>`);
 
-    const speedBadge = stablePct >= 50
+    const speedBadge = stablePct >= 40
       ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;background:rgba(0,212,255,0.12);color:var(--accent);font-size:10px;font-weight:600;">⚡ %${stablePct} Stabil</span>`
       : (dropPct > 0 ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;background:rgba(245,158,11,0.12);color:var(--warn);font-size:10px;font-weight:600;">📉 %${dropPct} Akşam Düşüşü</span>` : (pingPct > 0 ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;background:rgba(167,139,250,0.12);color:#a78bfa;font-size:10px;font-weight:600;">🎮 %${pingPct} Düşük Ping</span>` : `<span style="color:var(--text3);font-size:10px;">—</span>`));
 
-    const supportBadge = supportGoodPct >= 50
+    const supportBadge = supportGoodPct >= 40
       ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;background:rgba(56,189,248,0.12);color:#38bdf8;font-size:10px;font-weight:600;">📞 %${supportGoodPct} İlgili</span>`
       : (supportHardPct > 0 ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;background:rgba(239,68,68,0.12);color:var(--danger);font-size:10px;font-weight:600;">☎️ %${supportHardPct} Ulaşım Zor</span>` : `<span style="color:var(--text3);font-size:10px;">—</span>`);
 
@@ -5381,8 +5416,8 @@ function renderOperatorExperienceReport() {
         <div>${qualityBadge}</div>
         <div>${speedBadge}</div>
         <div>${supportBadge}</div>
-        <div style="text-align:right;font-size:10px;color:var(--success);font-family:var(--font-mono);font-weight:600;">
-          ✓ ${item.total} Adres
+        <div style="text-align:right;font-size:10px;color:var(--success);font-family:var(--font-mono);font-weight:600;" title="${item.total} farklı adreste deneyim etiketi, toplam ${item.totalPins} doğrulanmış ölçüm verisi">
+          ✓ ${item.totalPins} Veri
         </div>
       </div>
     `;
