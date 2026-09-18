@@ -3,27 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.googleadservices.com; connect-src 'self' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com; frame-src 'self' https://googleads.g.doubleclick.net https://*.googlesyndication.com https://*.google.com; base-uri 'none'; object-src 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.googleadservices.com; connect-src 'self' data: blob: https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com; frame-src 'self' https://googleads.g.doubleclick.net https://*.googlesyndication.com https://*.google.com; base-uri 'none'; object-src 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 
 <!-- Google AdSense Doğrulama ve Reklam Kodu -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9484247825024770" crossorigin="anonymous"></script>
 
-<title>Dünya ve Türkiye İnternet Hız Sıralaması 2026 — Speedtest Global Index | İnternetHarita</title>
-<meta name="description" content="Dünyanın en hızlı internetine sahip ülkeleri ve Türkiye'nin dünya sıralaması. Speedtest Global Index ve Ookla Açık Veri analizleriyle ülke ve il bazlı genişbant hız kıyaslaması.">
-<meta name="keywords" content="dünya internet hız sıralaması, türkiye internet hızı dünyada kaçıncı, speedtest global index türkiye, en hızlı internet hangi ülkede, türkiye ortalama internet hızı, ookla open data türkiye">
+<title>Speedtest Açık Verileri — Dünya ve Türkiye İnternet Hız Haritası | İnternetHarita</title>
+<meta name="description" content="Speedtest by Ookla açık verileriyle Türkiye internet hız ısı haritası ve dünya ülkeleri sıralaması. 74.687 ölçüm noktasıyla il il ortalama hız dağılımı.">
+<meta name="keywords" content="speedtest türkiye haritası, türkiye internet hız haritası, dünya internet hız sıralaması, ookla open data türkiye, en hızlı iller internet, speedtest global index türkiye">
 <link rel="canonical" href="https://internetharita.com.tr/hiz-atlasi.html">
 
+<!-- Leaflet CSS & JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+<!-- Leaflet.heat kütüphanesi (Canvas GPU ısı haritası) -->
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
 <!-- Open Graph / Sosyal Medya -->
-<meta property="og:title" content="Dünya ve Türkiye İnternet Hız Sıralaması — Speedtest Analizi">
-<meta property="og:description" content="Türkiye dünyada kaçıncı sırada? Dünya ülkelerinin internet hızları ve Türkiye'nin il bazlı hız dağılımı.">
+<meta property="og:title" content="Speedtest Verileri — Türkiye İnternet Hız Haritası & Dünya Sıralaması">
+<meta property="og:description" content="Türkiye'nin 74.687 noktalık Speedtest hız ısı haritası ve dünya ülkeleri sıralaması.">
 <meta property="og:url" content="https://internetharita.com.tr/hiz-atlasi.html">
 <meta property="og:type" content="article">
 <meta property="og:image" content="https://internetharita.com.tr/favicon-512x512.png">
 <meta property="og:locale" content="tr_TR">
 <meta name="twitter:card" content="summary_large_image">
 
-<!-- Yapısal Veri (JSON-LD Dataset & WebPage) -->
+<!-- Yapısal Veri -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -31,8 +37,8 @@
     {
       "@type": "WebPage",
       "@id": "https://internetharita.com.tr/hiz-atlasi.html#webpage",
-      "name": "Dünya ve Türkiye İnternet Hız Sıralaması",
-      "description": "Speedtest by Ookla verileriyle dünya ülkelerinin sabit genişbant hız sıralaması ve Türkiye karşılaştırması.",
+      "name": "Speedtest Açık Verileri — Dünya ve Türkiye İnternet Hız Haritası",
+      "description": "Speedtest by Ookla açık verileriyle Türkiye internet hız ısı haritası ve dünya genişbant sıralaması.",
       "url": "https://internetharita.com.tr/hiz-atlasi.html",
       "inLanguage": "tr-TR",
       "publisher": {
@@ -128,7 +134,7 @@ html.light nav { background: rgba(255,255,255,0.94); }
 
 /* HERO */
 .hero {
-  padding: 50px 20px 36px; text-align: center;
+  padding: 44px 20px 30px; text-align: center;
   background: radial-gradient(circle at 50% 10%, var(--accent-dim) 0%, transparent 65%);
   border-bottom: 1px solid var(--border);
 }
@@ -136,11 +142,11 @@ html.light nav { background: rgba(255,255,255,0.94); }
   display: inline-flex; align-items: center; gap: 6px;
   padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700;
   font-family: var(--font-mono); color: var(--accent); background: var(--accent-dim);
-  border: 1px solid rgba(0,212,255,0.3); margin-bottom: 14px;
+  border: 1px solid rgba(0,212,255,0.3); margin-bottom: 12px;
 }
 .hero h1 {
-  font-size: 30px; font-weight: 800; letter-spacing: -0.8px;
-  max-width: 820px; margin: 0 auto 12px; line-height: 1.25;
+  font-size: 28px; font-weight: 800; letter-spacing: -0.8px;
+  max-width: 820px; margin: 0 auto 10px; line-height: 1.25;
 }
 .hero p {
   color: var(--text2); font-size: 14px; max-width: 640px;
@@ -148,12 +154,12 @@ html.light nav { background: rgba(255,255,255,0.94); }
 }
 
 /* CONTAINER */
-.container { max-width: 1050px; margin: 0 auto; padding: 36px 20px 80px; }
+.container { max-width: 1050px; margin: 0 auto; padding: 32px 20px 80px; }
 
 /* KÜNYE & ŞEFFAFLIK KUTUSU */
 .source-box {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; padding: 18px 22px; margin-bottom: 32px;
+  border-radius: 12px; padding: 16px 20px; margin-bottom: 28px;
   display: flex; align-items: center; justify-content: space-between;
   gap: 16px; flex-wrap: wrap;
 }
@@ -171,46 +177,78 @@ html.light nav { background: rgba(255,255,255,0.94); }
 .turkey-spotlight {
   background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(0,212,255,0.08));
   border: 1.5px solid rgba(239,68,68,0.3); border-radius: 14px;
-  padding: 24px; margin-bottom: 36px; display: grid;
-  grid-template-columns: 1fr 2fr; gap: 24px; align-items: center;
+  padding: 22px; margin-bottom: 32px; display: grid;
+  grid-template-columns: 1fr 2fr; gap: 20px; align-items: center;
 }
 @media(max-width: 768px) { .turkey-spotlight { grid-template-columns: 1fr; } }
 
-.spotlight-left { text-align: center; border-right: 1px solid var(--border); padding-right: 20px; }
-@media(max-width: 768px) { .spotlight-left { border-right: none; border-bottom: 1px solid var(--border); padding-right: 0; padding-bottom: 18px; } }
+.spotlight-left { text-align: center; border-right: 1px solid var(--border); padding-right: 16px; }
+@media(max-width: 768px) { .spotlight-left { border-right: none; border-bottom: 1px solid var(--border); padding-right: 0; padding-bottom: 16px; } }
 
-.spotlight-flag { font-size: 40px; margin-bottom: 6px; }
+.spotlight-flag { font-size: 38px; margin-bottom: 4px; }
 .spotlight-rank {
-  font-family: var(--font-mono); font-size: 38px; font-weight: 900;
+  font-family: var(--font-mono); font-size: 36px; font-weight: 900;
   color: #ef4444; line-height: 1; margin-bottom: 4px;
 }
-.spotlight-label { font-size: 12px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.spotlight-label { font-size: 11px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 
 .spotlight-stats {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; text-align: center;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center;
 }
 @media(max-width: 500px) { .spotlight-stats { grid-template-columns: 1fr; } }
 .sstat-card {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 10px; padding: 14px 10px;
+  border-radius: 10px; padding: 12px 8px;
 }
-.sstat-val { font-family: var(--font-mono); font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 2px; }
+.sstat-val { font-family: var(--font-mono); font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 2px; }
 .sstat-lbl { font-size: 11px; color: var(--text3); }
 
 /* SEKMELER */
 .view-tabs {
   display: flex; gap: 6px; margin-bottom: 20px; border-bottom: 1px solid var(--border);
-  padding-bottom: 10px;
+  padding-bottom: 10px; flex-wrap: wrap;
 }
 .view-tab-btn {
-  padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 700;
+  padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700;
   cursor: pointer; border: 1px solid transparent; background: none; color: var(--text2);
-  transition: all .2s; font-family: var(--font-body);
+  transition: all .2s; font-family: var(--font-body); display: inline-flex; align-items: center; gap: 6px;
 }
 .view-tab-btn:hover { color: var(--text); background: var(--surface2); }
 .view-tab-btn.active { background: var(--accent-dim); border-color: rgba(0,212,255,0.3); color: var(--accent); }
 
-/* ARAMA VE FİLTRE */
+/* HARİTA KONTEYNERİ */
+.map-wrap {
+  position: relative; width: 100%; height: 580px;
+  border-radius: 14px; border: 1px solid var(--border);
+  overflow: hidden; background: var(--surface);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35); margin-bottom: 24px;
+}
+#heatMap { width: 100%; height: 100%; z-index: 1; }
+
+.map-floating-legend {
+  position: absolute; bottom: 20px; right: 20px; z-index: 1000;
+  background: rgba(13, 19, 24, 0.9); backdrop-filter: blur(12px);
+  border: 1px solid var(--border2); border-radius: 10px;
+  padding: 12px 14px; font-size: 11px; color: var(--text);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.legend-item:last-child { margin-bottom: 0; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+.map-loading-overlay {
+  position: absolute; inset: 0; z-index: 1500;
+  background: rgba(7, 11, 15, 0.85); backdrop-filter: blur(6px);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+}
+.spinner {
+  width: 36px; height: 36px; border: 3px solid rgba(0,212,255,0.2);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ARAMA VE TABLOLAR */
 .filter-bar {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   margin-bottom: 18px; flex-wrap: wrap;
@@ -225,7 +263,6 @@ html.light nav { background: rgba(255,255,255,0.94); }
 .search-input-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
 .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); }
 
-/* TABLO */
 .table-container {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 12px; overflow-x: auto;
@@ -258,7 +295,7 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
 
 /* REKLAM */
 .ad-container {
-  margin: 32px auto; text-align: center; max-width: 728px; min-height: 90px;
+  margin: 28px auto; text-align: center; max-width: 728px; min-height: 90px;
   background: var(--surface); border: 1px dashed var(--border); border-radius: 8px;
   display: flex; align-items: center; justify-content: center; overflow: hidden;
 }
@@ -266,10 +303,10 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
 /* KARŞILAŞTIRMA ARACI */
 .compare-box {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 14px; padding: 24px; margin-top: 40px;
+  border-radius: 14px; padding: 22px; margin-top: 36px;
 }
-.compare-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.compare-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media(max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
 .compare-select {
   width: 100%; padding: 10px 14px; background: var(--surface2);
@@ -278,13 +315,14 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
 }
 .compare-result {
   grid-column: 1 / -1; background: var(--surface2); border-radius: 10px;
-  padding: 16px; text-align: center; font-size: 14px; line-height: 1.6;
+  padding: 14px; text-align: center; font-size: 13px; line-height: 1.6;
 }
 
 @media(max-width: 768px) {
   .hero h1 { font-size: 22px; }
   .nav-links .btn-nav { display: none; }
   .nav-links .btn-nav.active { display: inline-flex; }
+  .map-wrap { height: 420px; }
   th, td { padding: 10px 8px; font-size: 11px; }
   .speed-bar-wrap { display: none; }
 }
@@ -324,9 +362,9 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
 </nav>
 
 <header class="hero">
-  <div class="hero-tag">📊 SPEEDTEST GLOBAL VERİLERİ</div>
-  <h1>Dünya ve Türkiye İnternet Hız Sıralaması</h1>
-  <p>Dünyanın en hızlı genişbant internetine sahip ülkeleri ve Türkiye'nin dünya genelindeki hız karnesi.</p>
+  <div class="hero-tag">📡 SPEEDTEST AÇIK VERİLERİ</div>
+  <h1>Speedtest Açık Verileri — Dünya ve Türkiye Hız Analizi</h1>
+  <p>Ookla Speedtest açık veri setiyle Türkiye genelindeki 74.687 noktanın hız ısı haritası ve dünya genişbant sıralaması.</p>
 </header>
 
 <main class="container">
@@ -336,7 +374,7 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
     <div class="source-info">
       <div class="source-icon">📡</div>
       <div>
-        <div class="source-title">Veri Kaynağı: Speedtest by Ookla™ Global Index &amp; Open Data</div>
+        <div class="source-title">Veri Kaynağı: Speedtest by Ookla™ Global Index &amp; Open Data Initiative</div>
         <div class="source-sub">
           Dünya çapında yapılan yüz milyonlarca tüketici hız testinin bağımsız analizi. Kamu erişimine açık ve tarafsızdır.
         </div>
@@ -372,27 +410,56 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
     </div>
   </div>
 
-  <!-- AdSense Banner -->
-  <div class="ad-container">
-    <ins class="adsbygoogle"
-         style="display:block; width:100%;"
-         data-ad-client="ca-pub-9484247825024770"
-         data-ad-slot="default"
-         data-ad-format="auto"
-         data-full-width-responsive="true"></ins>
-    <script>
-         (adsbygoogle = window.adsbygoogle || []).push({});
-    </script>
-  </div>
-
-  <!-- SEKMELER: DÜNYA LİDERLERİ vs TÜRKİYE İLLERİ -->
+  <!-- SEKMELER -->
   <div class="view-tabs">
-    <button class="view-tab-btn active" id="tabWorldBtn" onclick="switchTab('world')">🌍 Dünya Ülkeleri Sıralaması (Global Leaderboard)</button>
-    <button class="view-tab-btn" id="tabTurkeyBtn" onclick="switchTab('turkey')">🇹🇷 Türkiye İl ve Bölge Hız Dağılımı</button>
+    <button class="view-tab-btn active" id="tabMapBtn" onclick="switchTab('map')">🗺️ Türkiye Hız Isı Haritası (74.000+ Nokta)</button>
+    <button class="view-tab-btn" id="tabWorldBtn" onclick="switchTab('world')">🌍 Dünya Ülkeleri Sıralaması (Global Leaderboard)</button>
+    <button class="view-tab-btn" id="tabTurkeyBtn" onclick="switchTab('turkey')">📋 Türkiye İl ve Bölge Dağılımı</button>
   </div>
 
-  <!-- 1. GÖRÜNÜM: DÜNYA ÜLKELERİ -->
-  <div id="view-world">
+  <!-- 1. GÖRÜNÜM: TÜRKİYE HIZ ISI HARİTASI -->
+  <div id="view-map">
+    <div class="map-wrap">
+      <div id="heatMap"></div>
+
+      <!-- Lejant -->
+      <div class="map-floating-legend">
+        <div style="font-weight:700; font-size:11px; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px;">
+          İndirme Hızı Dağılımı
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#00ffff; box-shadow:0 0 6px #00ffff;"></span>
+          <span>100+ Mbps (Yüksek Hız / Fiber)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#22c55e;"></span>
+          <span>75 - 100 Mbps (Hızlı VDSL/Fiber)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#eab308;"></span>
+          <span>45 - 75 Mbps (Standart Genişbant)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#ef4444;"></span>
+          <span>&lt; 25 Mbps (Düşük Hız / Bakır)</span>
+        </div>
+      </div>
+
+      <!-- Yükleniyor Overlay -->
+      <div class="map-loading-overlay" id="mapLoading">
+        <div class="spinner"></div>
+        <div style="font-size:13px; font-weight:700; color:var(--text);">Speedtest Açık Verileri Yükleniyor...</div>
+        <div style="font-size:11px; color:var(--text3);">Türkiye genelindeki 74.687 parsel haritaya işleniyor</div>
+      </div>
+    </div>
+    
+    <div style="font-size:12px; color:var(--text3); text-align:center; margin-bottom:28px;">
+      💡 <em>İpucu: Haritayı yakınlaştırarak mahallenizin veya sokağınızın ortalama hız yoğunluğunu inceleyebilir, herhangi bir noktaya tıklayarak o bölgenin değerlerini görebilirsiniz.</em>
+    </div>
+  </div>
+
+  <!-- 2. GÖRÜNÜM: DÜNYA ÜLKELERİ -->
+  <div id="view-world" style="display:none;">
     <div class="filter-bar">
       <div class="search-input-wrap">
         <span class="search-icon">🔍</span>
@@ -414,9 +481,7 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
             <th>Gecikme (Ping)</th>
           </tr>
         </thead>
-        <tbody id="worldTableBody">
-          <!-- JS ile doldurulacak -->
-        </tbody>
+        <tbody id="worldTableBody"></tbody>
       </table>
     </div>
 
@@ -428,9 +493,7 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
       <div class="compare-grid">
         <div>
           <label style="font-size:12px; color:var(--text3); display:block; margin-bottom:6px;">Karşılaştırılacak Ülkeyi Seçin:</label>
-          <select id="compareSelect" class="compare-select" onchange="runComparison()">
-            <!-- JS ile doldurulacak -->
-          </select>
+          <select id="compareSelect" class="compare-select" onchange="runComparison()"></select>
         </div>
         <div class="compare-result" id="compareResult">
           Yukarıdan bir ülke seçerek Türkiye ile hız farkını anında analiz edin.
@@ -439,15 +502,15 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
     </div>
   </div>
 
-  <!-- 2. GÖRÜNÜM: TÜRKİYE İL DAĞILIMI -->
+  <!-- 3. GÖRÜNÜM: TÜRKİYE İL DAĞILIMI -->
   <div id="view-turkey" style="display:none;">
     <div class="filter-bar">
       <div class="search-input-wrap">
         <span class="search-icon">🔍</span>
-        <input type="text" id="trSearch" placeholder="İl veya ilçe ara (örn: İstanbul, İzmir, Kadıköy)..." onkeyup="filterTrTable()">
+        <input type="text" id="trSearch" placeholder="İl veya bölge ara (örn: İstanbul, İzmir, Ankara)..." onkeyup="filterTrTable()">
       </div>
       <div style="font-size:12px; color:var(--text3);">
-        Ookla Open Data 74.687 parsel bazlı bölgesel hız analizi
+        74.687 parsel bazlı bölgesel hız analizi
       </div>
     </div>
 
@@ -463,11 +526,22 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
             <th>Durum</th>
           </tr>
         </thead>
-        <tbody id="trTableBody">
-          <!-- JS ile doldurulacak -->
-        </tbody>
+        <tbody id="trTableBody"></tbody>
       </table>
     </div>
+  </div>
+
+  <!-- AdSense Banner -->
+  <div class="ad-container">
+    <ins class="adsbygoogle"
+         style="display:block; width:100%;"
+         data-ad-client="ca-pub-9484247825024770"
+         data-ad-slot="default"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>
+         (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
   </div>
 
 </main>
@@ -477,7 +551,7 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
     <div>&copy; 2026 <strong>İnternetHarita</strong> — Bağımsız Türkiye İnternet Altyapı Haritası ve Hız Atlası.</div>
     <div style="display:flex; gap:16px;">
       <a href="/" style="color:var(--text2); text-decoration:none;">Canlı Harita</a>
-      <a href="/hiz-atlasi.html" style="color:var(--text2); text-decoration:none;">Hız Sıralaması</a>
+      <a href="/hiz-atlasi.html" style="color:var(--text2); text-decoration:none;">Speedtest Verileri</a>
       <a href="/rehber.html" style="color:var(--text2); text-decoration:none;">Altyapı Rehberi &amp; SSS</a>
       <a href="/#kvkk" style="color:var(--text2); text-decoration:none;">Gizlilik &amp; Çerezler</a>
     </div>
@@ -485,7 +559,7 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
 </footer>
 
 <script>
-// DÜNYA ÜLKELERİ LİSTESİ (Speedtest Global Index Resmi Verileri)
+// DÜNYA ÜLKELERİ LİSTESİ
 const worldData = [
   { rank: 1, name: "Singapur", code: "SG", flag: "🇸🇬", dl: 425.5, ul: 310.2, ping: 3 },
   { rank: 2, name: "Birleşik Arap Emirlikleri", code: "AE", flag: "🇦🇪", dl: 384.5, ul: 195.4, ping: 4 },
@@ -521,7 +595,7 @@ const worldData = [
   { rank: 125, name: "Hindistan", code: "IN", flag: "🇮🇳", dl: 62.4, ul: 55.1, ping: 17 }
 ];
 
-// TÜRKİYE İL DAĞILIMI (Ookla Open Data 74.687 Ölçüm Analizi)
+// TÜRKİYE İL DAĞILIMI
 const trData = [
   { rank: 1, name: "İstanbul (Avrupa / Anadolu)", dl: 82.4, ul: 28.6, ping: 14, status: "Ortalama Üstü", color: "var(--success)" },
   { rank: 2, name: "Ankara", dl: 78.1, ul: 26.4, ping: 16, status: "Ortalama Üstü", color: "var(--success)" },
@@ -539,6 +613,100 @@ const trData = [
   { rank: 14, name: "Diyarbakır", dl: 49.8, ul: 14.2, ping: 32, status: "Ortalama Altı", color: "var(--danger)" },
   { rank: 15, name: "Van", dl: 44.5, ul: 12.8, ping: 38, status: "Geliştirilmeli", color: "var(--danger)" }
 ];
+
+let mapInstance = null;
+let heatLayer = null;
+let speedPointsRaw = [];
+
+function initSpeedHeatMap() {
+  if (mapInstance) return;
+
+  const isLight = document.documentElement.classList.contains('light');
+  const tileUrl = isLight 
+    ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+
+  mapInstance = L.map('heatMap', {
+    center: [39.0, 35.2],
+    zoom: 6,
+    minZoom: 5,
+    maxZoom: 15
+  });
+
+  L.tileLayer(tileUrl, {
+    attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(mapInstance);
+
+  // JSON verisini çek
+  fetch('/data/speedtest_tr.json')
+    .then(r => r.json())
+    .then(data => {
+      speedPointsRaw = data;
+      document.getElementById('mapLoading').style.display = 'none';
+
+      // Leaflet.heat için [lat, lng, intensity] formatı
+      // Max hız ~150 Mbps normalize
+      const heatPoints = data.map(p => [p[0], p[1], Math.min(1.0, Math.max(0.1, p[2] / 120))]);
+
+      heatLayer = L.heatLayer(heatPoints, {
+        radius: 14,
+        blur: 18,
+        maxZoom: 12,
+        max: 1.0,
+        gradient: {
+          0.15: '#ef4444', // <25 Mbps
+          0.4:  '#f59e0b', // 25-50 Mbps
+          0.65: '#22c55e', // 50-80 Mbps
+          0.9:  '#00d4ff', // 80-100 Mbps
+          1.0:  '#a855f7'  // 100+ Mbps Fiber
+        }
+      }).addTo(mapInstance);
+
+      // Harita tıklama: En yakın ölçüm noktasını bulup popup aç
+      mapInstance.on('click', function(e) {
+        const clickLat = e.latlng.lat;
+        const clickLng = e.latlng.lng;
+
+        // En yakın noktayı bul (15 km mesafe sınırı)
+        let nearest = null;
+        let minDist = 0.2; // ~15-20km
+
+        for (let i = 0; i < speedPointsRaw.length; i++) {
+          const p = speedPointsRaw[i];
+          const d = Math.hypot(p[0] - clickLat, p[1] - clickLng);
+          if (d < minDist) {
+            minDist = d;
+            nearest = p;
+          }
+        }
+
+        if (nearest) {
+          L.popup()
+            .setLatLng([nearest[0], nearest[1]])
+            .setContent(`
+              <div style="font-family:'DM Sans',sans-serif; min-width:180px; padding:4px;">
+                <div style="font-weight:700; font-size:12px; margin-bottom:6px; color:#070b0f;">📡 Speedtest Bölgesel Ölçümü</div>
+                <div style="font-size:11px; line-height:1.6; color:#333;">
+                  <div>⚡ <strong>İndirme:</strong> ${nearest[2]} Mbps</div>
+                  <div>🚀 <strong>Yükleme:</strong> ${nearest[3]} Mbps</div>
+                  <div>⏱️ <strong>Gecikme:</strong> ${nearest[4]} ms</div>
+                </div>
+                <div style="margin-top:6px; font-size:9px; color:#666; border-top:1px solid #ddd; padding-top:4px;">
+                  Ookla Açık Veri Parseli (~600m alan)
+                </div>
+              </div>
+            `)
+            .openOn(mapInstance);
+        }
+      });
+    })
+    .catch(err => {
+      console.error(err);
+      document.getElementById('mapLoading').innerHTML = '<div style="color:var(--danger); font-size:12px;">Veri yüklenirken hata oluştu.</div>';
+    });
+}
 
 function renderWorldTable(data) {
   const tbody = document.getElementById('worldTableBody');
@@ -609,25 +777,37 @@ function filterTrTable() {
 }
 
 function switchTab(tab) {
+  const mapView = document.getElementById('view-map');
   const worldView = document.getElementById('view-world');
   const trView = document.getElementById('view-turkey');
+
+  const tabM = document.getElementById('tabMapBtn');
   const tabW = document.getElementById('tabWorldBtn');
   const tabT = document.getElementById('tabTurkeyBtn');
 
-  if (tab === 'world') {
+  mapView.style.display = 'none';
+  worldView.style.display = 'none';
+  trView.style.display = 'none';
+
+  tabM.classList.remove('active');
+  tabW.classList.remove('active');
+  tabT.classList.remove('active');
+
+  if (tab === 'map') {
+    mapView.style.display = 'block';
+    tabM.classList.add('active');
+    if (mapInstance) {
+      setTimeout(() => { mapInstance.invalidateSize(); }, 150);
+    }
+  } else if (tab === 'world') {
     worldView.style.display = 'block';
-    trView.style.display = 'none';
     tabW.classList.add('active');
-    tabT.classList.remove('active');
   } else {
-    worldView.style.display = 'none';
     trView.style.display = 'block';
     tabT.classList.add('active');
-    tabW.classList.remove('active');
   }
 }
 
-// KARŞILAŞTIRMA ARACI INIT
 function initCompare() {
   const sel = document.getElementById('compareSelect');
   const options = worldData.filter(x => !x.isCurrent).map(x => `<option value="${x.rank}">${x.flag} ${x.name} (${x.dl} Mbps)</option>`).join('');
@@ -662,7 +842,6 @@ function runComparison() {
   }
 }
 
-// TEMA
 function toggleTheme() {
   var isLight = document.documentElement.classList.toggle('light');
   localStorage.setItem('ih_theme', isLight ? 'light' : 'dark');
@@ -681,6 +860,7 @@ function toggleTheme() {
   renderWorldTable(worldData);
   renderTrTable(trData);
   initCompare();
+  initSpeedHeatMap();
 })();
 </script>
 
