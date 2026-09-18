@@ -295,9 +295,9 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
 
 /* REKLAM */
 .ad-container {
-  margin: 28px auto; text-align: center; max-width: 728px; min-height: 90px;
-  background: var(--surface); border: 1px dashed var(--border); border-radius: 8px;
-  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  margin: 16px auto; text-align: center; max-width: 728px; min-height: 0;
+  background: transparent; border: none;
+  display: block; overflow: hidden;
 }
 
 /* KARŞILAŞTIRMA ARACI */
@@ -320,8 +320,7 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
 
 @media(max-width: 768px) {
   .hero h1 { font-size: 22px; }
-  .nav-links .btn-nav { display: none; }
-  .nav-links .btn-nav.active { display: inline-flex; }
+  .nav-links { overflow-x: auto; max-width: calc(100vw - 140px); }
   .map-wrap { height: 420px; }
   th, td { padding: 10px 8px; font-size: 11px; }
   .speed-bar-wrap { display: none; }
@@ -352,10 +351,12 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
     </a>
 
     <div class="nav-links">
-      <a href="/" class="btn-nav">🗺 Canlı Harita</a>
+      <a href="/" class="btn-nav">🗺 Harita</a>
+      <a href="/#bolgeler" class="btn-nav">🌍 Bölgeler</a>
+      <a href="/#istatistikler" class="btn-nav">📊 İstatistikler</a>
       <a href="/hiz-atlasi.html" class="btn-nav active">📡 Speedtest Verileri</a>
       <a href="/rehber.html" class="btn-nav">📖 Rehber &amp; SSS</a>
-      <a href="/?page=pin" class="btn-cta">+ Veri Ekle</a>
+      <a href="/#pin" class="btn-cta">+ Veri Ekle</a>
       <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="Tema Değiştir">☀️</button>
     </div>
   </div>
