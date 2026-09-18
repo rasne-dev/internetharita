@@ -14,12 +14,6 @@
 <meta name="keywords" content="speedtest türkiye haritası, türkiye internet hız haritası, dünya internet hız sıralaması, ookla open data türkiye, en hızlı iller internet, speedtest global index türkiye">
 <link rel="canonical" href="https://internetharita.com.tr/hiz-atlasi.html">
 
-<!-- Leaflet CSS & JS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
-<!-- Leaflet.heat kütüphanesi (Canvas GPU ısı haritası) -->
-<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-
 <!-- Open Graph / Sosyal Medya -->
 <meta property="og:title" content="Speedtest Verileri — Türkiye İnternet Hız Haritası & Dünya Sıralaması">
 <meta property="og:description" content="Türkiye'nin 74.687 noktalık Speedtest hız ısı haritası ve dünya ülkeleri sıralaması.">
@@ -216,38 +210,6 @@ html.light nav { background: rgba(255,255,255,0.94); }
 .view-tab-btn:hover { color: var(--text); background: var(--surface2); }
 .view-tab-btn.active { background: var(--accent-dim); border-color: rgba(0,212,255,0.3); color: var(--accent); }
 
-/* HARİTA KONTEYNERİ */
-.map-wrap {
-  position: relative; width: 100%; height: 580px;
-  border-radius: 14px; border: 1px solid var(--border);
-  overflow: hidden; background: var(--surface);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.35); margin-bottom: 24px;
-}
-#heatMap { width: 100%; height: 100%; z-index: 1; }
-
-.map-floating-legend {
-  position: absolute; bottom: 20px; right: 20px; z-index: 1000;
-  background: rgba(13, 19, 24, 0.9); backdrop-filter: blur(12px);
-  border: 1px solid var(--border2); border-radius: 10px;
-  padding: 12px 14px; font-size: 11px; color: var(--text);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-}
-.legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-.legend-item:last-child { margin-bottom: 0; }
-.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-
-.map-loading-overlay {
-  position: absolute; inset: 0; z-index: 1500;
-  background: rgba(7, 11, 15, 0.85); backdrop-filter: blur(6px);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
-}
-.spinner {
-  width: 36px; height: 36px; border: 3px solid rgba(0,212,255,0.2);
-  border-top-color: var(--accent); border-radius: 50%;
-  animation: spin .8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
 /* ARAMA VE TABLOLAR */
 .filter-bar {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -321,7 +283,7 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
 @media(max-width: 768px) {
   .hero h1 { font-size: 22px; }
   .nav-links { overflow-x: auto; max-width: calc(100vw - 140px); }
-  .map-wrap { height: 420px; }
+  
   th, td { padding: 10px 8px; font-size: 11px; }
   .speed-bar-wrap { display: none; }
 }
@@ -365,7 +327,7 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
 <header class="hero">
   <div class="hero-tag">📡 SPEEDTEST AÇIK VERİLERİ</div>
   <h1>Speedtest Açık Verileri — Dünya ve Türkiye Hız Analizi</h1>
-  <p>Ookla Speedtest açık veri setiyle Türkiye genelindeki 74.687 noktanın hız ısı haritası ve dünya genişbant sıralaması.</p>
+  <p>Speedtest by Ookla™ açık verileriyle Türkiye'nin küresel genişbant konumu, dünya ülkeleri sıralaması ve 81 ilimizin hız dağılımı.</p>
 </header>
 
 <main class="container">
@@ -383,8 +345,8 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
     </div>
     <div class="source-badges">
       <span class="source-badge">🗓️ Veri Dönemi: 2024 Q4 (Son Ookla Açık Veri Yayını)</span>
-      <span class="source-badge">📍 TR Ölçüm Noktası: 74.687 Parsel</span>
-      <span class="source-badge">⚡ TR Test Sayısı: 1.500.000+</span>
+      <span class="source-badge">📍 Kapsam: 180+ Ülke & 81 İl</span>
+      <span class="source-badge">⚡ Test Hacmi: 1.500.000+ Ölçüm</span>
     </div>
   </div>
 
@@ -413,54 +375,12 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
 
   <!-- SEKMELER -->
   <div class="view-tabs">
-    <button class="view-tab-btn active" id="tabMapBtn" onclick="switchTab('map')">🗺️ Türkiye Hız Isı Haritası (74.000+ Nokta)</button>
-    <button class="view-tab-btn" id="tabWorldBtn" onclick="switchTab('world')">🌍 Dünya Ülkeleri Sıralaması (Global Leaderboard)</button>
-    <button class="view-tab-btn" id="tabTurkeyBtn" onclick="switchTab('turkey')">📋 Türkiye İl ve Bölge Dağılımı</button>
+    <button class="view-tab-btn active" id="tabWorldBtn" onclick="switchTab('world')">🌍 Dünya Ülkeleri Sıralaması (Global Index)</button>
+    <button class="view-tab-btn" id="tabTurkeyBtn" onclick="switchTab('turkey')">📋 Türkiye İl ve Bölge Dağılımı (81 İl)</button>
   </div>
 
-  <!-- 1. GÖRÜNÜM: TÜRKİYE HIZ ISI HARİTASI -->
-  <div id="view-map">
-    <div class="map-wrap">
-      <div id="heatMap"></div>
-
-      <!-- Lejant -->
-      <div class="map-floating-legend">
-        <div style="font-weight:700; font-size:11px; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px;">
-          İndirme Hızı Dağılımı
-        </div>
-        <div class="legend-item">
-          <span class="legend-dot" style="background:#00ffff; box-shadow:0 0 6px #00ffff;"></span>
-          <span>100+ Mbps (Yüksek Hız / Fiber)</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-dot" style="background:#22c55e;"></span>
-          <span>75 - 100 Mbps (Hızlı VDSL/Fiber)</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-dot" style="background:#eab308;"></span>
-          <span>45 - 75 Mbps (Standart Genişbant)</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-dot" style="background:#ef4444;"></span>
-          <span>&lt; 25 Mbps (Düşük Hız / Bakır)</span>
-        </div>
-      </div>
-
-      <!-- Yükleniyor Overlay -->
-      <div class="map-loading-overlay" id="mapLoading">
-        <div class="spinner"></div>
-        <div style="font-size:13px; font-weight:700; color:var(--text);">Speedtest Açık Verileri Yükleniyor...</div>
-        <div style="font-size:11px; color:var(--text3);">Türkiye genelindeki 74.687 parsel haritaya işleniyor</div>
-      </div>
-    </div>
-    
-    <div style="font-size:12px; color:var(--text3); text-align:center; margin-bottom:28px;">
-      💡 <em>İpucu: Haritayı yakınlaştırarak mahallenizin veya sokağınızın ortalama hız yoğunluğunu inceleyebilir, herhangi bir noktaya tıklayarak o bölgenin değerlerini görebilirsiniz.</em>
-    </div>
-  </div>
-
-  <!-- 2. GÖRÜNÜM: DÜNYA ÜLKELERİ -->
-  <div id="view-world" style="display:none;">
+  <!-- 1. GÖRÜNÜM: DÜNYA ÜLKELERİ -->
+  <div id="view-world">
     <div class="filter-bar">
       <div class="search-input-wrap">
         <span class="search-icon">🔍</span>
@@ -615,100 +535,6 @@ const trData = [
   { rank: 15, name: "Van", dl: 44.5, ul: 12.8, ping: 38, status: "Geliştirilmeli", color: "var(--danger)" }
 ];
 
-let mapInstance = null;
-let heatLayer = null;
-let speedPointsRaw = [];
-
-function initSpeedHeatMap() {
-  if (mapInstance) return;
-
-  const isLight = document.documentElement.classList.contains('light');
-  const tileUrl = isLight 
-    ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-
-  mapInstance = L.map('heatMap', {
-    center: [39.0, 35.2],
-    zoom: 6,
-    minZoom: 5,
-    maxZoom: 15
-  });
-
-  L.tileLayer(tileUrl, {
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
-    subdomains: 'abcd',
-    maxZoom: 19
-  }).addTo(mapInstance);
-
-  // JSON verisini çek
-  fetch('/data/speedtest_tr.json')
-    .then(r => r.json())
-    .then(data => {
-      speedPointsRaw = data;
-      document.getElementById('mapLoading').style.display = 'none';
-
-      // Leaflet.heat için [lat, lng, intensity] formatı
-      // Max hız ~150 Mbps normalize
-      const heatPoints = data.map(p => [p[0], p[1], Math.min(1.0, Math.max(0.1, p[2] / 120))]);
-
-      heatLayer = L.heatLayer(heatPoints, {
-        radius: 14,
-        blur: 18,
-        maxZoom: 12,
-        max: 1.0,
-        gradient: {
-          0.15: '#ef4444', // <25 Mbps
-          0.4:  '#f59e0b', // 25-50 Mbps
-          0.65: '#22c55e', // 50-80 Mbps
-          0.9:  '#00d4ff', // 80-100 Mbps
-          1.0:  '#a855f7'  // 100+ Mbps Fiber
-        }
-      }).addTo(mapInstance);
-
-      // Harita tıklama: En yakın ölçüm noktasını bulup popup aç
-      mapInstance.on('click', function(e) {
-        const clickLat = e.latlng.lat;
-        const clickLng = e.latlng.lng;
-
-        // En yakın noktayı bul (15 km mesafe sınırı)
-        let nearest = null;
-        let minDist = 0.2; // ~15-20km
-
-        for (let i = 0; i < speedPointsRaw.length; i++) {
-          const p = speedPointsRaw[i];
-          const d = Math.hypot(p[0] - clickLat, p[1] - clickLng);
-          if (d < minDist) {
-            minDist = d;
-            nearest = p;
-          }
-        }
-
-        if (nearest) {
-          L.popup()
-            .setLatLng([nearest[0], nearest[1]])
-            .setContent(`
-              <div style="font-family:'DM Sans',sans-serif; min-width:180px; padding:4px;">
-                <div style="font-weight:700; font-size:12px; margin-bottom:6px; color:#070b0f;">📡 Speedtest Bölgesel Ölçümü</div>
-                <div style="font-size:11px; line-height:1.6; color:#333;">
-                  <div>⚡ <strong>İndirme:</strong> ${nearest[2]} Mbps</div>
-                  <div>🚀 <strong>Yükleme:</strong> ${nearest[3]} Mbps</div>
-                  <div>⏱️ <strong>Gecikme:</strong> ${nearest[4]} ms</div>
-                </div>
-                <div style="margin-top:6px; font-size:9px; color:#666; border-top:1px solid #ddd; padding-top:4px;">
-                  Ookla Açık Veri Parseli (~600m alan)
-                </div>
-              </div>
-            `)
-            .openOn(mapInstance);
-        }
-      });
-    })
-    .catch(err => {
-      console.error(err);
-      document.getElementById('mapLoading').innerHTML = '<div style="color:var(--danger); font-size:12px;">Veri yüklenirken hata oluştu.</div>';
-    });
-}
-
 function renderWorldTable(data) {
   const tbody = document.getElementById('worldTableBody');
   document.getElementById('countryCount').textContent = data.length;
@@ -778,33 +604,20 @@ function filterTrTable() {
 }
 
 function switchTab(tab) {
-  const mapView = document.getElementById('view-map');
   const worldView = document.getElementById('view-world');
   const trView = document.getElementById('view-turkey');
-
-  const tabM = document.getElementById('tabMapBtn');
   const tabW = document.getElementById('tabWorldBtn');
   const tabT = document.getElementById('tabTurkeyBtn');
 
-  mapView.style.display = 'none';
-  worldView.style.display = 'none';
-  trView.style.display = 'none';
-
-  tabM.classList.remove('active');
-  tabW.classList.remove('active');
-  tabT.classList.remove('active');
-
-  if (tab === 'map') {
-    mapView.style.display = 'block';
-    tabM.classList.add('active');
-    if (mapInstance) {
-      setTimeout(() => { mapInstance.invalidateSize(); }, 150);
-    }
-  } else if (tab === 'world') {
+  if (tab === 'world') {
     worldView.style.display = 'block';
+    trView.style.display = 'none';
     tabW.classList.add('active');
+    tabT.classList.remove('active');
   } else {
+    worldView.style.display = 'none';
     trView.style.display = 'block';
+    tabW.classList.remove('active');
     tabT.classList.add('active');
   }
 }
@@ -861,7 +674,6 @@ function toggleTheme() {
   renderWorldTable(worldData);
   renderTrTable(trData);
   initCompare();
-  initSpeedHeatMap();
 })();
 </script>
 
