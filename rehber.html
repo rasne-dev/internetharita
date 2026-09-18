@@ -332,16 +332,15 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 .cta-banner p { font-size: 14px; color: var(--text2); max-width: 500px; margin: 0 auto 20px; }
 
 .ad-container {
-  margin: 32px auto; text-align: center; max-width: 728px; min-height: 90px;
-  background: var(--surface); border: 1px dashed var(--border); border-radius: 8px;
-  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  margin: 16px auto; text-align: center; max-width: 728px;
+  min-height: 0; background: transparent; border: none;
+  display: block; overflow: hidden;
 }
 
 @media(max-width: 768px) {
   .hero h1 { font-size: 24px; }
   .grid-2 { grid-template-columns: 1fr; }
-  .nav-links .btn-nav { display: none; }
-  .nav-links .btn-nav.active { display: inline-flex; }
+  .nav-links { overflow-x: auto; max-width: calc(100vw - 140px); }
   .table-wrap { font-size: 12px; }
   .tech-specs { grid-template-columns: 1fr; }
 }
@@ -371,10 +370,12 @@ tr:hover td { background: rgba(255,255,255,0.02); }
     </a>
 
     <div class="nav-links">
-      <a href="/" class="btn-nav">🗺 Canlı Harita</a>
+      <a href="/" class="btn-nav">🗺 Harita</a>
+      <a href="/#bolgeler" class="btn-nav">🌍 Bölgeler</a>
+      <a href="/#istatistikler" class="btn-nav">📊 İstatistikler</a>
       <a href="/hiz-atlasi.html" class="btn-nav">📡 Speedtest Verileri</a>
       <a href="/rehber.html" class="btn-nav active">📖 Rehber &amp; SSS</a>
-      <a href="/?page=pin" class="btn-cta">+ Veri Ekle</a>
+      <a href="/#pin" class="btn-cta">+ Veri Ekle</a>
       <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="Tema Değiştir">☀️</button>
     </div>
   </div>
