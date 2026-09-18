@@ -5267,11 +5267,11 @@ function renderOperatorExperienceReport() {
   const issStats = {};
   Object.entries(issUserMap).forEach(([iss, usersMap]) => {
     const distinctUsersCount = usersMap.size;
-    const totalPinsForIss = (cleanPinsData || []).filter(p => canonicalIssName(p.iss) === iss).length;
+    const taggedPinsCount = validPins.filter(p => canonicalIssName(p.iss) === iss).length;
     const stat = {
       iss,
       total: distinctUsersCount,
-      totalPins: totalPinsForIss,
+      taggedCount: taggedPinsCount,
       isQualified: distinctUsersCount >= 3, // EN AZ 3 FARKLI KULLANICI / ADRES
       noDrop: 0,
       eveningDrop: 0,
@@ -5351,19 +5351,19 @@ function renderOperatorExperienceReport() {
 
   // Bayesian ağırlıklı sıralama
   const sortedList = [...qualifiedList].sort((a, b) => {
-    if (operatorReportSort === 'noDrop') return bayesExpPct(b.noDrop, b.total, priorNoDrop) - bayesExpPct(a.noDrop, a.total, priorNoDrop) || b.totalPins - a.totalPins;
-    if (operatorReportSort === 'stable') return bayesExpPct(b.stable, b.total, priorStable) - bayesExpPct(a.stable, a.total, priorStable) || b.totalPins - a.totalPins;
-    if (operatorReportSort === 'eveningDrop') return bayesExpPct(b.eveningDrop, b.total, priorDrop) - bayesExpPct(a.eveningDrop, a.total, priorDrop) || b.totalPins - a.totalPins;
-    if (operatorReportSort === 'lowPing') return bayesExpPct(b.lowPing, b.total, priorLowPing) - bayesExpPct(a.lowPing, a.total, priorLowPing) || b.totalPins - a.totalPins;
-    if (operatorReportSort === 'supportHard') return bayesExpPct(b.supportHard, b.total, priorSuppHard) - bayesExpPct(a.supportHard, a.total, priorSuppHard) || b.totalPins - a.totalPins;
-    if (operatorReportSort === 'supportGood') return bayesExpPct(b.supportGood, b.total, priorSuppGood) - bayesExpPct(a.supportGood, a.total, priorSuppGood) || b.totalPins - a.totalPins;
-    return b.totalPins - a.totalPins || b.total - a.total;
+    if (operatorReportSort === 'noDrop') return bayesExpPct(b.noDrop, b.total, priorNoDrop) - bayesExpPct(a.noDrop, a.total, priorNoDrop) || b.taggedCount - a.taggedCount;
+    if (operatorReportSort === 'stable') return bayesExpPct(b.stable, b.total, priorStable) - bayesExpPct(a.stable, a.total, priorStable) || b.taggedCount - a.taggedCount;
+    if (operatorReportSort === 'eveningDrop') return bayesExpPct(b.eveningDrop, b.total, priorDrop) - bayesExpPct(a.eveningDrop, a.total, priorDrop) || b.taggedCount - a.taggedCount;
+    if (operatorReportSort === 'lowPing') return bayesExpPct(b.lowPing, b.total, priorLowPing) - bayesExpPct(a.lowPing, a.total, priorLowPing) || b.taggedCount - a.taggedCount;
+    if (operatorReportSort === 'supportHard') return bayesExpPct(b.supportHard, b.total, priorSuppHard) - bayesExpPct(a.supportHard, a.total, priorSuppHard) || b.taggedCount - a.taggedCount;
+    if (operatorReportSort === 'supportGood') return bayesExpPct(b.supportGood, b.total, priorSuppGood) - bayesExpPct(a.supportGood, a.total, priorSuppGood) || b.taggedCount - a.taggedCount;
+    return b.taggedCount - a.taggedCount || b.total - a.total;
   });
 
   const sortBar = `
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
       <div style="font-size:11px;color:var(--text3);font-weight:600;">
-        Doğrulanmış Operatör Deneyimleri (Bayesian Dengelemeli):
+        Topluluk Deneyim Etiketleri (Bayesian Dengelemeli):
       </div>
       <div style="display:flex;align-items:center;gap:4px;overflow-x:auto;max-width:100%;padding-bottom:2px;">
         <button type="button" class="sort-btn ${operatorReportSort === 'total' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('total')">📊 Tümü</button>
@@ -5381,7 +5381,7 @@ function renderOperatorExperienceReport() {
       <div>Bağlantı Kalitesi</div>
       <div>Hız &amp; Ping Durumu</div>
       <div>Müşteri Desteği</div>
-      <div style="text-align:right;">Doğrulama</div>
+      <div style="text-align:right;">Geri Bildirim</div>
     </div>
   `;
 
@@ -5416,8 +5416,8 @@ function renderOperatorExperienceReport() {
         <div>${qualityBadge}</div>
         <div>${speedBadge}</div>
         <div>${supportBadge}</div>
-        <div style="text-align:right;font-size:10px;color:var(--success);font-family:var(--font-mono);font-weight:600;" title="${item.total} farklı adreste deneyim etiketi, toplam ${item.totalPins} doğrulanmış ölçüm verisi">
-          ✓ ${item.totalPins} Veri
+        <div style="text-align:right;font-size:11px;color:var(--text2);font-family:var(--font-mono);font-weight:600;" title="${item.total} farklı adreste, toplam ${item.taggedCount} etiketli kullanıcı deneyim bildirimi">
+          ${item.taggedCount} Veri
         </div>
       </div>
     `;
