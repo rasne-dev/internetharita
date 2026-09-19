@@ -283,29 +283,39 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
   padding: 14px; text-align: center; font-size: 13px; line-height: 1.6;
 }
 
+.tab-text.short, .add-text-short { display: none; }
+.tab-text.full, .add-text-full { display: inline; }
+
 @media(max-width: 768px) {
-  :root { --nav-h: 84px; }
-  nav { height: auto; min-height: var(--nav-h); padding: 6px 12px 6px; }
-  .nav-container { flex-direction: column; gap: 4px; align-items: stretch; }
-  .nav-top-row { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 36px; }
-  .logo-text { font-size: 13px; }
-  .logo-icon { width: 26px; height: 26px; }
-  .nav-right-actions { gap: 6px; }
-  .btn-cta { padding: 4px 10px; font-size: 11px; }
-  .theme-toggle-btn { width: 28px; height: 28px; font-size: 12px; }
+  :root { --nav-h: 78px; }
+  nav { height: auto; min-height: var(--nav-h); padding: 5px 8px 5px; }
+  .nav-container { flex-direction: column; gap: 3px; align-items: stretch; }
+  .nav-top-row { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 32px; }
+  .logo { gap: 6px; }
+  .logo-text { font-size: 12px; }
+  .logo-icon { width: 24px; height: 24px; }
+  .nav-right-actions { gap: 4px; }
+  .btn-cta { padding: 3px 8px; font-size: 10.5px; }
+  .theme-toggle-btn { width: 26px; height: 26px; font-size: 12px; }
+  .tab-text.short, .add-text-short { display: inline !important; }
+  .tab-text.full, .add-text-full { display: none !important; }
   .nav-links {
-    display: flex; width: 100%; overflow-x: auto; gap: 6px;
-    padding: 2px 2px 4px; -webkit-overflow-scrolling: touch;
+    display: flex !important; width: 100%; gap: 3px;
+    padding: 1px 0 2px; align-items: center; justify-content: space-between;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
     scrollbar-width: none; max-width: 100%;
   }
   .nav-links::-webkit-scrollbar { display: none; }
   .btn-nav {
-    flex-shrink: 0; padding: 5px 11px; font-size: 11px; font-weight: 600;
-    border-radius: 20px; background: var(--surface2); border: 1px solid var(--border);
+    flex: 1 1 0; min-width: 0; padding: 5px 2px;
+    font-size: 10.5px; font-weight: 600; text-align: center;
+    display: inline-flex; align-items: center; justify-content: center; gap: 2px;
+    border-radius: 6px; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text2); white-space: nowrap;
   }
   .btn-nav.active {
     background: var(--accent-dim); border-color: var(--accent); color: var(--accent);
-    font-weight: 700; box-shadow: 0 0 10px rgba(0,212,255,0.2);
+    font-weight: 700; box-shadow: 0 0 8px rgba(0,212,255,0.25);
   }
   .hero h1 { font-size: 22px; }
   th, td { padding: 10px 8px; font-size: 11px; }
@@ -337,16 +347,16 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
         <span class="logo-text">internet<span>Harita</span></span>
       </a>
       <div class="nav-right-actions">
-        <a href="/#pin" class="btn-cta">+ Veri Ekle</a>
+        <a href="/#pin" class="btn-cta" style="white-space:nowrap;"><span class="add-text-full">+ Veri Ekle</span><span class="add-text-short">+ Ekle</span></a>
         <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="Tema Değiştir">☀️</button>
       </div>
     </div>
 
     <div class="nav-links">
       <a href="/" class="btn-nav">🗺 Harita</a>
-      <a href="/#bolgeler" class="btn-nav">🌍 Bölgeler</a>
-      <a href="/#istatistikler" class="btn-nav">📊 İstatistikler</a>
-      <a href="/speedtest-verileri.html" class="btn-nav active">📡 Speedtest</a>
+      <a href="/#bolgeler" class="btn-nav">🌍 <span class="tab-text full">Bölgeler</span><span class="tab-text short">Bölge</span></a>
+      <a href="/#istatistikler" class="btn-nav">📊 <span class="tab-text full">İstatistikler</span><span class="tab-text short">İstat.</span></a>
+      <a href="/speedtest-verileri.html" class="btn-nav active">📡 <span class="tab-text full">Speedtest</span><span class="tab-text short">Speed</span></a>
       <a href="/rehber.html" class="btn-nav">📖 Rehber</a>
     </div>
   </div>
