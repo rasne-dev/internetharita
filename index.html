@@ -120,7 +120,7 @@
 }
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&amp;family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&amp;display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
 <!-- GÜVENLİK: Subresource Integrity (SRI) eklendi. SRI olmadan, unpkg/jsdelivr CDN'i
      ele geçirilirse veya (supabase-js'de olduğu gibi) sabitlenmemiş bir @2 etiketi
      altında kötü amaçlı bir sürüm yayınlanırsa, o kod HERKESİN (moderatör dahil)
@@ -1981,12 +1981,24 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
         <div id="issManagerList"><div class="loading-dots">Yükleniyor</div></div>
       </div>
 
-      <!-- En Hızlı Lokasyonlar manuel yönetimi kaldırıldı — doğrulanmış kaliteli ölçümler istatistiklere otomatik yansır -->
+      <!-- Moderatör Hız Doğrulama ve Harita Araçları -->
+      <div class="mod-section" style="margin-bottom:16px;">
+        <div class="mod-section-title">⚡ Hız Testi Verilerini Toplu Onayla &amp; Pin Görünürlüğü</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:14px;line-height:1.5;">
+          Tabloda görünen ve kalite kriterlerine uyan (doğrulanmış hız aralığında, spam olmayan) tüm pinleri tek tıklamayla doğrulanmış (verified) olarak işaretleyin veya haritadaki moderatör pin katmanını açıp kapatın.
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <button id="bulkVerifyBtn" class="btn-approve" onclick="bulkVerifySpeedRank()" style="padding:8px 14px;font-size:11px;">⚡ Toplu Onayla</button>
+          <button id="modPinsToggleBtn" class="btn-ghost" onclick="toggleModPinsVisibility()" style="padding:8px 14px;font-size:11px;color:var(--accent);border-color:var(--accent);">📍 Harita Pin Noktaları: AÇIK</button>
+        </div>
+      </div>
+
+      <!-- Gizli uyumluluk elemanları -->
       <div style="display:none;">
         <input type="text" id="speedRankSearch">
-        <tbody id="speedRankEditorBody"></tbody>
+        <table><tbody id="speedRankEditorBody"></tbody></table>
         <input type="hidden" id="statEditSearch">
-        <tbody id="statEditBody"></tbody>
+        <table><tbody id="statEditBody"></tbody></table>
       </div>
     </div>
 
@@ -3791,6 +3803,12 @@ function handleHashRoute() {
     showPage('istatistik', false);
   } else if (rawHash === 'pin' || rawHash === 'ekle' || rawHash === 'veriekle') {
     showPage('pin', false);
+  } else if (rawHash === 'kvkk' || rawHash === 'gizlilik') {
+    showPage('harita', false);
+    openKvkkModal();
+  } else if (rawHash === 'about' || rawHash === 'hakkinda') {
+    showPage('harita', false);
+    openAboutModal();
   } else if (!rawHash || rawHash === 'harita') {
     showPage('harita', false);
   }
@@ -3860,6 +3878,34 @@ async function retryLoadMap() {
   } catch(err) {
     showMapLoadingError('Bağlantı yeniden sağlanamadı. Lütfen internet, DNS veya VPN bağlantınızı kontrol edin.');
   }
+}
+
+// CARTO ücretsiz key. carto.com/basemaps/apikey üzerinden alındı — aylık 5M tile
+// isteğine kadar ücretsiz. Boş bırakılırsa site keysiz OpenStreetMap'e düşer (koyu tema yok).
+const CARTO_API_KEY = 'cb1_3gtw_1_6a857133eb2c83334bf96b05';
+function getMapTileUrl() {
+  const isLight = document.documentElement.classList.contains('light');
+  if (CARTO_API_KEY) {
+    return (isLight
+      ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png') + '?key=' + CARTO_API_KEY;
+  }
+  return 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+}
+function updateMapTiles() {
+  const url = getMapTileUrl();
+  [maps.main, maps.pin].forEach(m => {
+    if (!m) return;
+    m.eachLayer(l => { if (l._url && (l._url.includes('cartocdn') || l._url.includes('openstreetmap.org'))) m.removeLayer(l); });
+    const tl = L.tileLayer(url, { maxZoom:19, noWrap:true });
+    tl.on('tileerror', function() {
+      if (!this._osmFallback) {
+        this._osmFallback = true;
+        this.setUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+      }
+    });
+    tl.addTo(m);
+  });
 }
 
 async function initMainMap() { 
@@ -5930,7 +5976,7 @@ async function onManualIlChange() {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 5000);
     const res = await fetch(
-      `https://turkiyeapi.dev/api/v1/provinces?name=${encodeURIComponent(il)}`,
+      `https://api.turkiyeapi.dev/v1/provinces?name=${encodeURIComponent(il)}`,
       { signal: ctrl.signal, cache: 'force-cache' }
     );
     clearTimeout(timer);
@@ -8275,33 +8321,7 @@ document.addEventListener('click', function(e) {
     document.getElementById('settingsDropdown')?.classList.remove('open');
   }
 });
-// CARTO ücretsiz key. carto.com/basemaps/apikey üzerinden alındı — aylık 5M tile
-// isteğine kadar ücretsiz. Boş bırakılırsa site keysiz OpenStreetMap'e düşer (koyu tema yok).
-const CARTO_API_KEY = 'cb1_3gtw_1_6a857133eb2c83334bf96b05';
-function getMapTileUrl() {
-  const isLight = document.documentElement.classList.contains('light');
-  if (CARTO_API_KEY) {
-    return (isLight
-      ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png') + '?key=' + CARTO_API_KEY;
-  }
-  return 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-}
-function updateMapTiles() {
-  const url = getMapTileUrl();
-  [maps.main, maps.pin].forEach(m => {
-    if (!m) return;
-    m.eachLayer(l => { if (l._url && (l._url.includes('cartocdn') || l._url.includes('openstreetmap.org'))) m.removeLayer(l); });
-    const tl = L.tileLayer(url, { maxZoom:19, noWrap:true });
-    tl.on('tileerror', function() {
-      if (!this._osmFallback) {
-        this._osmFallback = true;
-        this.setUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-      }
-    });
-    tl.addTo(m);
-  });
-}
+
 
 // ===== ISS FİLTRESİ =====
 function toggleISSChip(el, issName) {
@@ -8454,33 +8474,9 @@ document.addEventListener('click', e => {
 
 // ===== PWA SERVİS ÇALIŞANI =====
 if ('serviceWorker' in navigator) {
-  const sw = `
-const CACHE='iharita-v1';
-const ASSETS=[
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
-  'https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js'
-];
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).catch(()=>{})));
-self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k))))));
-self.addEventListener('fetch',e=>{
-  if(!e.request.url.startsWith('http')||e.request.url.includes('supabase.co')||e.request.url.includes('nominatim')||e.request.url.includes('openfpcdn'))return;
-  e.respondWith(caches.match(e.request).then(hit=>hit||fetch(e.request).then(res=>{
-    if(res&&res.status===200&&['unpkg.com','cdn.jsdelivr','basemaps.cartocdn','fonts.googleapis','fonts.gstatic'].some(d=>res.url.includes(d))){
-      const clone=res.clone();caches.open(CACHE).then(c=>c.put(e.request,clone));
-    }
-    return res;
-  }).catch(()=>caches.match(e.request))));
-});`;
-  try {
-    const blob = new Blob([sw], { type: 'application/javascript' });
-    const swUrl = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(swUrl, { scope: '/' }).catch(() => {
-      // Blob URL SW desteklenmiyorsa /sw.js'e düş
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
-    });
-  } catch(e) {}
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
 }
 </script>
 

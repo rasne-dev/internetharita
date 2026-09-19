@@ -797,8 +797,9 @@ function toggleFaq(header) {
 
 function copyDilekce() {
   var text = document.getElementById('dilekceText').innerText.trim();
-  navigator.clipboard.writeText(text).then(function(){
-    var btn = document.querySelector('.copy-btn');
+  var btn = document.querySelector('.copy-btn');
+  function markCopied() {
+    if (!btn) return;
     var old = btn.textContent;
     btn.textContent = 'Kopyalandı! ✓';
     btn.style.background = 'var(--success)';
@@ -808,11 +809,47 @@ function copyDilekce() {
       btn.style.background = '';
       btn.style.color = '';
     }, 2000);
-  });
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(markCopied).catch(function() {
+      // Fallback
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+  function fallbackCopy(val) {
+    var ta = document.createElement('textarea');
+    ta.value = val;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      markCopied();
+    } catch(e) {}
+    document.body.removeChild(ta);
+  }
+}
+
+function trNormalize(str) {
+  return (str || '')
+    .replace(/İ/g, 'i')
+    .replace(/I/g, 'ı')
+    .toLocaleLowerCase('tr-TR')
+    .replace(/i̇/g, 'i')
+    .replace(/ı/g, 'i')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c')
+    .trim();
 }
 
 function filterGuide() {
-  var q = document.getElementById('guideSearch').value.toLowerCase().trim();
+  var q = trNormalize(document.getElementById('guideSearch').value);
   var elements = document.querySelectorAll('.searchable');
   
   elements.forEach(function(el) {
@@ -823,7 +860,7 @@ function filterGuide() {
       }
       return;
     }
-    var text = el.innerText.toLowerCase();
+    var text = trNormalize(el.innerText);
     if (text.includes(q)) {
       el.style.display = '';
       if (el.classList.contains('faq-item')) {
