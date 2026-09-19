@@ -1,4 +1,4 @@
-const CACHE = 'iharita-v9';
+const CACHE = 'iharita-v10';
 const ASSETS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
@@ -15,7 +15,23 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  if (!e.request.url.startsWith('http') || e.request.url.includes('supabase.co') || e.request.url.includes('nominatim')) return;
+  // Sadece GET istekleri önbelleklenebilir
+  if (e.request.method !== 'GET') return;
+
+  const url = e.request.url;
+  // Dinamik API'lar, hız testi veri akışları ve reklamları doğrudan ağa bırak
+  if (!url.startsWith('http') ||
+      url.includes('supabase.co') ||
+      url.includes('nominatim') ||
+      url.includes('speed.cloudflare.com') ||
+      url.includes('openfpcdn.io') ||
+      url.includes('googlesyndication') ||
+      url.includes('doubleclick') ||
+      url.includes('googleadservices') ||
+      url.includes('turkiyeapi.dev')) {
+    return;
+  }
+
   e.respondWith(
     caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
       if (res && res.status === 200 && ['unpkg.com', 'cdn.jsdelivr', 'basemaps.cartocdn', 'fonts.googleapis', 'fonts.gstatic'].some(d => res.url.includes(d))) {
