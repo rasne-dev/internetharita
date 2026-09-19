@@ -185,6 +185,8 @@ nav { position:fixed;top:0;left:0;right:0;z-index:1000; height:var(--nav-h); bac
 .nav-tab.mod-tab{color:var(--warn);} .nav-tab.mod-tab.active{color:var(--warn);background:rgba(245,158,11,.1);}
 .nav-right{margin-left:auto;display:flex;align-items:center;gap:6px; flex-shrink:0;}
 .nav-badge { font-size:10px;font-family:var(--font-mono); padding:2px 7px;border-radius:20px; background:var(--accent-dim);border:1px solid rgba(0,212,255,.3); color:var(--accent);display:none; }
+.tab-text.short, .add-text-short { display: none; }
+.tab-text.full, .add-text-full { display: inline; }
 @media(max-width:1250px) and (min-width:769px) {
   nav { padding:0 8px; }
   .logo { margin-right:8px; }
@@ -1040,45 +1042,53 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
 }
 
 @media(max-width:768px){
-  :root { --nav-h: 84px; }
+  :root { --nav-h: 78px; }
   nav {
     display: flex; flex-direction: column; height: auto; min-height: var(--nav-h);
-    padding: 6px 10px 6px; gap: 4px; align-items: stretch;
+    padding: 5px 8px 5px; gap: 3px; align-items: stretch;
   }
   .nav-top-row {
     display: flex; align-items: center; justify-content: space-between;
-    width: 100%; height: 36px;
+    width: 100%; height: 32px;
   }
-  .logo { margin-right: 0; }
-  .logo-text { font-size: 13px; display: inline-block !important; }
-  .logo-icon { width: 26px; height: 26px; }
-  .nav-right { margin-left: 0; gap: 6px; }
+  .logo { margin-right: 0; gap: 6px; }
+  .logo-text { font-size: 12px; display: inline-block !important; }
+  .logo-icon { width: 24px; height: 24px; }
+  .nav-right { margin-left: 0; gap: 4px; }
   .nav-right .btn-ghost {
-    display: inline-flex !important; padding: 4px 10px; font-size: 11px;
+    display: inline-flex !important; padding: 3px 8px; font-size: 10.5px;
     border-radius: 6px; background: var(--accent-dim); border-color: var(--accent);
     color: var(--accent); font-weight: 700;
   }
+  #headerMaintenanceToggle { display: none !important; }
+  .nav-badge { font-size: 9px; padding: 1px 5px; }
+  #navModLogoutBtn { font-size: 10px; padding: 2px 6px; }
+  .tab-text.short, .add-text-short { display: inline !important; }
+  .tab-text.full, .add-text-full { display: none !important; }
   .nav-tabs {
-    display: flex !important; width: 100%; overflow-x: auto;
-    gap: 6px; padding: 2px 2px 4px; -webkit-overflow-scrolling: touch;
+    display: flex !important; width: 100%;
+    gap: 3px; padding: 1px 0 2px;
+    align-items: center; justify-content: space-between;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
   .nav-tabs::-webkit-scrollbar { display: none; }
   .nav-tab {
-    flex-shrink: 0; padding: 5px 11px; font-size: 11px; font-weight: 600;
-    border-radius: 20px; background: var(--surface2); border: 1px solid var(--border);
-    color: var(--text2);
+    flex: 1 1 0; min-width: 0; padding: 5px 2px;
+    font-size: 10.5px; font-weight: 600; text-align: center;
+    display: inline-flex; align-items: center; justify-content: center; gap: 2px;
+    border-radius: 6px; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text2); white-space: nowrap;
   }
   .nav-tab.active {
     background: var(--accent-dim); border-color: var(--accent); color: var(--accent);
-    font-weight: 700; box-shadow: 0 0 10px rgba(0,212,255,0.2);
+    font-weight: 700; box-shadow: 0 0 8px rgba(0,212,255,0.25);
   }
   .nav-tab.mod-tab { color: var(--warn); border-color: rgba(245,158,11,0.25); }
   .nav-tab.mod-tab.active { background: rgba(245,158,11,0.15); border-color: var(--warn); color: var(--warn); }
   .mobile-nav { display: none !important; }
   .page { bottom: 0; top: var(--nav-h); }
   .toast { bottom: 24px; }
-  #navModLogoutBtn { font-size:11px; padding:4px 8px; }
   .map-sidebar { display:none; }
   .map-sidebar.mobile-open {
     display:flex; flex-direction:column;
@@ -1285,16 +1295,16 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
       </label>
       <span class="nav-badge" id="modBadge">MOD</span>
       <button class="btn-ghost" id="navModLogoutBtn" style="display:none; border-color:var(--danger); color:var(--danger); padding:5px 9px; font-size:11px;" onclick="modLogout()">Çıkış</button>
-      <button class="btn-ghost" id="navAddPinBtn" onclick="showPage('pin')" style="padding:6px 12px; font-size:11.5px; white-space:nowrap;">+ Veri Ekle</button>
+      <button class="btn-ghost" id="navAddPinBtn" onclick="showPage('pin')" style="white-space:nowrap;"><span class="add-text-full">+ Veri Ekle</span><span class="add-text-short">+ Ekle</span></button>
     </div>
   </div>
   <div class="nav-tabs">
     <button class="nav-tab active" id="tab-harita" onclick="showPage('harita')">🗺 Harita</button>
-    <button class="nav-tab" id="tab-bolge" onclick="showPage('bolge')">🌍 Bölgeler</button>
-    <button class="nav-tab" id="tab-istatistik" onclick="showPage('istatistik')">📊 İstatistikler</button>
-    <a href="/speedtest-verileri.html" class="nav-tab" id="tab-speedtest" style="text-decoration:none;display:inline-flex;align-items:center;">📡 Speedtest</a>
+    <button class="nav-tab" id="tab-bolge" onclick="showPage('bolge')">🌍 <span class="tab-text full">Bölgeler</span><span class="tab-text short">Bölge</span></button>
+    <button class="nav-tab" id="tab-istatistik" onclick="showPage('istatistik')">📊 <span class="tab-text full">İstatistikler</span><span class="tab-text short">İstat.</span></button>
+    <a href="/speedtest-verileri.html" class="nav-tab" id="tab-speedtest" style="text-decoration:none;display:inline-flex;align-items:center;">📡 <span class="tab-text full">Speedtest</span><span class="tab-text short">Speed</span></a>
     <a href="/rehber.html" class="nav-tab" id="tab-rehber" style="text-decoration:none;display:inline-flex;align-items:center;">📖 Rehber</a>
-    <button class="nav-tab mod-tab" id="navModBtn" onclick="showPage('mod')">🔧 Moderatör</button>
+    <button class="nav-tab mod-tab" id="navModBtn" onclick="showPage('mod')">🔧 <span class="tab-text full">Moderatör</span><span class="tab-text short">Mod</span></button>
   </div>
 </nav>
 
@@ -6815,7 +6825,7 @@ async function loadCustomIss() {
     updateOnayCountBadge(pins);
     if (!Object.keys(grouped).length) { list.innerHTML='<div class="empty-state">Bekleyen özel İSS teklifi yok ✅</div>'; return; }
     list.innerHTML = Object.entries(grouped).sort((a,b)=>b[1].count-a[1].count).map(([iss, data]) => {
-      const inputId = 'norm_' + btoa(encodeURIComponent(iss)).replace(/[^a-z0-9]/gi,'').slice(0,10);
+      const inputId = 'norm_' + Math.abs(Array.from(iss).reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0)).toString(36);
       const guess = iss.charAt(0).toUpperCase() + iss.slice(1);
       const autoColor = issHashColor(iss);
       const colorId = 'color_' + inputId;
