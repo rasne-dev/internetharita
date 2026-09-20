@@ -96,6 +96,14 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" id="themeColorMeta" content="#070b0f">
+<script>
+(function(){
+  try {
+    var t = localStorage.getItem('ih_theme') || 'dark';
+    if (t === 'light') document.documentElement.classList.add('light');
+  } catch(e) {}
+})();
+</script>
 
 <style>
 :root {
@@ -426,7 +434,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
       </a>
       <div class="nav-right-actions">
         <a href="/#pin" class="btn-cta" style="white-space:nowrap;"><span class="add-text-full">+ Veri Ekle</span><span class="add-text-short">+ Ekle</span></a>
-        <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="Tema Değiştir">☀️</button>
+        <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="Tema Değiştir" aria-label="Tema Değiştir">☀️</button>
       </div>
     </div>
 
@@ -913,7 +921,7 @@ function scrollToTop() {
 }
 </script>
 
-<button class="back-to-top" id="backToTop" onclick="scrollToTop()" title="Yukarı Çık">↑</button>
+<button class="back-to-top" id="backToTop" onclick="scrollToTop()" title="Yukarı Çık" aria-label="Yukarı Çık">↑</button>
 
 </body>
 </html>

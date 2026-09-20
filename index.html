@@ -1333,11 +1333,11 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
       <button class="btn-ghost" id="navModLogoutBtn" style="display:none; border-color:var(--danger); color:var(--danger); padding:5px 9px; font-size:11px;" onclick="modLogout()">Çıkış</button>
       <button class="btn-ghost" id="navAddPinBtn" onclick="showPage('pin')" style="white-space:nowrap;"><span class="add-text-full">+ Veri Ekle</span><span class="add-text-short">+ Ekle</span></button>
       <div class="settings-menu-wrap" id="settingsMenuWrap">
-        <button class="theme-toggle" id="settingsBtn" onclick="toggleSettingsMenu(event)" title="Ayarlar">⚙️</button>
+        <button class="theme-toggle" id="settingsBtn" onclick="toggleSettingsMenu(event)" title="Ayarlar" aria-label="Ayarlar">⚙️</button>
         <div class="settings-dropdown" id="settingsDropdown">
           <div class="settings-item">
             <span class="settings-item-label">🌗 Tema</span>
-            <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="Tema Değiştir" style="width:28px;height:28px;font-size:13px;">☀️</button>
+            <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="Tema Değiştir" aria-label="Tema Değiştir" style="width:28px;height:28px;font-size:13px;">☀️</button>
           </div>
           <div class="settings-item">
             <span class="settings-item-label">👁️ Renk Körü Modu</span>
@@ -1403,7 +1403,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
   </div>
   <!-- Sidebar backdrop — mobilde sidebar açıkken haritayı karartır, tıklanınca kapatır -->
   <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleMapSidebar()"></div>
-  <div class="map-sidebar-toggle" id="sidebarToggle" onclick="toggleMapSidebar()">⚙ Filtreler</div>
+  <div class="map-sidebar-toggle" id="sidebarToggle" onclick="toggleMapSidebar()" role="button" aria-label="Filtreler">⚙ Filtreler</div>
   <div class="map-sidebar" id="mapSidebar">
     <div class="sidebar-panel">
       <!-- HEADER / COLLAPSE -->
