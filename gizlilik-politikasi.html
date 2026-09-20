@@ -74,7 +74,8 @@ html.light nav { background: rgba(255,255,255,0.94); }
   width: 100%; max-width: 1100px; margin: 0 auto;
   display: flex; align-items: center; justify-content: space-between;
 }
-.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.nav-top-row { display: contents; }
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; order: 1; }
 .logo-icon {
   width: 32px; height: 32px; border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
@@ -83,7 +84,7 @@ html.light nav { background: rgba(255,255,255,0.94); }
 .logo-text { font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
 .logo-text span { color: var(--accent); }
 
-.nav-links { display: flex; align-items: center; gap: 10px; }
+.nav-links { display: flex; align-items: center; gap: 10px; order: 2; }
 .btn-nav {
   padding: 7px 14px; border-radius: 7px; font-size: 13px; font-weight: 600;
   text-decoration: none; color: var(--text2); transition: all .2s;
@@ -92,7 +93,7 @@ html.light nav { background: rgba(255,255,255,0.94); }
 .btn-nav:hover { color: var(--text); background: var(--surface2); }
 .btn-nav.active { color: var(--accent); background: var(--accent-dim); }
 
-.nav-right-actions { display: flex; align-items: center; gap: 8px; }
+.nav-right-actions { display: flex; align-items: center; gap: 8px; order: 3; }
 .btn-cta {
   padding: 7px 16px; background: var(--accent); color: #000 !important;
   font-weight: 700; border-radius: 7px; text-decoration: none; font-size: 12px;
