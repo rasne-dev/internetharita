@@ -161,8 +161,74 @@ html.light nav { background: rgba(255,255,255,0.94); }
 .feature-box h3 { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
 .feature-box p { font-size: 12px; color: var(--text2); margin: 0; line-height: 1.5; }
 
+.tab-text.short, .add-text-short { display: none; }
+.tab-text.full, .add-text-full { display: inline; }
+
+.btn-nav:hover { color: var(--text); background: var(--surface2); }
+.btn-nav.active {
+  color: var(--accent); background: var(--accent-dim);
+  border: 1px solid rgba(0,212,255,0.25); box-shadow: 0 0 12px rgba(0,212,255,0.12);
+}
+
+/* BREADCRUMB */
+.breadcrumb {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--text3); margin-bottom: 14px; font-family: var(--font-mono);
+}
+.breadcrumb a { color: var(--text2); text-decoration: none; transition: color .2s; }
+.breadcrumb a:hover { color: var(--accent); }
+.breadcrumb .sep { opacity: 0.5; }
+.breadcrumb .current { color: var(--accent); font-weight: 700; }
+
+/* YUKARI ÇIK BUTONU */
+.back-to-top {
+  position: fixed; bottom: 24px; right: 24px; z-index: 999;
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--accent); font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35); transition: all .25s ease;
+  opacity: 0; visibility: hidden; transform: translateY(12px);
+}
+.back-to-top.visible {
+  opacity: 1; visibility: visible; transform: translateY(0);
+}
+.back-to-top:hover {
+  background: var(--accent-dim); border-color: var(--accent);
+  box-shadow: 0 6px 20px var(--accent-glow); transform: translateY(-2px);
+}
+
 @media (max-width: 768px) {
-  .nav-links { display: none; }
+  :root { --nav-h: 78px; }
+  nav { height: auto; min-height: var(--nav-h); padding: 5px 8px 5px; }
+  .nav-container { flex-direction: column; gap: 3px; align-items: stretch; }
+  .nav-top-row { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 32px; }
+  .logo { gap: 6px; }
+  .logo-text { font-size: 12px; }
+  .logo-icon { width: 24px; height: 24px; }
+  .nav-right-actions { gap: 4px; }
+  .btn-cta { padding: 3px 8px; font-size: 10.5px; }
+  .theme-toggle-btn { width: 26px; height: 26px; font-size: 12px; }
+  .tab-text.short, .add-text-short { display: inline !important; }
+  .tab-text.full, .add-text-full { display: none !important; }
+  .nav-links {
+    display: flex !important; width: 100%; gap: 3px;
+    padding: 1px 0 2px; align-items: center; justify-content: space-between;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; max-width: 100%;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .btn-nav {
+    flex: 1 1 0; min-width: 0; padding: 5px 2px;
+    font-size: 10.5px; font-weight: 600; text-align: center;
+    display: inline-flex; align-items: center; justify-content: center; gap: 2px;
+    border-radius: 6px; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text2); white-space: nowrap;
+  }
+  .btn-nav.active {
+    background: var(--accent-dim); border-color: var(--accent); color: var(--accent);
+    font-weight: 700; box-shadow: 0 0 8px rgba(0,212,255,0.25);
+  }
   .content-card { padding: 20px; }
   .hero h1 { font-size: 24px; }
 }
@@ -172,28 +238,48 @@ html.light nav { background: rgba(255,255,255,0.94); }
 
 <nav>
   <div class="nav-container">
-    <a href="/" class="logo">
-      <div class="logo-icon">
-        <img src="/favicon-48x48.png" width="32" height="32" alt="İnternetHarita Logo">
+    <div class="nav-top-row">
+      <a href="/" class="logo">
+        <div class="logo-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+            <defs>
+              <linearGradient id="logoGradNav" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00e5ff"/>
+                <stop offset="100%" stop-color="#0066ff"/>
+              </linearGradient>
+            </defs>
+            <rect width="92" height="92" x="4" y="4" rx="22" fill="url(#logoGradNav)"/>
+            <path d="M 23 28 A 38 38 0 0 1 77 28" fill="none" stroke="#070b0f" stroke-width="7.5" stroke-linecap="round"/>
+            <path d="M 33 40 A 24 24 0 0 1 67 40" fill="none" stroke="#070b0f" stroke-width="7.5" stroke-linecap="round"/>
+            <circle cx="50" cy="50" r="5" fill="#070b0f"/>
+            <text x="50" y="84" font-family="'Space Mono', monospace, sans-serif" font-size="34" font-weight="900" fill="#070b0f" text-anchor="middle" letter-spacing="3">İH</text>
+          </svg>
+        </div>
+        <span class="logo-text">internet<span>Harita</span></span>
+      </a>
+      <div class="nav-right-actions">
+        <a href="/#pin" class="btn-cta" style="white-space:nowrap;"><span class="add-text-full">+ Veri Ekle</span><span class="add-text-short">+ Ekle</span></a>
+        <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="Tema Değiştir">☀️</button>
       </div>
-      <span class="logo-text">internet<span>harita</span></span>
-    </a>
-
-    <div class="nav-links">
-      <a href="/" class="btn-nav">🗺 Canlı Harita</a>
-      <a href="/speedtest-verileri.html" class="btn-nav">📊 Hız Verileri</a>
-      <a href="/rehber.html" class="btn-nav">📚 Altyapı Rehberi</a>
     </div>
 
-    <div class="nav-right-actions">
-      <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="Temayı Değiştir">☀️</button>
-      <a href="/" class="btn-cta">Haritaya Git</a>
+    <div class="nav-links">
+      <a href="/" class="btn-nav">🗺 Harita</a>
+      <a href="/#bolgeler" class="btn-nav">🌍 <span class="tab-text full">Bölgeler</span><span class="tab-text short">Bölge</span></a>
+      <a href="/#istatistikler" class="btn-nav">📊 <span class="tab-text full">İstatistikler</span><span class="tab-text short">İstat.</span></a>
+      <a href="/speedtest-verileri.html" class="btn-nav">📡 <span class="tab-text full">Speedtest</span><span class="tab-text short">Speed</span></a>
+      <a href="/rehber.html" class="btn-nav">📖 Rehber</a>
     </div>
   </div>
 </nav>
 
 <header class="hero">
-  <div class="hero-tag">ℹ️ BİZ KİMİZ?</div>
+  <div class="breadcrumb">
+    <a href="/">Ana Sayfa</a>
+    <span class="sep">/</span>
+    <span class="current">Hakkımızda</span>
+  </div>
+  <div class="hero-tag" style="display:block; width:fit-content; margin:0 auto 16px;">ℹ️ BİZ KİMİZ?</div>
   <h1>İnternetHarita Hakkında</h1>
   <p>Türkiye'de internet altyapısını şeffaflaştıran, kullanıcı deneyimlerini haritalandıran bağımsız ve açık kaynaklı topluluk projesi.</p>
 </header>
@@ -284,7 +370,24 @@ function toggleTheme() {
     }
   } catch(e) {}
 })();
+
+// YUKARI ÇIK FONKSİYONU
+window.addEventListener('scroll', function() {
+  var btt = document.getElementById('backToTop');
+  if (btt) {
+    if (window.pageYOffset > 300) {
+      btt.classList.add('visible');
+    } else {
+      btt.classList.remove('visible');
+    }
+  }
+});
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 </script>
+
+<button class="back-to-top" id="backToTop" onclick="scrollToTop()" title="Yukarı Çık">↑</button>
 
 </body>
 </html>

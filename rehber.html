@@ -155,7 +155,27 @@ html.light nav { background: rgba(255,255,255,0.94); }
   display: inline-flex; align-items: center; gap: 6px;
 }
 .btn-nav:hover { color: var(--text); background: var(--surface2); }
-.btn-nav.active { color: var(--accent); background: var(--accent-dim); }
+.btn-nav.active {
+  color: var(--accent); background: var(--accent-dim);
+  border: 1px solid rgba(0,212,255,0.25); box-shadow: 0 0 12px rgba(0,212,255,0.12);
+}
+
+.back-to-top {
+  position: fixed; bottom: 24px; right: 24px; z-index: 999;
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--accent); font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35); transition: all .25s ease;
+  opacity: 0; visibility: hidden; transform: translateY(12px);
+}
+.back-to-top.visible {
+  opacity: 1; visibility: visible; transform: translateY(0);
+}
+.back-to-top:hover {
+  background: var(--accent-dim); border-color: var(--accent);
+  box-shadow: 0 6px 20px var(--accent-glow); transform: translateY(-2px);
+}
 
 .nav-right-actions { display: flex; align-items: center; gap: 8px; order: 3; }
 .btn-cta {
@@ -456,7 +476,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
           </div>
           <div class="tech-spec-item">
             <span class="tech-spec-label">Maks. Upload</span>
-            <span class="tech-spec-value">1.000 Mbps (Simetrik)</span>
+            <span class="tech-spec-value">1.000 Mbps (Simetrik)*</span>
           </div>
           <div class="tech-spec-item">
             <span class="tech-spec-label">Ortalama Ping</span>
@@ -467,6 +487,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
             <span class="tech-spec-value">GPON Fiber Kablo</span>
           </div>
         </div>
+        <div style="font-size:11px; color:var(--text3); margin-top:10px; line-height:1.4;">* TurkNet GigaFiber'de 1.000 Mbps simetrik; Türk Telekom ve Superonline FTTH paketlerinde upload genellikle 50–100 Mbps ile sınırlandırılmaktadır.</div>
       </article>
 
       <!-- FTTB FIBER -->
@@ -863,7 +884,24 @@ function filterGuide() {
     }
   });
 }
+
+// YUKARI ÇIK FONKSİYONU
+window.addEventListener('scroll', function() {
+  var btt = document.getElementById('backToTop');
+  if (btt) {
+    if (window.pageYOffset > 300) {
+      btt.classList.add('visible');
+    } else {
+      btt.classList.remove('visible');
+    }
+  }
+});
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 </script>
+
+<button class="back-to-top" id="backToTop" onclick="scrollToTop()" title="Yukarı Çık">↑</button>
 
 </body>
 </html>
