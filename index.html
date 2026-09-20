@@ -1286,9 +1286,11 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
 <!-- Tema erken init — flash önleme -->
 <script>
   (function(){
-    var t = localStorage.getItem('ih_theme') || 'dark';
-    if (t === 'light') document.documentElement.classList.add('light');
-    if (localStorage.getItem('ih_colorblind') === 'true') document.documentElement.classList.add('colorblind-mode');
+    try {
+      var t = localStorage.getItem('ih_theme') || 'dark';
+      if (t === 'light') document.documentElement.classList.add('light');
+      if (localStorage.getItem('ih_colorblind') === 'true') document.documentElement.classList.add('colorblind-mode');
+    } catch(e) {}
   })();
 </script>
 </head>
@@ -1315,7 +1317,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
           <text x="50" y="84" font-family="'Space Mono', monospace, sans-serif" font-size="34" font-weight="900" fill="#070b0f" text-anchor="middle" letter-spacing="3">İH</text>
         </svg>
       </div>
-      <h1 class="logo-text" style="margin:0;font-size:inherit;font-weight:inherit;display:inline-block;" title="İnternet Altyapı Haritası &amp; Altyapı Sorgulama">internet<span>Harita</span></h1>
+      <h1 class="logo-text" style="margin:0;display:inline-block;" title="İnternet Altyapı Haritası &amp; Altyapı Sorgulama">internet<span>Harita</span></h1>
     </div>
     <div class="nav-right">
       <label class="maintenance-toggle" id="headerMaintenanceToggle" style="display:none; padding: 4px 8px; height: 30px;">

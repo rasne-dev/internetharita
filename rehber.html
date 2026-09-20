@@ -150,7 +150,7 @@ html.light nav { background: rgba(255,255,255,0.94); }
 
 .nav-links { display: flex; align-items: center; gap: 10px; order: 2; }
 .btn-nav {
-  padding: 7px 14px; border-radius: 7px; font-size: 12px; font-weight: 600;
+  padding: 7px 14px; border-radius: 7px; font-size: 13px; font-weight: 600;
   text-decoration: none; color: var(--text2); transition: all .2s;
   display: inline-flex; align-items: center; gap: 6px;
 }
@@ -782,12 +782,14 @@ function toggleTheme() {
 }
 
 (function initTheme(){
-  var t = localStorage.getItem('ih_theme') || 'dark';
-  if (t === 'light') {
-    document.documentElement.classList.add('light');
-    var btn = document.getElementById('themeBtn');
-    if (btn) btn.textContent = '🌙';
-  }
+  try {
+    var t = localStorage.getItem('ih_theme') || 'dark';
+    if (t === 'light') {
+      document.documentElement.classList.add('light');
+      var btn = document.getElementById('themeBtn');
+      if (btn) btn.textContent = '🌙';
+    }
+  } catch(e) {}
 })();
 
 function toggleFaq(header) {
