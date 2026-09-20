@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.googleadservices.com; connect-src 'self' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com; frame-src 'self' https://googleads.g.doubleclick.net https://*.googlesyndication.com https://*.google.com; base-uri 'none'; object-src 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+
+<!-- Google AdSense Doğrulama ve Reklam Kodu -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9484247825024770" crossorigin="anonymous"></script>
+
+<title>Gizlilik ve Çerez Politikası — KVKK, GDPR ve AdSense Aydınlatma Metni | İnternetHarita</title>
+<meta name="description" content="İnternetHarita gizlilik politikası, KVKK ve GDPR aydınlatma metni, konum mahremiyeti (~100m fuzzing), çerez yönetimi ve Google AdSense reklam ilkeleri.">
+<meta name="keywords" content="internetharita gizlilik politikası, çerez politikası, kvkk aydınlatma metni, gdpr, google adsense çerezleri, konum mahremiyeti">
+<link rel="canonical" href="https://internetharita.com.tr/gizlilik-politikasi.html">
+
+<!-- Open Graph / Sosyal Medya -->
+<meta property="og:title" content="Gizlilik ve Çerez Politikası — İnternetHarita">
+<meta property="og:description" content="İnternetHarita veri mahremiyeti, çerez politikası, KVKK aydınlatma metni ve Google AdSense ilkeleri.">
+<meta property="og:url" content="https://internetharita.com.tr/gizlilik-politikasi.html">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://internetharita.com.tr/favicon-512x512.png">
+<meta property="og:locale" content="tr_TR">
+<meta name="twitter:card" content="summary_large_image">
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="/logo.svg">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" id="themeColorMeta" content="#070b0f">
+
+<style>
+:root {
+  --bg: #070b0f; --surface: #0d1318; --surface2: #141c24; --surface3: #1c2733;
+  --border: #1e2d3d; --border2: #243444;
+  --accent: #00d4ff; --accent-dim: rgba(0,212,255,0.12); --accent-glow: rgba(0,212,255,0.25);
+  --text: #e2eaf4; --text2: #8fa3b8; --text3: #4a6278;
+  --success: #22c55e; --warn: #f59e0b; --danger: #ef4444; --purple: #a855f7;
+  --font-mono: 'Space Mono', monospace; --font-body: 'DM Sans', sans-serif;
+  --nav-h: 56px;
+}
+
+html.light {
+  --bg: #f5f8fc; --surface: #ffffff; --surface2: #ebf1f8; --surface3: #e0e9f4;
+  --border: #d4e0ee; --border2: #bfd0e4;
+  --accent: #0088cc; --accent-dim: rgba(0,136,204,0.1); --accent-glow: rgba(0,136,204,0.25);
+  --text: #0f1923; --text2: #3a5068; --text3: #758ca3;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: var(--font-body); -webkit-font-smoothing: antialiased;
+  line-height: 1.7; overflow-x: hidden;
+}
+
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+
+/* NAV */
+nav {
+  position: sticky; top: 0; left: 0; right: 0; z-index: 1000;
+  height: var(--nav-h); background: rgba(7,11,15,0.94); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border); display: flex; align-items: center;
+  padding: 0 20px;
+}
+html.light nav { background: rgba(255,255,255,0.94); }
+.nav-container {
+  width: 100%; max-width: 1100px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.logo-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 16px var(--accent-glow); overflow: hidden;
+}
+.logo-text { font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+.logo-text span { color: var(--accent); }
+
+.nav-links { display: flex; align-items: center; gap: 10px; }
+.btn-nav {
+  padding: 7px 14px; border-radius: 7px; font-size: 13px; font-weight: 600;
+  text-decoration: none; color: var(--text2); transition: all .2s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-nav:hover { color: var(--text); background: var(--surface2); }
+.btn-nav.active { color: var(--accent); background: var(--accent-dim); }
+
+.nav-right-actions { display: flex; align-items: center; gap: 8px; }
+.btn-cta {
+  padding: 7px 16px; background: var(--accent); color: #000 !important;
+  font-weight: 700; border-radius: 7px; text-decoration: none; font-size: 12px;
+  box-shadow: 0 2px 10px var(--accent-glow); transition: all .2s;
+}
+.btn-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 18px var(--accent-glow); }
+
+.theme-toggle-btn {
+  width: 32px; height: 32px; border-radius: 8px; background: var(--surface2);
+  border: 1px solid var(--border); color: var(--text); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 14px;
+  transition: all .2s;
+}
+
+/* HERO */
+.hero {
+  padding: 56px 20px 36px; text-align: center;
+  background: radial-gradient(circle at 50% 10%, var(--accent-dim) 0%, transparent 65%);
+  border-bottom: 1px solid var(--border);
+}
+.hero-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700;
+  font-family: var(--font-mono); color: var(--accent); background: var(--accent-dim);
+  border: 1px solid rgba(0,212,255,0.3); margin-bottom: 16px;
+}
+.hero h1 {
+  font-size: 30px; font-weight: 800; letter-spacing: -0.8px;
+  max-width: 800px; margin: 0 auto 12px; line-height: 1.3;
+}
+.hero p {
+  color: var(--text2); font-size: 14px; max-width: 600px; margin: 0 auto;
+}
+
+/* CONTENT CONTAINER */
+.container {
+  max-width: 880px; margin: 0 auto; padding: 48px 20px 80px;
+}
+
+.legal-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 28px; margin-bottom: 24px;
+}
+.legal-card h2 {
+  font-size: 18px; font-weight: 700; margin-bottom: 14px; color: var(--text);
+  display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+}
+.legal-card h3 {
+  font-size: 15px; font-weight: 600; margin: 16px 0 8px; color: var(--accent);
+}
+.legal-card p {
+  font-size: 14px; color: var(--text2); margin-bottom: 12px;
+}
+.legal-card ul {
+  margin: 8px 0 16px 20px; font-size: 14px; color: var(--text2);
+}
+.legal-card li { margin-bottom: 6px; }
+.legal-card code {
+  font-family: var(--font-mono); font-size: 12px; background: var(--surface2);
+  padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border);
+}
+.legal-card a { color: var(--accent); text-decoration: none; }
+.legal-card a:hover { text-decoration: underline; }
+
+.callout-box {
+  background: var(--surface2); border-left: 4px solid var(--accent);
+  border-radius: 0 8px 8px 0; padding: 14px 16px; margin: 16px 0;
+  font-size: 13px; color: var(--text);
+}
+
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .legal-card { padding: 20px; }
+  .hero h1 { font-size: 24px; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-container">
+    <a href="/" class="logo">
+      <div class="logo-icon">
+        <img src="/favicon-48x48.png" width="32" height="32" alt="İnternetHarita Logo">
+      </div>
+      <span class="logo-text">internet<span>harita</span></span>
+    </a>
+
+    <div class="nav-links">
+      <a href="/" class="btn-nav">🗺 Canlı Harita</a>
+      <a href="/speedtest-verileri.html" class="btn-nav">📊 Hız Verileri</a>
+      <a href="/rehber.html" class="btn-nav">📚 Altyapı Rehberi</a>
+    </div>
+
+    <div class="nav-right-actions">
+      <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="Temayı Değiştir">☀️</button>
+      <a href="/" class="btn-cta">Haritaya Git</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-tag">🔒 GİZLİLİK &amp; KVKK</div>
+  <h1>Gizlilik ve Çerez Politikası</h1>
+  <p>Veri mahremiyeti ilkelerimiz, konum güvenliği, çerezler ve Google AdSense standartları hakkında detaylı bilgilendirme.</p>
+</header>
+
+<main class="container">
+
+  <div class="legal-card">
+    <h2><span>1. Veri Sorumlusu ve Kapsam</span></h2>
+    <p>Bu metin, <strong>internetharita.com.tr</strong> ("İnternetHarita" veya "Platform") web sitesini ziyaret eden veya platforma katkıda bulunan tüm kullanıcıların gizlilik haklarını korumak, 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) ve Avrupa Genel Veri Koruma Tüzüğü (GDPR) kapsamında aydınlatma yükümlülüğünü yerine getirmek amacıyla hazırlanmıştır.</p>
+    <p>İnternetHarita, kâr amacı gütmeyen, açık kaynaklı ve Türkiye'deki internet altyapı şeffaflığını artırmayı hedefleyen bağımsız bir topluluk projesidir.</p>
+  </div>
+
+  <div class="legal-card">
+    <h2><span>2. Sıfır Kişisel Veri (Zero PII) İlkesi</span></h2>
+    <p>İnternetHarita'da hesap oluşturma, üyelik veya oturum açma zorunluluğu yoktur. Kullanıcılarımızdan hiçbir şekilde aşağıdaki kişisel veriler <strong>istenmez, toplanmaz ve işlenmez:</strong></p>
+    <ul>
+      <li>Ad, soyad, T.C. kimlik numarası veya resmi kimlik bilgileri,</li>
+      <li>Telefon numarası veya e-posta adresi (iletişime kendiniz geçmediğiniz sürece),</li>
+      <li>Daire numarası, bina kapı numarası veya mülk sahibine ait kişisel kayıtlar,</li>
+      <li>Ödeme, kredi kartı veya fatura bilgileri.</li>
+    </ul>
+  </div>
+
+  <div class="legal-card">
+    <h2><span>3. Konum Mahremiyeti (~100m Fuzzing Teknolojisi)</span></h2>
+    <p>Kullanıcılar haritada kendi altyapı veya hız testi deneyimlerini paylaştıklarında, hane gizliliğinin korunması en üst düzeyde güvenceye alınır:</p>
+    <div class="callout-box">
+      <strong>🔒 Konum Bulanıklaştırma Güvencesi:</strong> Haritada işaretlediğiniz koordinatlar sunucuya veya veritabanına iletilmeden önce tarayıcınızda istemci taraflı (client-side) olarak ~100 metre yarıçapında rastgele bir sapmayla bulanıklaştırılır (fuzzing). Sistem yöneticileri ve moderatörler dahil olmak üzere hiç kimse hanenizin kesin konumuna erişemez.
+    </div>
+  </div>
+
+  <div class="legal-card">
+    <h2><span>4. Çerezler (Cookies) ve Google AdSense Reklamcılığı</span></h2>
+    <p>Sitemizin barındırma, alan adı ve sunucu işletim maliyetlerini karşılamak amacıyla Google AdSense reklam hizmetleri kullanılmaktadır.</p>
+    
+    <h3>Google AdSense ve DoubleClick Çerezi</h3>
+    <ul>
+      <li>Google dahil üçüncü taraf tedarikçiler, kullanıcıların web sitemize veya diğer web sitelerine yaptıkları önceki ziyaretlere dayalı olarak reklam yayınlamak için çerezler (cookies) kullanır.</li>
+      <li>Google'ın reklam çerezlerini kullanması, Google ve iş ortaklarının kullanıcılarımıza sitemize ve/veya internetteki diğer sitelere yaptıkları ziyaretlere dayalı reklamlar sunmasına olanak tanır.</li>
+      <li>Kullanıcılar, <a href="https://myadcenter.google.com/" target="_blank" rel="noopener noreferrer">Google Reklam Merkezi</a> sayfasını ziyaret ederek kişiselleştirilmiş reklamcılığı diledikleri zaman devre dışı bırakabilirler.</li>
+      <li>Alternatif olarak, üçüncü taraf bir tedarikçinin kişiselleştirilmiş reklamcılık için çerezleri kullanmasını devre dışı bırakmak isteyen kullanıcılar <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer">aboutads.info</a> veya <a href="https://www.youronlinechoices.eu/" target="_blank" rel="noopener noreferrer">Your Online Choices</a> adreslerini ziyaret edebilirler.</li>
+    </ul>
+
+    <h3>Tarayıcı Yerel Depolaması (LocalStorage)</h3>
+    <p>Platformumuzda tercih ettiğiniz arayüz teması (karanlık / aydınlık) ve kendi eklediğiniz hız ölçümlerini üye olmadan yönetebilmeniz ("Düzenle" / "Sil" butonları) için tarayıcınızın yerel hafızası (<code>localStorage</code>) kullanılır. Bu veriler yalnızca cihazınızda saklanır ve harici sunuculara aktarılmaz.</p>
+  </div>
+
+  <div class="legal-card">
+    <h2><span>5. Üçüncü Taraf Hizmet Sağlayıcılar</span></h2>
+    <p>Platformumuzun kesintisiz, hızlı ve güvenli çalışabilmesi için küresel ölçekte tanınan aşağıdaki altyapı sağlayıcıları kullanılmaktadır:</p>
+    <ul>
+      <li><strong>Cloudflare Inc.:</strong> DDoS koruması, SSL/TLS şifreleme, CDN önbellekleme ve ping testi sinyalleri için.</li>
+      <li><strong>Supabase Inc.:</strong> Açık kaynak PostgreSQL veritabanı altyapısı ve veri depolama için.</li>
+      <li><strong>OpenStreetMap Foundation &amp; CartoDB:</strong> Harita katmanlarının ve coğrafi harita karolarının (tile) sunulması için.</li>
+      <li><strong>Google LLC (Google AdSense):</strong> Reklam sunumu ve anonim performans analitiği için.</li>
+    </ul>
+  </div>
+
+  <div class="legal-card">
+    <h2><span>6. KVKK ve GDPR Kapsamındaki Haklarınız</span></h2>
+    <p>Kişisel Verilerin Korunması Kanunu'nun 11. maddesi ve GDPR uyarınca herkes veri sorumlusuna başvurarak:</p>
+    <ul>
+      <li>Kendi eklediği ölçüm veya bildirimi doğrudan tarayıcı üzerinden <strong>"Sil"</strong> butonuyla veritabanından kalıcı olarak silme (Unutulma Hakkı),</li>
+      <li>Platformda yayınlanan herhangi bir bilginin gerçeğe aykırı veya hatalı olduğunu bildirme ve düzeltilmesini talep etme hakkına sahiptir.</li>
+    </ul>
+  </div>
+
+  <div class="legal-card">
+    <h2><span>7. İletişim ve Veri Sorumlusu İrtibatı</span></h2>
+    <p>Gizlilik politikamız, çerez uygulamalarımız veya veri güvenliği ile ilgili her türlü soru, öneri ve talepleriniz için bizimle iletişime geçebilirsiniz:</p>
+    <ul>
+      <li><strong>E-posta:</strong> <a href="mailto:rasne.app@gmail.com">rasne.app@gmail.com</a></li>
+      <li><strong>GitHub Issues:</strong> <a href="https://github.com/rasne-dev/internetharita/issues" target="_blank" rel="noopener noreferrer">github.com/rasne-dev/internetharita</a></li>
+      <li><strong>Yürürlük ve Güncelleme Tarihi:</strong> 20 Eylül 2026</li>
+    </ul>
+  </div>
+
+</main>
+
+<footer style="border-top:1px solid var(--border); padding:32px 20px; text-align:center; font-size:12px; color:var(--text3);">
+  <div style="max-width:1000px; margin:0 auto; display:flex; flex-direction:column; gap:12px; align-items:center;">
+    <div>&copy; 2026 <strong>İnternetHarita</strong> — Bağımsız Türkiye İnternet Altyapı Haritası. Tüm hakları saklıdır.</div>
+    <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center;">
+      <a href="/" style="color:var(--text2); text-decoration:none;">Canlı Harita</a>
+      <a href="/speedtest-verileri.html" style="color:var(--text2); text-decoration:none;">Speedtest Verileri</a>
+      <a href="/rehber.html" style="color:var(--text2); text-decoration:none;">Altyapı Rehberi &amp; SSS</a>
+      <a href="/hakkimizda.html" style="color:var(--text2); text-decoration:none;">Hakkımızda</a>
+      <a href="/gizlilik-politikasi.html" style="color:var(--accent); text-decoration:none; font-weight:600;">Gizlilik &amp; Çerezler</a>
+      <a href="/kullanim-sartlari.html" style="color:var(--text2); text-decoration:none;">Kullanım Şartları</a>
+      <a href="/iletisim.html" style="color:var(--text2); text-decoration:none;">İletişim</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+function toggleTheme() {
+  var isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('ih_theme', isLight ? 'light' : 'dark');
+  document.getElementById('themeBtn').textContent = isLight ? '🌙' : '☀️';
+  var meta = document.getElementById('themeColorMeta');
+  if (meta) meta.setAttribute('content', isLight ? '#f5f8fc' : '#070b0f');
+}
+
+(function initTheme(){
+  try {
+    var t = localStorage.getItem('ih_theme') || 'dark';
+    if (t === 'light') {
+      document.documentElement.classList.add('light');
+      var btn = document.getElementById('themeBtn');
+      if (btn) btn.textContent = '🌙';
+      var meta = document.getElementById('themeColorMeta');
+      if (meta) meta.setAttribute('content', '#f5f8fc');
+    }
+  } catch(e) {}
+})();
+</script>
+
+</body>
+</html>
