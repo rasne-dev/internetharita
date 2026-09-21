@@ -10,8 +10,8 @@
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9484247825024770" crossorigin="anonymous"></script>
 
 <title>İletişim & Destek — İnternetHarita</title>
-<meta name="description" content="İnternetHarita ekibi ile iletişime geçin. Geri bildirim, teknik destek, moderasyon, veri kaldırma talepleri ve iş birliği.">
-<meta name="keywords" content="internetharita iletişim, internet haritası destek, altyapı veri kaldırma, moderasyon iletişim">
+<meta name="description" content="İnternetHarita ekibi ile iletişime geçin. Geri bildirim, teknik öneriler, telif/kural ihlali bildirimleri ve iş birliği.">
+<meta name="keywords" content="internetharita iletişim, internet haritası destek, altyapı bildirim, moderasyon iletişim">
 <link rel="canonical" href="https://internetharita.com.tr/iletisim.html">
 
 <!-- Open Graph / Sosyal Medya -->
@@ -303,7 +303,7 @@ html.light nav { background: rgba(255,255,255,0.94); }
     <div class="contact-box">
       <div class="icon">✉️</div>
       <h2>E-Posta İletişimi</h2>
-      <p>Genel sorularınız, veri kaldırma / moderasyon talepleri, telif hakları veya iş birliği önerileri için doğrudan e-posta gönderebilirsiniz.</p>
+      <p>Genel sorularınız, kural veya telif hakkı ihlalleri ile iş birliği önerileri için doğrudan e-posta gönderebilirsiniz.</p>
       <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:auto;">
         <a href="mailto:rasne.app@gmail.com" class="link-btn" style="flex:1;">rasne.app@gmail.com</a>
         <button onclick="copyEmail(this)" class="link-btn" style="padding:10px 14px; cursor:pointer;" title="E-postayı Kopyala">📋 Kopyala</button>
@@ -319,19 +319,24 @@ html.light nav { background: rgba(255,255,255,0.94); }
   </div>
 
   <div class="info-card">
-    <h3><span>⚖️ Veri Kaldırma, Hatalı Bilgi ve Moderasyon Talepleri</span></h3>
-    <p>İnternetHarita üzerindeki veriler topluluk tarafından girilen anonim hız ve altyapı bildirimleridir. Harita üzerindeki herhangi bir işaretlemenin mülkiyetinizi ihlal ettiğini veya gerçeğe aykırı olduğunu düşünüyorsanız:</p>
+    <h3><span>💡 Kendi Ölçümünüzü Silmek veya Düzenlemek mi İstiyorsunuz?</span></h3>
+    <p>Platformumuzda kullanıcı gizliliği gereği <strong>hiçbir üyelik, e-posta veya kimlik kaydı tutulmamaktadır</strong> (Sıfır Kişisel Veri). Bu nedenle eklediğiniz ölçüm yalnızca ölçümü gerçekleştirdiğiniz cihaz ve tarayıcının yerel hafızasına (<code>localStorage</code>) tanımlanır:</p>
     <ul>
-      <li>E-postanızda ilgili konumun haritadaki yaklaşık koordinatlarını veya mahalle/sokak bilgisini,</li>
-      <li>Düzeltilmesini veya silinmesini talep ettiğiniz gerekçeyi belirterek bize iletiniz.</li>
+      <li>Ölçümü girdiğiniz tarayıcıdan haritadaki noktanıza tıkladığınızda açılan bilgi penceresinde doğrudan <strong>"🗑 Sil"</strong> ve <strong>"✏️ Düzenle"</strong> butonları görüntülenir.</li>
+      <li>Bu butona tıklayarak kaydınızı veritabanından tek tıkla, anında ve kalıcı olarak silebilirsiniz (Unutulma Hakkı).</li>
+      <li><strong>Önemli Bilgilendirme:</strong> Veritabanında hiçbir kullanıcı hesabı veya kimlik eşleşmesi tutulmadığı için; e-posta yoluyla iletilen <em>"şu mahalledeki pinimi silin"</em> şeklindeki bireysel talepler hangi pinin kime ait olduğunun doğrulanamaması nedeniyle teknik olarak işleme alınamamaktadır. Ölçümlerinizi lütfen eklediğiniz cihaz üzerinden yönetiniz.</li>
     </ul>
-    <p>Moderasyon ekibimiz başvurunuzu en geç <strong>24–48 saat</strong> içerisinde inceleyerek gerekli güncellemeyi sağlayacaktır.</p>
   </div>
 
   <div class="info-card">
-    <h3><span>💡 Kendi Ölçümünüzü Silmek mi İstiyorsunuz?</span></h3>
-    <p>Platformumuzda "Unutulma Hakkı" tam olarak uygulanmaktadır. Eklediğiniz ölçümü silmek için bizimle iletişime geçmenize dahi gerek yoktur:</p>
-    <p>Ölçüm eklediğiniz tarayıcıdan haritadaki noktanıza tıkladığınızda açılan pencerede <strong>"🗑 Sil"</strong> butonu görünecektir. Bu butona tıklayarak kaydınızı veritabanımızdan anında ve kalıcı olarak silebilirsiniz.</p>
+    <h3><span>⚖️ Kural İhlali, Hukuki Bildirim ve Moderasyon</span></h3>
+    <p>İnternetHarita üzerindeki veriler topluluk tarafından girilen yaklaşık 100m kaydırılmış (fuzzed) anonim hız ve altyapı bildirimleridir. Yalnızca aşağıdaki durumlarda moderasyon ekibimize başvurabilirsiniz:</p>
+    <ul>
+      <li>Yorumlarda şahıs adı, telefon numarası veya hakaret/küfür gibi kişisel veri veya kural ihlali içeren bir ifade bulunuyorsa,</li>
+      <li>Askeri, diplomatik veya özel güvenlikli bir alanın üzerine sehven işaretleme yapılmışsa,</li>
+      <li>Bariz bot/spam saldırısı veya kötü niyetli manipülasyon tespit edildiyse.</li>
+    </ul>
+    <p>Bu gibi durumlarda ilgili noktanın yaklaşık koordinatını ve gerekçenizi belirterek e-posta iletebilirsiniz. Moderasyon ekibimiz inceleme sonrası kural dışı içeriği yayından kaldıracaktır.</p>
   </div>
 
 </main>

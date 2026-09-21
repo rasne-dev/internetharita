@@ -2095,7 +2095,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
 
       <p style="margin-bottom:8px;"><b style="color:var(--text);">4) Veri Güvenliği ve Anti-Spam Koruması:</b> Platforma otomatik botların veya kötü niyetli betiklerin sahte ölçüm basmasını engellemek amacıyla standart hız sınırlamaları (rate limiting) ve görünmez form güvenlik önlemleri uygulanmaktadır.</p>
 
-      <p style="margin-bottom:8px;"><b style="color:var(--text);">5) Yerel Depolama (LocalStorage) &amp; Ölçüm Yönetimi:</b> Tema tercihiniz (karanlık/aydınlık) ile eklediğiniz ölçümleri üyelik gerektirmeden tanıyabilmeniz için tarayıcınızın yerel hafızası (<code>localStorage</code>) kullanılır. Haritadaki kendi ölçümünüzü dilediğiniz an <b>"✏️ Düzenle"</b> veya <b>"🗑 Sil"</b> butonlarıyla kalıcı olarak silebilirsiniz (Unutulma Hakkı).</p>
+      <p style="margin-bottom:8px;"><b style="color:var(--text);">5) Yerel Depolama (LocalStorage) &amp; Ölçüm Yönetimi:</b> Tema tercihiniz (karanlık/aydınlık) ile eklediğiniz ölçümleri üyelik gerektirmeden tanıyabilmeniz için tarayıcınızın yerel hafızası (<code>localStorage</code>) kullanılır. Haritadaki kendi ölçümünüzü dilediğiniz an <b>"✏️ Düzenle"</b> veya <b>"🗑 Sil"</b> butonlarıyla kalıcı olarak silebilirsiniz (Unutulma Hakkı). Sistemde kimlik veya e-posta kaydı tutulmadığından ölçüm yönetimi yalnızca verinin eklendiği cihaz ve tarayıcı üzerinden gerçekleştirilebilir.</p>
 
       <p style="margin-bottom:8px;"><b style="color:var(--text);">6) Çerezler ve Reklamlar (Google AdSense):</b> Alan adı, sunucu ve harita altyapı işletim masraflarını karşılamak amacıyla Google AdSense standart reklam çerezleri kullanılabilir. Kullanıcılar kişiselleştirilmiş reklam tercihlerini <a href="https://myadcenter.google.com" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">Google Reklam Merkezi</a> üzerinden kolayca yönetebilir veya kapatabilir.</p>
 
@@ -2152,9 +2152,15 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
     <input type="hidden" id="reportPinId"><input type="hidden" id="reportHexId"><input type="hidden" id="reportBolge">
     <div class="fg" style="margin-bottom:10px;">
       <div class="fl">Bildirim Türü</div>
-      <select class="fs" id="reportType"><option value="yanlis_hiz">Hız verisi yanlış</option><option value="yanlis_konum">Konum yanlış</option><option value="yanlis_iss">İSS bilgisi yanlış</option><option value="spam">Spam / sahte veri</option><option value="guncelleme">Altyapı değişti / Bilgi güncelleme (örn. Fiber geldi)</option><option value="diger">Diğer</option></select>
+      <select class="fs" id="reportType" onchange="onReportTypeChange(this.value)"><option value="yanlis_hiz">Hız verisi yanlış</option><option value="yanlis_konum">Konum yanlış</option><option value="yanlis_iss">İSS bilgisi yanlış</option><option value="spam">Spam / sahte veri</option><option value="guncelleme">Altyapı değişti / Bilgi güncelleme (örn. Fiber geldi)</option><option value="diger">Diğer</option></select>
     </div>
-    <div class="fg" style="margin-bottom:16px;"><div class="fl">Açıklama (opsiyonel)</div><textarea class="fta" id="reportText" placeholder="Neyin yanlış olduğunu açıklayın..."></textarea></div>
+    <!-- Fiber / Altyapı Değişikliği Bilgilendirme ve Yönlendirme Kartı -->
+    <div id="reportFiberGuide" style="display:none;background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.3);border-radius:7px;padding:10px 12px;margin-bottom:12px;font-size:11px;color:var(--text2);line-height:1.5;">
+      <div style="font-weight:700;color:var(--accent);margin-bottom:4px;">💡 Mahallenize Yeni Altyapı mı Geldi?</div>
+      <div>Bölgenize yeni bir Fiber altyapısı gelmiş olması, diğer binalardaki veya komşularınızdaki VDSL/ADSL ölçümlerini hatalı kılmaz (binaların altyapıları veya kullanıcı paketleri farklı olabilir). Kendi binanızdaki yeni Fiber hızını paylaşmak için lütfen doğrudan haritaya kendi ölçümünüzü ekleyin:</div>
+      <button type="button" class="btn-ghost" onclick="redirectToNewPinFromReport()" style="margin-top:8px;width:100%;font-size:11px;color:var(--accent);border-color:var(--accent);padding:7px 10px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;">📍 Kendi Hız Ölçümünü Haritaya Ekle (+ Veri Ekle)</button>
+    </div>
+    <div class="fg" style="margin-bottom:16px;"><div class="fl">Açıklama (opsiyonel)</div><textarea class="fta" id="reportText" placeholder="Neyin yanlış olduğunu veya güncel altyapı durumunu açıklayın..."></textarea></div>
     <button class="btn-primary" id="reportSubmitBtn" style="width:100%;padding:11px;" onclick="submitReport()">Bildirimi Gönder</button>
   </div>
 </div>
@@ -6794,6 +6800,7 @@ function openReportModal(pinId, locStr) {
     document.getElementById('reportLocationInfo').style.display = 'none';
   }
   document.getElementById('reportType').value = 'yanlis_hiz';
+  onReportTypeChange('yanlis_hiz');
   document.getElementById('reportText').value = '';
   const rsb1 = document.getElementById('reportSubmitBtn'); if (rsb1) { rsb1.disabled = false; rsb1.textContent = 'Bildirimi Gönder'; }
   document.getElementById('reportModal').classList.add('open');
@@ -6807,16 +6814,30 @@ function openHexReport() {
   document.getElementById('reportLocationText').textContent = locText;
   document.getElementById('reportLocationInfo').style.display = 'block';
   document.getElementById('reportType').value = 'yanlis_hiz';
+  onReportTypeChange('yanlis_hiz');
   document.getElementById('reportText').value = '';
   const rsb2 = document.getElementById('reportSubmitBtn'); if (rsb2) { rsb2.disabled = false; rsb2.textContent = 'Bildirimi Gönder'; }
   document.getElementById('reportModal').classList.add('open');
 }
 function closeReportModal() { document.getElementById('reportModal').classList.remove('open'); }
 
+function onReportTypeChange(val) {
+  const guide = document.getElementById('reportFiberGuide');
+  if (guide) {
+    guide.style.display = (val === 'guncelleme') ? 'block' : 'none';
+  }
+}
+function redirectToNewPinFromReport() {
+  closeReportModal();
+  showPage('pin');
+}
+
 // HATA ÖNLEYİCİ GÜNCELLEME (SCHEMA CACHE FALLBACK)
 async function submitReport() {
   const pinId = document.getElementById('reportPinId').value; const bolge = document.getElementById('reportBolge').value || null; const hexId = document.getElementById('reportHexId').value || null;
-  const targets = pinId ?[{pin_id:pinId}] : activeHexPins.slice(0,5).map(p=>({pin_id:p.id}));
+  // BÖLGE BİLDİRİMİ İYİLEŞTİRMESİ: Eğer pinId boşsa (bölge bildirimi yapılıyorsa),
+  // o bölgedeki masum kullanıcı pinlerini hedef almak yerine bağımsız tek bir bölge bildirimi (pin_id: null) açıyoruz.
+  const targets = pinId ? [{pin_id:pinId}] : [{pin_id:null}];
   if (!targets.length) return showToast('Bildirilecek veri yok','err');
   const tip = document.getElementById('reportType').value;
   const aciklama = document.getElementById('reportText').value || null;
@@ -6825,8 +6846,8 @@ async function submitReport() {
   if (btn) { if (btn.disabled) return; btn.disabled = true; btn.textContent = 'Gönderiliyor...'; }
   const resetBtn = () => { if (btn) { btn.disabled = false; btn.textContent = 'Bildirimi Gönder'; } };
 
-  const fullPayload  = t => ({ pin_id:t.pin_id, tip, aciklama, durum:'bekleyen', browser_fp: browserFingerprint || null, hex_id: hexId, bolge });
-  const basicPayload = t => ({ pin_id:t.pin_id, tip, aciklama, durum:'bekleyen' });
+  const fullPayload  = t => ({ pin_id:t.pin_id || null, tip, aciklama, durum:'bekleyen', browser_fp: browserFingerprint || null, hex_id: hexId, bolge });
+  const basicPayload = t => ({ pin_id:t.pin_id || null, tip, aciklama, durum:'bekleyen' });
 
   // HATA DÜZELTMESİ: Önceden Promise.all kullanılıyordu — 5 pinlik bir bölge bildiriminde
   // TEK bir pin şema/RLS hatası verse bile Promise.all TÜMÜNÜ reddediyor, ardından catch
@@ -7945,15 +7966,23 @@ function buildRaporScopeAndPinHtml(r, pin, siblingGroups) {
     scopeKey = r.bolge + '|' + r.tip + '|' + (r.aciklama || '') + '|' + bucket;
   }
   const siblingCount = scopeKey && siblingGroups[scopeKey] ? siblingGroups[scopeKey].length : 1;
-  const scopeBadge = siblingCount > 1
-    ? `<span style="display:inline-block;padding:2px 7px;background:rgba(251,140,0,.12);border:1px solid rgba(251,140,0,.4);border-radius:4px;font-size:9px;color:var(--warn);font-family:var(--font-mono);font-weight:700;">🗺️ BÖLGE BİLDİRİMİ — bu bölgedeki ${siblingCount} pinden biri</span>`
-    : `<span style="display:inline-block;padding:2px 7px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:4px;font-size:9px;color:var(--accent);font-family:var(--font-mono);font-weight:700;">📍 TEK PİN BİLDİRİMİ</span>`;
-  const pinInfo = pin
-    ? `<span style="color:var(--text2);font-weight:700;">${escHtml(pin.iss||'—')}</span> · <span style="color:${cc(pin.baglanti_turu)}">${(pin.baglanti_turu||'').toUpperCase()}</span> · ${pin.gercek_dl||'?'} Mbps <span title="${escHtml(r.pin_id||'')}" style="opacity:.5;font-family:var(--font-mono);">(${r.pin_id?escHtml(r.pin_id.slice(0,8))+'…':'—'})</span>`
-    : `<span style="color:var(--warn);">⚠ Bu pin artık bulunamıyor — silinmiş olabilir</span>`;
+  const scopeBadge = !r.pin_id
+    ? `<span style="display:inline-block;padding:2px 7px;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.4);border-radius:4px;font-size:9px;color:var(--accent);font-family:var(--font-mono);font-weight:700;">🗺️ GENEL BÖLGE BİLDİRİMİ (Tekil pine bağlı değil)</span>`
+    : (siblingCount > 1
+      ? `<span style="display:inline-block;padding:2px 7px;background:rgba(251,140,0,.12);border:1px solid rgba(251,140,0,.4);border-radius:4px;font-size:9px;color:var(--warn);font-family:var(--font-mono);font-weight:700;">🗺️ BÖLGE BİLDİRİMİ — bu bölgedeki ${siblingCount} pinden biri</span>`
+      : `<span style="display:inline-block;padding:2px 7px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:4px;font-size:9px;color:var(--accent);font-family:var(--font-mono);font-weight:700;">📍 TEK PİN BİLDİRİMİ</span>`);
+
+  let pinInfo = '';
+  if (r.pin_id) {
+    pinInfo = pin
+      ? `<span style="color:var(--text2);font-weight:700;">${escHtml(pin.iss||'—')}</span> · <span style="color:${cc(pin.baglanti_turu)}">${(pin.baglanti_turu||'').toUpperCase()}</span> · ${pin.gercek_dl||'?'} Mbps <span title="${escHtml(r.pin_id||'')}" style="opacity:.5;font-family:var(--font-mono);">(${escHtml(r.pin_id.slice(0,8))}…)</span>`
+      : `<span style="color:var(--warn);">⚠ Bu pin artık bulunamıyor — silinmiş olabilir</span>`;
+  } else {
+    pinInfo = `<span style="color:var(--text3);font-size:10px;">ℹ️ Bu bildirim tekil bir kullanıcı pinine bağlı değildir; bölgenin genel altyapısıyla ilgilidir.</span>`;
+  }
 
   let pinReasonsHtml = '';
-  if (pin) {
+  if (pin && r.pin_id) {
     const reasons = getQuarantineReasons(pin);
     if (reasons && reasons.length) {
       pinReasonsHtml = `
