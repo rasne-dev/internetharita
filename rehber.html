@@ -342,15 +342,23 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 
 .dilekce-box {
   background: var(--surface2); border: 1px dashed var(--border2);
-  border-radius: 8px; padding: 16px; margin-top: 12px; font-size: 12px;
-  color: var(--text); font-family: var(--font-mono); line-height: 1.6;
-  position: relative;
+  border-radius: 8px; padding: 16px 18px; margin-top: 14px; font-size: 12px;
+  color: var(--text); font-family: var(--font-mono); line-height: 1.7;
+}
+.dilekce-box-header {
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+  border-bottom: 1px dashed var(--border2); padding-bottom: 10px; margin-bottom: 14px;
+  font-weight: 700; color: var(--accent); font-size: 11px; letter-spacing: 0.5px;
+}
+#dilekceText {
+  white-space: pre-wrap; word-break: break-word;
 }
 .copy-btn {
-  position: absolute; top: 10px; right: 10px; padding: 5px 10px;
+  padding: 6px 12px;
   background: var(--surface3); border: 1px solid var(--border2);
   border-radius: 6px; color: var(--accent); font-size: 11px; cursor: pointer;
   font-family: var(--font-body); font-weight: 600;
+  transition: all .2s;
 }
 .copy-btn:hover { background: var(--accent); color: #000; }
 
@@ -670,18 +678,45 @@ tr:hover td { background: rgba(255,255,255,0.02); }
           <p>Müşteri hizmetlerini telefonla aramak genellikle 'Bölgenizde altyapı bulunmamaktadır' yanıtı verir. Doğrudan bağlı bulunduğunuz Türk Telekom İlçe / Bölge Müdürlüğü'ne fiziki olarak gidip <strong>Erişim Planlama ve Yatırım Birimi</strong>'ne dilekçenizi elden teslim edin ve evrak takip numarası alın.</p>
           
           <div class="dilekce-box">
-            <button class="copy-btn" onclick="copyDilekce()">Kopyala</button>
-            <div id="dilekceText">TÜRK TELEKOMÜNİKASYON A.Ş. BÖLGE MÜDÜRLÜĞÜ'NE,
+            <div class="dilekce-box-header">
+              <span>📄 ÖRNEK FİBER DÖNÜŞÜM TALEP DİLEKÇESİ</span>
+              <button class="copy-btn" onclick="copyDilekce()">📋 Dilekçeyi Kopyala</button>
+            </div>
+            <div id="dilekceText">                                                  TARİH: ... / ... / 2026
 
-Konu: Binamıza FTTH (Eve Kadar Fiber) Altyapı Dönüşümü Talebi Hakkında
+TÜRK TELEKOMÜNİKASYON A.Ş.
+[Bölge / İl / İlçe] MÜDÜRLÜĞÜ'NE
+(Erişim Planlama ve Yatırım Birimi Başkanlığı'na)
 
-Adresimiz olan [İl], [İlçe], [Mahalle], [Sokak/Cadde], No: [Bina No] adresinde yer alan [Daire Sayısı] daireli apartmanımızda şu anda mevcut bakır altyapı yetersiz kalmakta ve sık sık kopma yaşanmaktadır.
+KONU: 
+Binamıza FTTH (Eve / Daireye Kadar Fiber) Altyapısı Çekilmesi Talebi
 
-Çevre sokaklarımızda fiber altyapı mevcut olup, binamızdaki sakinler olarak yüksek hızlı FTTH (Fiber) internet aboneliğine geçmek istemekteyiz. Binamızın fiber dönüşüm planlamasına dahil edilerek fiber optik kablo çekilmesini ve bina içi dağıtım kutusunun (OFSD) montajını saygılarımızla arz ve talep ederiz.
+TALEPTE BULUNAN:
+[Apartman / Site Adı] Yönetimi ve Bina Sakinleri
 
-Tarih: ... / ... / 2026
-Apartman Yöneticisi / Temsilcisi: [Ad Soyad, İmza, Telefon]
-Ek: Bina Sakinleri İmza Listesi</div>
+BİNA ADRES BİLGİLERİ:
+İl / İlçe         : [İl] / [İlçe]
+Mahalle           : [Mahalle Adı]
+Sokak / Cadde     : [Sokak / Cadde Adı]
+Bina Dış Kapı No  : [Bina No]
+Toplam Daire/Hane : Toplam [Daire Sayısı] Bağımsız Bölüm
+
+AÇIKLAMA VE TALEP:
+Yukarıda açık adresi ve bina bilgileri belirtilen apartmanımızda halihazırda kullanılmakta olan mevcut bakır (DSL) altyapısı günümüzün yüksek hızlı internet ihtiyaçlarına cevap verememekte, bina sakinlerimiz sık sık bağlantı kopmaları ve düşük hız problemleri yaşamaktadır.
+
+Bölgemizde ve çevre sokaklarımızda Türk Telekom yüksek hızlı fiber internet altyapısının mevcut olduğunu tespit etmiş bulunmaktayız. Binamızdaki sakinler olarak ortak mutabakatımız ve kararımız doğrultusunda, yüksek hızlı, kaliteli ve kesintisiz internet erişimi için Türk Telekom FTTH (Eve Kadar Fiber) aboneliğine geçiş yapmak istemekteyiz.
+
+Binamızın Türk Telekom fiber dönüşüm ve altyapı yatırım planlamasına dahil edilmesini, ana hattan binamıza fiber optik kablonun çekilmesini ve bina ortak alanına bina içi fiber sonlandırma kutusunun (OFSD) montajının yapılmasını saygılarımızla arz ve talep ederiz.
+
+BAŞVURU SAHİBİ (YÖNETİCİ / BİNA TEMSİLCİSİ):
+Ad Soyad        : ....................................................
+T.C. Kimlik No  : ....................................................
+Telefon Numarası: ....................................................
+İmza            : ....................................................
+
+EKLER:
+1. Bina Sakinleri İmzalı Talep Listesi (Ad-Soyad, Daire No, İmza)
+2. Apartman Karar Defteri Fotokopisi (Varsa)</div>
           </div>
         </div>
       </div>
