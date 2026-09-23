@@ -7119,10 +7119,18 @@ async function approveCustomIss(iss, normalizedName, color) {
 async function rejectCustomIss(iss) {
   try {
     const pins = await getAllPinsAdmin() || [];
-    const targets = pins.filter(p => p.iss === iss && p.is_quarantine);
-    for (const p of targets) await patchPin(p.id, { gorunur:false, is_quarantine:true });
+    const targets = pins.filter(p => p.iss === iss && !p.deleted_at);
+    for (const p of targets) {
+      await patchPin(p.id, { gorunur: false, is_quarantine: false, sikayet_sayisi: 0 });
+    }
     showToast(`👁 "${iss}" için ${targets.length} pin gizlendi`);
-    await loadCustomIss(); loadIssManager(); updateInboxSummary();
+    await loadPins();
+    await loadCustomIss();
+    loadSikayetler();
+    loadIssManager();
+    updateInboxSummary();
+    updateModStatsSummary();
+    loadAdminTable();
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 
@@ -7743,7 +7751,7 @@ async function loadSikayetler() {
   const list = document.getElementById('sikayetList'); list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
   try {
     const pins = await getAllPinsAdmin()||[];
-    const flagged = pins.filter(p => (p.sikayet_sayisi||0)>0 || !p.gorunur || isSpam(p) || p.is_quarantine);
+    const flagged = pins.filter(p => ((p.sikayet_sayisi||0)>0 || p.is_quarantine) && !p.deleted_at);
     if (!flagged.length) return list.innerHTML='<div class="empty-state">Şüpheli pin kümesi bulunmuyor ✅</div>';
 
     // FP'ye göre grupla — aynı cihazdan gelen pinleri bir arada göster
@@ -7826,10 +7834,13 @@ async function groupAction(idsJson, approve) {
         showToast(`🏷 ${unapprovedIss.length} yeni İSS listeye eklendi`, 'info');
       }
     }
-    await Promise.all(ids.map(id => patchPin(id, { gorunur: approve, sikayet_sayisi: approve ? 0 : 99, is_quarantine: approve ? false : true })));
+    await Promise.all(ids.map(id => patchPin(id, { gorunur: approve, sikayet_sayisi: 0, is_quarantine: false })));
     ids.forEach(id => document.getElementById('mc_'+id)?.remove());
     showToast(approve ? `✅ ${ids.length} pin onaylandı` : `👁 ${ids.length} pin gizlendi`);
-    await loadPins(); loadSikayetler();
+    await loadPins();
+    await loadCustomIss();
+    loadSikayetler();
+    loadAdminTable();
     updateInboxSummary();
     updateModStatsSummary();
   } catch(e) { showToast('Hata: '+friendlyDbError(e, 'pins'),'err'); }
@@ -7846,6 +7857,9 @@ async function groupDelete(idsJson) {
     cleanPinsData = publicCleanPins(pinsData);
     if (maps.main) { renderHex(); renderModPins(); }
     showToast(`🗑 ${ids.length} pin silindi`);
+    await loadPins();
+    await loadCustomIss();
+    loadSikayetler();
     loadAdminTable();
     updateInboxSummary();
     updateModStatsSummary();
@@ -7892,10 +7906,10 @@ async function quickApprovePinRow(id) {
 
 async function quickHidePinRow(id) {
   try {
-    await patchPin(id, { gorunur: false });
+    await patchPin(id, { gorunur: false, is_quarantine: false, sikayet_sayisi: 0 });
     showToast(`👁 Pin gizlendi`);
-    // Veritabanından taze veri çek ve tüm listeleri güncelle
     await loadPins();
+    await loadCustomIss();
     loadSikayetler();
     filterAdminTable(document.getElementById('tableSearch')?.value || '');
     updateModStatsSummary();
@@ -8150,12 +8164,15 @@ async function undoRapor(id) {
 async function handleRapor(id, durum) { try { await patchRapor(id,{durum}); showToast('✅ Rapor güncellendi'); await loadRaporlar(); if (gecmisRaporlarYuklendi) loadGecmisRaporlar(); updateInboxSummary(); } catch(e) { showToast('Hata: '+e.message,'err'); } }
 async function modAction(id, approve) { 
   try { 
-    await patchPin(id, { gorunur: approve, sikayet_sayisi: approve ? 0 : 99, is_quarantine: approve ? false : true }); 
+    await patchPin(id, { gorunur: approve, sikayet_sayisi: 0, is_quarantine: false }); 
     document.getElementById('mc_'+id)?.remove(); 
     showToast(approve ? '✅ Pin onaylandı' : '👁 Pin gizlendi'); 
     await loadPins(); 
+    await loadCustomIss();
     loadSikayetler(); 
+    loadAdminTable();
     updateInboxSummary();
+    updateModStatsSummary();
   } catch(e) { showToast('Hata: '+e.message,'err'); } 
 }
 
@@ -8246,13 +8263,15 @@ async function saveEdit() {
       paket_hizi_ul: editPkgULVal,
       puan,
       gorunur: isGorunur,
-      is_quarantine: isGorunur && issNowApproved ? false : true,
+      is_quarantine: isGorunur ? (!issNowApproved) : false,
+      sikayet_sayisi: 0,
       mod_notu: document.getElementById('editModNote').value.trim()||null,
       diger_altyapilar: editExtraList.length ? JSON.stringify(editExtraList) : null
     });
     showToast('✅ Pin güncellendi');
     closeEditModal();
     await loadPins();
+    await loadCustomIss();
     loadAdminTable();
     loadSikayetler();
     refreshModData();
@@ -8270,13 +8289,15 @@ async function saveEdit() {
           paket_hizi: editPkgDLVal,
           puan,
           gorunur: isGorunur,
-          is_quarantine: isGorunur && issNowApproved ? false : true,
+          is_quarantine: isGorunur ? (!issNowApproved) : false,
+          sikayet_sayisi: 0,
           mod_notu: document.getElementById('editModNote').value.trim()||null,
           diger_altyapilar: editExtraList2.length ? JSON.stringify(editExtraList2) : null
         });
         showToast('✅ Pin güncellendi (DB şeması bekleniyor — sadece eski Paket Hızı kaydedildi)');
         closeEditModal();
         await loadPins();
+        await loadCustomIss();
         loadAdminTable();
         loadSikayetler();
         refreshModData();
