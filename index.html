@@ -1701,7 +1701,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
 
       <!-- MANUEL ADRES GİRİŞİ (gizli, toggle ile açılır) -->
       <div id="manualAddressWrap" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;gap:10px;flex-direction:column;">
-        <div style="font-size:9px;color:var(--warn);font-family:var(--font-mono);font-weight:700;">⚠ Konumunuz zaten haritada işaretliyse buradan seçtiğiniz İl/İlçe/Mahalle sadece etiketi düzeltir, pin'i taşımaz. Henüz konum işaretlemediyseniz, seçtiğiniz ilin yaklaşık merkezi kullanılır.</div>
+        <div style="font-size:9px;color:var(--accent);font-family:var(--font-mono);font-weight:700;">📍 Buradan seçeceğiniz İl, İlçe ve Mahalle haritada otomatik bulunur ve pin seçtiğiniz mahalleye konumlandırılır.</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <div class="fg">
             <div class="fl">İl</div>
@@ -5781,9 +5781,7 @@ function findDistrict(a, matchedIl) {
     a.city_district,
     a.town,
     a.city,
-    a.suburb,
-    a.borough,
-    a.neighbourhood
+    a.borough
   ].filter(Boolean);
   
   if (matchedIl && ILCE_MAP[matchedIl]) {
@@ -6101,17 +6099,21 @@ async function onManualIlChange() {
 }
 
 function onManualIlceChange() {
-  const ilce = document.getElementById('manualIlce').value;
+  const il = document.getElementById('manualIl')?.value || '';
+  const ilce = document.getElementById('manualIlce')?.value || '';
   const mahalleSel = document.getElementById('manualMahalle');
   mahalleSel.innerHTML = '<option value="">Yükleniyor...</option>';
   mahalleSel.disabled = true;
   if (!ilce) { mahalleSel.innerHTML = '<option value="">Önce ilçe seçin</option>'; return; }
   const ctrl = new AbortController();
-  setTimeout(() => ctrl.abort(), 5000);
-  fetch(`https://api.turkiyeapi.dev/v1/neighborhoods?district=${encodeURIComponent(ilce)}&limit=500`, { signal: ctrl.signal, cache: 'force-cache' })
+  setTimeout(() => ctrl.abort(), 6000);
+  const provParam = il ? `province=${encodeURIComponent(il)}&` : '';
+  fetch(`https://api.turkiyeapi.dev/v1/neighborhoods?${provParam}district=${encodeURIComponent(ilce)}&limit=500`, { signal: ctrl.signal, cache: 'force-cache' })
     .then(r => r.json())
     .then(data => {
-      const mahalleler = (data?.data || []).map(m => m.name).sort((a,b) => a.localeCompare(b,'tr'));
+      const rawList = data?.data || [];
+      const filtered = rawList.filter(m => (!ilce || (m.district || '').toLowerCase() === ilce.toLowerCase()) && (!il || (m.province || '').toLowerCase() === il.toLowerCase()));
+      const mahalleler = (filtered.length ? filtered : rawList).map(m => m.name).sort((a,b) => a.localeCompare(b,'tr'));
       if (mahalleler.length) {
         mahalleSel.innerHTML = '<option value="">Belirtmek istemiyorum</option>' +
           mahalleler.map(m => `<option value="${m}">${m}</option>`).join('');
@@ -6128,30 +6130,93 @@ function onManualIlceChange() {
     });
 }
 
-function applyManualAddress() {
+async function applyManualAddress() {
   const il = document.getElementById('manualIl').value;
   const ilce = document.getElementById('manualIlce').value;
   const mahalle = document.getElementById('manualMahalle')?.value || '';
   if (!il) return showToast('İl seçin','err');
+  
   document.getElementById('ilInput').value = il;
   document.getElementById('ilceInput').value = ilce || '';
   document.getElementById('mahalleInput').value = mahalle || '';
-  if (pinLat == null || pinLng == null) {
-    // Konum hiç belirlenmemiş (GPS/harita tıklaması yok) — il merkezini yaklaşık konum olarak kullan
-    const coords = IL_COORDS[il];
-    if (!coords) return showToast('Bu il için koordinat bulunamadı','err');
-    const lat = coords[0] + (Math.random() - 0.5) * 0.05;
-    const lng = coords[1] + (Math.random() - 0.5) * 0.05;
-    pinLat = lat; pinLng = lng;
-    document.getElementById('locDot').classList.add('set');
-    document.getElementById('locText').textContent = `${il}${ilce?' › '+ilce:''}${mahalle?' · '+mahalle:''} (Manuel)`;
-    if (maps.pin) maps.pin.setView([lat, lng], 12);
-    showToast(`✅ Adres ayarlandı: ${il}${ilce?' / '+ilce:''}`, 'warn');
-  } else {
-    // Konum zaten haritadan/GPS'ten doğru biliniyor (örn. otomatik tespit yanlış mahalle yazmış olabilir) —
-    // koordinatı KORU, sadece il/ilçe/mahalle etiketini düzelt.
-    showToast(`✅ Adres bilgisi düzeltildi (konum değişmedi): ${mahalle || ilce || il}`, 'warn');
+
+  const applyBtn = document.querySelector('#manualAddressWrap button');
+  const oldBtnText = applyBtn ? applyBtn.textContent : '';
+  if (applyBtn) { applyBtn.disabled = true; applyBtn.textContent = '⏳ Konum ayarlanıyor...'; }
+
+  let foundLat = null;
+  let foundLng = null;
+
+  // 1. Nominatim ile tam mahalle / ilçe koordinatını ara ve pin'i oraya taşı
+  const cleanMah = mahalle ? mahalle.replace(/\s+Mahallesi$/i, '').replace(/\s+Mah\.?$/i, '').trim() : '';
+  const searchQueries = [];
+  if (cleanMah && ilce) searchQueries.push(`${cleanMah} Mahallesi, ${ilce}, ${il}, Türkiye`);
+  if (cleanMah && ilce) searchQueries.push(`${cleanMah}, ${ilce}, ${il}, Türkiye`);
+  if (ilce) searchQueries.push(`${ilce}, ${il}, Türkiye`);
+
+  for (const q of searchQueries) {
+    try {
+      const ctrl = new AbortController();
+      const tId = setTimeout(() => ctrl.abort(), 4000);
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=tr&format=json&limit=1&accept-language=tr`, {
+        signal: ctrl.signal,
+        headers: { 'Accept': 'application/json', 'Accept-Language': 'tr' }
+      });
+      clearTimeout(tId);
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.length > 0 && json[0].lat && json[0].lon) {
+          foundLat = parseFloat(json[0].lat);
+          foundLng = parseFloat(json[0].lon);
+          break;
+        }
+      }
+    } catch(e) {}
   }
+
+  // 2. Geocode başarılı olduysa pin'i ve haritayı o ilçeye/mahalleye taşı
+  if (foundLat != null && foundLng != null) {
+    pinLat = foundLat;
+    pinLng = foundLng;
+    if (pinMarker && maps.pin) maps.pin.removeLayer(pinMarker);
+    if (maps.pin) {
+      pinMarker = L.circle([pinLat, pinLng], {
+        radius: 100,
+        color: '#00d4ff',
+        fillColor: '#00d4ff',
+        fillOpacity: 0.12,
+        weight: 2
+      }).addTo(maps.pin);
+      maps.pin.setView([pinLat, pinLng], mahalle ? 15 : 13);
+    }
+    document.getElementById('locDot').classList.add('set');
+    document.getElementById('locText').textContent = `${il}${ilce ? ' › ' + ilce : ''}${mahalle ? ' · ' + mahalle : ''} (Manuel)`;
+    showToast(`✅ Konum ve adres ayarlandı: ${[il, ilce, mahalle].filter(Boolean).join(' / ')}`, 'warn');
+  } else {
+    // Geocode başarısızsa il koordinatına fallback yap
+    const coords = IL_COORDS[il];
+    if (coords) {
+      const lat = coords[0] + (Math.random() - 0.5) * 0.05;
+      const lng = coords[1] + (Math.random() - 0.5) * 0.05;
+      pinLat = lat; pinLng = lng;
+      if (pinMarker && maps.pin) maps.pin.removeLayer(pinMarker);
+      if (maps.pin) {
+        pinMarker = L.circle([pinLat, pinLng], {
+          radius: 100,
+          color: '#00d4ff',
+          fillColor: '#00d4ff',
+          fillOpacity: 0.12,
+          weight: 2
+        }).addTo(maps.pin);
+        maps.pin.setView([lat, lng], 12);
+      }
+      document.getElementById('locDot').classList.add('set');
+      document.getElementById('locText').textContent = `${il}${ilce ? ' › ' + ilce : ''}${mahalle ? ' · ' + mahalle : ''} (Manuel)`;
+      showToast(`✅ Adres ayarlandı: ${il}${ilce ? ' / ' + ilce : ''}`, 'warn');
+    }
+  }
+
+  if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = oldBtnText; }
   document.getElementById('manualAddressWrap').style.display = 'none';
 }
 function checkSpeedAndConnSuggestion(silent = false) {
