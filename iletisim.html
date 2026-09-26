@@ -214,7 +214,7 @@ html.light nav { background: rgba(255,255,255,0.94); }
 
 @media (max-width: 768px) {
   :root { --nav-h: 78px; }
-  nav { height: auto; min-height: var(--nav-h); padding: 5px 8px 5px; }
+  nav { height: auto; min-height: var(--nav-h); padding: max(5px, env(safe-area-inset-top, 5px)) 8px 5px; }
   .nav-container { flex-direction: column; gap: 3px; align-items: stretch; }
   .nav-top-row { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 32px; }
   .logo { gap: 6px; }
@@ -227,13 +227,13 @@ html.light nav { background: rgba(255,255,255,0.94); }
   .tab-text.full, .add-text-full { display: none !important; }
   .nav-links {
     display: flex !important; width: 100%; gap: 3px;
-    padding: 1px 0 2px; align-items: center; justify-content: space-between;
+    padding: 1px 0 2px; align-items: center; justify-content: flex-start;
     overflow-x: auto; -webkit-overflow-scrolling: touch;
     scrollbar-width: none; max-width: 100%;
   }
   .nav-links::-webkit-scrollbar { display: none; }
   .btn-nav {
-    flex: 1 1 0; min-width: 0; padding: 5px 2px;
+    flex: 1 0 auto; min-width: max-content; padding: 5px 6px;
     font-size: 10.5px; font-weight: 600; text-align: center;
     display: inline-flex; align-items: center; justify-content: center; gap: 2px;
     border-radius: 6px; background: var(--surface2); border: 1px solid var(--border);
