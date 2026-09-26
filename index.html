@@ -597,8 +597,20 @@ html.light #mapStats { color: rgba(0,0,0,0.6); }
 html.light .map-legend-box { background:rgba(255,255,255,0.93); border-color:rgba(0,0,0,0.08); }
 html.light .zoom-hint { background:rgba(255,255,255,0.92); border-color:rgba(0,0,0,0.08); color:rgba(0,0,0,0.5); }
 @media(max-width:768px){
-  .map-legend-box { bottom:66px; right:14px; }
-  .zoom-hint { bottom:66px; }
+  .map-legend-box {
+    bottom: max(14px, env(safe-area-inset-bottom, 14px));
+    left: 12px;
+    right: auto;
+    padding: 7px 10px;
+    font-size: 9.5px;
+    border-radius: 8px;
+    max-width: 140px;
+  }
+  .zoom-hint {
+    bottom: max(14px, env(safe-area-inset-bottom, 14px));
+    font-size: 9.5px;
+    padding: 5px 10px;
+  }
   /* Sidebar açıkken legend ve zoom-hint gizlensin (çakışma önleme) */
   .map-sidebar.mobile-open ~ .map-legend-box,
   .map-sidebar.mobile-open ~ .zoom-hint { display:none !important; }
@@ -660,10 +672,9 @@ html.light .infra-badge.vdsl   { color: #0891b2; background: rgba(6,182,212,0.08
 html.light .infra-badge.adsl   { color: #dc2626; background: rgba(229,57,53,0.08); border-color: rgba(229,57,53,0.3); }
 html.light .infra-badge.docsis { color: #2563eb; background: rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.3); }
 
-/* ===== SAYFA İÇİ HIZ TESTİ ===== */
-.speedtest-modal { display:none; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center; }
+.speedtest-modal { display:none; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:16px; }
 .speedtest-modal.open { display:flex; }
-.speedtest-box { background:var(--surface); border:1px solid var(--border2); border-radius:16px; padding:28px 24px; width:100%; max-width:380px; text-align:center; box-shadow:0 24px 64px rgba(0,0,0,0.7); position:relative; }
+.speedtest-box { background:var(--surface); border:1px solid var(--border2); border-radius:16px; padding:28px 24px; width:100%; max-width:380px; max-height:90vh; max-height:90dvh; overflow-y:auto; text-align:center; box-shadow:0 24px 64px rgba(0,0,0,0.7); position:relative; }
 .speedtest-close { position:absolute; top:14px; right:16px; cursor:pointer; color:var(--text3); font-size:20px; line-height:1; }
 .speedtest-title { font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--accent); margin-bottom:4px; }
 .speedtest-sub { font-size:11px; color:var(--text3); margin-bottom:24px; }
@@ -716,9 +727,9 @@ html.light .sr-ping { background:#f5f7fa; }
 .region-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
 
 /* ===== TEŞEKKÜR MODALI ===== */
-.thankyou-modal { display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center; }
+.thankyou-modal { display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:16px; }
 .thankyou-modal.open { display:flex; }
-.thankyou-box { background:var(--surface); border:1px solid var(--border2); border-radius:18px; padding:32px 28px; width:100%; max-width:360px; text-align:center; box-shadow:0 24px 64px rgba(0,0,0,0.7); }
+.thankyou-box { background:var(--surface); border:1px solid var(--border2); border-radius:18px; padding:28px 22px; width:100%; max-width:360px; max-height:90vh; max-height:90dvh; overflow-y:auto; text-align:center; box-shadow:0 24px 64px rgba(0,0,0,0.7); }
 .ty-icon { font-size:48px; margin-bottom:12px; display:block; }
 .ty-title { font-family:var(--font-mono); font-size:17px; font-weight:700; color:var(--accent); margin-bottom:6px; }
 .ty-sub { font-size:12px; color:var(--text2); line-height:1.6; margin-bottom:20px; }
@@ -1117,7 +1128,7 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   :root { --nav-h: 78px; }
   nav {
     display: flex; flex-direction: column; height: auto; min-height: var(--nav-h);
-    padding: 5px 8px 5px; gap: 3px; align-items: stretch;
+    padding: max(5px, env(safe-area-inset-top, 5px)) 8px 5px; gap: 3px; align-items: stretch;
   }
   .nav-top-row {
     display: flex !important; align-items: center; justify-content: space-between;
@@ -1140,13 +1151,13 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   .nav-tabs {
     display: flex !important; width: 100%; margin: 0 !important;
     gap: 3px; padding: 1px 0 2px;
-    align-items: center; justify-content: space-between;
+    align-items: center; justify-content: flex-start;
     overflow-x: auto; -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
   .nav-tabs::-webkit-scrollbar { display: none; }
   .nav-tab {
-    flex: 1 1 0; min-width: 0; padding: 5px 2px;
+    flex: 1 0 auto; min-width: max-content; padding: 5px 6px;
     font-size: 10.5px; font-weight: 600; text-align: center;
     display: inline-flex; align-items: center; justify-content: center; gap: 2px;
     border-radius: 6px; background: var(--surface2); border: 1px solid var(--border);
@@ -1164,9 +1175,10 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   .map-sidebar { display:none; }
   .map-sidebar.mobile-open {
     display:flex; flex-direction:column;
-    width:calc(100vw - 20px);
+    left: 10px; right: 10px; width: auto; max-width: 480px; margin: 0 auto;
     top: calc(var(--nav-h) + 10px);
     max-height:calc(100vh - var(--nav-h) - 20px);
+    max-height:calc(100dvh - var(--nav-h) - 20px);
     z-index:600;
   }
   .map-sidebar.mobile-open .sidebar-panel {
@@ -1175,24 +1187,50 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   }
   .map-sidebar.mobile-open .sidebar-body {
     max-height:calc(100vh - var(--nav-h) - 20px - 44px);
+    max-height:calc(100dvh - var(--nav-h) - 20px - 44px);
     overflow-y:auto; -webkit-overflow-scrolling:touch;
   }
   .map-sidebar-toggle { display:block; top: 12px; left: 12px; }
   /* Sidebar açıkken "Filtreler" toggle butonu gizlensin — zaten sidebar'ın içinde kapama var */
   .map-sidebar.mobile-open ~ .map-sidebar-toggle { display:none; }
   /* Sidebar içindeki mobil X kapat butonu sadece mobilde görünür */
-  #mobileSidebarCloseBtn { display:flex !important; }
-  .map-info { width:calc(100vw - 28px); right:14px; top:calc(var(--nav-h) + 8px); max-height:calc(100vh - var(--nav-h) - 24px); }
-  .pin-layout { grid-template-columns:1fr; grid-template-rows:40vh 1fr; } 
+  #mobileSidebarCloseBtn {
+    display:flex !important;
+    width: 28px !important; height: 28px !important;
+    font-size: 14px !important; font-weight: 700;
+    color: var(--accent) !important;
+    border-color: rgba(0,212,255,0.3) !important;
+    border-radius: 6px !important;
+  }
+  .map-info {
+    width:calc(100vw - 24px); left:12px; right:12px; margin:0 auto; max-width:480px;
+    top:calc(var(--nav-h) + 8px);
+    max-height:calc(100vh - var(--nav-h) - 20px);
+    max-height:calc(100dvh - var(--nav-h) - 20px);
+  }
+  .info-close {
+    width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+    font-size: 20px; padding: 0; border-radius: 6px; background: var(--surface2);
+  }
+  .pin-layout { grid-template-columns:1fr; grid-template-rows:minmax(180px, 35vh) minmax(0, 1fr); overflow:hidden; }
   #pin-map { height:100%; } 
-  .pform { border-left:none; border-top:1px solid var(--border); overflow-y:auto; -webkit-overflow-scrolling:touch; max-height:60vh; }
-  .stats-top { grid-template-columns:1fr 1fr; } .stats-grid { grid-template-columns:1fr; } #page-mod { padding:14px; } .regions-grid { grid-template-columns:1fr; } .header-mtoggle-text { display: none; }
+  .pform { border-left:none; border-top:1px solid var(--border); overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:0; }
+  .stats-top { grid-template-columns:1fr 1fr; }
+  .sum-card { padding: 10px 12px; }
+  .sum-val { font-size: 22px; }
+  .stats-grid { grid-template-columns:1fr; }
+  #page-mod { padding:14px; }
+  #page-bolge, #page-istatistik { padding:12px 14px; }
+  .regions-grid { grid-template-columns:1fr; }
+  .rstat-val { font-size: 13.5px; }
+  .header-mtoggle-text { display: none; }
   .loc-actions { flex-wrap:wrap; }
   .btn-loc { min-height:44px; font-size:12px; }
   .btn-submit { min-height:48px; }
   .settings-dropdown { right:-8px; }
   .pform-steps-indicator { margin:12px 0 2px; }
   .pf-step-dot .pf-step-label { font-size:8px; }
+  .modal { padding:16px; max-width:min(94vw, 380px); }
   /* iOS Safari'de 16px altı font-size inputlara odaklanınca otomatik yakınlaştırma yapar — engelle (inline stil override'ları dahil) */
   .fi, .fs, .fta, .search-input, input[type="text"], input[type="email"], input[type="password"], input[type="number"], select, textarea { font-size:16px !important; }
   /* Dokunma hedeflerini büyüt */
@@ -1207,10 +1245,9 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   .cbtns { flex-wrap:wrap; }
   .cbtn { flex:1 1 calc(50% - 3px); min-width:calc(50% - 3px); font-size:10px; padding:7px 4px; }
   .sbtn { min-width:24px; font-size:9px; padding:5px 1px; }
-  .modal { padding:16px; }
+  .modal { padding:14px; }
   .modal-title { font-size:13px; }
-  nav { padding:0 8px; }
-  .logo-text { font-size:13px; }
+  .logo-text { font-size:11.5px; }
   .settings-dropdown { min-width:190px; right:-12px; }
 }
 
@@ -1230,7 +1267,7 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
 @media(max-width: 768px) {
   .pwa-install-banner {
     display: none !important;
-    position: fixed; bottom: 66px; left: 12px; right: 12px; z-index: 1100;
+    position: fixed; bottom: max(12px, env(safe-area-inset-bottom, 12px)); left: 12px; right: 12px; z-index: 1100;
     background: var(--surface); border: 1px solid var(--border2);
     border-radius: 14px; padding: 14px 16px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.5);
@@ -1281,7 +1318,7 @@ html.light .pwa-install-banner { background:var(--surface); border-color:var(--b
 }
 @media(max-width: 768px) {
   .cookie-consent-banner {
-    bottom: 68px; flex-direction: column; align-items: flex-start; gap: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom, 12px)); flex-direction: column; align-items: flex-start; gap: 12px;
     padding: 14px 16px;
   }
   .cookie-consent-banner .ccb-actions { width: 100%; display: flex; justify-content: flex-end; }
@@ -1564,7 +1601,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
   <div class="regions-grid" id="regionsGrid"><div class="loading-text loading-dots">Yükleniyor</div></div>
 
   <!-- 3. İNTERAKTİF BÖLGE DETAYI & 7 BÖLGE KARŞILAŞTIRMA MATRİSİ -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;margin-top:14px;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%, 300px),1fr));gap:16px;margin-top:14px;">
     
     <!-- SEÇİLİ BÖLGE İL DETAYI VE İSS DAĞILIMI -->
     <div class="stat-card" style="display:flex;flex-direction:column;gap:12px;">
@@ -1575,7 +1612,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
           <button class="btn-ghost" style="padding:3px 8px;font-size:10px;" onclick="goToSelectedRegionMap()">🗺️ Haritada Gör</button>
         </div>
       </div>
-      <div id="selectedRegionContent"></div>
+      <div id="selectedRegionContent" style="overflow-x:auto;-webkit-overflow-scrolling:touch;"></div>
     </div>
 
     <!-- 7 BÖLGE ALTYAPI & PERFORMANS KARŞILAŞTIRMASI -->
@@ -1584,7 +1621,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
         <span>📊 7 Bölge Altyapı &amp; Hız Karşılaştırması</span>
         <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);font-weight:normal;">Fiber &amp; Hız Kıyası</span>
       </div>
-      <div id="regionComparisonTable"></div>
+      <div id="regionComparisonTable" style="overflow-x:auto;-webkit-overflow-scrolling:touch;"></div>
     </div>
 
   </div>
@@ -4013,13 +4050,16 @@ async function initMainMap() {
   showMapLoading();
   // Türkiye + çevre — kenarlar rahat görünsün, dünya tekrarlaması olmasın
   const TR_BOUNDS = L.latLngBounds([34.0, 22.0], [44.5, 48.0]);
+  const isMobile = window.innerWidth <= 768;
+  const initialCenter = isMobile ? [39.0, 35.5] : [38.8, 37.5];
+  const initialZoom = isMobile ? (window.innerWidth < 480 ? 5 : 6) : 6;
   const m = L.map('map', { 
     zoomControl: false, 
     maxBoundsViscosity: 0.7,
     maxBounds: TR_BOUNDS,
     worldCopyJump: false,
     minZoom: 5
-  }).setView([38.8, 37.5], 6);  // merkez biraz sağa kaydı — sol panel hesaba katıldı
+  }).setView(initialCenter, initialZoom);
 
   const tileLayer = L.tileLayer(getMapTileUrl(), { 
     maxZoom: 19,
@@ -5041,15 +5081,17 @@ function renderRegions() {
     }).join('');
 
     comparisonContainer.innerHTML = `
-      <div style="display:grid;grid-template-columns:120px 1fr 65px 65px 50px;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:6px;">
-        <div>Bölge</div>
-        <div title="Türkiye'nin en hızlı bölgesine (%100) kıyasla bağıl hız performans çubuğu" style="cursor:help;">Hız Çubuğu ⓘ</div>
-        <div style="text-align:center;">Fiber %</div>
-        <div style="text-align:center;">Puan</div>
-        <div style="text-align:right;">Ölçüm</div>
-      </div>
-      <div style="display:flex;flex-direction:column;">
-        ${compRows}
+      <div style="min-width:440px;">
+        <div style="display:grid;grid-template-columns:120px 1fr 65px 65px 50px;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:6px;">
+          <div>Bölge</div>
+          <div title="Türkiye'nin en hızlı bölgesine (%100) kıyasla bağıl hız performans çubuğu" style="cursor:help;">Hız Çubuğu ⓘ</div>
+          <div style="text-align:center;">Fiber %</div>
+          <div style="text-align:center;">Puan</div>
+          <div style="text-align:right;">Ölçüm</div>
+        </div>
+        <div style="display:flex;flex-direction:column;">
+          ${compRows}
+        </div>
       </div>
       <div style="font-size:9px;color:var(--text3);margin-top:8px;font-family:var(--font-mono);text-align:right;">
         * Sıralamayı değiştirmek veya ili incelemek için satırlara tıklayabilirsiniz.
@@ -5735,7 +5777,8 @@ function renderIlList() {
 
 let pinLat=null, pinLng=null, pinMarker=null, selConnVal='', selScoreVal=0, extraAltyapiRowSeq=0;
 function initPinMap() { 
-  const m = L.map('pin-map', { zoomControl:false }).setView([39.2,35.5], 6); 
+  const isMobile = window.innerWidth <= 768;
+  const m = L.map('pin-map', { zoomControl:false }).setView([39.0, 35.5], isMobile ? 5 : 6);
   L.tileLayer(getMapTileUrl(), { maxZoom:19 }).addTo(m); 
   L.control.zoom({ position:'bottomright' }).addTo(m); 
   maps.pin = m; 
