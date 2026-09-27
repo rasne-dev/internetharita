@@ -9114,17 +9114,54 @@ function openScoreCardModal(source) {
     cardData.puan = lastSubmittedData.puan || null;
     cardData.isAltyapiYok = !!lastSubmittedData.isAltyapiYok;
   } else if (source === 'region') {
-    const rawTitle = document.getElementById('infoTitle')?.textContent.replace(/^📍\s*/, '') || 'Bölge';
-    const parts = rawTitle.split('>').map(s => s.trim());
-    cardData.il = parts[0] || '';
-    cardData.ilce = parts[1] || '';
-    const dlEl = document.getElementById('infoDL');
-    const ulEl = document.getElementById('infoUL');
-    const scoreEl = document.getElementById('infoScore');
-    cardData.dl = parseFloat(dlEl?.textContent) || 0;
-    cardData.ul = parseFloat(ulEl?.textContent) || 0;
-    cardData.puan = parseFloat(scoreEl?.textContent) || null;
-    cardData.iss = 'Bölge Ortalaması';
+    if (typeof activeHexPins !== 'undefined' && activeHexPins && activeHexPins.length) {
+      const speedPins = activeHexPins.filter(p => !p.is_altyapi_yok);
+      const avgDL = speedPins.length ? Math.round(speedPins.reduce((a,p) => a + (p.gercek_dl || 0), 0) / speedPins.length) : 0;
+      const ulPins = speedPins.filter(p => (p.gercek_ul || 0) > 0);
+      const avgUL = ulPins.length ? Math.round(ulPins.reduce((a,p) => a + p.gercek_ul, 0) / ulPins.length) : 0;
+      const pingPins = speedPins.filter(p => (p.ping || 0) > 0);
+      const avgPing = pingPins.length ? Math.round(pingPins.reduce((a,p) => a + p.ping, 0) / pingPins.length) : null;
+      const avgS = (activeHexPins.reduce((a,p) => a + (p.puan || 0), 0) / activeHexPins.length).toFixed(1);
+
+      cardData.dl = avgDL;
+      cardData.ul = avgUL;
+      cardData.ping = avgPing;
+      cardData.puan = parseFloat(avgS) || null;
+      cardData.isAltyapiYok = speedPins.length === 0 && activeHexPins.some(p => p.is_altyapi_yok);
+
+      // Sık geçen il ve ilçe
+      const _locCount = {};
+      activeHexPins.forEach(p => {
+        const key = [p.il, p.ilce, p.mahalle].filter(Boolean).join('\x00');
+        if (key) _locCount[key] = (_locCount[key] || 0) + 1;
+      });
+      const _topLoc = Object.entries(_locCount).sort((a,b) => b[1] - a[1])[0];
+      if (_topLoc) {
+        const lp = _topLoc[0].split('\x00');
+        cardData.il = lp[0] || '';
+        cardData.ilce = lp[1] ? (lp[2] ? `${lp[1]} (${lp[2]})` : lp[1]) : '';
+      }
+      cardData.iss = `${activeHexPins.length} Ölçüm Ortalaması`;
+    } else {
+      // Fallback DOM parse
+      const rawTitle = document.getElementById('infoTitle')?.textContent.replace(/^📍\s*/, '') || 'Bölge';
+      const parts = rawTitle.split(/[›>]/).map(s => s.trim()).filter(Boolean);
+      cardData.il = parts[0] || '';
+      cardData.ilce = parts[1] ? (parts[2] ? `${parts[1]} (${parts[2]})` : parts[1]) : '';
+
+      const dlText = document.getElementById('infoDL')?.textContent || '';
+      const ulText = document.getElementById('infoUL')?.textContent || '';
+      const scText = document.getElementById('infoScore')?.textContent || '';
+
+      const dlMatch = dlText.match(/(\d+(?:\.\d+)?)/);
+      const ulMatch = ulText.match(/(\d+(?:\.\d+)?)/);
+      const scMatch = scText.match(/(\d+(?:\.\d+)?)/);
+
+      cardData.dl = dlMatch ? parseFloat(dlMatch[1]) : 0;
+      cardData.ul = ulMatch ? parseFloat(ulMatch[1]) : 0;
+      cardData.puan = scMatch ? parseFloat(scMatch[1]) : null;
+      cardData.iss = 'Bölge Ortalaması';
+    }
     const countText = document.getElementById('infoCount')?.textContent || '';
     if (cardData.dl === 0 && countText.includes('0 ölçüm')) {
       cardData.isAltyapiYok = false;
