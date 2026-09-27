@@ -4357,6 +4357,7 @@ async function initMainMap() {
       this.setUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
     }
   });
+  tileLayer.addTo(m);
   L.control.zoom({ position:'bottomright' }).addTo(m); 
 
   // Haritada "Konumuma Git" kontrolü
