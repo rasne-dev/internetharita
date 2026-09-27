@@ -1515,7 +1515,31 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
 .scorecard-trigger-btn:hover {
   background: linear-gradient(135deg, rgba(0, 212, 255, 0.28), rgba(59, 130, 246, 0.28));
   border-color: var(--accent);
-  transform: translateY(-1px);
+.leaflet-control-locate a {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  background: var(--surface) !important;
+  color: var(--accent) !important;
+  font-size: 16px;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all .15s;
+}
+.leaflet-control-locate a:hover {
+  background: var(--surface2) !important;
+  transform: scale(1.08);
+}
+@media (max-width: 480px) {
+  .scorecard-modal { padding: 10px; }
+  .scorecard-box { padding: 18px 14px; border-radius: 16px; }
+  .scorecard-canvas-wrap { max-width: 270px; margin-bottom: 12px; }
+  .scorecard-social-grid { gap: 5px; }
+  .scorecard-sbtn { padding: 7px 3px; font-size: 10px; }
 }
 </style>
 <!-- Tema erken init — flash önleme -->
@@ -4264,9 +4288,21 @@ async function initMainMap() {
       this.setUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
     }
   });
-  tileLayer.addTo(m); 
-
   L.control.zoom({ position:'bottomright' }).addTo(m); 
+
+  // Haritada "Konumuma Git" kontrolü
+  const locateControl = L.control({ position: 'bottomright' });
+  locateControl.onAdd = function() {
+    const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-locate');
+    div.innerHTML = `<a href="javascript:void(0)" title="Konumuma Git (Bölgeyi Bul)" role="button" aria-label="Konumuma Git">🎯</a>`;
+    div.onclick = function(e) {
+      if (e.stopPropagation) e.stopPropagation();
+      if (e.preventDefault) e.preventDefault();
+      locateUserOnMainMap();
+    };
+    return div;
+  };
+  locateControl.addTo(m);
   if (m.attributionControl) {
     m.attributionControl.setPrefix(
       '<a href="/hakkimizda.html">Hakkımızda</a> &bull; ' +
@@ -4307,6 +4343,27 @@ function onZoomEnd() {
   renderHex(); renderModPins(); renderMyPins();
   const z = maps.main.getZoom(); const hints = { 5:'Türkiye geneli', 6:'Bölge bazlı', 7:'İl bazlı', 9:'İlçe bazlı', 11:'Mahalle bazlı', 13:'Sokak bazlı', 15:'Bina bazlı' };
   const found = Object.entries(hints).reverse().find(([k]) => z >= parseInt(k)); if (found) document.getElementById('zoomHint').textContent = found[1] + ' görünümü';
+}
+
+function locateUserOnMainMap() {
+  if (!navigator.geolocation) {
+    return showToast('Tarayıcınız konum özelliğini desteklemiyor', 'err');
+  }
+  showToast('📍 Konumunuz aranıyor...', 'warn');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      if (maps.main) {
+        flyToResult(lat, lng, 'Mevcut Konumum', 'Bulunduğunuz Konum');
+        showToast('🎯 Bulunduğunuz konuma gidildi!');
+      }
+    },
+    err => {
+      showToast('Konum erişimi reddedildi veya zaman aşımına uğradı', 'warn');
+    },
+    { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+  );
 }
 
 // _loadPinsPromise is declared globally (avoid TDZ if called early)
@@ -6817,12 +6874,25 @@ async function submitPin() {
     markSubmit(); 
     if (isAltyapiYok) markSubmitNoInfra();
     
+    const thankyouData = {
+      dl,
+      ul,
+      ping: (typeof stResults !== 'undefined' && stResults && stResults.ping) ? stResults.ping : null,
+      iss: finalIss,
+      conn: typeof selConnVal !== 'undefined' ? selConnVal.toUpperCase() : '',
+      il: pinPayload.il || document.getElementById('ilInput')?.value || '',
+      ilce: pinPayload.ilce ? (pinPayload.mahalle ? `${pinPayload.ilce} (${pinPayload.mahalle})` : pinPayload.ilce) : (document.getElementById('ilceInput')?.value || ''),
+      puan: pinPayload.puan || null,
+      quarantine: !!quarantine,
+      isAltyapiYok: !!isAltyapiYok
+    };
+    
     if (quarantine) {
       const reason = isAltyapiYok ? '⚠ Altyapı yok bildirimi' : (outlier ? '⚠ Bölge ortalamasından sapma' : (capExceeded ? `⚠ ${selConnVal.toUpperCase()} için olağan dışı yüksek hız` : (rateQuarantine ? '⚠ Hızlı giriş algılandı' : '⚠ Verini aldık')));
       showToast(`${reason} — incelemeye alındı`, 'warn');
-      showThankyou({ dl, ul, iss: finalIss, il: document.getElementById('ilInput').value, quarantine: true, isAltyapiYok });
+      showThankyou(thankyouData);
     } else {
-      showThankyou({ dl, ul, iss: finalIss, il: document.getElementById('ilInput').value, quarantine: false, isAltyapiYok });
+      showThankyou(thankyouData);
     }
     resetPinForm(); loadPins();
   } catch(e) {
@@ -6835,6 +6905,18 @@ async function submitPin() {
         saveMyPinLocal({ ...fb, created_at: new Date().toISOString() });
         markSubmit(); if (isAltyapiYok) markSubmitNoInfra();
         showToast('⚠ Verini aldık — DB güncellemesi bekleniyor', 'warn'); 
+        showThankyou({
+          dl,
+          ul,
+          ping: (typeof stResults !== 'undefined' && stResults && stResults.ping) ? stResults.ping : null,
+          iss: finalIss,
+          conn: typeof selConnVal !== 'undefined' ? selConnVal.toUpperCase() : '',
+          il: pinPayload.il || '',
+          ilce: pinPayload.ilce || '',
+          puan: pinPayload.puan || null,
+          quarantine: true,
+          isAltyapiYok: !!isAltyapiYok
+        });
         resetPinForm(); loadPins(); 
       } catch(e2) { showToast(friendlyDbError(e2,'pins'),'err'); }
     } else showToast(friendlyDbError(e,'pins'),'err');
@@ -8887,8 +8969,8 @@ function showSearchResultCard(targetLat, targetLng, title, sub) {
   if (matchedPins.length > 0) {
     showHexInfo(matchedPins, null);
     const titleEl = document.getElementById('infoTitle');
-    if (titleEl) titleEl.textContent = '📍 ' + (title || displayTitle);
   } else {
+    activeHexPins = [];
     document.getElementById('infoTitle').textContent = '📍 ' + displayTitle;
     const dlEl = document.getElementById('infoDL'); if (dlEl) { dlEl.textContent = '—'; dlEl.style.color = 'var(--text3)'; }
     const ulEl = document.getElementById('infoUL'); if (ulEl) ulEl.textContent = '—';
@@ -8924,7 +9006,9 @@ document.addEventListener('click', e => {
 // ===== PWA SERVİS ÇALIŞANI =====
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      reg.update().catch(() => {});
+    }).catch(() => {});
   });
 }
 </script>
@@ -9032,7 +9116,7 @@ function shareSubmission(platform) {
   const text = `Mahallemizin (${il}${ilce}) internet hız ve altyapı verilerini internetharita.com.tr'ye ekledim${iss}${dl}! Sen de kendi mahallendeki fiber/VDSL durumunu haritada gör 👉 ${shareUrl}`;
 
   if (platform === 'whatsapp') {
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   } else if (platform === 'twitter') {
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text + ' #internetharita')}`, '_blank');
   }
@@ -9047,7 +9131,7 @@ function shareSpeedResult(platform) {
   const text = `İnternet hızımı internetharita.com.tr'de test ettim: ⬇️ ${dl} Mbps İndirme, ⬆️ ${ul} Mbps Yükleme${ping}! Sen de kendi mahallendeki internet hızını ve fiber altyapıyı haritada gör 👉 ${shareUrl}`;
 
   if (platform === 'whatsapp') {
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   } else if (platform === 'twitter') {
     const tweet = `İnternet hızımı @internetharita'da test ettim: ⬇️ ${dl} Mbps indirme | ⬆️ ${ul} Mbps yükleme${ping}. Türkiye'nin bağımsız internet altyapı haritası: ${shareUrl} #internetharita #hıztesti`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`, '_blank');
@@ -9114,19 +9198,21 @@ function openScoreCardModal(source) {
     cardData.puan = lastSubmittedData.puan || null;
     cardData.isAltyapiYok = !!lastSubmittedData.isAltyapiYok;
   } else if (source === 'region') {
-    if (typeof activeHexPins !== 'undefined' && activeHexPins && activeHexPins.length) {
-      const speedPins = activeHexPins.filter(p => !p.is_altyapi_yok);
-      const avgDL = speedPins.length ? Math.round(speedPins.reduce((a,p) => a + (p.gercek_dl || 0), 0) / speedPins.length) : 0;
-      const ulPins = speedPins.filter(p => (p.gercek_ul || 0) > 0);
-      const avgUL = ulPins.length ? Math.round(ulPins.reduce((a,p) => a + p.gercek_ul, 0) / ulPins.length) : 0;
-      const pingPins = speedPins.filter(p => (p.ping || 0) > 0);
-      const avgPing = pingPins.length ? Math.round(pingPins.reduce((a,p) => a + p.ping, 0) / pingPins.length) : null;
-      const avgS = (activeHexPins.reduce((a,p) => a + (p.puan || 0), 0) / activeHexPins.length).toFixed(1);
+    const hasPins = typeof activeHexPins !== 'undefined' && Array.isArray(activeHexPins) && activeHexPins.length > 0;
+    if (hasPins) {
+      const speedPins = activeHexPins.filter(p => !p.is_altyapi_yok && Number(p.gercek_dl) > 0);
+      const avgDL = speedPins.length ? Math.round(speedPins.reduce((a,p) => a + Number(p.gercek_dl), 0) / speedPins.length) : 0;
+      const ulPins = activeHexPins.filter(p => Number(p.gercek_ul) > 0);
+      const avgUL = ulPins.length ? Math.round(ulPins.reduce((a,p) => a + Number(p.gercek_ul), 0) / ulPins.length) : 0;
+      const pingPins = activeHexPins.filter(p => Number(p.ping) > 0);
+      const avgPing = pingPins.length ? Math.round(pingPins.reduce((a,p) => a + Number(p.ping), 0) / pingPins.length) : null;
+      const scoredPins = activeHexPins.filter(p => Number(p.puan) > 0);
+      const avgS = scoredPins.length ? (scoredPins.reduce((a,p) => a + Number(p.puan), 0) / scoredPins.length).toFixed(1) : null;
 
       cardData.dl = avgDL;
       cardData.ul = avgUL;
       cardData.ping = avgPing;
-      cardData.puan = parseFloat(avgS) || null;
+      cardData.puan = avgS ? parseFloat(avgS) : null;
       cardData.isAltyapiYok = speedPins.length === 0 && activeHexPins.some(p => p.is_altyapi_yok);
 
       // Sık geçen il ve ilçe
@@ -9142,51 +9228,62 @@ function openScoreCardModal(source) {
         cardData.ilce = lp[1] ? (lp[2] ? `${lp[1]} (${lp[2]})` : lp[1]) : '';
       }
       cardData.iss = `${activeHexPins.length} Ölçüm Ortalaması`;
-    } else {
-      // Fallback DOM parse
-      const rawTitle = document.getElementById('infoTitle')?.textContent.replace(/^📍\s*/, '') || 'Bölge';
-      const parts = rawTitle.split(/[›>]/).map(s => s.trim()).filter(Boolean);
-      cardData.il = parts[0] || '';
-      cardData.ilce = parts[1] ? (parts[2] ? `${parts[1]} (${parts[2]})` : parts[1]) : '';
-
-      const dlText = document.getElementById('infoDL')?.textContent || '';
-      const ulText = document.getElementById('infoUL')?.textContent || '';
-      const scText = document.getElementById('infoScore')?.textContent || '';
-
-      const dlMatch = dlText.match(/(\d+(?:\.\d+)?)/);
-      const ulMatch = ulText.match(/(\d+(?:\.\d+)?)/);
-      const scMatch = scText.match(/(\d+(?:\.\d+)?)/);
-
-      cardData.dl = dlMatch ? parseFloat(dlMatch[1]) : 0;
-      cardData.ul = ulMatch ? parseFloat(ulMatch[1]) : 0;
-      cardData.puan = scMatch ? parseFloat(scMatch[1]) : null;
-      cardData.iss = 'Bölge Ortalaması';
     }
+
+    // DOM Fallback / Güvenlik Kontrolü (DOM'da hız görünüyorsa ama cardData.dl 0 ise mutlaka DOM'dan al)
+    const dlText = document.getElementById('infoDL')?.textContent || '';
+    const dlMatch = dlText.match(/(\d+(?:\.\d+)?)/);
+    if ((!cardData.dl || cardData.dl === 0) && dlMatch) {
+      cardData.dl = parseFloat(dlMatch[1]);
+    }
+    const ulText = document.getElementById('infoUL')?.textContent || '';
+    const ulMatch = ulText.match(/(\d+(?:\.\d+)?)/);
+    if ((!cardData.ul || cardData.ul === 0) && ulMatch) {
+      cardData.ul = parseFloat(ulMatch[1]);
+    }
+    const scText = document.getElementById('infoScore')?.textContent || '';
+    const scMatch = scText.match(/(\d+(?:\.\d+)?)/);
+    if (!cardData.puan && scMatch) {
+      cardData.puan = parseFloat(scMatch[1]);
+    }
+    if (!cardData.il || !cardData.ilce) {
+      const rawTitle = document.getElementById('infoTitle')?.textContent.replace(/^📍\s*/, '') || '';
+      const parts = rawTitle.split(/[›,>]/).map(s => s.trim()).filter(Boolean);
+      if (!cardData.il && parts[0]) cardData.il = parts[0];
+      if (!cardData.ilce && parts[1]) cardData.ilce = parts[2] ? `${parts[1]} (${parts[2]})` : parts[1];
+    }
+    if (!cardData.iss) cardData.iss = hasPins ? `${activeHexPins.length} Ölçüm Ortalaması` : 'Bölge Ortalaması';
+
     const countText = document.getElementById('infoCount')?.textContent || '';
-    if (cardData.dl === 0 && countText.includes('0 ölçüm')) {
-      cardData.isAltyapiYok = false;
+    if ((!cardData.dl || cardData.dl === 0) && !cardData.isAltyapiYok && (countText.includes('0 ölçüm') || !hasPins)) {
+      return showToast('ℹ️ Bu bölgede henüz kayıtlı internet ölçümü bulunmuyor. İlk ölçümü siz ekleyin!', 'warn');
     }
   } else {
     // 'speedtest' veya varsayılan
-    if (stResults) {
+    if (typeof stResults !== 'undefined' && stResults) {
       cardData.dl = stResults.dl || 0;
       cardData.ul = stResults.ul || 0;
       cardData.ping = stResults.ping || null;
     }
-    // Form alanlarından lokasyon/İSS almayı dene
-    const ilInput = document.getElementById('il');
-    const ilceInput = document.getElementById('ilce');
-    const issInput = document.getElementById('iss');
-    const connInput = document.getElementById('conn');
-    const puanInput = document.querySelector('input[name="puan"]:checked') || document.getElementById('puan');
-    const altyapiYokCheckbox = document.getElementById('isAltyapiYok') || document.getElementById('altyapiYokCheck');
+    // Form alanlarından lokasyon/İSS al
+    const ilInput = document.getElementById('ilInput');
+    const ilceInput = document.getElementById('ilceInput');
+    const mahalleInput = document.getElementById('mahalleInput');
+    const issSelect = document.getElementById('issSelect');
+    const customIss = document.getElementById('customIssInput');
+    const noInfra = document.getElementById('noInfraCheck');
 
     if (ilInput && ilInput.value) cardData.il = ilInput.value;
-    if (ilceInput && ilceInput.value) cardData.ilce = ilceInput.value;
-    if (issInput && issInput.value) cardData.iss = issInput.value;
-    if (connInput && connInput.value) cardData.conn = connInput.value;
-    if (puanInput && puanInput.value) cardData.puan = puanInput.value;
-    if (altyapiYokCheckbox && altyapiYokCheckbox.checked) cardData.isAltyapiYok = true;
+    if (ilceInput && ilceInput.value) {
+      cardData.ilce = mahalleInput && mahalleInput.value ? `${ilceInput.value} (${mahalleInput.value})` : ilceInput.value;
+    }
+    if (customIss && customIss.value) {
+      cardData.iss = customIss.value;
+    } else if (issSelect && issSelect.value && issSelect.value !== 'Diğer') {
+      cardData.iss = issSelect.value;
+    }
+    if (typeof selConnVal !== 'undefined' && selConnVal) cardData.conn = selConnVal.toUpperCase();
+    if (noInfra && noInfra.checked) cardData.isAltyapiYok = true;
   }
 
   currentScoreCardData = cardData;
@@ -9444,20 +9541,28 @@ function renderInternetScoreCard(cardData) {
       const dlVal = parseFloat(cardData.dl) || 0;
       const grade = getScoreCardGrade(cardData);
 
-      ctx.fillStyle = grade.color;
-      ctx.font = '800 108px "Space Mono", monospace';
       const numStr = dlVal >= 1000 ? (dlVal / 1000).toFixed(2) + 'k' : dlVal.toFixed(1);
 
-      // Neon ışıma
+      ctx.font = '800 108px "Space Mono", monospace';
+      const numW = ctx.measureText(numStr).width;
+      ctx.font = '700 34px "Space Mono", monospace';
+      const unitW = ctx.measureText('Mbps').width;
+      const totalW = numW + 16 + unitW;
+      const startX = 540 - (totalW / 2);
+
+      // Neon ışıma & Sayı
+      ctx.fillStyle = grade.color;
+      ctx.font = '800 108px "Space Mono", monospace';
+      ctx.textAlign = 'left';
       ctx.shadowColor = grade.color;
       ctx.shadowBlur = 24;
-      ctx.fillText(numStr, 510, 450);
+      ctx.fillText(numStr, startX, 450);
       ctx.shadowBlur = 0; // Sıfırla
 
+      // Mbps Birimi
       ctx.fillStyle = '#94a3b8';
       ctx.font = '700 34px "Space Mono", monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText('Mbps', 510 + (ctx.measureText(numStr).width / 2) + 12, 450);
+      ctx.fillText('Mbps', startX + numW + 16, 450);
 
       ctx.fillStyle = '#64748b';
       ctx.font = '500 15px "DM Sans", sans-serif';
@@ -9625,7 +9730,7 @@ function shareScoreCardWhatsApp() {
     text = `İnternet hızımı test ettim${locStr}: ⬇️ ${d.dl} Mbps İndirme, ⬆️ ${d.ul || 0} Mbps Yükleme! Sen de mahallendeki gerçek hızları haritada gör 👉 https://internetharita.com.tr`;
   }
 
-  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
 }
 
 function copyScoreCardText() {
