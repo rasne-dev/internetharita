@@ -301,6 +301,32 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
 .btn-primary:hover{background:#33deff;box-shadow:0 4px 16px var(--accent-glow);}
 .btn-ghost { padding:7px 14px;background:transparent;color:var(--accent); border:1px solid rgba(0,212,255,.35);border-radius:7px; font-weight:600;font-size:12px;cursor:pointer; font-family:var(--font-body);transition:all .2s; }
 .btn-ghost:hover{background:var(--accent-dim);}
+
+/* Klavye ve ekran okuyucu erişilebilirliği */
+.skip-link {
+  position: fixed; top: 10px; left: 10px; z-index: 10000;
+  padding: 10px 14px; border-radius: 8px; background: var(--accent);
+  color: #070b0f; font-weight: 700; text-decoration: none;
+  transform: translateY(-160%); transition: transform .18s ease;
+}
+.skip-link:focus { transform: translateY(0); }
+:focus-visible {
+  outline: 3px solid var(--accent) !important;
+  outline-offset: 3px;
+}
+.chip[role="button"], .mode-tab[role="button"], .cbtn[role="button"],
+.feedback-tag[role="button"], .sbtn[role="button"], .my-pins-toggle[role="button"],
+.map-sidebar-toggle[role="button"], .sidebar-collapse-btn[role="button"], .info-close[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
 .page{position:fixed;inset:0;top:var(--nav-h);display:none;} .page.active{display:flex;}
 
 /* ===== MAP PAGE ===== */
@@ -1555,6 +1581,8 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
 </head>
 <body>
 
+<a class="skip-link" href="#map">Ana içeriğe geç</a>
+
 <div class="maintenance-banner" id="maintenanceBanner">🔧 Bakım modu aktif — Yeni veri girişleri geçici olarak kapatılmıştır.</div>
 <div class="maintenance-banner submissions-paused-banner" id="submissionsPausedBanner">🚨 Otomatik güvenlik duraklatması — kısa sürede çok sayıda veri geldi, moderatör incelemesi bekleniyor.</div>
 
@@ -1646,7 +1674,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
 </div>
 
 <div id="page-harita" class="page active">
-  <div id="map"></div>
+  <div id="map" tabindex="-1" aria-label="Türkiye internet altyapı haritası"></div>
   <div id="mapLoadingOverlay" class="map-loading-overlay">
     <div class="mlo-box">
       <div class="mlo-spinner" id="mloSpinner"></div>
@@ -2546,7 +2574,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <!-- JAVASCRIPT -->
 <script>
@@ -2740,7 +2768,7 @@ function toggleMyPinsUI() {
 
   isMyPinsVisible = !isMyPinsVisible;
   const btn = document.getElementById('myPinsToggle');
-  if (btn) btn.classList.toggle('active', isMyPinsVisible);
+  if (btn) { btn.classList.toggle('active', isMyPinsVisible); syncInteractiveControlState(btn.parentElement); }
   renderMyPins();
   showToast(isMyPinsVisible ? '📍 Ölçümleriniz haritaya eklendi' : '👁 Ölçümleriniz haritadan gizlendi');
 }
@@ -3994,6 +4022,7 @@ function renderISSChips(list) {
     </div>`);
 
     container.innerHTML = chipsHtml.join('');
+    enhanceInteractiveControls(container);
   }
 
   // 2. Veri Ekleme Formu (#issSelect): Kullanıcı veri eklerken TÜM sağlayıcıları eksiksiz görebilsin
@@ -4027,11 +4056,48 @@ function renderISSChips(list) {
 }
 let colorMode = 'hiz', hexLayers =[], pinMarkerLayers =[], isModLoggedIn = false, currentModUser = null, regionSortMode = 'dl';
 
+// Div olarak tasarlanmış seçim kontrollerini klavye ile de kullanılabilir kıl.
+// Bu yaklaşım mevcut görsel tasarımı korurken Enter ve Boşluk tuşlarını gerçek
+// butonlardaki gibi çalıştırır; dinamik eklenen İSS çipleri de bu fonksiyondan geçer.
+function enhanceInteractiveControls(root = document) {
+  root.querySelectorAll('.chip, .mode-tab, .cbtn, .feedback-tag, .sbtn, .my-pins-toggle, .map-sidebar-toggle, .sidebar-collapse-btn, .info-close').forEach(el => {
+    if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+    if (!el.hasAttribute('aria-label')) el.setAttribute('aria-label', (el.textContent || '').trim());
+    if (!el.dataset.keyboardReady) {
+      el.dataset.keyboardReady = '1';
+      el.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          el.click();
+          window.setTimeout(syncInteractiveControlState, 0);
+        }
+      });
+    }
+  });
+  root.querySelectorAll('.map-sidebar-toggle').forEach(el => {
+    if (!el.hasAttribute('aria-expanded')) el.setAttribute('aria-expanded', 'false');
+  });
+  root.querySelectorAll('.sidebar-collapse-btn').forEach(el => {
+    if (!el.hasAttribute('aria-expanded')) el.setAttribute('aria-expanded', String(!document.getElementById('sidebarBody')?.classList.contains('collapsed')));
+  });
+  syncInteractiveControlState(root);
+}
+
+function syncInteractiveControlState(root = document) {
+  root.querySelectorAll('.chip, .mode-tab, .cbtn, .feedback-tag, .sbtn, .my-pins-toggle').forEach(el => {
+    el.setAttribute('aria-pressed', String(el.classList.contains('on') || el.classList.contains('active') || el.classList.contains('sel')));
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => enhanceInteractiveControls());
+
 function setColorMode(m) {
   colorMode = (m === 'memnuniyet' || m === 'mem') ? 'mem' : 'hiz';
   const isHiz = colorMode === 'hiz';
   document.getElementById('colorModeHiz')?.classList.toggle('active', isHiz);
   document.getElementById('colorModeMem')?.classList.toggle('active', !isHiz);
+  syncInteractiveControlState();
   const items = document.getElementById('legendItems');
   if (!items) return renderHex();
   if (isHiz) {
@@ -4044,7 +4110,7 @@ function setColorMode(m) {
   renderHex();
 }
 
-function toggleChip(el, type) { el.classList.toggle('on'); if (activeFilters.has(type)) activeFilters.delete(type); else activeFilters.add(type); renderHex(); renderModPins(); }
+function toggleChip(el, type) { el.classList.toggle('on'); syncInteractiveControlState(el.parentElement); if (activeFilters.has(type)) activeFilters.delete(type); else activeFilters.add(type); renderHex(); renderModPins(); }
 function resetAllFilters(e) {
   if (e) e.stopPropagation();
   // Bağlantı türü çipleri — hepsini aç
@@ -4053,6 +4119,7 @@ function resetAllFilters(e) {
   // İSS çipleri — popülerleri ve Diğer'i aç
   activeISSFilters = new Set([...POPULAR_ISS_NAMES, 'Diğer']);
   document.querySelectorAll('#issChips .chip-iss').forEach(c => c.classList.add('on'));
+  syncInteractiveControlState();
   // Renk modu — varsayılana (Hız) dön
   setColorMode('hiz');
   // Arama kutusu
@@ -4075,6 +4142,7 @@ function toggleMapSidebar() {
   const backdrop = document.getElementById('sidebarBackdrop');
   const isOpen = sb.classList.toggle('mobile-open');
   if (btn) btn.textContent = isOpen ? '✕ Kapat' : '⚙ Filtreler';
+  if (btn) btn.setAttribute('aria-expanded', String(isOpen));
   if (backdrop) backdrop.classList.toggle('active', isOpen);
   // Mobilde sidebar açıkken legend ve zoom-hint'i gizle
   if (window.innerWidth <= 768) {
@@ -4089,6 +4157,7 @@ function toggleSidebarCollapse() {
   const btn = document.getElementById('sidebarCollapseBtn');
   const collapsed = body.classList.toggle('collapsed');
   btn.textContent = collapsed ? '▼' : '▲';
+  btn.setAttribute('aria-expanded', String(!collapsed));
   localStorage.setItem('ih_sidebar_collapsed', collapsed ? '1' : '0');
 }
 function initSidebarState() {
@@ -6550,6 +6619,7 @@ function selConn(el,type,fromAuto = false) {
   }
   el.parentElement.querySelectorAll('.cbtn').forEach(b=>b.className=b.className.replace(/ sel/g,''));
   el.classList.add('sel');
+  syncInteractiveControlState(el.parentElement);
   selConnVal=type;
   const issSel = document.getElementById('issSelect');
   const infraSel = document.getElementById('infraSelect');
@@ -6638,11 +6708,12 @@ function collectExtraAltyapiFrom(containerId) {
   return out;
 }
 function collectExtraAltyapi() { return []; }
-function selScore(el,val) { document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); selScoreVal=val; }
+function selScore(el,val) { document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); syncInteractiveControlState(); selScoreVal=val; }
 (function buildScoreRow() { const row = document.getElementById('scoreRow'); if(!row) return; for(let i=1;i<=10;i++){const b=document.createElement('div');b.className='sbtn';b.textContent=i;b.onclick=()=>selScore(b,i);row.appendChild(b);} })();
 
 function toggleFeedbackTag(el) {
   el.classList.toggle('sel');
+  syncInteractiveControlState(el.parentElement);
   const selTags = [];
   document.querySelectorAll('#feedbackTags .feedback-tag.sel').forEach(t => {
     const val = t.getAttribute('data-val') || t.textContent.trim();
@@ -8858,6 +8929,7 @@ document.addEventListener('click', function(e) {
 function toggleISSChip(el, issName) {
   issName = canonicalIssName(issName);
   el.classList.toggle('on');
+  syncInteractiveControlState(el.parentElement);
   if (activeISSFilters.has(issName)) activeISSFilters.delete(issName);
   else activeISSFilters.add(issName);
   renderHex();
@@ -8873,6 +8945,7 @@ function toggleAllISSChips() {
     if (allOn) { chip.classList.remove('on'); activeISSFilters.delete(name); }
     else { chip.classList.add('on'); activeISSFilters.add(name); }
   });
+  syncInteractiveControlState(document.getElementById('issChips'));
   renderHex(); renderModPins();
 }
 
