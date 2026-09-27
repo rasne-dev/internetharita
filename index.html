@@ -1326,6 +1326,197 @@ html.light .pwa-install-banner { background:var(--surface); border-color:var(--b
 .ccb-content { display: flex; align-items: center; gap: 12px; font-size: 11px; line-height: 1.5; color: var(--text2); }
 .ccb-icon { font-size: 24px; flex-shrink: 0; }
 html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); border-color: var(--border); box-shadow: 0 12px 40px rgba(0,0,0,0.15); }
+
+/* ===== İNTERNET HIZ KARNESİ MODALI ===== */
+.scorecard-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 3500;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+}
+.scorecard-modal.open {
+  display: flex;
+}
+.scorecard-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 24px 20px;
+  width: 100%;
+  max-width: 440px;
+  max-height: 92vh;
+  max-height: 92dvh;
+  overflow-y: auto;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8);
+  animation: scFadeUp .25s ease;
+}
+@keyframes scFadeUp {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.scorecard-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  cursor: pointer;
+  color: var(--text3);
+  font-size: 24px;
+  line-height: 1;
+  transition: color .15s;
+}
+.scorecard-close:hover {
+  color: var(--text);
+}
+.scorecard-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: var(--accent);
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.25);
+  border-radius: 20px;
+  padding: 3px 10px;
+  margin-bottom: 6px;
+}
+.scorecard-title {
+  font-family: var(--font-mono);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.scorecard-sub {
+  font-size: 11px;
+  color: var(--text2);
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+.scorecard-canvas-wrap {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto 16px;
+  position: relative;
+}
+#scoreCardCanvas {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1/1;
+  border-radius: 14px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  display: block;
+}
+.scorecard-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.scorecard-btn {
+  width: 100%;
+  padding: 11px 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all .2s;
+  font-family: var(--font-body);
+}
+.scorecard-btn.primary {
+  background: linear-gradient(135deg, #00d4ff, #3b82f6);
+  color: #040a17;
+  box-shadow: 0 4px 18px rgba(0, 212, 255, 0.35);
+}
+.scorecard-btn.primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+.scorecard-btn.secondary {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+}
+.scorecard-btn.secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.scorecard-social-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin-top: 4px;
+}
+.scorecard-sbtn {
+  padding: 8px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all .15s;
+  font-family: var(--font-body);
+}
+.scorecard-sbtn:hover {
+  border-color: var(--border2);
+  color: var(--text);
+}
+.scorecard-sbtn.wa:hover {
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.4);
+}
+.scorecard-sbtn.x:hover {
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+.scorecard-sbtn.copy:hover {
+  color: var(--accent);
+  border-color: rgba(0, 212, 255, 0.4);
+}
+.scorecard-trigger-btn {
+  width: 100%;
+  padding: 9px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.16), rgba(59, 130, 246, 0.16));
+  color: var(--accent);
+  border: 1px solid rgba(0, 212, 255, 0.4);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all .2s;
+  font-family: var(--font-body);
+}
+.scorecard-trigger-btn:hover {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.28), rgba(59, 130, 246, 0.28));
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
 </style>
 <!-- Tema erken init — flash önleme -->
 <script>
@@ -1563,6 +1754,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
       <div class="hex-pins-list" id="hexPinsList" style="display:none;"></div>
       <button class="popup-btn popup-report" id="infoBildirBtn" onclick="openHexReport()" style="width:100%;margin-top:10px;padding:7px;">🚩 Bu Bölgeyi Bildir</button>
       <button class="btn-ghost" onclick="shareCurrentRegion()" style="width:100%;margin-top:6px;padding:7px;font-size:11px;display:flex;align-items:center;justify-content:center;gap:6px;border-color:rgba(0,212,255,0.3);color:var(--accent);background:rgba(0,212,255,0.04);">🔗 Bu Bölgenin Bağlantısını Paylaş</button>
+      <button class="btn-ghost" onclick="openScoreCardModal('region')" style="width:100%;margin-top:6px;padding:7px;font-size:11px;display:flex;align-items:center;justify-content:center;gap:6px;border-color:rgba(0,212,255,0.4);color:var(--accent);background:rgba(0,212,255,0.06);">📸 Bu Bölgenin İnternet Karnesini Paylaş</button>
     </div>
   </div>
   <div class="map-legend-box" id="mapLegendBox">
@@ -8750,6 +8942,9 @@ if ('serviceWorker' in navigator) {
     </div>
     <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px;">
       <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.3px;text-align:center;">Ölçümünü Arkadaşlarınla Paylaş</div>
+      <button type="button" class="scorecard-trigger-btn" onclick="openScoreCardModal('submission')">
+        <span>📸</span> Görsel İnternet Karneni İndir / Paylaş
+      </button>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         <button type="button" class="btn-ghost" onclick="shareSubmission('whatsapp')" style="padding:8px 6px;font-size:11px;display:flex;align-items:center;justify-content:center;gap:6px;color:#22c55e;border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.06);">
           <span>💬</span> WhatsApp
@@ -8885,6 +9080,529 @@ function shareCurrentRegion() {
     });
   }
 }
+
+// ===== İNTERNET HIZ KARNESİ MOTORU (CANVAS & PAYLAŞIM) =====
+let currentScoreCardData = null;
+
+function closeScoreCardModal() {
+  const modal = document.getElementById('scoreCardModal');
+  if (modal) modal.classList.remove('open');
+}
+
+function openScoreCardModal(source) {
+  let cardData = {
+    dl: 0,
+    ul: 0,
+    ping: null,
+    il: '',
+    ilce: '',
+    iss: '',
+    conn: '',
+    puan: null,
+    isAltyapiYok: false,
+    date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+  };
+
+  if (source === 'submission' && lastSubmittedData) {
+    cardData.dl = lastSubmittedData.dl || 0;
+    cardData.ul = lastSubmittedData.ul || 0;
+    cardData.ping = lastSubmittedData.ping || null;
+    cardData.il = lastSubmittedData.il || '';
+    cardData.ilce = lastSubmittedData.ilce || '';
+    cardData.iss = lastSubmittedData.iss || '';
+    cardData.conn = lastSubmittedData.conn || '';
+    cardData.puan = lastSubmittedData.puan || null;
+    cardData.isAltyapiYok = !!lastSubmittedData.isAltyapiYok;
+  } else if (source === 'region') {
+    const rawTitle = document.getElementById('infoTitle')?.textContent.replace(/^📍\s*/, '') || 'Bölge';
+    const parts = rawTitle.split('>').map(s => s.trim());
+    cardData.il = parts[0] || '';
+    cardData.ilce = parts[1] || '';
+    const dlEl = document.getElementById('infoDL');
+    const ulEl = document.getElementById('infoUL');
+    const scoreEl = document.getElementById('infoScore');
+    cardData.dl = parseFloat(dlEl?.textContent) || 0;
+    cardData.ul = parseFloat(ulEl?.textContent) || 0;
+    cardData.puan = parseFloat(scoreEl?.textContent) || null;
+    cardData.iss = 'Bölge Ortalaması';
+    const countText = document.getElementById('infoCount')?.textContent || '';
+    if (cardData.dl === 0 && countText.includes('0 ölçüm')) {
+      cardData.isAltyapiYok = false;
+    }
+  } else {
+    // 'speedtest' veya varsayılan
+    if (stResults) {
+      cardData.dl = stResults.dl || 0;
+      cardData.ul = stResults.ul || 0;
+      cardData.ping = stResults.ping || null;
+    }
+    // Form alanlarından lokasyon/İSS almayı dene
+    const ilInput = document.getElementById('il');
+    const ilceInput = document.getElementById('ilce');
+    const issInput = document.getElementById('iss');
+    const connInput = document.getElementById('conn');
+    const puanInput = document.querySelector('input[name="puan"]:checked') || document.getElementById('puan');
+    const altyapiYokCheckbox = document.getElementById('isAltyapiYok') || document.getElementById('altyapiYokCheck');
+
+    if (ilInput && ilInput.value) cardData.il = ilInput.value;
+    if (ilceInput && ilceInput.value) cardData.ilce = ilceInput.value;
+    if (issInput && issInput.value) cardData.iss = issInput.value;
+    if (connInput && connInput.value) cardData.conn = connInput.value;
+    if (puanInput && puanInput.value) cardData.puan = puanInput.value;
+    if (altyapiYokCheckbox && altyapiYokCheckbox.checked) cardData.isAltyapiYok = true;
+  }
+
+  currentScoreCardData = cardData;
+
+  const modal = document.getElementById('scoreCardModal');
+  if (modal) modal.classList.add('open');
+
+  renderInternetScoreCard(cardData);
+}
+
+function getScoreCardGrade(data) {
+  if (data.isAltyapiYok) {
+    return {
+      grade: 'F',
+      title: '🚫 SIFIR ALTYAPI (Altyapı Mağduru)',
+      desc: 'Mahallede sabit internet altyapısı bulunmuyor! Acil yatırım şart.',
+      color: '#ef4444',
+      bg: 'rgba(239, 68, 68, 0.08)',
+      border: 'rgba(239, 68, 68, 0.35)',
+      circleBg: 'rgba(239, 68, 68, 0.16)'
+    };
+  }
+  const dl = parseFloat(data.dl) || 0;
+  if (dl >= 500) {
+    return {
+      grade: 'S+',
+      title: '🚀 IŞIK HIZINDA (Giga Sınıfı Fiber)',
+      desc: 'Türkiye ortalamasının %95\'inden daha hızlı! Kusursuz gigabit bağlantı.',
+      color: '#c084fc',
+      bg: 'rgba(192, 132, 252, 0.08)',
+      border: 'rgba(192, 132, 252, 0.35)',
+      circleBg: 'rgba(192, 132, 252, 0.16)'
+    };
+  }
+  if (dl >= 200) {
+    return {
+      grade: 'A+',
+      title: '⚡ ULTRA HIZLI (Gerçek Fiber)',
+      desc: '4K/8K yayınlar, profesyonel dosya aktarımı ve kesintisiz deneyim.',
+      color: '#00d4ff',
+      bg: 'rgba(0, 212, 255, 0.08)',
+      border: 'rgba(0, 212, 255, 0.35)',
+      circleBg: 'rgba(0, 212, 255, 0.16)'
+    };
+  }
+  if (dl >= 100) {
+    return {
+      grade: 'A',
+      title: '🟢 ÇOK HIZLI (Yüksek Hız)',
+      desc: 'Standartların üzerinde! Çoklu cihaz ve online oyun için ideal.',
+      color: '#22c55e',
+      bg: 'rgba(34, 197, 94, 0.08)',
+      border: 'rgba(34, 197, 94, 0.35)',
+      circleBg: 'rgba(34, 197, 94, 0.16)'
+    };
+  }
+  if (dl >= 50) {
+    return {
+      grade: 'B',
+      title: '👍 İYİ (Standart Genişbant)',
+      desc: 'Ev ve ofis kullanımı için stabil ve dengeli hız seviyesi.',
+      color: '#38bdf8',
+      bg: 'rgba(56, 189, 248, 0.08)',
+      border: 'rgba(56, 189, 248, 0.35)',
+      circleBg: 'rgba(56, 189, 248, 0.16)'
+    };
+  }
+  if (dl >= 24) {
+    return {
+      grade: 'C',
+      title: '⚠️ ORTALAMA (VDSL / Yenilenmeli)',
+      desc: 'Temel ihtiyaçları karşılıyor ancak fiber dönüşümü şart.',
+      color: '#f59e0b',
+      bg: 'rgba(245, 158, 11, 0.08)',
+      border: 'rgba(245, 158, 11, 0.35)',
+      circleBg: 'rgba(245, 158, 11, 0.16)'
+    };
+  }
+  return {
+    grade: 'D',
+    title: '🐢 DÜŞÜK HIZ (Altyapı Mağduru)',
+    desc: '2026 yılı standartlarının çok gerisinde! Acil altyapı iyileştirmesi gerek.',
+    color: '#ef4444',
+    bg: 'rgba(239, 68, 68, 0.08)',
+    border: 'rgba(239, 68, 68, 0.35)',
+    circleBg: 'rgba(239, 68, 68, 0.16)'
+  };
+}
+
+function _scDrawRect(ctx, x, y, width, height, radius, fillStyle, strokeStyle, lineWidth) {
+  ctx.save();
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(x, y, width, height, radius);
+  } else {
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+  }
+  ctx.closePath();
+  if (fillStyle) {
+    ctx.fillStyle = fillStyle;
+    ctx.fill();
+  }
+  if (strokeStyle && lineWidth) {
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function _scDrawCircle(ctx, cx, cy, r, fillStyle, strokeStyle, lineWidth) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.closePath();
+  if (fillStyle) {
+    ctx.fillStyle = fillStyle;
+    ctx.fill();
+  }
+  if (strokeStyle && lineWidth) {
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function _scTruncate(ctx, text, maxWidth) {
+  if (ctx.measureText(text).width <= maxWidth) return text;
+  let t = text;
+  while (t.length > 3 && ctx.measureText(t + '...').width > maxWidth) {
+    t = t.slice(0, -1);
+  }
+  return t + '...';
+}
+
+function renderInternetScoreCard(cardData) {
+  const canvas = document.getElementById('scoreCardCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const doPaint = () => {
+    // 1080x1080 Temel Boyut
+    canvas.width = 1080;
+    canvas.height = 1080;
+
+    // Arka Plan: Koyu Gece Mavisi / Siyah
+    ctx.fillStyle = '#080c15';
+    ctx.fillRect(0, 0, 1080, 1080);
+
+    // Üst Sol Cyan Parlama
+    const g1 = ctx.createRadialGradient(200, 160, 10, 200, 160, 520);
+    g1.addColorStop(0, 'rgba(0, 212, 255, 0.22)');
+    g1.addColorStop(0.5, 'rgba(0, 212, 255, 0.05)');
+    g1.addColorStop(1, 'rgba(0, 212, 255, 0)');
+    ctx.fillStyle = g1;
+    ctx.fillRect(0, 0, 1080, 1080);
+
+    // Alt Sağ Mor Parlama
+    const g2 = ctx.createRadialGradient(900, 900, 10, 900, 900, 550);
+    g2.addColorStop(0, 'rgba(168, 85, 247, 0.18)');
+    g2.addColorStop(0.5, 'rgba(168, 85, 247, 0.04)');
+    g2.addColorStop(1, 'rgba(168, 85, 247, 0)');
+    ctx.fillStyle = g2;
+    ctx.fillRect(0, 0, 1080, 1080);
+
+    // Siber Izgara Çizgileri
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.025)';
+    ctx.lineWidth = 1;
+    for (let x = 60; x < 1080; x += 60) {
+      ctx.beginPath(); ctx.moveTo(x, 40); ctx.lineTo(x, 1040); ctx.stroke();
+    }
+    for (let y = 60; y < 1080; y += 60) {
+      ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(1040, y); ctx.stroke();
+    }
+
+    // Ana Cam Kart Çerçevesi
+    _scDrawRect(ctx, 40, 40, 1000, 1000, 36, 'rgba(13, 20, 36, 0.55)', 'rgba(255, 255, 255, 0.08)', 1.5);
+
+    // Üst Parlayan Çizgi
+    const edgeGrad = ctx.createLinearGradient(120, 40, 960, 40);
+    edgeGrad.addColorStop(0, 'rgba(0, 212, 255, 0)');
+    edgeGrad.addColorStop(0.4, 'rgba(0, 212, 255, 0.85)');
+    edgeGrad.addColorStop(0.7, 'rgba(168, 85, 247, 0.85)');
+    edgeGrad.addColorStop(1, 'rgba(168, 85, 247, 0)');
+    ctx.strokeStyle = edgeGrad;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(140, 40);
+    ctx.lineTo(940, 40);
+    ctx.stroke();
+
+    // 1. Üst Rozet
+    _scDrawRect(ctx, 350, 72, 380, 38, 19, 'rgba(0, 212, 255, 0.1)', 'rgba(0, 212, 255, 0.35)', 1);
+    ctx.fillStyle = '#00d4ff';
+    ctx.font = '700 14px "Space Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚡ BAĞIMSIZ DOĞRULANMIŞ TEST', 540, 96);
+
+    // 2. Logo & Başlık
+    ctx.font = '700 40px "DM Sans", -apple-system, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.fillText('🗺️ internetharita.com.tr', 540, 155);
+
+    ctx.font = '700 16px "Space Mono", monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('TÜRKİYE İNTERNET HIZ & ALTYAPI KARNESİ', 540, 190);
+
+    // 3. Bilgi Çipleri (Konum, İSS, Tarih)
+    const locText = cardData.ilce ? `${cardData.ilce}, ${cardData.il || ''}` : (cardData.il || 'Türkiye Geneli');
+    const issText = cardData.iss ? (cardData.conn ? `${cardData.iss} (${cardData.conn})` : cardData.iss) : 'Sabit Genişbant';
+    const dateStr = cardData.date || new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    // Çip 1: Konum
+    _scDrawRect(ctx, 80, 222, 290, 48, 14, 'rgba(255, 255, 255, 0.04)', 'rgba(255, 255, 255, 0.1)', 1);
+    ctx.font = '600 15px "DM Sans", sans-serif';
+    ctx.fillStyle = '#e2e8f0';
+    ctx.textAlign = 'center';
+    ctx.fillText(_scTruncate(ctx, `📍 ${locText}`, 270), 225, 252);
+
+    // Çip 2: İSS
+    _scDrawRect(ctx, 385, 222, 340, 48, 14, 'rgba(255, 255, 255, 0.04)', 'rgba(255, 255, 255, 0.1)', 1);
+    ctx.fillText(_scTruncate(ctx, `🏢 ${issText}`, 320), 555, 252);
+
+    // Çip 3: Tarih
+    _scDrawRect(ctx, 740, 222, 260, 48, 14, 'rgba(255, 255, 255, 0.04)', 'rgba(255, 255, 255, 0.1)', 1);
+    ctx.fillText(`📅 ${dateStr}`, 870, 252);
+
+    // 4. Hero Bölümü: İndirme Hızı (Download)
+    _scDrawRect(ctx, 80, 295, 920, 250, 26, 'rgba(0, 212, 255, 0.04)', 'rgba(0, 212, 255, 0.3)', 2);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '700 16px "Space Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('↓ İNDİRME HIZI (DOWNLOAD)', 540, 340);
+
+    if (cardData.isAltyapiYok) {
+      ctx.fillStyle = '#ef4444';
+      ctx.font = '800 68px "DM Sans", sans-serif';
+      ctx.fillText('ALTYAPI YOK', 540, 435);
+
+      ctx.fillStyle = '#f87171';
+      ctx.font = '600 18px "DM Sans", sans-serif';
+      ctx.fillText('Bu bölgede sabit genişbant internet altyapısı bulunmuyor', 540, 485);
+    } else {
+      const dlVal = parseFloat(cardData.dl) || 0;
+      const grade = getScoreCardGrade(cardData);
+
+      ctx.fillStyle = grade.color;
+      ctx.font = '800 108px "Space Mono", monospace';
+      const numStr = dlVal >= 1000 ? (dlVal / 1000).toFixed(2) + 'k' : dlVal.toFixed(1);
+
+      // Neon ışıma
+      ctx.shadowColor = grade.color;
+      ctx.shadowBlur = 24;
+      ctx.fillText(numStr, 510, 450);
+      ctx.shadowBlur = 0; // Sıfırla
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '700 34px "Space Mono", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('Mbps', 510 + (ctx.measureText(numStr).width / 2) + 12, 450);
+
+      ctx.fillStyle = '#64748b';
+      ctx.font = '500 15px "DM Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Gerçek tarayıcı tabanlı ölçüm verisidir • internetharita.com.tr', 540, 505);
+    }
+
+    // 5. İkincil Metrikler: Yükleme (Upload) & Gecikme (Ping)
+    // Sol: Yükleme
+    _scDrawRect(ctx, 80, 565, 445, 110, 20, 'rgba(34, 197, 94, 0.05)', 'rgba(34, 197, 94, 0.3)', 1.5);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '700 14px "Space Mono", monospace';
+    ctx.fillText('↑ YÜKLEME (UPLOAD)', 115, 602);
+    ctx.fillStyle = '#22c55e';
+    ctx.font = '800 34px "Space Mono", monospace';
+    const ulVal = cardData.ul ? `${parseFloat(cardData.ul).toFixed(1)} Mbps` : (cardData.isAltyapiYok ? 'Yok' : '—');
+    ctx.fillText(ulVal, 115, 646);
+
+    // Sağ: Ping
+    _scDrawRect(ctx, 555, 565, 445, 110, 20, 'rgba(245, 158, 11, 0.05)', 'rgba(245, 158, 11, 0.3)', 1.5);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '700 14px "Space Mono", monospace';
+    ctx.fillText('⏱️ GECİKME (PING)', 590, 602);
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = '800 34px "Space Mono", monospace';
+    const pingVal = cardData.ping ? `${cardData.ping} ms` : '—';
+    ctx.fillText(pingVal, 590, 646);
+
+    // 6. Karne Değerlendirmesi / Rozet Bandı
+    const gradeInfo = getScoreCardGrade(cardData);
+    _scDrawRect(ctx, 80, 695, 920, 160, 24, gradeInfo.bg, gradeInfo.border, 2);
+
+    // Yuvarlak Not Rozeti (Sol)
+    _scDrawCircle(ctx, 165, 775, 46, gradeInfo.circleBg, gradeInfo.color, 3);
+    ctx.fillStyle = gradeInfo.color;
+    ctx.font = '800 40px "Space Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(gradeInfo.grade, 165, 789);
+
+    // Başlık ve Açıklama (Sağ)
+    ctx.textAlign = 'left';
+    ctx.fillStyle = gradeInfo.color;
+    ctx.font = '800 27px "DM Sans", sans-serif';
+    ctx.fillText(gradeInfo.title, 235, 755);
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '500 17px "DM Sans", sans-serif';
+    ctx.fillText(gradeInfo.desc, 235, 794);
+
+    if (cardData.puan) {
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = '600 15px "Space Mono", monospace';
+      ctx.fillText(`Kullanıcı Memnuniyeti: ${cardData.puan}/10 ★`, 235, 825);
+    } else {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '500 14px "DM Sans", sans-serif';
+      ctx.fillText('Türkiye internet altyapısını haritada keşfedin ve karşılaştırın.', 235, 825);
+    }
+
+    // 7. Alt Aksiyon / Viral CTA Kutusu
+    _scDrawRect(ctx, 80, 875, 920, 95, 20, 'rgba(255, 255, 255, 0.03)', 'rgba(255, 255, 255, 0.09)', 1);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '600 17px "DM Sans", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Senin mahallen ne durumda? Kendi hızını test et ve haritada gör:', 115, 930);
+
+    // Sağdaki Çağrı Butonu
+    _scDrawRect(ctx, 700, 895, 275, 55, 14, '#00d4ff', null, 0);
+    ctx.fillStyle = '#040914';
+    ctx.font = '800 17px "Space Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('internetharita.com.tr ➔', 837, 929);
+
+    // 8. Etiketler (En Alt)
+    ctx.fillStyle = '#475569';
+    ctx.font = '600 13px "Space Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('#internetharita   #hıztesti   #fibernerede   #açıkkaynak', 540, 1005);
+  };
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(doPaint).catch(doPaint);
+  } else {
+    doPaint();
+  }
+}
+
+async function shareScoreCardNative() {
+  const canvas = document.getElementById('scoreCardCanvas');
+  if (!canvas) return;
+
+  const btnText = document.getElementById('btnShareCardText');
+  const oldText = btnText ? btnText.textContent : '';
+
+  try {
+    if (btnText) btnText.textContent = 'Hazırlanıyor...';
+
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) throw new Error('Görsel üretilemedi');
+
+    const file = new File([blob], `internetharita-hiz-karnem-${Date.now()}.png`, { type: 'image/png' });
+    const shareData = {
+      title: 'İnternet Hız Karnem — İnternetHarita',
+      text: 'İnternet hız karnem! Sen de kendi mahallendeki fiber/VDSL durumunu ve hızları haritada gör 👉 https://internetharita.com.tr',
+      files: [file]
+    };
+
+    if (navigator.canShare && navigator.canShare(shareData)) {
+      await navigator.share(shareData);
+      showToast('Karne başarıyla paylaşıldı! 🚀');
+    } else {
+      downloadScoreCardImage();
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      console.warn('Paylaşım hatası:', err);
+      downloadScoreCardImage();
+    }
+  } finally {
+    if (btnText) btnText.textContent = oldText;
+  }
+}
+
+function downloadScoreCardImage() {
+  const canvas = document.getElementById('scoreCardCanvas');
+  if (!canvas) return;
+  const link = document.createElement('a');
+  link.download = `internetharita-hiz-karnesi-${Date.now()}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  showToast('📥 İnternet karneniz görsel olarak indirildi!');
+}
+
+function shareScoreCardTwitter() {
+  if (!currentScoreCardData) return;
+  const d = currentScoreCardData;
+  const isYok = !!d.isAltyapiYok;
+  const loc = d.ilce ? `${d.ilce}, ${d.il}` : (d.il || '');
+  const locStr = loc ? `📍 Bölge: ${loc}\n` : '';
+  const issStr = d.iss ? `🏢 İSS: ${d.iss}\n` : '';
+
+  let tweet = '';
+  if (isYok) {
+    tweet = `⚠️ Mahallemizde internet altyapısı bulunmuyor!\n${locStr}${issStr}Türkiye'nin bağımsız altyapı haritası @internetharita'ya ekledim. Mahallenizdeki durumu görün 👉 https://internetharita.com.tr #internetharita #altyapıyok #fibernerede`;
+  } else {
+    const grade = getScoreCardGrade(d);
+    tweet = `İnternet Hız Karnem: ⬇️ ${d.dl} Mbps | ⬆️ ${d.ul || 0} Mbps (Derece: ${grade.grade} - ${grade.title})\n${locStr}${issStr}Sen de kendi mahallendeki internet hızını test et ve haritada gör 👉 https://internetharita.com.tr #internetharita #hıztesti`;
+  }
+
+  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`, '_blank');
+}
+
+function shareScoreCardWhatsApp() {
+  if (!currentScoreCardData) return;
+  const d = currentScoreCardData;
+  const isYok = !!d.isAltyapiYok;
+  const loc = d.ilce ? `${d.ilce}, ${d.il}` : (d.il || '');
+  const locStr = loc ? ` (${loc})` : '';
+
+  let text = '';
+  if (isYok) {
+    text = `Mahallemizde${locStr} internet altyapısı bulunmuyor! Altyapı talebimizi İnternetHarita'ya ekledim. Sen de kendi mahalleni kontrol et: https://internetharita.com.tr`;
+  } else {
+    text = `İnternet hızımı test ettim${locStr}: ⬇️ ${d.dl} Mbps İndirme, ⬆️ ${d.ul || 0} Mbps Yükleme! Sen de mahallendeki gerçek hızları haritada gör 👉 https://internetharita.com.tr`;
+  }
+
+  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function copyScoreCardText() {
+  if (!currentScoreCardData) return;
+  const d = currentScoreCardData;
+  const loc = d.ilce ? `${d.ilce}, ${d.il}` : (d.il || '');
+  const locStr = loc ? ` (${loc})` : '';
+  const text = `İnternet hız karnem${locStr}: ⬇️ ${d.dl || 0} Mbps | ⬆️ ${d.ul || 0} Mbps. Türkiye'nin bağımsız altyapı haritası: https://internetharita.com.tr`;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('📋 Karne bilgisi panoya kopyalandı!');
+  }).catch(() => {
+    showToast('Kopyalama başarısız', 'err');
+  });
+}
 </script>
 <div class="speedtest-modal" id="speedTestModal">
   <div class="speedtest-box">
@@ -8924,6 +9642,9 @@ function shareCurrentRegion() {
     <button class="speedtest-btn use" id="stUseBtn" style="display:none;margin-top:8px;" onclick="applySpeedResults()">✓ Bu Sonuçları Kullan</button>
     <div id="stShareWrap" style="display:none;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);flex-direction:column;gap:6px;">
       <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.3px;text-align:center;">Hızını Arkadaşlarınla Paylaş</div>
+      <button type="button" class="scorecard-trigger-btn" onclick="openScoreCardModal('speedtest')">
+        <span>📸</span> Görsel İnternet Karneni Oluştur &amp; Paylaş
+      </button>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
         <button type="button" class="btn-ghost" onclick="shareSpeedResult('whatsapp')" style="padding:7px 4px;font-size:10px;display:flex;align-items:center;justify-content:center;gap:4px;color:#22c55e;border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.06);">
           <span>💬</span> WhatsApp
@@ -8938,6 +9659,38 @@ function shareCurrentRegion() {
     </div>
     <button class="speedtest-btn" id="stRetryBtn" style="display:none;margin-top:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);" onclick="resetSpeedTestUI()">↺ Tekrar Dene</button>
     <div style="margin-top:12px;font-size:9px;color:var(--text3);text-align:center;line-height:1.5;">📡 Kablolu veya 5 GHz Wi-Fi bağlantısı daha doğru sonuç verir<br>Mobil veri ile test yapmayınız, sonuçlar gerçek hızı yansıtmaz!</div>
+  </div>
+</div>
+
+<!-- İNTERNET HIZ KARNESİ PAYLAŞIM MODALI -->
+<div class="scorecard-modal" id="scoreCardModal" onclick="if(event.target===this)closeScoreCardModal()">
+  <div class="scorecard-box">
+    <div class="scorecard-close" onclick="closeScoreCardModal()" title="Kapat">×</div>
+    <div class="scorecard-badge">📊 SOSYAL MEDYA KARNESİ</div>
+    <div class="scorecard-title">İnternet Hız Karneniz</div>
+    <div class="scorecard-sub">Instagram Hikayesi, WhatsApp veya X (Twitter)'da paylaşabileceğiniz yüksek kaliteli görsel kart:</div>
+    <div class="scorecard-canvas-wrap">
+      <canvas id="scoreCardCanvas" width="1080" height="1080"></canvas>
+    </div>
+    <div class="scorecard-actions">
+      <button type="button" class="scorecard-btn primary" id="btnShareCard" onclick="shareScoreCardNative()">
+        <span>📲</span> <span id="btnShareCardText">Görseli Paylaş / Hikaye Yap</span>
+      </button>
+      <button type="button" class="scorecard-btn secondary" onclick="downloadScoreCardImage()">
+        <span>📥</span> Görseli İndir (PNG)
+      </button>
+      <div class="scorecard-social-grid">
+        <button type="button" class="scorecard-sbtn x" onclick="shareScoreCardTwitter()">
+          <span>𝕏</span> Tweetle
+        </button>
+        <button type="button" class="scorecard-sbtn wa" onclick="shareScoreCardWhatsApp()">
+          <span>💬</span> WhatsApp
+        </button>
+        <button type="button" class="scorecard-sbtn copy" onclick="copyScoreCardText()">
+          <span>📋</span> Kopyala
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
