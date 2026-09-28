@@ -10040,11 +10040,17 @@ function closeKvkkModal() { document.getElementById('kvkkModal').classList.remov
 function openAboutModal() { document.getElementById('aboutModal').classList.add('open'); }
 function closeAboutModal() { document.getElementById('aboutModal').classList.remove('open'); }
 function closeSpeedTestModal() {
-  if (stRunning) return;
+  if (stRunning && _cfSpeedEngine) {
+    try { _cfSpeedEngine.pause(); } catch(e) {}
+    stRunning = false;
+  }
   document.getElementById('speedTestModal').classList.remove('open');
   speedTestTarget = 'form';
 }
 function resetSpeedTestUI() {
+  if (_cfSpeedEngine) {
+    try { _cfSpeedEngine.pause(); } catch(e) {}
+  }
   stResults = null; stRunning = false; speedVerifiedByTest = false;
   document.getElementById('stVal').textContent = '—';
   document.getElementById('stPhase').textContent = 'HAZIR';
@@ -10091,329 +10097,183 @@ function liveLogAppend(direction, mbps) {
   log.textContent = `${direction} ${formatMbps(mbps)} Mbps`;
 }
 // Yükleme testi için bellek dostu, GC baskısı yapmayan sabit boyutlu Blob'lar
-const _uploadBlobs = {
-  k256: new Blob([new Uint8Array(256 * 1024)]),
-  k512: new Blob([new Uint8Array(512 * 1024)]),
-  m1:   new Blob([new Uint8Array(1024 * 1024)]),
-  m2:   new Blob([new Uint8Array(2 * 1024 * 1024)]),
-  m4:   new Blob([new Uint8Array(4 * 1024 * 1024)]),
-};
+let _cfSpeedEngine = null;
 
-async function measurePing() {
+async function getSpeedEngineClass() {
   try {
-    // 1. Warm-up (TCP & TLS Keep-Alive oturumunu hazirla)
-    try {
-      await fetchWithTimeout(`${SPEED_DOWNLOAD_URL}?bytes=0&t=w_${Date.now()}`, { cache:'no-store', mode:'cors' }, 4000);
-    } catch(e) {}
+    const mod = await import('./speedtest.js');
+    return mod.default || mod;
+  } catch (e) {
+    console.warn('Yerel speedtest.js yüklenemedi, CDN yedeği deneniyor...', e);
+    const mod = await import('https://cdn.jsdelivr.net/npm/@cloudflare/speedtest@1.14.1/dist/speedtest.js');
+    return mod.default || mod;
+  }
+}
 
-    const times = [];
-    for (let i = 0; i < 6; i++) {
-      const pingUrl = `${SPEED_DOWNLOAD_URL}?bytes=0&t=p_${Date.now()}_${i}`;
-      const t0 = performance.now();
+function runOfficialSpeedTest(EngineClass) {
+  return new Promise((resolve) => {
+    let liveMax = 200;
+    let currentPhase = 'latency';
+
+    document.getElementById('stPhase').textContent = 'PING';
+    document.getElementById('stSub').textContent = 'Bağlantı gecikmesi (Ping) ölçülüyor...';
+    document.getElementById('sgFill').style.stroke = 'var(--accent)';
+    document.getElementById('stVal').textContent = '…';
+
+    const engine = new EngineClass({
+      autoStart: false,
+      measureDownloadLoadedLatency: false,
+      measureUploadLoadedLatency: false,
+      bandwidthFinishRequestDuration: 1200, // 1.2 sn'den uzun süren adımlarda daha büyük pakete geçmeyi durdur
+      measurements: [
+        { type: 'latency', numPackets: 15 },
+        { type: 'download', bytes: 1e5, count: 4 },
+        { type: 'download', bytes: 1e6, count: 6 },
+        { type: 'download', bytes: 1e7, count: 6 },
+        { type: 'download', bytes: 25e6, count: 4 },
+        { type: 'download', bytes: 1e8, count: 3 },
+        { type: 'upload', bytes: 1e5, count: 4 },
+        { type: 'upload', bytes: 1e6, count: 6 },
+        { type: 'upload', bytes: 1e7, count: 4 },
+        { type: 'upload', bytes: 25e6, count: 3 }
+      ]
+    });
+
+    _cfSpeedEngine = engine;
+
+    engine.onPhaseChange = (phase) => {
+      const type = phase?.measurement?.type;
+      currentPhase = type;
+      if (type === 'latency') {
+        document.getElementById('stPhase').textContent = 'PING';
+        document.getElementById('stSub').textContent = 'Gecikme ölçülüyor (Cloudflare Edge)...';
+        document.getElementById('sgFill').style.stroke = 'var(--accent)';
+      } else if (type === 'download') {
+        document.getElementById('stPhase').textContent = '↓ İNDİRME';
+        document.getElementById('stSub').textContent = 'İndirme hızı ölçülüyor (Resmi Cloudflare Motoru)...';
+        document.getElementById('sgFill').style.stroke = 'var(--accent)';
+      } else if (type === 'upload') {
+        document.getElementById('stPhase').textContent = '↑ YÜKLEME';
+        document.getElementById('stSub').textContent = 'Yükleme hızı ölçülüyor (Resmi Cloudflare Motoru)...';
+        document.getElementById('sgFill').style.stroke = 'var(--success)';
+      }
+    };
+
+    engine.onResultsChange = () => {
       try {
-        await fetchWithTimeout(pingUrl, { cache:'no-store', mode:'cors' }, 3000);
-        let duration = performance.now() - t0;
-        
-        // Tarayicinin saf ag seviyesi Resource Timing verisini kontrol et
-        if (window.performance && performance.getEntriesByName) {
-          const entries = performance.getEntriesByName(pingUrl);
-          if (entries && entries.length) {
-            const entry = entries[entries.length - 1];
-            if (entry.responseStart && entry.requestStart && (entry.responseStart > entry.requestStart)) {
-              duration = entry.responseStart - entry.requestStart;
-            } else if (entry.duration && entry.duration > 0) {
-              duration = entry.duration;
+        const results = engine.results;
+        if (!results) return;
+
+        // Ping canlı güncelle
+        const latency = results.getUnloadedLatency();
+        if (latency && latency > 0) {
+          const pingVal = Math.round(latency);
+          document.getElementById('stPingRow').style.display = 'flex';
+          document.getElementById('stPingVal').textContent = pingVal + ' ms';
+        }
+
+        // İndirme canlı ibre
+        if (currentPhase === 'download') {
+          const points = results.getDownloadBandwidthPoints();
+          if (points && points.length) {
+            const last = points[points.length - 1];
+            if (last && last.bps) {
+              const liveMbps = Math.round(last.bps / 1e6);
+              if (liveMbps > 0) {
+                liveLogAppend('↓', liveMbps);
+                if (liveMbps > liveMax) liveMax = Math.ceil(liveMbps * 1.3 / 50) * 50;
+                setGauge(liveMbps, liveMax, 'var(--accent)');
+              }
             }
           }
+          const curDL = results.getDownloadBandwidth();
+          if (curDL && curDL > 0) {
+            document.getElementById('stDLVal').textContent = formatMbps(Math.round(curDL / 1e6));
+          }
         }
-        if (duration > 0) times.push(Math.round(duration));
+
+        // Yükleme canlı ibre
+        if (currentPhase === 'upload') {
+          const points = results.getUploadBandwidthPoints();
+          if (points && points.length) {
+            const last = points[points.length - 1];
+            if (last && last.bps) {
+              const liveMbps = Math.round(last.bps / 1e6);
+              if (liveMbps > 0) {
+                liveLogAppend('↑', liveMbps);
+                if (liveMbps > liveMax) liveMax = Math.ceil(liveMbps * 1.3 / 50) * 50;
+                setGauge(liveMbps, liveMax, 'var(--success)');
+              }
+            }
+          }
+          const curUL = results.getUploadBandwidth();
+          if (curUL && curUL > 0) {
+            document.getElementById('stULVal').textContent = formatMbps(Math.round(curUL / 1e6));
+          }
+        }
       } catch(e) {}
-    }
-    if (!times.length) return null;
-    times.sort((a,b)=>a-b);
-    return times[0] || null;
-  } catch(e) { return null; }
-}
+    };
 
-function percentile90(samples) {
-  if (!samples || samples.length < 3) return null;
-  const sorted = [...samples].sort((a, b) => a - b);
-  const idx = Math.min(sorted.length - 1, Math.floor(0.9 * sorted.length));
-  return sorted[idx];
-}
+    engine.onFinish = (results) => {
+      try {
+        const summary = results.getSummary();
+        const finalDL = summary.download ? Math.round(summary.download / 1e6) : 0;
+        const finalUL = summary.upload ? Math.round(summary.upload / 1e6) : 0;
+        const finalPing = summary.latency ? Math.round(summary.latency) : null;
 
-// HATA DÜZELTMESİ: fetchWithTimeout()'un AbortController'ı yalnızca fetch()
-// promise'i (yani HTTP başlıkları) dönene kadar aktifti — clearTimeout()
-// başlıklar gelir gelmez çalışıyordu. Bundan sonra reader.read() ile yapılan
-// gövde (body) okumalarının HİÇBİR zaman aşımı yoktu. Bir VPN/proxy/captive
-// portal başlıkları gönderip gövdeyi ortada keserse, reader.read() sonsuza
-// kadar askıda kalır; dıştaki "while (performance.now() < stopAt)" kontrolü
-// bir sonraki read() çağrısına asla ulaşamaz ve Promise.all hiç dönmediği
-// için tüm indirme testi "İndirme ölçülüyor..." ekranında donar. readWithTimeout,
-// her read() çağrısını bir zaman aşımıyla yarıştırır; aşım olursa reader
-// iptal edilip stream kapatılır ve döngü bir sonraki isteğe geçer.
-function readWithTimeout(reader, ms) {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('read_timeout')), ms);
-    reader.read().then(
-      (res) => { clearTimeout(timer); resolve(res); },
-      (err) => { clearTimeout(timer); reject(err); }
-    );
+        document.getElementById('stPhase').textContent = 'TAMAMLANDI';
+        document.getElementById('stSub').style.color = '';
+        const fmtSub = v => v >= 1000 ? (v/1000).toFixed(2)+'G' : v;
+        document.getElementById('stSub').textContent = `↓ ${fmtSub(finalDL)} Mbps  ·  ↑ ${fmtSub(finalUL)} Mbps${finalPing ? '  ·  ' + finalPing + ' ms' : ''}`;
+        
+        document.getElementById('stDLVal').textContent = formatMbps(finalDL);
+        document.getElementById('stULVal').textContent = formatMbps(finalUL);
+        if (finalPing) {
+          document.getElementById('stPingRow').style.display = 'flex';
+          document.getElementById('stPingVal').textContent = finalPing + ' ms';
+        }
+
+        const dlMax = Math.max(Math.ceil(finalDL * 1.15 / 50) * 50, 50);
+        setGauge(finalDL, dlMax, 'var(--accent)');
+
+        document.getElementById('stResults').classList.add('show');
+        document.getElementById('stStartBtn').style.display = 'none';
+        document.getElementById('stUseBtn').style.display = 'block';
+        document.getElementById('stRetryBtn').style.display = 'block';
+        const shareWrap = document.getElementById('stShareWrap');
+        if (shareWrap) shareWrap.style.display = 'flex';
+
+        stResults = { dl: finalDL, ul: finalUL, ping: finalPing };
+      } catch(e) {
+        console.error('onFinish parse error:', e);
+      }
+      resolve();
+    };
+
+    engine.onError = (err) => {
+      console.warn('Engine error:', err);
+      try {
+        const summary = engine.results?.getSummary();
+        if (summary && (summary.download || summary.upload)) {
+          engine.onFinish(engine.results);
+          return resolve();
+        }
+      } catch(e2) {}
+
+      document.getElementById('stPhase').textContent = 'HATA';
+      document.getElementById('stSub').style.color = 'var(--danger)';
+      document.getElementById('stSub').textContent = 'Hız testi sırasında bağlantı kesildi: ' + (err || 'Ağ hatası');
+      const btn = document.getElementById('stStartBtn');
+      if (btn) { btn.disabled = false; btn.textContent = 'Tekrar Dene'; }
+      document.getElementById('stRetryBtn').style.display = 'block';
+      resolve();
+    };
+
+    engine.play();
   });
 }
 
-async function measureDownload(onLive) {
-  const CHUNK_SIZE = 25 * 1024 * 1024;
-  const MEASURE_MS = 10000;
-  const SAMPLE_MS  = 200;
-  const PARALLEL_STREAMS = 8;
-  const READ_TIMEOUT_MS = 8000; // tek bir read() çağrısı için üst sınır
-
-  await Promise.all(Array.from({ length: PARALLEL_STREAMS }, async (_, n) => {
-    try {
-      const r = await fetchWithTimeout(`${SPEED_DOWNLOAD_URL}?bytes=${1024 * 1024}&t=warmup_${n}_${Date.now()}`, { cache:'no-store', mode:'cors' }, 6000);
-      if (r.body) {
-        const rdr = r.body.getReader();
-        try {
-          while (true) {
-            const {done} = await readWithTimeout(rdr, READ_TIMEOUT_MS);
-            if (done) break;
-          }
-        } catch(e) { try { await rdr.cancel(); } catch(e2) {} }
-      }
-    } catch(e) {}
-  }));
-
-  const startedAt = performance.now();
-  const stopAt = startedAt + MEASURE_MS;
-  const sharedSamples = [];
-  let totalBytesGlobal = 0;
-
-  // Doygunluk (Steady-State) ölçümü için ramp-up ayracı:
-  // TCP Slow-Start evresini (ilk 1.8 sn) doyum ölçümünden ayır
-  const RAMP_UP_MS = 1800;
-  const steadyStartAt = startedAt + RAMP_UP_MS;
-  let bytesAtSteadyStart = 0;
-  let steadyMarked = false;
-
-  let lastSampleBytes = 0, lastSampleAt = startedAt;
-  const samplerId = setInterval(() => {
-    const now = performance.now();
-    const dt = now - lastSampleAt;
-    if (dt <= 0) return;
-
-    if (!steadyMarked && now >= steadyStartAt) {
-      bytesAtSteadyStart = totalBytesGlobal;
-      steadyMarked = true;
-    }
-
-    const instantMbps = Math.round(((totalBytesGlobal - lastSampleBytes) * 8) / (dt / 1000) / 1e6);
-    lastSampleBytes = totalBytesGlobal;
-    lastSampleAt = now;
-    if (instantMbps > 0) {
-      sharedSamples.push({ mbps: instantMbps, t: now });
-      if (onLive) onLive(instantMbps);
-    }
-  }, SAMPLE_MS);
-
-  async function readStream(n) {
-    while (performance.now() < stopAt) {
-      const url = `${SPEED_DOWNLOAD_URL}?bytes=${CHUNK_SIZE}&t=${Date.now()}_${n}_${Math.random()}`;
-      let r;
-      try { r = await fetchWithTimeout(url, { cache:'no-store', mode:'cors' }, 12000); } catch(e) { break; }
-      if (!r.ok || !r.body) break;
-      const reader = r.body.getReader();
-      while (performance.now() < stopAt) {
-        let res;
-        try { res = await readWithTimeout(reader, READ_TIMEOUT_MS); } catch(e) { break; }
-        if (res.done) break;
-        totalBytesGlobal += res.value.length;
-      }
-      try { await reader.cancel(); } catch(e) {}
-    }
-  }
-
-  await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => readStream(i)));
-  clearInterval(samplerId);
-  const totalElapsed = (performance.now() - startedAt) / 1000;
-  if (totalBytesGlobal < 100000 || totalElapsed <= 0) return null;
-
-  // Doygunluk (Steady-State) transfer hızı hesabı (TCP Slow-start kayıplarını arındırır)
-  if (steadyMarked && totalBytesGlobal > bytesAtSteadyStart) {
-    const steadyBytes = totalBytesGlobal - bytesAtSteadyStart;
-    const steadyElapsed = (performance.now() - steadyStartAt) / 1000;
-    if (steadyElapsed > 2 && steadyBytes > 500000) {
-      const steadyRate = Math.round((steadyBytes * 8) / steadyElapsed / 1e6);
-      const steadySamples = sharedSamples
-        .filter(s => s.t >= steadyStartAt)
-        .map(s => s.mbps)
-        .sort((a,b) => a - b);
-
-      if (steadySamples.length >= 5) {
-        const trimLow = Math.floor(steadySamples.length * 0.15);
-        const trimHigh = Math.floor(steadySamples.length * 0.90);
-        const trimmed = steadySamples.slice(trimLow, trimHigh);
-        if (trimmed.length) {
-          const trimmedAvg = Math.round(trimmed.reduce((a,b)=>a+b,0) / trimmed.length);
-          return Math.max(1, Math.round(steadyRate * 0.6 + trimmedAvg * 0.4));
-        }
-      }
-      return Math.max(1, steadyRate);
-    }
-  }
-
-  return Math.max(1, Math.round((totalBytesGlobal * 8) / totalElapsed / 1e6));
-}
-
-// ── UPLOAD ÖLÇÜM MİMARİSİ (Tam Round-Trip Doğrulamalı Blob Akışı) ───────────
-// HATA DÜZELTMESİ (Yüksek / Yanlış Ölçüm ve Bufferbloat Sorunu):
-// Eski sistemde iki kritik hata vardı:
-// 1) ReadableStream + duplex: 'half' kullanımı Chromium CORS kontrollerinde
-//    "TypeError: Failed to fetch" verip doğrudan yedek yola düşürüyordu.
-// 2) XHR veya progress tabanlı ölçümlerde tarayıcının ve işletim sisteminin
-//    lokal soket gönderme arabelleğine (OS send buffer) yazılan veriler
-//    "onprogress" ile fiziksel ağa çıkmış gibi sayılıyordu. 4MB'lık parçalarla
-//    hızlı bir yerel arayüz bu tamponu neredeyse anında dolduruyor ve 20 Mbps'lik
-//    bir hatta 70+ Mbps yapay sıçramalar kaydediliyordu. Test durdurulduğunda
-//    ise tamponda bekleyen baytlar fiilen iletilmediği halde hıza katılıyordu.
-// 
-// YENİ VE KESİN ÇÖZÜM (Ookla / Cloudflare Speedtest Standardı):
-// 1) Bellekte önceden oluşturulmuş sabit boyutlu Blob'lar kullanılır (GC baskısı sıfır).
-// 2) Sadece SUNUCUYA TAM ULAŞIP 200 OK YANITI ALINAN parçalar hıza sayılır.
-//    Böylece lokal soket tamponu değil, fiziksel internetten geçip sunucunun
-//    aldığı net bayt sayısı ölçülür.
-// 3) Bağlantı hızına göre otomatik uyarlanan parça boyutu ve eşzamanlılık:
-//    - Hızlı 0.3s prob ile hat kapasitesi anlaşılır.
-//    - Yavaş / DSL (<15 Mbps): 256KB - 512KB parçalar, 2 paralel işçi.
-//    - Orta / VDSL (15 - 45 Mbps): 1MB parçalar, 2 paralel işçi.
-//    - Hızlı Fiber (45 - 120 Mbps): 2MB parçalar, 3 paralel işçi.
-//    - Gigabit Fiber (>120 Mbps): 4MB parçalar, 4 paralel işçi.
-// 4) Canlı ibre için kayan pencere (rolling window) hız hesaplayıcısı:
-//    Tamamlanan son parçaların gerçek zamansal aktarım hızını hesaplar,
-//    sahte sıçramaları filtreleyerek ibreyi pürüzsüz ve doğru gösterir.
-// 5) Birincil olarak Cloudflare Istanbul Edge Node (speed.cloudflare.com/__up),
-//    erişilemezse otomatik olarak Supabase Gateway kullanılır.
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function measureUploadCore(targetUrl, headers, onLive) {
-  const MEASURE_MS = 8000;
-
-  // 1. Hat hızını anlamak için 512KB hızlı prob
-  const tProbe0 = performance.now();
-  try {
-    const probeRes = await fetchWithTimeout(`${targetUrl}?t=probe_${Date.now()}`, {
-      method: 'POST',
-      headers,
-      body: _uploadBlobs.k512
-    }, 4500);
-    if (!probeRes || (!probeRes.ok && probeRes.status !== 404)) return null;
-  } catch (e) {
-    return null;
-  }
-  const probeDt = (performance.now() - tProbe0) / 1000;
-  const probeMbps = (512 * 1024 * 8) / Math.max(probeDt, 0.1) / 1e6;
-
-  // Hatta göre ideal parça ve eşzamanlı işçi seçimi
-  let chunkBlob = _uploadBlobs.m1;
-  let chunkSize = 1024 * 1024;
-  let concurrency = 2;
-
-  if (probeMbps < 6) {
-    chunkBlob = _uploadBlobs.k256; chunkSize = 256 * 1024; concurrency = 2;
-  } else if (probeMbps < 15) {
-    chunkBlob = _uploadBlobs.k512; chunkSize = 512 * 1024; concurrency = 2;
-  } else if (probeMbps < 45) {
-    chunkBlob = _uploadBlobs.m1; chunkSize = 1024 * 1024; concurrency = 2;
-  } else if (probeMbps < 120) {
-    chunkBlob = _uploadBlobs.m2; chunkSize = 2 * 1024 * 1024; concurrency = 3;
-  } else {
-    chunkBlob = _uploadBlobs.m4; chunkSize = 4 * 1024 * 1024; concurrency = 4;
-  }
-
-  const measureStart = performance.now();
-  const stopAt = measureStart + MEASURE_MS;
-  let totalConfirmedBytes = 0;
-  let chunkHistory = [];
-
-  // Canlı ibre için 200ms aralıklı kayan pencere (rolling throughput)
-  const samplerId = setInterval(() => {
-    const now = performance.now();
-    chunkHistory = chunkHistory.filter(e => now - e.t <= 2000);
-    if (chunkHistory.length >= 2) {
-      const windowBytes = chunkHistory.reduce((acc, e) => acc + e.bytes, 0);
-      const span = (now - chunkHistory[0].t) / 1000;
-      if (span > 0.3) {
-        const liveRate = Math.round((windowBytes * 8) / span / 1e6);
-        if (liveRate > 0 && onLive) onLive(liveRate);
-      }
-    }
-  }, 200);
-
-  async function worker(id) {
-    while (performance.now() < stopAt) {
-      try {
-        const res = await fetchWithTimeout(`${targetUrl}?t=${Date.now()}_w${id}_${Math.random()}`, {
-          method: 'POST',
-          headers,
-          body: chunkBlob
-        }, 9000);
-        if (res && (res.ok || res.status === 404)) {
-          totalConfirmedBytes += chunkSize;
-          chunkHistory.push({ bytes: chunkSize, t: performance.now() });
-        } else {
-          break;
-        }
-      } catch (e) {
-        break;
-      }
-    }
-  }
-
-  await Promise.all(Array.from({ length: concurrency }, (_, i) => worker(i)));
-  clearInterval(samplerId);
-
-  const totalElapsed = (performance.now() - measureStart) / 1000;
-  if (totalConfirmedBytes < 256 * 1024 || totalElapsed <= 0) return null;
-
-  // Kesin sonuç: Gerçekten iletilen toplam onaylı bayt / geçen toplam süre
-  return Math.max(1, Math.round((totalConfirmedBytes * 8) / totalElapsed / 1e6));
-}
-
-async function measureUpload(onLive) {
-  window.lastUploadDebug = '';
-
-  // 1. Birincil Yol: Cloudflare (İstanbul CDN Edge)
-  try {
-    const cfResult = await measureUploadCore(SPEED_UPLOAD_URL, { 'Content-Type': 'text/plain' }, onLive);
-    if (cfResult) {
-      window.lastUploadDebug = `Cloudflare onaylı yükleme: ${cfResult} Mbps`;
-      return cfResult;
-    }
-  } catch (e) {
-    window.lastUploadDebug = `Cloudflare hatası: ${e?.message || e}`;
-  }
-
-  // 2. Yedek Yol: Supabase Gateway (Cloudflare erişilemezse)
-  const subEl = document.getElementById('stSub');
-  if (subEl) subEl.textContent = 'Yükleme hızı ölçülüyor — yedek sunucuya bağlanılıyor...';
-
-  try {
-    const sbResult = await measureUploadCore(`${SB_URL}/rest/v1/rpc/speedtest_ping`, {
-      'apikey': SB_KEY,
-      'Content-Type': 'text/plain'
-    }, onLive);
-    if (sbResult) {
-      window.lastUploadDebug += ` || Supabase yedek onaylı yükleme: ${sbResult} Mbps`;
-      return sbResult;
-    }
-  } catch (e) {
-    window.lastUploadDebug += ` || Supabase hatası: ${e?.message || e}`;
-  }
-
-  return null;
-}
-
-// 3. UI GÜNCELLEYİCİ: runSpeedTest (Ortalama Değerlerin Bastırılması)
+// 3. UI GÜNCELLEYİCİ: runSpeedTest (Resmi Cloudflare Motoru Çağrısı)
 async function runSpeedTest() {
   if (stRunning) return;
 
@@ -10434,117 +10294,27 @@ async function runSpeedTest() {
     const btn = document.getElementById('stStartBtn');
     btn.disabled = true; btn.textContent = 'Ölçülüyor...';
     liveLogReset();
+    document.getElementById('stRetryBtn').style.display = 'none';
+    document.getElementById('stUseBtn').style.display = 'none';
 
-    // --- PING ---
-    document.getElementById('stPhase').textContent = 'PING';
-    document.getElementById('stSub').textContent = 'Gecikme ölçülüyor...';
-    const ping = await measurePing();
-    if (ping) { 
-      document.getElementById('stPingRow').style.display='flex'; 
-      document.getElementById('stPingVal').textContent=ping+' ms'; 
-    }
-
-    // --- DOWNLOAD ---
-    document.getElementById('stPhase').textContent = '↓ İNDİRME';
-    document.getElementById('stSub').textContent = 'İndirme hızı ölçülüyor (~10 sn)...';
-    document.getElementById('sgFill').style.stroke = 'var(--accent)';
-    document.getElementById('stVal').textContent = '…';
-    
-    let liveMax = 200; // 100 -> 200: 1Gbps baglantilarda ilk sample gauge'i doldurmasin
-    const dlSamples = [];
-    const dl = await measureDownload((instantMbps) => {
-      dlSamples.push(instantMbps);
-      liveLogAppend('↓', instantMbps);
-      if (instantMbps > liveMax) liveMax = Math.ceil(instantMbps * 1.3 / 50) * 50;
-      setGauge(instantMbps, liveMax, 'var(--accent)');
-    });
-    
-    const dlSamplesAvg = dlSamples.length ? Math.round(dlSamples.reduce((a,b)=>a+b,0)/dlSamples.length) : 0;
-    const finalDL = dl || dlSamplesAvg || 0;
-    if (!finalDL) {
-      document.getElementById('stSub').style.color = 'var(--danger)';
-      document.getElementById('stSub').textContent = 'İndirme ölçümü başarısız oldu. Bağlantıyı kontrol edip tekrar deneyin.';
-      btn.disabled = false; btn.textContent = 'Tekrar Dene';
-      document.getElementById('stRetryBtn').style.display = 'block';
-      return;
-    }
-    const dlMax = Math.max(Math.ceil(finalDL * 1.15 / 50) * 50, 50);
-    setGauge(finalDL, dlMax, 'var(--accent)');
-    document.getElementById('stDLVal').textContent = formatMbps(finalDL);
-    
-    // İndirme ortalama etiketi — kullanıcı dostu
-    if (dlSamples.length > 1) {
-      const dlAvg = Math.round(dlSamples.reduce((a,b)=>a+b,0)/dlSamples.length);
-      const sampleCount = dlSamples.length;
-      if (dlAvg < finalDL * 0.85) {
-        document.getElementById('stDLAvg').textContent = `Ortalama: ${dlAvg} Mbps (Bağlantı Dalgalı · ${sampleCount} örnek)`;
-      } else {
-        document.getElementById('stDLAvg').textContent = `Ortalama: ${dlAvg} Mbps (${sampleCount} örnek)`;
-      }
+    // Resmi Cloudflare SpeedTestEngine sınıfını dinamik olarak al
+    let EngineClass = null;
+    try {
+      EngineClass = await getSpeedEngineClass();
+    } catch(e) {
+      console.warn('SpeedTestEngine sınıfı yüklenemedi:', e);
     }
 
-    // --- UPLOAD ---
-    liveLogReset();
-    document.getElementById('stPhase').textContent = '↑ YÜKLEME';
-    document.getElementById('stSub').textContent = 'Yükleme hızı ölçülüyor (~10 sn) — sunucuya veri gönderiliyor...';
-    document.getElementById('sgFill').style.stroke = 'var(--success)';
-    document.getElementById('stVal').textContent = '…';
-    
-    let ulLiveMax = Math.max(finalDL, 50);
-    const ulSamples = [];
-    const ul = await measureUpload((instantMbps) => {
-      ulSamples.push(instantMbps);
-      liveLogAppend('↑', instantMbps);
-      if (instantMbps > ulLiveMax) ulLiveMax = Math.ceil(instantMbps * 1.3 / 50) * 50;
-      setGauge(instantMbps, ulLiveMax, 'var(--success)');
-    });
-    
-    const ulSamplesAvg = ulSamples.length ? Math.round(ulSamples.reduce((a,b)=>a+b,0)/ulSamples.length) : 0;
-    const finalUL = ul || ulSamplesAvg || 0;
-    if (!finalUL) {
-      document.getElementById('stPhase').textContent = 'HATA';
-      document.getElementById('stSub').style.color = 'var(--danger)';
-      const debugDetails = window.lastUploadDebug ? ` [Detay: ${window.lastUploadDebug}]` : '';
-      document.getElementById('stSub').textContent = 'Yükleme hızı ölçülemedi — hem birincil hem yedek sunucuya bağlantı başarısız oldu. VPN/güvenlik duvarı aktifse devre dışı bırakıp tekrar deneyin.' + debugDetails;
-      document.getElementById('stULVal').textContent = '—';
-      document.getElementById('stResults').classList.add('show');
-      btn.disabled = false; btn.textContent = 'Tekrar Dene';
-      document.getElementById('stRetryBtn').style.display = 'block';
-      return;
+    if (EngineClass) {
+      await runOfficialSpeedTest(EngineClass);
+    } else {
+      throw new Error('Hız testi motoru yüklenemedi. Lütfen internet bağlantınızı kontrol edin.');
     }
-    const ulMax = Math.max(Math.ceil(finalUL * 1.15 / 50) * 50, 50);
-    setGauge(finalUL, ulMax, 'var(--success)');
-    document.getElementById('stULVal').textContent = formatMbps(finalUL);
-    
-    // Yükleme ortalama etiketi — kullanıcı dostu
-    if (ulSamples.length > 1) {
-      const ulAvg = Math.round(ulSamples.reduce((a,b)=>a+b,0)/ulSamples.length);
-      const sampleCount = ulSamples.length;
-      if (ulAvg < finalUL * 0.85) {
-        document.getElementById('stULAvg').textContent = `Ortalama: ${ulAvg} Mbps (Bağlantı Dalgalı · ${sampleCount} örnek)`;
-      } else {
-        document.getElementById('stULAvg').textContent = `Ortalama: ${ulAvg} Mbps (${sampleCount} örnek)`;
-      }
-    }
-
-    // --- BİTİŞ ---
-    stResults = { dl:finalDL, ul:finalUL, ping };
-    document.getElementById('stPhase').textContent = 'TAMAMLANDI';
-    document.getElementById('stSub').style.color = '';
-    const fmtSub = v => v >= 1000 ? (v/1000).toFixed(2)+'G' : v;
-    document.getElementById('stSub').textContent = `↓ ${fmtSub(finalDL)} Mbps  ·  ↑ ${fmtSub(finalUL)} Mbps${ping?' · '+ping+' ms':''}`;
-    document.getElementById('stResults').classList.add('show');
-    
-    btn.style.display = 'none';
-    document.getElementById('stUseBtn').style.display = 'block';
-    document.getElementById('stRetryBtn').style.display = 'block';
-    const shareWrap = document.getElementById('stShareWrap');
-    if (shareWrap) shareWrap.style.display = 'flex';
   } catch (err) {
     console.error('Speed test error:', err);
     document.getElementById('stPhase').textContent = 'HATA';
     document.getElementById('stSub').style.color = 'var(--danger)';
-    document.getElementById('stSub').textContent = 'Beklenmeyen bir hata oluştu: ' + (err?.message || 'Bağlantı hatası');
+    document.getElementById('stSub').textContent = 'Hata oluştu: ' + (err?.message || 'Bağlantı hatası');
     const btn = document.getElementById('stStartBtn');
     if (btn) { btn.disabled = false; btn.textContent = 'Tekrar Dene'; }
     document.getElementById('stRetryBtn').style.display = 'block';
@@ -10552,6 +10322,7 @@ async function runSpeedTest() {
     stRunning = false;
   }
 }
+
 function applySpeedResults() {
   if (!stResults || !stResults.dl || !stResults.ul) {
     return showToast('Hız testi tamamlanmadan sonuç kullanılamaz','err');

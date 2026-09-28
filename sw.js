@@ -1,9 +1,10 @@
-const CACHE = 'iharita-v24';
+const CACHE = 'iharita-v25';
 const ASSETS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js'
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js',
+  '/speedtest.js'
 ];
 
 self.addEventListener('install', e => {
