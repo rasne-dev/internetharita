@@ -2551,6 +2551,10 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
       <input type="hidden" id="userEditComment" value="">
     </div>
     
+    <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:9px 12px;margin-bottom:14px;font-size:11px;line-height:1.4;color:var(--text2);display:flex;align-items:center;justify-content:space-between;gap:8px;">
+      <div>📍 <b>Konumu yanlış mı seçtiniz?</b> Bu ölçümü silip mevcut hız sonuçlarınızla haritadan doğru konumu seçebilirsiniz.</div>
+      <button type="button" class="btn-del" style="padding:6px 10px;font-size:10px;white-space:nowrap;font-weight:700;" onclick="deleteAndRecreatePin()">🗑️ Sil &amp; Yeni Konum Seç</button>
+    </div>
     <div style="display:flex;gap:8px;">
       <button class="btn-primary" style="flex:1;padding:11px;" onclick="saveUserEdit()">💾 Güncelle</button>
       <button class="btn-ghost" style="padding:11px 16px;" onclick="closeUserEditModal()">İptal</button>
@@ -3850,7 +3854,7 @@ async function clearSubmissionsPaused() {
 }
 
 let activeHexPins =[];
-function fuzzy(lat, lng) { const o = 0.0013; return { lat: lat+(Math.random()-.5)*o, lng: lng+(Math.random()-.5)*o }; }
+function fuzzy(lat, lng) { return { lat: Number(lat), lng: Number(lng) }; }
 const IC = { 
   'Türk Telekom': '#005ea6', 
   'Superonline (Turkcell)': '#00d4ff', 
@@ -7241,6 +7245,62 @@ async function deleteUserPin(pinId) {
   }
 }
 
+async function deleteAndRecreatePin() {
+  const pinId = document.getElementById('userEditPinId')?.value;
+  if (!pinId) return;
+  if (!confirm('Mevcut ölçüm silinecek ve verileriniz yeni konum seçebilmeniz için forma aktarılacak. Onaylıyor musunuz?')) return;
+  
+  const pin = pinsData.find(p => p.id === pinId) || (activeHexPins || []).find(p => p.id === pinId);
+  const dl = document.getElementById('userEditDL')?.value;
+  const ul = document.getElementById('userEditUL')?.value;
+  const pkgDL = document.getElementById('userEditPkgDL')?.value;
+  const pkgUL = document.getElementById('userEditPkgUL')?.value;
+  const conn = selConnValUserEdit;
+  const score = selScoreValUserEdit;
+  const comment = document.getElementById('userEditComment')?.value;
+  const iss = pin?.iss;
+
+  try {
+    await delPinOwn(pinId);
+    pinsData = pinsData.filter(p => p.id !== pinId);
+    cleanPinsData = publicCleanPins(pinsData);
+    renderHex();
+    closeUserEditModal();
+    document.getElementById('mapInfo')?.classList.remove('visible');
+
+    // Forma aktar
+    showPage('pin');
+    if (dl) {
+      document.getElementById('dlSpeed').value = dl;
+      document.getElementById('ulSpeed').value = ul || 0;
+      document.getElementById('speedVerifiedBadge')?.classList.add('show');
+      speedVerifiedByTest = true;
+    }
+    if (pkgDL) document.getElementById('packageSpeedDL').value = pkgDL;
+    if (pkgUL) document.getElementById('packageSpeedUL').value = pkgUL;
+    if (conn) {
+      const btn = document.querySelector(`#page-pin .cbtn.${conn}`);
+      if (btn) selConn(btn, conn, true);
+    }
+    if (iss && document.getElementById('issSelect')) {
+      document.getElementById('issSelect').value = iss;
+    }
+    if (score) {
+      const sbtns = document.querySelectorAll('#scoreRow .sbtn');
+      if (sbtns[score - 1]) selScore(sbtns[score - 1], score);
+    }
+    if (comment && document.getElementById('commentInput')) {
+      document.getElementById('commentInput').value = comment;
+    }
+    
+    // Konumu temizle ve haritaya odaklan
+    clearPinLocation();
+    showToast('📍 Eski ölçüm silindi. Lütfen haritadan doğru konumu seçip "Veriyi Paylaş"a tıklayın.', 'warn');
+  } catch(e) {
+    showToast(friendlyDbError(e, 'pins'), 'err');
+  }
+}
+
 function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); document.querySelectorAll('#feedbackTags .feedback-tag').forEach(t => t.classList.remove('sel')); selConnVal=''; selScoreVal=0; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); speedVerifiedByTest = false; const kvkkCheck = document.getElementById('kvkkCheck');
   if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; }
   const noInfraCheck = document.getElementById('noInfraCheck');
@@ -9098,6 +9158,7 @@ if ('serviceWorker' in navigator) {
       <button class="ty-btn secondary" onclick="closeThankyou()">Kapat</button>
       <button class="ty-btn primary" onclick="goToSubmittedLocation()">🗺 Haritada Gör</button>
     </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:8px;line-height:1.4;text-align:center;">💡 Harita üzerinde ölçümünüze tıklayarak dilediğiniz zaman <b>düzenleyebilir</b> veya <b>silebilirsiniz</b>.</div>
     <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px;">
       <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.3px;text-align:center;">Ölçümünü Arkadaşlarınla Paylaş</div>
       <button type="button" class="scorecard-trigger-btn" onclick="openScoreCardModal('submission')">
@@ -9146,12 +9207,18 @@ function goToSubmittedLocation() {
   showPage('harita');
   if (!lastSubmittedLatLng) return;
   const target = lastSubmittedLatLng;
+
+  // Kendi ölçümlerim katmanını kesinlikle aç ve güncelle
+  isMyPinsVisible = true;
+  document.getElementById('myPinsToggle')?.classList.add('active');
+  renderMyPins();
+
   let attempts = 0;
   const tryFly = () => {
     attempts++;
     if (maps.main) {
       maps.main.invalidateSize();
-      maps.main.flyTo([target.lat, target.lng], 14, { animate: true, duration: 1.5 });
+      maps.main.flyTo([target.lat, target.lng], 16, { animate: true, duration: 1.2 });
       
       // Yeni eklenen pini cyan nabız halkasıyla vurgula
       if (typeof locationFocusMarker !== 'undefined' && locationFocusMarker) {
@@ -9173,6 +9240,15 @@ function goToSubmittedLocation() {
           locationFocusMarker = null;
         }
       }, 10000);
+
+      // Kendi pininin popup'ını aç (böylece düzenleme/silme doğrudan görünür)
+      if (myPinsLayer) {
+        myPinsLayer.eachLayer(layer => {
+          if (layer.getLatLng && Math.abs(layer.getLatLng().lat - target.lat) < 0.0008 && Math.abs(layer.getLatLng().lng - target.lng) < 0.0008) {
+            setTimeout(() => { if (layer.openPopup) layer.openPopup(); }, 1200);
+          }
+        });
+      }
     } else if (attempts < 30) {
       setTimeout(tryFly, 100);
     }
@@ -9875,6 +9951,7 @@ function copyScoreCardText() {
     </div>
     <button class="speedtest-btn" id="stRetryBtn" style="display:none;margin-top:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);" onclick="resetSpeedTestUI()">↺ Tekrar Dene</button>
     <div style="margin-top:12px;font-size:9px;color:var(--text3);text-align:center;line-height:1.5;">📡 Kablolu veya 5 GHz Wi-Fi bağlantısı daha doğru sonuç verir<br>Mobil veri ile test yapmayınız, sonuçlar gerçek hızı yansıtmaz!</div>
+    <div style="margin-top:6px;font-size:8.5px;color:rgba(255,255,255,0.4);text-align:center;line-height:1.4;">⚡ Ölçümler doğrudan Cloudflare Edge CDN sunucuları üzerinden yapılır. Gigabit (1000 Mbps) ve yüksek hızlı hatlar için doyum hızı esas alınır. Ping süresi İSS'nizin rota tercihine göre şekillenir.</div>
   </div>
 </div>
 
@@ -10024,12 +10101,35 @@ const _uploadBlobs = {
 
 async function measurePing() {
   try {
+    // 1. Warm-up (TCP & TLS Keep-Alive oturumunu hazirla)
+    try {
+      await fetchWithTimeout(`${SPEED_DOWNLOAD_URL}?bytes=0&t=w_${Date.now()}`, { cache:'no-store', mode:'cors' }, 4000);
+    } catch(e) {}
+
     const times = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
+      const pingUrl = `${SPEED_DOWNLOAD_URL}?bytes=0&t=p_${Date.now()}_${i}`;
       const t0 = performance.now();
-      await fetchWithTimeout(`${SPEED_DOWNLOAD_URL}?bytes=0&t=${Date.now()}_${i}`, { cache:'no-store', mode:'cors' }, 5000);
-      times.push(Math.round(performance.now() - t0));
+      try {
+        await fetchWithTimeout(pingUrl, { cache:'no-store', mode:'cors' }, 3000);
+        let duration = performance.now() - t0;
+        
+        // Tarayicinin saf ag seviyesi Resource Timing verisini kontrol et
+        if (window.performance && performance.getEntriesByName) {
+          const entries = performance.getEntriesByName(pingUrl);
+          if (entries && entries.length) {
+            const entry = entries[entries.length - 1];
+            if (entry.responseStart && entry.requestStart && (entry.responseStart > entry.requestStart)) {
+              duration = entry.responseStart - entry.requestStart;
+            } else if (entry.duration && entry.duration > 0) {
+              duration = entry.duration;
+            }
+          }
+        }
+        if (duration > 0) times.push(Math.round(duration));
+      } catch(e) {}
     }
+    if (!times.length) return null;
     times.sort((a,b)=>a-b);
     return times[0] || null;
   } catch(e) { return null; }
@@ -10071,7 +10171,7 @@ async function measureDownload(onLive) {
 
   await Promise.all(Array.from({ length: PARALLEL_STREAMS }, async (_, n) => {
     try {
-      const r = await fetchWithTimeout(`${SPEED_DOWNLOAD_URL}?bytes=${512 * 1024}&t=warmup_${n}_${Date.now()}`, { cache:'no-store', mode:'cors' }, 8000);
+      const r = await fetchWithTimeout(`${SPEED_DOWNLOAD_URL}?bytes=${1024 * 1024}&t=warmup_${n}_${Date.now()}`, { cache:'no-store', mode:'cors' }, 6000);
       if (r.body) {
         const rdr = r.body.getReader();
         try {
@@ -10089,16 +10189,29 @@ async function measureDownload(onLive) {
   const sharedSamples = [];
   let totalBytesGlobal = 0;
 
+  // Doygunluk (Steady-State) ölçümü için ramp-up ayracı:
+  // TCP Slow-Start evresini (ilk 1.8 sn) doyum ölçümünden ayır
+  const RAMP_UP_MS = 1800;
+  const steadyStartAt = startedAt + RAMP_UP_MS;
+  let bytesAtSteadyStart = 0;
+  let steadyMarked = false;
+
   let lastSampleBytes = 0, lastSampleAt = startedAt;
   const samplerId = setInterval(() => {
     const now = performance.now();
     const dt = now - lastSampleAt;
     if (dt <= 0) return;
+
+    if (!steadyMarked && now >= steadyStartAt) {
+      bytesAtSteadyStart = totalBytesGlobal;
+      steadyMarked = true;
+    }
+
     const instantMbps = Math.round(((totalBytesGlobal - lastSampleBytes) * 8) / (dt / 1000) / 1e6);
     lastSampleBytes = totalBytesGlobal;
     lastSampleAt = now;
     if (instantMbps > 0) {
-      sharedSamples.push(instantMbps);
+      sharedSamples.push({ mbps: instantMbps, t: now });
       if (onLive) onLive(instantMbps);
     }
   }, SAMPLE_MS);
@@ -10122,19 +10235,34 @@ async function measureDownload(onLive) {
 
   await Promise.all(Array.from({ length: PARALLEL_STREAMS }, (_, i) => readStream(i)));
   clearInterval(samplerId);
-  const elapsed = (performance.now() - startedAt) / 1000;
-  if (totalBytesGlobal < 100000 || elapsed <= 0) return null;
-  // DOĞRULUK DÜZELTMESİ: bkz. measureUploadXHR — aynı sebepten p90 yerine gerçek
-  // ortalama kullanılıyor. reader.read() ile gelen veri, ağdan aktığı anda değil
-  // JS event loop'a sıra geldiğinde okunuyor; 8 paralel stream aynı anda
-  // çalışırken bazı 200ms pencerelerde arabelleğe birikmiş veri "patlama"
-  // şeklinde boşalıyor. Bu da o pencerede olmayan bir hız sıçraması gibi
-  // görünüyor ve p90 tam da bu yapay sıçramaları seçip gerçek sonuç sanıyordu
-  // — bu yüzden hız testi normalden yüksek ölçüyordu. Artık birincil metrik:
-  // toplam alınan bayt / toplam geçen süre (gerçek ortalama). percentile90()
-  // fonksiyonu geriye dönük uyumluluk ve olası UI/anlık ibre kullanımları için
-  // korunuyor, sadece burada birincil sonuç hesaplamasında kullanılmıyor.
-  return Math.max(1, Math.round((totalBytesGlobal * 8) / elapsed / 1e6));
+  const totalElapsed = (performance.now() - startedAt) / 1000;
+  if (totalBytesGlobal < 100000 || totalElapsed <= 0) return null;
+
+  // Doygunluk (Steady-State) transfer hızı hesabı (TCP Slow-start kayıplarını arındırır)
+  if (steadyMarked && totalBytesGlobal > bytesAtSteadyStart) {
+    const steadyBytes = totalBytesGlobal - bytesAtSteadyStart;
+    const steadyElapsed = (performance.now() - steadyStartAt) / 1000;
+    if (steadyElapsed > 2 && steadyBytes > 500000) {
+      const steadyRate = Math.round((steadyBytes * 8) / steadyElapsed / 1e6);
+      const steadySamples = sharedSamples
+        .filter(s => s.t >= steadyStartAt)
+        .map(s => s.mbps)
+        .sort((a,b) => a - b);
+
+      if (steadySamples.length >= 5) {
+        const trimLow = Math.floor(steadySamples.length * 0.15);
+        const trimHigh = Math.floor(steadySamples.length * 0.90);
+        const trimmed = steadySamples.slice(trimLow, trimHigh);
+        if (trimmed.length) {
+          const trimmedAvg = Math.round(trimmed.reduce((a,b)=>a+b,0) / trimmed.length);
+          return Math.max(1, Math.round(steadyRate * 0.6 + trimmedAvg * 0.4));
+        }
+      }
+      return Math.max(1, steadyRate);
+    }
+  }
+
+  return Math.max(1, Math.round((totalBytesGlobal * 8) / totalElapsed / 1e6));
 }
 
 // ── UPLOAD ÖLÇÜM MİMARİSİ (Tam Round-Trip Doğrulamalı Blob Akışı) ───────────
