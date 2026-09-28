@@ -2014,8 +2014,9 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
         <div class="fl">İSS</div>
         <select class="fs" id="issSelect" onchange="toggleCustomIss(this.value)"><option value="">Seçin...</option><option value="Diğer">Diğer (İSS adını girin)</option></select>
         <div id="customIssWrap" style="display:none;margin-top:6px;">
-          <input class="fi" type="text" id="customIssInput" placeholder="İSS adını yazın..." maxlength="60">
-          <div style="font-size:9px;color:var(--warn);margin-top:4px;font-family:var(--font-mono);">⚠ Özel İSS girişleri moderatör onayına düşer, haritada görünmez.</div>
+          <input class="fi" type="text" id="customIssInput" placeholder="Örn: Comnet, Poyraz WiFi, Atlantisnet..." maxlength="60">
+          <div style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">💡 Listede olmayan internet firmanızın adını yazın. Firmanızı bilmiyorsanız faturanızdan veya modem arayüzünüzden kontrol edin.</div>
+          <div style="font-size:9px;color:var(--warn);margin-top:2px;font-family:var(--font-mono);">⚠ Yeni İSS girişleri moderatör onayından sonra haritada görünür.</div>
         </div>
       </div>
       <div class="fg">
@@ -6800,9 +6801,23 @@ async function submitPin() {
   }
   const issVal = document.getElementById('issSelect').value;
   const customIss = document.getElementById('customIssInput')?.value?.trim();
-  if (issVal === 'Diğer' && !customIss && !isAltyapiYok) {
-    highlightRequired('customIssInput');
-    return showToast('Lütfen özel İSS adını girin','err');
+  if (issVal === 'Diğer' && !isAltyapiYok) {
+    if (!customIss || customIss.length < 2) {
+      highlightRequired('customIssInput');
+      return showToast('Lütfen geçerli bir İSS adı girin (en az 2 karakter)','err');
+    }
+    const INVALID_ISS_WORDS = [
+      'bilmiyorum', 'bilmiom', 'bilmiorum', 'bilinmiyor', 'bilinmez', 'bilmem',
+      'yok', 'yoktur', 'fark etmez', 'farketmez', 'emin değilim', 'emindegilim',
+      'asdf', 'qwer', 'test', 'deneme', 'internet', 'wifi', 'vayfay',
+      'fiber', 'vdsl', 'adsl', 'none', 'null', 'undefined', 'bos', 'boş',
+      'saglayici', 'sağlayıcı', 'diger', 'diğer', 'super', 'turk'
+    ];
+    const norm = normalizeTurkish(customIss);
+    if (INVALID_ISS_WORDS.some(w => norm === w || norm.includes(w))) {
+      highlightRequired('customIssInput');
+      return showToast('⚠️ Geçerli bir firma adı yazmalısınız (örn: Comnet, Poyraz WiFi). Firmanızı bilmiyorsanız lütfen faturanızdan kontrol edin.','warn');
+    }
   }
   const finalIss = isAltyapiYok ? 'Altyapı Yok' : (issVal === 'Diğer' ? canonicalIssName(customIss) : canonicalIssName(issVal));
   if (!finalIss && !isAltyapiYok) {
@@ -7535,7 +7550,8 @@ async function loadCustomIss() {
         </div>
         <div class="mod-actions">
           <button class="btn-approve" onclick="approveCustomIss('${escAttr(iss)}', document.getElementById('${inputId}').value.trim(), document.getElementById('${colorId}').value)">✅ Düzeltip Listeye Ekle</button>
-          <button class="btn-hide" onclick="rejectCustomIss('${escAttr(iss)}')">❌ Tümünü Gizle</button>
+          <button class="btn-hide" onclick="rejectCustomIss('${escAttr(iss)}')">👁️ Yayından Gizle</button>
+          <button class="btn-del" onclick="deleteCustomIssAndPins('${escAttr(iss)}')">🗑️ Geçersiz / Sil</button>
         </div>
       </div>`;
     }).join('');
@@ -7581,6 +7597,25 @@ async function rejectCustomIss(iss) {
     updateModStatsSummary();
     loadAdminTable();
   } catch(e) { showToast('Hata: '+e.message,'err'); }
+}
+
+async function deleteCustomIssAndPins(iss) {
+  if (!confirm(`"${iss}" teklifi geçersiz sayılarak bu sağlayıcıyla eklenmiş tüm pinler silinecek. Onaylıyor musunuz?`)) return;
+  try {
+    const pins = await getAllPinsAdmin() || [];
+    const targets = pins.filter(p => p.iss === iss && !p.deleted_at);
+    for (const p of targets) {
+      await delPin(p.id);
+    }
+    showToast(`🗑️ "${iss}" teklifi ve ${targets.length} pin silindi.`);
+    await loadPins();
+    await loadCustomIss();
+    loadSikayetler();
+    loadIssManager();
+    updateInboxSummary();
+    updateModStatsSummary();
+    loadAdminTable();
+  } catch(e) { showToast('Hata: ' + e.message, 'err'); }
 }
 
 // ===== İSS YÖNETİM PANELİ =====
