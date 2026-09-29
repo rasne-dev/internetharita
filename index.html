@@ -2012,7 +2012,11 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
       <div class="fg"><div class="fl">Mahalle/Semt</div><input class="fi" type="text" id="mahalleInput" readonly placeholder="Otomatik"></div>
       <div class="fg">
         <div class="fl">İSS</div>
-        <select class="fs" id="issSelect" onchange="toggleCustomIss(this.value)"><option value="">Seçin...</option><option value="Diğer">Diğer (İSS adını girin)</option></select>
+        <select class="fs" id="issSelect" onchange="onIssSelectUserChange(this.value)"><option value="">Seçin...</option><option value="Diğer">Diğer (İSS adını girin)</option></select>
+        <div id="autoIssBadge" style="display:none;font-size:10px;margin-top:6px;align-items:center;gap:6px;color:var(--text2);background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.22);padding:5px 9px;border-radius:6px;line-height:1.4;">
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;flex-shrink:0;"></span>
+          <span>Bağlantınızdan algılandı: <b id="autoIssBadgeName" style="color:var(--accent);"></b> <span style="color:var(--text3);font-size:9.5px;">(Dilerseniz değiştirebilirsiniz)</span></span>
+        </div>
         <div id="customIssWrap" style="display:none;margin-top:6px;">
           <input class="fi" type="text" id="customIssInput" placeholder="Örn: Comnet, Poyraz WiFi, Atlantisnet..." maxlength="60">
           <div style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">💡 Listede olmayan internet firmanızın adını yazın. Firmanızı bilmiyorsanız faturanızdan veya modem arayüzünüzden kontrol edin.</div>
@@ -4056,7 +4060,11 @@ function renderISSChips(list) {
     sel.innerHTML = '<option value="">Seçin...</option>' +
       combined.map(i => `<option value="${escHtml(i.name)}">${escHtml(i.name)}</option>`).join('') +
       '<option value="Diğer">Diğer (İSS adını girin)</option>';
-    if (cur) sel.value = canonicalIssName(cur);
+    if (cur) {
+      sel.value = canonicalIssName(cur);
+    } else if (typeof _detectedIssResult !== 'undefined' && _detectedIssResult && !issUserManuallyChanged) {
+      applyDetectedIssToSelect(_detectedIssResult);
+    }
   }
 }
 let colorMode = 'hiz', hexLayers =[], pinMarkerLayers =[], isModLoggedIn = false, currentModUser = null, regionSortMode = 'dl';
@@ -4210,7 +4218,7 @@ function showPage(id, updateUrl = true) {
   const st = document.getElementById('sidebarToggle'); if (st) st.style.display = onlyMap ? '' : 'none';
   setTimeout(async () => { 
     if (id==='harita') { if (!maps.main) await initMainMap(); else maps.main.invalidateSize(); } 
-    if (id==='pin') { if (!maps.pin) initPinMap(); else maps.pin.invalidateSize(); renderISSChips(issListCache.filter(i=>i.active!==false)); } 
+    if (id==='pin') { if (!maps.pin) initPinMap(); else maps.pin.invalidateSize(); renderISSChips(issListCache.filter(i=>i.active!==false)); if (typeof detectAndSuggestIss === 'function') detectAndSuggestIss(); } 
     if (id==='bolge') renderRegions(); 
     if (id==='istatistik') renderStats(); 
     if (id==='mod' && isModLoggedIn) refreshModData(); 
@@ -7014,6 +7022,173 @@ async function submitPin() {
   }
   submitBtn.disabled=false; submitBtn.textContent='📍 Veriyi Paylaş';
 }
+let _detectedIssResult = null;
+let _detectIssPromise = null;
+let issUserManuallyChanged = false;
+
+const KNOWN_ASN_MAP = {
+  '9121': 'Türk Telekom',
+  '47524': 'Türk Telekom',
+  '34984': 'Superonline (Turkcell)',
+  '16135': 'Superonline (Turkcell)',
+  '47331': 'TurkNet',
+  '15897': 'Vodafone',
+  '42926': 'Türksat Kablonet',
+  '34296': 'Millenicom',
+  '197316': 'Netspeed',
+  '50383': 'Comnet',
+  '206501': 'GIBIRNet',
+  '44414': 'FixNet',
+  '209425': 'Poyraz WiFi',
+  '208620': 'Atlantisnet',
+  '207137': 'Pelicell'
+};
+
+function resolveIssFromNetworkData(asnRaw, ...textFields) {
+  if (asnRaw != null) {
+    const cleanAsn = String(asnRaw).replace(/^AS/i, '').trim();
+    if (KNOWN_ASN_MAP[cleanAsn]) return KNOWN_ASN_MAP[cleanAsn];
+  }
+  const fullText = textFields.filter(Boolean).join(' ').toLowerCase();
+  if (/turk\s*telekom|ttnet/i.test(fullText)) return 'Türk Telekom';
+  if (/superonline|turkcell/i.test(fullText)) return 'Superonline (Turkcell)';
+  if (/turk\s*net/i.test(fullText)) return 'TurkNet';
+  if (/vodafone/i.test(fullText)) return 'Vodafone';
+  if (/turksat|kablonet|uydunet/i.test(fullText)) return 'Türksat Kablonet';
+  if (/milleni|doping/i.test(fullText)) return 'Millenicom';
+  if (/netspeed/i.test(fullText)) return 'Netspeed';
+  if (/comnet/i.test(fullText)) return 'Comnet';
+  if (/gibir/i.test(fullText)) return 'GIBIRNet';
+  if (/fixnet/i.test(fullText)) return 'FixNet';
+  if (/poyraz/i.test(fullText)) return 'Poyraz WiFi';
+  if (/atlantis/i.test(fullText)) return 'Atlantisnet';
+  if (/pelicell/i.test(fullText)) return 'Pelicell';
+  return null;
+}
+
+function applyDetectedIssToSelect(issName) {
+  if (!issName || issUserManuallyChanged) return;
+  const sel = document.getElementById('issSelect');
+  if (!sel) return;
+  
+  // Eğer "Altyapı Yok" seçiliyse forma dokunma
+  const noInfra = document.getElementById('noInfraCheck');
+  if (noInfra && noInfra.checked) return;
+
+  const canonicalTarget = canonicalIssName(issName).toLowerCase();
+  let matchedValue = null;
+  
+  for (let i = 0; i < sel.options.length; i++) {
+    const optVal = sel.options[i].value;
+    if (optVal && (optVal.toLowerCase() === canonicalTarget || canonicalIssName(optVal).toLowerCase() === canonicalTarget)) {
+      matchedValue = optVal;
+      break;
+    }
+  }
+
+  const badge = document.getElementById('autoIssBadge');
+  const badgeName = document.getElementById('autoIssBadgeName');
+
+  if (matchedValue) {
+    sel.value = matchedValue;
+    toggleCustomIss(matchedValue);
+    if (badge && badgeName) {
+      badgeName.textContent = matchedValue;
+      badge.style.display = 'flex';
+    }
+  } else if (issName) {
+    sel.value = 'Diğer';
+    toggleCustomIss('Diğer');
+    const customInp = document.getElementById('customIssInput');
+    if (customInp) customInp.value = issName;
+    if (badge && badgeName) {
+      badgeName.textContent = issName;
+      badge.style.display = 'flex';
+    }
+  }
+}
+
+function onIssSelectUserChange(val) {
+  issUserManuallyChanged = true;
+  toggleCustomIss(val);
+  const badge = document.getElementById('autoIssBadge');
+  if (badge) {
+    if (_detectedIssResult && val !== _detectedIssResult) {
+      badge.style.display = 'none';
+    } else if (val === _detectedIssResult) {
+      badge.style.display = 'flex';
+    }
+  }
+}
+
+async function detectAndSuggestIss() {
+  if (_detectedIssResult) {
+    if (!issUserManuallyChanged) applyDetectedIssToSelect(_detectedIssResult);
+    return _detectedIssResult;
+  }
+  if (_detectIssPromise) {
+    return _detectIssPromise;
+  }
+
+  _detectIssPromise = (async () => {
+    let detectedName = null;
+    try {
+      const cached = sessionStorage.getItem('ih_detected_iss');
+      if (cached) {
+        _detectedIssResult = cached;
+        if (!issUserManuallyChanged) applyDetectedIssToSelect(_detectedIssResult);
+        return _detectedIssResult;
+      }
+    } catch(e) {}
+
+    // 1. ipwhois.app ile sorgula (4s zaman aşımı)
+    try {
+      const c1 = new AbortController();
+      const t1 = setTimeout(() => c1.abort(), 4000);
+      const res = await fetch('https://ipwhois.app/json/', { signal: c1.signal });
+      clearTimeout(t1);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (data.asn || data.isp || data.org)) {
+          detectedName = resolveIssFromNetworkData(data.asn, data.isp, data.org);
+        }
+      }
+    } catch (err) {
+      console.debug('Primary ISP detect skipped/failed:', err);
+    }
+
+    // 2. freeipapi.com yedeği (4s zaman aşımı)
+    if (!detectedName) {
+      try {
+        const c2 = new AbortController();
+        const t2 = setTimeout(() => c2.abort(), 4000);
+        const res = await fetch('https://freeipapi.com/api/json', { signal: c2.signal });
+        clearTimeout(t2);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && (data.asn || data.asnOrganization)) {
+            detectedName = resolveIssFromNetworkData(data.asn, data.asnOrganization);
+          }
+        }
+      } catch (err) {
+        console.debug('Fallback ISP detect skipped/failed:', err);
+      }
+    }
+
+    if (detectedName) {
+      _detectedIssResult = canonicalIssName(detectedName);
+      try { sessionStorage.setItem('ih_detected_iss', _detectedIssResult); } catch(e) {}
+      if (!issUserManuallyChanged) {
+        applyDetectedIssToSelect(_detectedIssResult);
+      }
+    }
+
+    return _detectedIssResult;
+  })();
+
+  return _detectIssPromise;
+}
+
 function toggleCustomIss(val) {
   const wrap = document.getElementById('customIssWrap');
   if (wrap) wrap.style.display = val === 'Diğer' ? 'block' : 'none';
@@ -7320,6 +7495,13 @@ function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.remov
   if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; }
   const noInfraCheck = document.getElementById('noInfraCheck');
   if (noInfraCheck && noInfraCheck.checked) { noInfraCheck.checked = false; onNoInfraChange(false); }
+  issUserManuallyChanged = false;
+  if (typeof _detectedIssResult !== 'undefined' && _detectedIssResult) {
+    applyDetectedIssToSelect(_detectedIssResult);
+  } else {
+    const autoBadge = document.getElementById('autoIssBadge');
+    if (autoBadge) autoBadge.style.display = 'none';
+  }
 }
 
 function openReportModal(pinId, locStr) {
@@ -8977,6 +9159,7 @@ if (document.readyState === 'loading') {
   startupApp();
 }
 loadIssListAndRenderChips();
+if (typeof detectAndSuggestIss === 'function') detectAndSuggestIss();
 
 // ===== TEMA =====
 function applyTheme(theme) {
