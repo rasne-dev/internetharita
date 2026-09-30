@@ -256,6 +256,11 @@ html.light nav { background: rgba(255,255,255,0.94); }
 .search-input-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
 .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); }
 
+th.sortable { cursor: pointer; user-select: none; transition: background .15s, color .15s; }
+th.sortable:hover { background: var(--surface2); color: var(--accent); }
+.sort-icon { font-size: 10px; margin-left: 4px; opacity: 0.55; display: inline-block; vertical-align: middle; }
+th.sorted .sort-icon { opacity: 1; color: var(--accent); }
+
 .table-container {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 12px; overflow-x: auto;
@@ -397,6 +402,14 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
   <div class="hero-tag">📡 SPEEDTEST AÇIK VERİLERİ</div>
   <h1>Speedtest Açık Verileri — Dünya ve Türkiye Hız Analizi</h1>
   <p>Speedtest by Ookla™ açık verileriyle Türkiye'nin dünya sıralaması ve 81 ilimizin hız dağılımı.</p>
+  <div style="margin-top:16px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+    <a href="/#speedtest" class="btn-cta" style="padding:10px 22px;font-size:13px;display:inline-flex;align-items:center;gap:6px;box-shadow:0 4px 20px var(--accent-glow);text-decoration:none;">
+      ⚡ Kendi Hızınızı Test Edin
+    </a>
+    <a href="/#pin" class="btn-nav" style="border:1px solid var(--border2);background:var(--surface2);padding:10px 18px;border-radius:8px;font-size:13px;display:inline-flex;align-items:center;gap:6px;color:var(--text);text-decoration:none;">
+      📍 Altyapı Verisi Ekle
+    </a>
+  </div>
 </header>
 
 <main class="container">
@@ -464,11 +477,11 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
       <table id="worldTable">
         <thead>
           <tr>
-            <th style="width:60px;">Sıra</th>
-            <th>Ülke</th>
-            <th>Ort. İndirme (Download)</th>
-            <th>Ort. Yükleme (Upload)</th>
-            <th>Gecikme (Ping)</th>
+            <th style="width:65px;" class="sortable" id="th-w-rank" onclick="sortWorldTable('rank')">Sıra <span class="sort-icon">▲</span></th>
+            <th class="sortable" id="th-w-name" onclick="sortWorldTable('name')">Ülke <span class="sort-icon">↕</span></th>
+            <th class="sortable" id="th-w-dl" onclick="sortWorldTable('dl')">Ort. İndirme (Download) <span class="sort-icon">↕</span></th>
+            <th class="sortable" id="th-w-ul" onclick="sortWorldTable('ul')">Ort. Yükleme (Upload) <span class="sort-icon">↕</span></th>
+            <th class="sortable" id="th-w-ping" onclick="sortWorldTable('ping')">Gecikme (Ping) <span class="sort-icon">↕</span></th>
           </tr>
         </thead>
         <tbody id="worldTableBody"></tbody>
@@ -508,12 +521,12 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
       <table id="trTable">
         <thead>
           <tr>
-            <th style="width:60px;">Sıra</th>
-            <th>Bölge / İl</th>
-            <th>Ort. İndirme (Download)</th>
-            <th>Ort. Yükleme (Upload)</th>
-            <th>Ortalama Ping</th>
-            <th>Durum</th>
+            <th style="width:65px;" class="sortable" id="th-t-rank" onclick="sortTrTable('rank')">Sıra <span class="sort-icon">▲</span></th>
+            <th class="sortable" id="th-t-name" onclick="sortTrTable('name')">Bölge / İl <span class="sort-icon">↕</span></th>
+            <th class="sortable" id="th-t-dl" onclick="sortTrTable('dl')">Ort. İndirme (Download) <span class="sort-icon">↕</span></th>
+            <th class="sortable" id="th-t-ul" onclick="sortTrTable('ul')">Ort. Yükleme (Upload) <span class="sort-icon">↕</span></th>
+            <th class="sortable" id="th-t-ping" onclick="sortTrTable('ping')">Ortalama Ping <span class="sort-icon">↕</span></th>
+            <th class="sortable" id="th-t-status" onclick="sortTrTable('status')">Durum <span class="sort-icon">↕</span></th>
           </tr>
         </thead>
         <tbody id="trTableBody"></tbody>
@@ -782,9 +795,55 @@ const trData = [
   { rank: 81, name: "Kilis", dl: 13.5, ul: 15.6, ping: 37, status: "Ortalama Altı", color: "var(--danger)" }
 ];
 
+let currentWorldSort = { col: 'rank', asc: true };
+let currentTrSort = { col: 'rank', asc: true };
+
+function sortWorldTable(col) {
+  if (currentWorldSort.col === col) {
+    currentWorldSort.asc = !currentWorldSort.asc;
+  } else {
+    currentWorldSort.col = col;
+    currentWorldSort.asc = (col === 'name' || col === 'rank');
+  }
+  updateSortIcons('world', currentWorldSort);
+  filterWorldTable();
+}
+
+function sortTrTable(col) {
+  if (currentTrSort.col === col) {
+    currentTrSort.asc = !currentTrSort.asc;
+  } else {
+    currentTrSort.col = col;
+    currentTrSort.asc = (col === 'name' || col === 'rank' || col === 'status');
+  }
+  updateSortIcons('tr', currentTrSort);
+  filterTrTable();
+}
+
+function updateSortIcons(type, sortState) {
+  const prefix = type === 'world' ? 'th-w-' : 'th-t-';
+  const cols = type === 'world' ? ['rank', 'name', 'dl', 'ul', 'ping'] : ['rank', 'name', 'dl', 'ul', 'ping', 'status'];
+  cols.forEach(c => {
+    const th = document.getElementById(prefix + c);
+    if (!th) return;
+    const icon = th.querySelector('.sort-icon');
+    if (c === sortState.col) {
+      th.classList.add('sorted');
+      if (icon) icon.textContent = sortState.asc ? '▲' : '▼';
+    } else {
+      th.classList.remove('sorted');
+      if (icon) icon.textContent = '↕';
+    }
+  });
+}
+
 function renderWorldTable(data) {
   const tbody = document.getElementById('worldTableBody');
   document.getElementById('countryCount').textContent = data.length;
+  if (!data || !data.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3);font-size:13px;">🔍 Aradığınız kriterlere uygun ülke bulunamadı.</td></tr>';
+    return;
+  }
   const maxDl = Math.max(...data.map(d => d.dl), 1);
 
   tbody.innerHTML = data.map(item => {
@@ -818,6 +877,10 @@ function renderWorldTable(data) {
 
 function renderTrTable(data) {
   const tbody = document.getElementById('trTableBody');
+  if (!data || !data.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3);font-size:13px;">🔍 Aradığınız kriterlere uygun il bulunamadı.</td></tr>';
+    return;
+  }
   const maxDl = Math.max(...data.map(d => d.dl), 1);
 
   tbody.innerHTML = data.map(item => {
@@ -855,17 +918,29 @@ function trNormalize(str) {
 
 function filterWorldTable() {
   const q = trNormalize(document.getElementById('worldSearch').value);
-  const filtered = worldData.filter(x => 
+  let filtered = worldData.filter(x => 
     trNormalize(x.name).includes(q) || 
     (x.enName && trNormalize(x.enName).includes(q)) || 
     trNormalize(x.code).includes(q)
   );
+  const { col, asc } = currentWorldSort;
+  filtered.sort((a, b) => {
+    let vA = a[col], vB = b[col];
+    if (typeof vA === 'string') return asc ? vA.localeCompare(vB, 'tr-TR') : vB.localeCompare(vA, 'tr-TR');
+    return asc ? (vA - vB) : (vB - vA);
+  });
   renderWorldTable(filtered);
 }
 
 function filterTrTable() {
   const q = trNormalize(document.getElementById('trSearch').value);
-  const filtered = trData.filter(x => trNormalize(x.name).includes(q));
+  let filtered = trData.filter(x => trNormalize(x.name).includes(q));
+  const { col, asc } = currentTrSort;
+  filtered.sort((a, b) => {
+    let vA = a[col], vB = b[col];
+    if (typeof vA === 'string') return asc ? vA.localeCompare(vB, 'tr-TR') : vB.localeCompare(vA, 'tr-TR');
+    return asc ? (vA - vB) : (vB - vA);
+  });
   renderTrTable(filtered);
 }
 

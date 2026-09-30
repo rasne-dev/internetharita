@@ -1,4 +1,4 @@
-const CACHE = 'iharita-v30';
+const CACHE = 'iharita-v31';
 const ASSETS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
@@ -29,7 +29,7 @@ self.addEventListener('fetch', e => {
   if (!url.startsWith('http') ||
       url.includes('supabase.co') ||
       url.includes('nominatim') ||
-      url.includes('speed.cloudflare.com') ||
+      url.includes('cloudflare.com') ||
       url.includes('openfpcdn.io') ||
       url.includes('googlesyndication') ||
       url.includes('doubleclick') ||
