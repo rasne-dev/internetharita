@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
@@ -10118,7 +10118,7 @@ function copyScoreCardText() {
   <div class="speedtest-box">
     <div class="speedtest-close" onclick="closeSpeedTestModal()">×</div>
     <div class="speedtest-title">⚡ Hız Testi</div>
-    <div class="speedtest-sub" id="stSub">Tarayıcı tabanlı ölçüm — otomatik form doldurur</div>
+    <div class="speedtest-sub" id="stSub">Sonuçlar otomatik olarak forma aktarılır</div>
     <div class="speedtest-gauge">
       <svg width="160" height="160" viewBox="0 0 160 160">
         <circle class="sg-track" cx="80" cy="80" r="68"/>
@@ -10168,8 +10168,8 @@ function copyScoreCardText() {
       </div>
     </div>
     <button class="speedtest-btn" id="stRetryBtn" style="display:none;margin-top:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);" onclick="resetSpeedTestUI()">↺ Tekrar Dene</button>
-    <div style="margin-top:12px;font-size:9px;color:var(--text3);text-align:center;line-height:1.5;">📡 Kablolu veya 5 GHz Wi-Fi bağlantısı daha doğru sonuç verir<br>Mobil veri ile test yapmayınız, sonuçlar gerçek hızı yansıtmaz!</div>
-    <div style="margin-top:6px;font-size:8.5px;color:rgba(255,255,255,0.4);text-align:center;line-height:1.4;">⚡ Ölçümler doğrudan Cloudflare Edge CDN sunucuları üzerinden yapılır. Gigabit (1000 Mbps) ve yüksek hızlı hatlar için doyum hızı esas alınır. Ping süresi İSS'nizin rota tercihine göre şekillenir.</div>
+    <div style="margin-top:12px;font-size:10px;color:var(--warn);text-align:center;line-height:1.6;font-weight:600;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:8px 12px;">⚠️ Doğru sonuç için kablolu (Ethernet) veya 5 GHz Wi-Fi bağlantısı ile test yapın.<br>2.4 GHz Wi-Fi veya mobil veri ile yapılan testler gerçek hızınızı yansıtmaz!</div>
+
   </div>
 </div>
 
@@ -10288,7 +10288,7 @@ function resetSpeedTestUI() {
   const shareWrap = document.getElementById('stShareWrap');
   if (shareWrap) shareWrap.style.display = 'none';
   document.getElementById('stSub').style.color = '';
-  document.getElementById('stSub').textContent = 'Tarayıcı tabanlı ölçüm (Cloudflare) | Sonuç forma otomatik aktarılır';
+  document.getElementById('stSub').textContent = 'Sonuçlar otomatik olarak forma aktarılır';
   liveLogReset();
 }
 function setGauge(mbps, maxMbps, color) {
@@ -10334,7 +10334,7 @@ function runOfficialSpeedTest(EngineClass) {
     let currentPhase = 'latency';
 
     document.getElementById('stPhase').textContent = 'PING';
-    document.getElementById('stSub').textContent = 'Bağlantı gecikmesi (Ping) ölçülüyor...';
+    document.getElementById('stSub').textContent = 'Ping ölçülüyor...';
     document.getElementById('sgFill').style.stroke = 'var(--accent)';
     document.getElementById('stVal').textContent = '…';
 
@@ -10364,15 +10364,15 @@ function runOfficialSpeedTest(EngineClass) {
       currentPhase = type;
       if (type === 'latency') {
         document.getElementById('stPhase').textContent = 'PING';
-        document.getElementById('stSub').textContent = 'Gecikme ölçülüyor (Cloudflare Edge)...';
+        document.getElementById('stSub').textContent = 'Ping ölçülüyor...';
         document.getElementById('sgFill').style.stroke = 'var(--accent)';
       } else if (type === 'download') {
         document.getElementById('stPhase').textContent = '↓ İNDİRME';
-        document.getElementById('stSub').textContent = 'İndirme hızı ölçülüyor (Resmi Cloudflare Motoru)...';
+        document.getElementById('stSub').textContent = 'İndirme hızı ölçülüyor...';
         document.getElementById('sgFill').style.stroke = 'var(--accent)';
       } else if (type === 'upload') {
         document.getElementById('stPhase').textContent = '↑ YÜKLEME';
-        document.getElementById('stSub').textContent = 'Yükleme hızı ölçülüyor (Resmi Cloudflare Motoru)...';
+        document.getElementById('stSub').textContent = 'Yükleme hızı ölçülüyor...';
         document.getElementById('sgFill').style.stroke = 'var(--success)';
       }
     };
@@ -10480,7 +10480,7 @@ function runOfficialSpeedTest(EngineClass) {
 
       document.getElementById('stPhase').textContent = 'HATA';
       document.getElementById('stSub').style.color = 'var(--danger)';
-      document.getElementById('stSub').textContent = 'Hız testi sırasında bağlantı kesildi: ' + (err || 'Ağ hatası');
+      document.getElementById('stSub').textContent = 'Test tamamlanamadı. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.';
       const btn = document.getElementById('stStartBtn');
       if (btn) { btn.disabled = false; btn.textContent = 'Tekrar Dene'; }
       document.getElementById('stRetryBtn').style.display = 'block';
@@ -10491,7 +10491,7 @@ function runOfficialSpeedTest(EngineClass) {
   });
 }
 
-// 3. UI GÜNCELLEYİCİ: runSpeedTest (Resmi Cloudflare Motoru Çağrısı)
+// 3. UI GÜNCELLEYİCİ: runSpeedTest
 async function runSpeedTest() {
   if (stRunning) return;
 
@@ -10532,7 +10532,7 @@ async function runSpeedTest() {
     console.error('Speed test error:', err);
     document.getElementById('stPhase').textContent = 'HATA';
     document.getElementById('stSub').style.color = 'var(--danger)';
-    document.getElementById('stSub').textContent = 'Hata oluştu: ' + (err?.message || 'Bağlantı hatası');
+    document.getElementById('stSub').textContent = 'Test tamamlanamadı. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.';
     const btn = document.getElementById('stStartBtn');
     if (btn) { btn.disabled = false; btn.textContent = 'Tekrar Dene'; }
     document.getElementById('stRetryBtn').style.display = 'block';
