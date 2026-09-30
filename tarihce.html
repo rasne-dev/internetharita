@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>İnternetin Yolculuğu — Dünyada ve Türkiye'de İnternet Tarihçesi | internetHarita</title>
+  <meta name="description" content="1969 ARPANET'ten 1993 ODTÜ'ye, 56K çevirmeli ağdan günümüz Gigabit fiber ve Starlink uydularına: İnternetin dünyadaki ve Türkiye'deki interaktif görsel yolculuğu.">
+  <link rel="canonical" href="https://internetharita.com/tarihce.html">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2300d4ff'/><text x='50' y='68' font-size='50' text-anchor='middle' fill='%23000' font-family='sans-serif' font-weight='bold'>İH</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #070b0f;
+      --surface: #0d1520;
+      --surface2: #131f2e;
+      --surface3: #1a2a3e;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.15);
+      --accent: #00d4ff;
+      --accent2: #0066ff;
+      --accent-glow: rgba(0,212,255,0.3);
+      --success: #22c55e;
+      --warn: #f59e0b;
+      --purple: #a855f7;
+      --pink: #ec4899;
+      --text: #e2e8f0;
+      --text2: #94a3b8;
+      --text3: #64748b;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      line-height: 1.6;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* CANVAS ARKA PLAN */
+    #warpCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.55;
+    }
+
+    /* NAV */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7, 11, 15, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text);
+    }
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 12px rgba(0,212,255,0.4);
+    }
+    .logo-text { font-weight: 800; font-size: 17px; letter-spacing: -0.5px; }
+    .logo-text span { color: var(--accent); }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .btn-nav {
+      text-decoration: none;
+      color: var(--text2);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .btn-nav:hover { color: var(--text); background: var(--surface2); }
+    .btn-nav.active {
+      color: var(--accent);
+      background: rgba(0,212,255,0.1);
+      border-color: rgba(0,212,255,0.3);
+    }
+
+    /* SCROLLYTELLING HUD (CANLI HIZ & YIL GÖSTERGESİ) */
+    .hud-bar {
+      position: sticky;
+      top: 53px;
+      z-index: 90;
+      background: rgba(13, 21, 32, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 16px;
+    }
+    .hud-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .hud-metrics {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .hud-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .hud-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text3);
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+    .hud-value {
+      font-size: 17px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      text-shadow: 0 0 10px rgba(0,212,255,0.4);
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+    }
+    .hud-value small { font-size: 11px; color: var(--text2); font-weight: normal; }
+
+    .hud-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .filter-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 11px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .filter-btn:hover { color: var(--text); border-color: var(--border2); }
+    .filter-btn.active {
+      background: rgba(0,212,255,0.15);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .autoplay-btn {
+      background: linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,102,255,0.2));
+      border: 1px solid var(--accent);
+      color: var(--text);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .25s;
+    }
+    .autoplay-btn:hover {
+      box-shadow: 0 0 12px rgba(0,212,255,0.4);
+      transform: translateY(-1px);
+    }
+
+    /* HERO */
+    .hero-journey {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 60px 16px 40px;
+      max-width: 820px;
+      margin: 0 auto;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0,212,255,0.1);
+      border: 1px solid rgba(0,212,255,0.3);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+    }
+    .hero-journey h1 {
+      font-size: clamp(28px, 5vw, 46px);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 16px;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #ffffff 40%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-journey p {
+      font-size: 15px;
+      color: var(--text2);
+      line-height: 1.6;
+      max-width: 640px;
+      margin: 0 auto 24px;
+    }
+    .scroll-hint {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      color: var(--text3);
+      font-size: 11px;
+      font-family: var(--font-mono);
+      animation: bounce 2s infinite;
+      cursor: pointer;
+    }
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(6px); }
+      60% { transform: translateY(3px); }
+    }
+
+    /* TIMELINE CONTAINER & CARDS */
+    .timeline-container {
+      position: relative;
+      z-index: 10;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 30px 16px 120px;
+    }
+    /* Dikey İlerleme Işığı */
+    .timeline-spine {
+      position: absolute;
+      top: 30px;
+      bottom: 120px;
+      left: 50%;
+      width: 3px;
+      background: rgba(255,255,255,0.08);
+      transform: translateX(-50%);
+      border-radius: 2px;
+    }
+    .timeline-progress-glow {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 0%;
+      background: linear-gradient(180deg, var(--accent), var(--purple), var(--success));
+      box-shadow: 0 0 14px var(--accent);
+      border-radius: 2px;
+      transition: height 0.15s ease-out;
+    }
+
+    /* TIMELINE ITEM */
+    .timeline-item {
+      position: relative;
+      display: flex;
+      margin-bottom: 70px;
+      opacity: 0.25;
+      transform: translateY(28px) scale(0.97);
+      transition: all 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .timeline-item.active {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    .timeline-item:nth-child(odd) {
+      justify-content: flex-start;
+      padding-right: 50%;
+    }
+    .timeline-item:nth-child(even) {
+      justify-content: flex-end;
+      padding-left: 50%;
+    }
+
+    /* ORTA NOKTA / DÜĞÜM */
+    .timeline-node {
+      position: absolute;
+      left: 50%;
+      top: 24px;
+      transform: translate(-50%, -50%);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 2px solid var(--border2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      z-index: 5;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      transition: all 0.4s;
+    }
+    .timeline-item.active .timeline-node {
+      border-color: var(--accent);
+      box-shadow: 0 0 16px var(--accent-glow);
+      transform: translate(-50%, -50%) scale(1.15);
+      background: var(--surface2);
+    }
+
+    /* KART GÖVDESİ */
+    .timeline-card {
+      background: rgba(13, 21, 32, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px 24px;
+      width: 90%;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      backdrop-filter: blur(10px);
+      transition: border-color 0.3s, box-shadow 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .timeline-item.active .timeline-card {
+      border-color: rgba(0,212,255,0.3);
+      box-shadow: 0 12px 35px rgba(0,0,0,0.5), 0 0 20px rgba(0,212,255,0.08);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .year-tag {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--accent);
+      background: rgba(0,212,255,0.12);
+      padding: 3px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(0,212,255,0.25);
+    }
+    .scope-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+    }
+    .scope-tr { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+    .scope-world { background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+      line-height: 1.35;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+
+    /* KART İÇİ İNTERAKTİF ÖZELLİKLER */
+    .card-meta-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      border: 1px solid var(--border);
+    }
+    .speed-badge {
+      color: var(--accent);
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* RETRO MODEM SESİ DÜĞMESİ */
+    .sound-btn {
+      background: rgba(245,158,11,0.15);
+      border: 1px solid rgba(245,158,11,0.35);
+      color: #fbbf24;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      transition: all 0.2s;
+    }
+    .sound-btn:hover {
+      background: rgba(245,158,11,0.28);
+      box-shadow: 0 0 10px rgba(245,158,11,0.3);
+    }
+
+    /* NOSTALJİ KUTUSU */
+    .nostalgia-quote {
+      margin-top: 12px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.03);
+      border-left: 3px solid var(--accent);
+      border-radius: 4px;
+      font-size: 11px;
+      color: var(--text3);
+      font-style: italic;
+    }
+
+    /* RETRO TERMINAL EKRANI (ARPANET & ODTÜ) */
+    .retro-terminal {
+      background: #000;
+      border: 1px solid #16a34a;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #22c55e;
+      margin-top: 10px;
+      line-height: 1.5;
+      box-shadow: inset 0 0 10px rgba(34,197,94,0.15);
+    }
+    .retro-cursor {
+      display: inline-block;
+      width: 7px;
+      height: 13px;
+      background: #22c55e;
+      animation: blink 1s infinite;
+      vertical-align: middle;
+      margin-left: 2px;
+    }
+    @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+
+    /* FOOTER CTA */
+    .footer-cta {
+      margin-top: 60px;
+      text-align: center;
+      background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(168,85,247,0.1));
+      border: 1px solid var(--border2);
+      border-radius: 16px;
+      padding: 40px 20px;
+    }
+    .footer-cta h3 { font-size: 24px; font-weight: 800; margin-bottom: 10px; }
+    .footer-cta p { font-size: 14px; color: var(--text2); max-width: 520px; margin: 0 auto 20px; }
+    .btn-cta-lg {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #000;
+      font-weight: 800;
+      font-size: 14px;
+      padding: 12px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all .25s;
+      box-shadow: 0 0 20px rgba(0,212,255,0.3);
+    }
+    .btn-cta-lg:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 28px rgba(0,212,255,0.5);
+    }
+
+    /* MOBİL DUYARLILIK */
+    @media (max-width: 768px) {
+      .hud-inner { gap: 8px; justify-content: center; }
+      .timeline-spine { left: 24px; }
+      .timeline-node { left: 24px; }
+      .timeline-item:nth-child(odd),
+      .timeline-item:nth-child(even) {
+        padding-left: 56px;
+        padding-right: 0;
+        justify-content: flex-start;
+      }
+      .timeline-card { width: 100%; }
+      .hero-journey { padding: 40px 16px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ARKA PLAN CANVAS -->
+  <canvas id="warpCanvas"></canvas>
+
+  <!-- NAVİGASYON -->
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="brand-wrap">
+        <div class="brand-logo">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+            <defs>
+              <linearGradient id="logoGradNav" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00e5ff"/>
+                <stop offset="100%" stop-color="#0066ff"/>
+              </linearGradient>
+            </defs>
+            <rect width="92" height="92" x="4" y="4" rx="22" fill="url(#logoGradNav)"/>
+            <path d="M 23 28 A 38 38 0 0 1 77 28" fill="none" stroke="#070b0f" stroke-width="7.5" stroke-linecap="round"/>
+            <path d="M 33 40 A 24 24 0 0 1 67 40" fill="none" stroke="#070b0f" stroke-width="7.5" stroke-linecap="round"/>
+            <circle cx="50" cy="50" r="5" fill="#070b0f"/>
+            <text x="50" y="84" font-family="'Space Mono', monospace, sans-serif" font-size="34" font-weight="900" fill="#070b0f" text-anchor="middle" letter-spacing="3">İH</text>
+          </svg>
+        </div>
+        <span class="logo-text">internet<span>Harita</span></span>
+      </a>
+
+      <div class="nav-links">
+        <a href="/" class="btn-nav">🗺 Harita</a>
+        <a href="/#bolgeler" class="btn-nav">🌍 Bölgeler</a>
+        <a href="/#istatistikler" class="btn-nav">📊 İstatistikler</a>
+        <a href="/speedtest-verileri.html" class="btn-nav">📡 Speedtest</a>
+        <a href="/rehber.html" class="btn-nav">📖 Rehber</a>
+        <a href="/tarihce.html" class="btn-nav active">⏳ Tarihçe</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- CANLI HUD BAR (KAYDIRDIKÇA CANLANAN GÖSTERGE) -->
+  <div class="hud-bar">
+    <div class="hud-inner">
+      <div class="hud-metrics">
+        <div class="hud-item">
+          <span class="hud-label">Dönem</span>
+          <span class="hud-value" id="hudYear">1969 <small>Yılı</small></span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">Tipik Ağ Hızı</span>
+          <span class="hud-value" id="hudSpeed">50 <small>Kbps</small></span>
+        </div>
+        <div class="hud-item" style="display:none;" id="hudTechWrap">
+          <span class="hud-label">Teknoloji</span>
+          <span class="hud-value" id="hudTech" style="font-size:13px;color:var(--text);">ARPANET</span>
+        </div>
+      </div>
+
+      <div class="hud-controls">
+        <button type="button" class="filter-btn active" onclick="setTimelineFilter('all', this)">🌐 Tümü</button>
+        <button type="button" class="filter-btn" onclick="setTimelineFilter('tr', this)">🇹🇷 Türkiye</button>
+        <button type="button" class="filter-btn" onclick="setTimelineFilter('world', this)">🌍 Dünya</button>
+        <button type="button" class="autoplay-btn" id="autoPlayBtn" onclick="toggleAutoScroll()">
+          <span id="autoPlayIcon">▶️</span> <span id="autoPlayText">Otomatik Oynat</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <header class="hero-journey">
+    <div class="hero-badge">⚡ İNTERAKTİF ZAMAN YOLCULUĞU</div>
+    <h1>İnternetin Dünyada ve Türkiye'deki Yolculuğu</h1>
+    <p>50 Kbps'lik ilk deneysel paketten 1000 Mbps simetrik ev fiberlerine ve uzaydaki Starlink uydularına: İnternetin nasıl doğduğunu ve Türkiye'ye nasıl yayıldığını keşfedin.</p>
+    <div class="scroll-hint" onclick="window.scrollBy({top: window.innerHeight * 0.7, behavior: 'smooth'})">
+      <span>AŞAĞI KAYDIR VE GEÇMİŞİ BAŞLAT</span>
+      <span>▼</span>
+    </div>
+  </header>
+
+  <!-- TIMELINE / SCROLLYTELLING ALANI -->
+  <main class="timeline-container">
+    <div class="timeline-spine">
+      <div class="timeline-progress-glow" id="spineGlow"></div>
+    </div>
+
+    <!-- 1969: ARPANET -->
+    <div class="timeline-item active" data-year="1969" data-speed="50 Kbps" data-tech="ARPANET" data-scope="world">
+      <div class="timeline-node">⚡</div>
+      <article class="timeline-card">
+        <div class="card-top">
+          <span class="year-tag">1969</span>
+          <span class="scope-pill scope-world">🌍 Dünya</span>
+        </div>
+        <h2 class="card-title">İlk Kıvılcım: ARPANET ve Tarihin İlk Mesajı</h2>
+        <p class="card-desc">
+          29 Ekim 1969'da UCLA ile Stanford Üniversitesi arasındaki ilk bilgisayar ağı kuruldu. Araştırmacılar <strong>"LOGIN"</strong> kelimesini göndermek istedi; ancak sistem <strong>"L"</strong> ve <strong>"O"</strong> harflerini ilettikten hemen sonra çöktü. Böylece internetin tarihindeki ilk mesaj istemsizce <em>"LO"</em> (Bak / Gör) oldu!
+        </p>
+        <div class="retro-terminal">
+          &gt; CONNECTING 10.0.0.1... OK<br>
+          &gt; TRANSMITTING: "L"... SENT<br>
+          &gt; TRANSMITTING: "O"... SENT<br>
+          &gt; SYSTEM CRASH: BUFFER OVERFLOW<span class="retro-cursor"></span>
+        </div>
+        <div class="card-meta-bar" style="margin-top:12px;">
+          <span>Bağlantı Türü: Kiralık Telefon Hattı</span>
+          <span class="speed-badge">⚡ 50 Kbps</span>
+        </div>
+      </article>
+    </div>
+
+    <!-- 1983: TCP/IP -->
+    <div class="timeline-item" data-year="1983" data-speed="56 Kbps" data-tech="TCP/IP" data-scope="world">
+      <div class="timeline-node">🌐</div>
+      <article class="timeline-card">
+        <div class="card-top">
+          <span class="year-tag">1 Ocak 1983</span>
+          <span class="scope-pill scope-world">🌍 Dünya</span>
+        </div>
+        <h2 class="card-title">İnternetin Ortak Dili Doğuyor: TCP/IP</h2>
+        <p class="card-desc">
+          Farklı marka ve mimarideki bilgisayarların birbirleriyle hatasız konuşabilmesi için Vint Cerf ve Bob Kahn tarafından geliştirilen <strong>TCP/IP</strong> standart protokol haline getirildi. Bugün cep telefonunuzdan evinizdeki modeme kadar her cihaz hâlâ bu protokolün kurallarıyla internete bağlanıyor.
+        </p>
+        <div class="card-meta-bar">
+          <span>Temel İlke: Paket Anahtarlama (Paketleme)</span>
+          <span class="speed-badge">📡 56 Kbps</span>
+        </div>
+      </article>
+    </div>
+
+    <!-- 1989-1991: WORLD WIDE WEB -->
+    <div class="timeline-item" data-year="1991" data-speed="64 Kbps" data-tech="World Wide Web" data-scope="world">
+      <div class="timeline-node">🕸️</div>
+      <article class="timeline-card">
+        <div class="card-top">
+          <span class="year-tag">1989 - 1991</span>
+          <span class="scope-pill scope-world">🌍 Dünya</span>
+        </div>
+        <h2 class="card-title">Ağın Örümceği: World Wide Web (WWW)</h2>
+        <p class="card-desc">
+          CERN laboratuvarında çalışan İngiliz mühendis <strong>Tim Berners-Lee</strong>, bilim insanlarının birbirlerinin dokümanlarına tıklayarak ulaşabilmesi için <strong>HTML</strong> dilini, <strong>HTTP</strong> transfer kuralını ve ilk web tarayıcısını geliştirdi. Böylece sadece siyah komut satırlarından ibaret olan internet, tıklanabilir sayfalarla insanlığa açıldı.
+        </p>
+        <div class="nostalgia-quote">
+          "Dünyanın ilk web sitesi 'info.cern.ch' adresinde yayınlandı ve tasarımı sadece mavi linkler ile siyah yazılardan ibaretti."
+        </div>
+        <div class="card-meta-bar" style="margin-top:12px;">
+          <span>İlk Web Sitesi: CERN NeXT Bilgisayarı</span>
+          <span class="speed-badge">🌐 64 Kbps</span>
+        </div>
+      </article>
+    </div>
+
+    <!-- 12 NİSAN 1993: TÜRKİYE'NİN İLK BAĞLANTISI (ODTÜ) -->
+    <div class="timeline-item" data-year="1993" data-speed="64 Kbps" data-tech="PTT Kiralık Hat" data-scope="tr">
+      <div class="timeline-node">🇹🇷</div>
+      <article class="timeline-card" style="border-left: 3px solid #ef4444;">
+        <div class="card-top">
+          <span class="year-tag" style="color:#f87171;background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);">12 Nisan 1993</span>
+          <span class="scope-pill scope-tr">🇹🇷 Türkiye</span>
+        </div>
+        <h2 class="card-title">Türkiye'nin İlk 'Ping'i: ODTÜ Sistem Odası</h2>
+        <p class="card-desc">
+          Türkiye, internete ilk kez <strong>12 Nisan 1993</strong> günü saat 15:30 sularında bağlandı. ODTÜ Bilgi İşlem Daire Başkanlığı'ndaki yönlendiriciler üzerinden, PTT'den kiralanan <strong>64 Kbps</strong> kapasiteli hatla Washington NSFNet ağına ilk başarılı sinyal gönderildi. Türkiye'nin tescil edilen ilk alan adı <strong>metu.edu.tr</strong> oldu.
+        </p>
+        <div class="retro-terminal">
+          [ODTU-ANKARA] &gt; ping nsfnet.nasa.gov<br>
+          64 bytes from 192.12.184.1: icmp_seq=1 ttl=242 time=280 ms<br>
+          TURKIYE INTERNETE BAGLANDI: 12.04.1993 15:30<span class="retro-cursor"></span>
+        </div>
+        <div class="card-meta-bar" style="margin-top:12px;">
+          <span>Hat Kapasitesi: Ankara - Washington</span>
+          <span class="speed-badge">🇹🇷 64 Kbps</span>
+        </div>
+      </article>
+    </div>
+
+    <!-- 1996: TURNET VE TİCARİ İNTERNET -->
+    <div class="timeline-item" data-year="1996" data-speed="2 Mbps" data-tech="TURNET Omurgası" data-scope="tr">
+      <div class="timeline-node">🏢</div>
+      <article class="timeline-card">
+        <div class="card-top">
+          <span class="year-tag">1996</span>
+          <span class="scope-pill scope-tr">🇹🇷 Türkiye</span>
+        </div>
+        <h2 class="card-title">TURNET ile İnternet Halka ve Şirketlere Açılıyor</h2>
+        <p class="card-desc">
+          Üniversite sınırlarını aşan internet ihtiyacı için Türk Telekom (o zamanki PTT) ve konsorsiyum ortakları <strong>TURNET</strong> (Türkiye Ulusal İnternet Ağı) omurgasını kurdu. İstanbul, Ankara ve İzmir santralleri üzerinden ilk özel servis sağlayıcılar ticari abonelik satmaya başladı.
+        </p>
+        <div class="card-meta-bar">
+          <span>Ulusal Omurga: 3 Ana Düğüm</span>
+          <span class="speed-badge">⚡ 2 Mbps Omurga</span>
+        </div>
+      </article>
+    </div>
+
+    <!-- 1999-2001: 56K DIAL-UP VE 146 ÇAĞI -->
+    <div class="timeline-item" data-year="2000" data-speed="56 Kbps" data-tech="Dial-up (146)" data-scope="tr">
+      <div class="timeline-node">📞</div>
+      <article class="timeline-card">
+        <div class="card-top">
+          <span class="year-tag">1999 - 2001</span>
+          <span class="scope-pill scope-tr">🇹🇷 Türkiye &amp; Dünya</span>
+        </div>
+        <h2 class="card-title">Efsane Çevirmeli Ağ (Dial-up 56K) ve 146 Dönemi</h2>
+        <p class="card-desc">
+          Evlerdeki sabit telefon kablosuna takılan harici veya PCI modemler <em>146</em> çevirir, o unutulmaz cızırtılı frekans el sıkışma sesini çıkarırdı. İnternete girildiğinde ev telefonu meşgul çalar, yüksek gelen telefon faturaları yüzünden aile içi tatlı krizler yaşanırdı. Gazeteler kuponla "İnternet Erişim CD'si" dağıtırdı.
+        </p>
+
+        <button type="button" class="sound-btn" onclick="playModemSound(this)">
+          <span>🔊</span> <strong>56K Çevirmeli Ağ Sesini Dinle (Nostalji)</strong>
+        </button>
+
+        <div class="nostalgia-quote">
+          "Bir MP3 şarkıyı (3 MB) indirmek yarım saat sürer, tam %99'a geldiğinde biri telefonu kaldırırsa indirme tamamen başa dönerdi!"
+        </div>
+        <div class="card-meta-bar" style="margin-top:12px;">
+          <span>Maksimum Teorik Hız: V.90 Standardı</span>
+          <span class="speed-badge">📞 56 Kbps</span>
+        </div>
+      </article>
+    </div>
+
+    <!-- 2004: ADSL DEVRİMİ -->
+    <div class="timeline-item" data-year="2004" data-speed="256 Kbps" data-tech="TTNet ADSL" data-scope="tr">
+      <div class="timeline-node">⚡</div>
+      <article class="timeline-card">
+        <div class="card-top">
+          <span class="year-tag">2004</span>
+          <span class="scope-pill scope-tr">🇹🇷 Türkiye</span>
+        </div>
+        <h2 class="card-title">Büyük Kırılma: ADSL ve Sabit Ücretli İnternet</h2>
+        <p class="card-desc">
+          Türk Telekom'un ADSL teknolojisini başlatmasıyla internet devrimi yaşandı. Artık internete girildiğinde telefon meşgul çalmıyordu! İlk paketler <strong>128 Kbps</strong> ve <strong>256 Kbps</strong> hızındaydı ve 3-6 GB kotalar vardı. MSN Messenger, mIRC, Yonja, eMule ve ilk online forumlar Türkiye gençliğinin hayatına girdi.
+        </p>
+        <div class="card-meta-bar">
+          <span>Yenilik: Kesintisiz Genişbant (Splitter ile Telefon + Net)</span>
+          <span class="speed-badge">🚀 256 Kbps</span>
+        </div>
+      </article>
+    </div>
+
+    <!-- 2008-2009: 3G VE KABLONET DOCSIS -->
+    <div class="timeline-item" data-year="2009" data-speed="8 Mbps" data-tech="3G Mobil & Kablo TV" data-scope="tr">
+      <div class="timeline-node">📱</div>
+      <article class="timeline-card">
+        <div class="card-top">
+          <span class="year-tag">2008 - 2009</span>
+          <span class="scope-pill scope-tr">🇹🇷 Türkiye</span>
+        </div>
+        <h2 class="card-title">3G ile Cepten İnternet ve Uydunet (Kablonet)</h2>
+        <p class="card-desc">
+          30 Temmuz 2009'da Türkiye 3G şebekesine geçti ve cep telefonlarında görüntülü görüşme ile mobil internet çağı başladı. Aynı dönemde Türksat, Kablo TV koaksiyel anten kabloları üzerinden telefon hattı gerektirmeyen bağımsız Uydunet (DOCSIS) paketlerini yaygınlaştırdı. Evlerde hızlar 8 Mbps seviyesine ulaştı.
+        </p>
+        <div class="card-meta-bar">
+          <span>Dönüm Noktası: Akıllı Telefonlar & Mobil Veri</span>
+          <span class="speed-badge">📶 8 Mbps</span>
+        </div>
+      </article>
+    </div>
+
+    <!-- 2011-2016: FIBER DÖNÜŞÜMÜ VE 4.5G -->
+    <div class="timeline-item" data-year="2016" data-speed="100 Mbps" data-tech="FTTH & 4.5G LTE" data-scope="tr">
+      <div class="timeline-node">💡</div>
+      <article class="timeline-card">
+        <div class="card-top">
+          <span class="year-tag">2011 - 2016</span>
+          <span class="scope-pill scope-tr">🇹🇷 Türkiye</span>
+        </div>
+        <h2 class="card-title">Camdan Işık Hızı: Evlere Kadar Fiber ve 4.5G</h2>
+        <p class="card-desc">
+          Superonline ve Türk Telekom'un büyük yatırımlarıyla binalara doğrudan cam optik kablolar (FTTH/FTTB) çekilmeye başlandı. 1 Nisan 2016'da devreye giren <strong>4.5G (LTE-Advanced)</strong> ile cepten 100+ Mbps hızlar hayal olmaktan çıktı. 4K video akışları ve online oyun kültürü tüm ülkeye yayıldı.
+        </p>
+        <div class="card-meta-bar">
+          <span>Altyapı: Cam Elyaf Fiber Optik Kıl</span>
+          <span class="speed-badge">💡 100 Mbps</span>
+        </div>
+      </article>
+    </div>
+
+    <!-- 2020+: GİGABİT ÇAĞI, STARLINK VE TOPLULUK VERİSİ -->
+    <div class="timeline-item" data-year="2026" data-speed="1000 Mbps" data-tech="1 Gbps Simetrik & LEO" data-scope="tr">
+      <div class="timeline-node">🚀</div>
+      <article class="timeline-card" style="border: 1px solid var(--accent); box-shadow: 0 0 25px rgba(0,212,255,0.15);">
+        <div class="card-top">
+          <span class="year-tag" style="background:var(--accent);color:#000;">GÜNÜMÜZ &amp; GELECEK</span>
+          <span class="scope-pill" style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);">⚡ YENİ NESİL</span>
+        </div>
+        <h2 class="card-title">1000 Mbps Simetrik Fiber, Starlink ve internetHarita</h2>
+        <p class="card-desc">
+          Bugün artık evlerde <strong>1.000 Mbps (1 Gbps)</strong> hızlar, uzayda alçak yörüngede dönen Starlink uyduları ve dağ köylerinde çatı anteniyle havadan internet (Airfiber) konuşuluyor. Kullanıcılar artık servis sağlayıcıların vaatlerine değil, <strong>internetHarita</strong> üzerinde binlerce kullanıcının paylaştığı gerçek mahalle ve hız karnelerine bakarak karar veriyor!
+        </p>
+        <div class="card-meta-bar">
+          <span>Bugünün Standardı: Şeffaf &amp; Bağımsız Veri</span>
+          <span class="speed-badge" style="color:#22c55e;">🚀 1.000+ Mbps</span>
+        </div>
+      </article>
+    </div>
+
+    <!-- ALT BÖLÜM CTA -->
+    <div class="footer-cta">
+      <h3>Sen de İnternetin Geleceğini Şekillendir</h3>
+      <p>Kendi evinin veya iş yerinin altyapısını ve hız testini haritaya ekleyerek Türkiye'nin dijital haritasına bir iz bırak.</p>
+      <a href="/#pin" class="btn-cta-lg">📍 Deneyimini Haritaya Ekle</a>
+    </div>
+
+  </main>
+
+  <script>
+    // ==========================================
+    // 1. DİNAMİK CANLI CANVAS ANIMASYONU (WARP FIELD)
+    // ==========================================
+    const canvas = document.getElementById('warpCanvas');
+    const ctx = canvas.getContext('2d');
+    let width = 0, height = 0;
+    let particles = [];
+    const PARTICLE_COUNT = 90;
+
+    function resizeCanvas() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.size = Math.random() * 2 + 0.8;
+        this.speedX = (Math.random() - 0.5) * 0.4;
+        this.speedY = Math.random() * 0.8 + 0.2;
+        this.alpha = Math.random() * 0.7 + 0.2;
+      }
+      update(speedMultiplier) {
+        this.y += this.speedY * speedMultiplier;
+        this.x += this.speedX * speedMultiplier;
+        if (this.y > height) this.y = 0;
+        if (this.x < 0) this.x = width;
+        if (this.x > width) this.x = 0;
+      }
+      draw(themeColor) {
+        ctx.fillStyle = themeColor;
+        ctx.globalAlpha = this.alpha;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push(new Particle());
+    }
+
+    let currentScrollRatio = 0;
+    function animateParticles() {
+      ctx.clearRect(0, 0, width, height);
+
+      // Scroll oranına göre renk geçişi (Yeşil Terminal -> Turuncu Bakır -> Cyan Fiber)
+      let themeColor = '#00d4ff';
+      if (currentScrollRatio < 0.25) {
+        themeColor = '#22c55e'; // Retro yeşil fosfor
+      } else if (currentScrollRatio < 0.55) {
+        themeColor = '#f59e0b'; // Bakır/telefon hattı turuncusu
+      } else if (currentScrollRatio < 0.8) {
+        themeColor = '#a855f7'; // Fiber mor/eflatun
+      } else {
+        themeColor = '#00d4ff'; // Gigabit cam mavisi
+      }
+
+      // Hıza göre parçacık akışı
+      const speedMultiplier = 1 + (currentScrollRatio * 2.5);
+      particles.forEach(p => {
+        p.update(speedMultiplier);
+        p.draw(themeColor);
+      });
+
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    // ==========================================
+    // 2. SCROLL DİNLEYİCİSİ VE HUD GÜNCELLEMESİ
+    // ==========================================
+    const timelineItems = document.querySelectorAll('.timeline-item');
+    const spineGlow = document.getElementById('spineGlow');
+    const hudYear = document.getElementById('hudYear');
+    const hudSpeed = document.getElementById('hudSpeed');
+    const hudTech = document.getElementById('hudTech');
+    const hudTechWrap = document.getElementById('hudTechWrap');
+
+    function updateTimelineOnScroll() {
+      const scrollY = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      currentScrollRatio = Math.max(0, Math.min(1, scrollY / (docHeight || 1)));
+
+      if (spineGlow) {
+        spineGlow.style.height = (currentScrollRatio * 100) + '%';
+      }
+
+      const viewportCenter = window.innerHeight * 0.45;
+      let activeItem = null;
+
+      timelineItems.forEach(item => {
+        if (item.style.display === 'none') return;
+        const rect = item.getBoundingClientRect();
+        if (rect.top <= viewportCenter + 80) {
+          activeItem = item;
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
+      });
+
+      if (activeItem) {
+        const year = activeItem.getAttribute('data-year');
+        const speed = activeItem.getAttribute('data-speed');
+        const tech = activeItem.getAttribute('data-tech');
+
+        if (hudYear) hudYear.innerHTML = `${year} <small>Yılı</small>`;
+        if (hudSpeed) {
+          const parts = (speed || '').split(' ');
+          hudSpeed.innerHTML = `${parts[0] || ''} <small>${parts[1] || ''}</small>`;
+        }
+        if (hudTech && tech) {
+          hudTech.textContent = tech;
+          hudTechWrap.style.display = 'flex';
+        }
+      }
+    }
+
+    window.addEventListener('scroll', updateTimelineOnScroll, { passive: true });
+    updateTimelineOnScroll();
+
+    // ==========================================
+    // 3. FİLTRELEME (DÜNYA / TÜRKİYE)
+    // ==========================================
+    function setTimelineFilter(scope, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      timelineItems.forEach(item => {
+        const itemScope = item.getAttribute('data-scope');
+        if (scope === 'all') {
+          item.style.display = 'flex';
+        } else if (scope === 'tr') {
+          item.style.display = (itemScope === 'tr') ? 'flex' : 'none';
+        } else if (scope === 'world') {
+          item.style.display = (itemScope === 'world') ? 'flex' : 'none';
+        }
+      });
+
+      updateTimelineOnScroll();
+    }
+
+    // ==========================================
+    // 4. OTOMATİK SİNEMATİK OYNATMA (AUTOPLAY)
+    // ==========================================
+    let isAutoPlaying = false;
+    let autoPlayInterval = null;
+
+    function toggleAutoScroll() {
+      const btn = document.getElementById('autoPlayBtn');
+      const icon = document.getElementById('autoPlayIcon');
+      const text = document.getElementById('autoPlayText');
+
+      if (!isAutoPlaying) {
+        isAutoPlaying = true;
+        icon.textContent = '⏸️';
+        text.textContent = 'Durdur';
+        btn.style.borderColor = '#22c55e';
+        btn.style.color = '#22c55e';
+
+        autoPlayInterval = setInterval(() => {
+          if (window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 10) {
+            toggleAutoScroll(); // Sonuna gelince dur
+            return;
+          }
+          window.scrollBy({ top: 3, behavior: 'auto' });
+        }, 22);
+      } else {
+        isAutoPlaying = false;
+        clearInterval(autoPlayInterval);
+        icon.textContent = '▶️';
+        text.textContent = 'Otomatik Oynat';
+        btn.style.borderColor = 'var(--accent)';
+        btn.style.color = 'var(--text)';
+      }
+    }
+
+    // ==========================================
+    // 5. NOSTALJİK 56K MODEM SESİ SENTEZLEYİCİSİ (WEB AUDIO API)
+    // ==========================================
+    let audioCtx = null;
+    function playModemSound(btn) {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span>🔊</span> <strong>Çalıyor... (Nostaljik El Sıkışma)</strong>';
+
+        const now = audioCtx.currentTime;
+
+        // Çevirme Sesi (DTMF Tone 146)
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gainDial = audioCtx.createGain();
+
+        osc1.frequency.setValueAtTime(697, now);
+        osc2.frequency.setValueAtTime(1209, now);
+        gainDial.gain.setValueAtTime(0.12, now);
+        gainDial.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+
+        osc1.connect(gainDial);
+        osc2.connect(gainDial);
+        gainDial.connect(audioCtx.destination);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 0.8);
+        osc2.stop(now + 0.8);
+
+        // Çevrilme Hissiyatı & El sıkışma gürültüsü (Beyaz gürültü / Bandpass filtre)
+        const bufferSize = audioCtx.sampleRate * 2.2;
+        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+
+        const whiteNoise = audioCtx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1400, now + 0.9);
+        filter.Q.setValueAtTime(4.0, now + 0.9);
+
+        // Frekans kayması (BZZZT-KRRRT)
+        filter.frequency.exponentialRampToValueAtTime(2600, now + 2.0);
+        filter.frequency.exponentialRampToValueAtTime(900, now + 3.0);
+
+        const gainNoise = audioCtx.createGain();
+        gainNoise.gain.setValueAtTime(0.001, now);
+        gainNoise.gain.linearRampToValueAtTime(0.18, now + 1.0);
+        gainNoise.gain.exponentialRampToValueAtTime(0.001, now + 3.1);
+
+        whiteNoise.connect(filter);
+        filter.connect(gainNoise);
+        gainNoise.connect(audioCtx.destination);
+
+        whiteNoise.start(now + 0.9);
+        whiteNoise.stop(now + 3.1);
+
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerHTML = '<span>🔊</span> <strong>56K Çevirmeli Ağ Sesini Dinle (Nostalji)</strong>';
+        }, 3400);
+
+      } catch (err) {
+        console.warn('Audio API error:', err);
+        btn.innerHTML = '<span>⚠️</span> Tarayıcı sesi desteklemiyor';
+      }
+    }
+  </script>
+</body>
+</html>

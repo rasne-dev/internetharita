@@ -278,6 +278,7 @@ html.light nav { background: rgba(255,255,255,0.94); }
 .badge-adsl { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
 .badge-wisp { background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); }
 .badge-satellite { background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); }
+.badge-mobile { background: rgba(249,115,22,0.15); color: #fb923c; border: 1px solid rgba(249,115,22,0.3); }
 
 .tech-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
 .tech-card p { font-size: 13px; color: var(--text2); line-height: 1.55; margin-bottom: 16px; flex-grow: 1; }
@@ -454,6 +455,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
       <a href="/#istatistikler" class="btn-nav">📊 <span class="tab-text full">İstatistikler</span><span class="tab-text short">İstat.</span></a>
       <a href="/speedtest-verileri.html" class="btn-nav">📡 <span class="tab-text full">Speedtest</span><span class="tab-text short">Speed</span></a>
       <a href="/rehber.html" class="btn-nav active">📖 Rehber</a>
+      <a href="/tarihce.html" class="btn-nav">⏳ Tarihçe</a>
     </div>
   </div>
 </nav>
@@ -625,11 +627,14 @@ tr:hover td { background: rgba(255,255,255,0.02); }
       <!-- SABİT KABLOSUZ / AIRFIBER -->
       <article class="tech-card searchable">
         <div class="tech-card-header">
-          <span class="badge badge-wisp">HAVADAN KABLOSUZ</span>
+          <span class="badge badge-wisp">ÇATI ANTENİ İLE İNTERNET</span>
           <span style="font-size:20px;">📡</span>
         </div>
-        <h3>Sabit Kablosuz / Airfiber (Havadan İnternet)</h3>
-        <p>Kablo altyapısının (fiber veya bakır telefon hattı) bulunmadığı köylerde, kırsal bölgelerde, yazlıklarda veya sanayi sitelerinde kullanılır. Çatıya takılan küçük bir alıcı çanak/anten, sağlayıcının bölgedeki verici kulesini doğrudan görerek kablosuz bağlantı kurar. Daire içine ise standart internet kablosu iner.</p>
+        <h3>Sabit Kablosuz / Airfiber (Çatı Antenli)</h3>
+        <p>Kablo altyapısının bulunmadığı köy, kırsal veya yazlık bölgelerde binanın çatısına takılan küçük bir alıcı çanak/anten aracılığıyla hizmet veren sabit internettir. Çatıdaki anten, sağlayıcının verici kulesiyle doğrudan havadan görüşerek kablosuz veri aktarımı yapar ve eve internet kablosu indirilir.</p>
+        <div style="margin-bottom:14px;padding:8px 10px;background:rgba(192,132,252,0.08);border-left:3px solid #c084fc;border-radius:4px;font-size:12px;color:var(--text2);line-height:1.45;">
+          <strong>💡 Superbox'tan Farkı Nedir?</strong> Superbox veya Magnet prize takılan ve cep telefonu SIM kartıyla çalışan taşınabilir bir modemdir. Airfiber ise SIM kart kullanmaz; çatıya sabit anten montajı gerektirir ve adrese özel sabit kotasız internet sağlar.
+        </div>
         <div class="tech-specs">
           <div class="tech-spec-item">
             <span class="tech-spec-label">Maks. Download</span>
@@ -645,7 +650,35 @@ tr:hover td { background: rgba(255,255,255,0.02); }
           </div>
           <div class="tech-spec-item">
             <span class="tech-spec-label">Bağlantı Türü</span>
-            <span class="tech-spec-value">Kablosuz Çatı Anteni</span>
+            <span class="tech-spec-value">Sabit Çatı Anteni</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- TAŞINABİLİR 4.5G / SUPERBOX -->
+      <article class="tech-card searchable">
+        <div class="tech-card-header">
+          <span class="badge badge-mobile">SIM KARTLI TAŞINABİLİR</span>
+          <span style="font-size:20px;">📶</span>
+        </div>
+        <h3>Taşınabilir 4.5G Ev İnterneti (Superbox, Magnet, Redbox)</h3>
+        <p>Kablo veya çatı anteni gerektirmeyen, içine takılan 4.5G SIM kart ile cep telefonu baz istasyonundan internet çeken prize takılı modemlerdir. Elektriğin olduğu her adrese veya yazlığa kolayca götürülebilir; ancak hız ve ping değerleri bölgedeki baz istasyonunun anlık yoğunluğuna bağlı olarak dalgalanabilir ve paketler kotalı olabilir.</p>
+        <div class="tech-specs">
+          <div class="tech-spec-item">
+            <span class="tech-spec-label">Maks. Download</span>
+            <span class="tech-spec-value">15 - 150 Mbps</span>
+          </div>
+          <div class="tech-spec-item">
+            <span class="tech-spec-label">Maks. Upload</span>
+            <span class="tech-spec-value">5 - 50 Mbps</span>
+          </div>
+          <div class="tech-spec-item">
+            <span class="tech-spec-label">Ortalama Ping</span>
+            <span class="tech-spec-value">25 - 60 ms</span>
+          </div>
+          <div class="tech-spec-item">
+            <span class="tech-spec-label">Bağlantı Türü</span>
+            <span class="tech-spec-value">4.5G Mobil Şebeke (SIM Kart)</span>
           </div>
         </div>
       </article>
@@ -658,6 +691,9 @@ tr:hover td { background: rgba(255,255,255,0.02); }
         </div>
         <h3>Uydu İnterneti (Starlink &amp; Yeni Nesil Uydular)</h3>
         <p>Karasal kablo ve baz istasyonunun hiç ulaşamadığı dağ evleri, yaylalar, tekneler veya çok uzak kırsal yerleşimlerde kullanılır. Açık gökyüzünü gören motorlu bir uydu çanağı, uzaydaki alçak yörünge uydularıyla doğrudan haberleşir. Eski hantal uyduların aksine online oyun ve görüntülü görüşmeye elverişli düşük gecikme sunar.</p>
+        <div style="margin-bottom:14px;padding:8px 10px;background:rgba(56,189,248,0.08);border-left:3px solid #38bdf8;border-radius:4px;font-size:12px;color:var(--text2);line-height:1.45;">
+          <strong>💡 Airfiber (Havadan İnternet) ile Farkı:</strong> Airfiber, bölgenizdeki yeryüzünde bulunan bir verici kuleyle haberleşen karasal bir sistemdir. Starlink ise yeryüzünde hiçbir kuleye veya şebekeye bağlanmaz; doğrudan <strong>uzaydaki uydulardan</strong> sinyal alır. Bu sayede dağın başında, çölde veya açık denizde bile çalışır.
+        </div>
         <div class="tech-specs">
           <div class="tech-spec-item">
             <span class="tech-spec-label">Maks. Download</span>
@@ -740,6 +776,14 @@ tr:hover td { background: rgba(255,255,255,0.02); }
             <td>15 - 40 ms</td>
             <td>Hava Durumu &amp; Görüş Açısı</td>
             <td>Kırsal / Altyapısız Alanlar</td>
+          </tr>
+          <tr>
+            <td><strong>Taşınabilir 4.5G (Superbox vb.)</strong></td>
+            <td>15 - 150 Mbps</td>
+            <td>5 - 50 Mbps</td>
+            <td>25 - 60 ms</td>
+            <td>Baz İstasyonu Yoğunluğu &amp; Çekim Gücü</td>
+            <td>Taşınabilir / Geçici Evler</td>
           </tr>
           <tr>
             <td><strong>Uydu İnterneti (Starlink vb.)</strong></td>
@@ -903,6 +947,21 @@ EKLER:
 
       <div class="faq-item searchable">
         <div class="faq-header" onclick="toggleFaq(this)">
+          <span>Havadan İnternet (Airfiber), Superbox ve Starlink arasındaki fark nedir?</span>
+          <span class="faq-arrow">▼</span>
+        </div>
+        <div class="faq-body">
+          Üçü de kablo çekilmeden havadan internet sunar ancak çalışma prensipleri tamamen farklıdır:
+          <ul style="margin: 8px 0 8px 20px; line-height: 1.6;">
+            <li><strong>Sabit Kablosuz (Airfiber):</strong> Çatınıza takılan yönlü küçük bir çanak antenle bölgenizdeki <em>yeryüzündeki verici kuleye</em> bağlanır. SIM kart kullanmaz, adrese sabittir ve tıpkı kablolu internet gibi sınırsızdır.</li>
+            <li><strong>Taşınabilir 4.5G (Superbox / Magnet):</strong> İçine takılan <em>cep telefonu SIM kartı</em> ile çalışır. Prizin olduğu her yere (başka şehre, yazlığa) kolayca götürülebilir; ancak baz istasyonunun anlık yoğunluğuna duyarlıdır ve kotalıdır.</li>
+            <li><strong>Uydu İnterneti (Starlink):</strong> Yeryüzünde hiçbir kuleye veya şebekeye bağlanmaz; motorlu çanağıyla doğrudan <em>uzaydaki uydularla</em> haberleşir. Hiçbir operatörün kapsamadığı ıssız dağlarda, yaylalarda veya teknelerde çalışır.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="faq-item searchable">
+        <div class="faq-header" onclick="toggleFaq(this)">
           <span>Ben de kendi hızımı ve altyapımı haritaya nasıl ekleyebilirim?</span>
           <span class="faq-arrow">▼</span>
         </div>
@@ -932,6 +991,7 @@ EKLER:
       <a href="/" style="color:var(--text2); text-decoration:none;">Canlı Harita</a>
       <a href="/speedtest-verileri.html" style="color:var(--text2); text-decoration:none;">Speedtest Verileri</a>
       <a href="/rehber.html" style="color:var(--accent); text-decoration:none; font-weight:600;">Altyapı Rehberi &amp; SSS</a>
+      <a href="/tarihce.html" style="color:var(--text2); text-decoration:none;">İnternetin Tarihçesi</a>
       <a href="/hakkimizda.html" style="color:var(--text2); text-decoration:none;">Hakkımızda</a>
       <a href="/gizlilik-politikasi.html" style="color:var(--text2); text-decoration:none;">Gizlilik &amp; Çerezler</a>
       <a href="/kullanim-sartlari.html" style="color:var(--text2); text-decoration:none;">Kullanım Şartları</a>
