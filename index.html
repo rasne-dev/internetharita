@@ -5889,10 +5889,10 @@ function renderOperatorExperienceReport() {
   // BAYESIAN DENGELEME (Laplace / Bayesian Smoothing):
   // Az veri girilen operatörlerin 2-3 bildirimle %67, %100 gibi uçuk oranlara fırlamasını önler
   const totalAllFeedbackUsers = Object.values(issUserMap).reduce((sum, m) => sum + m.size, 0) || 1;
-  let gNoDrop = 0, gDisconnect = 0, gStable = 0, gDrop = 0, gLowPing = 0, gSuppGood = 0, gSuppHard = 0;
+  let gNoDrop = 0, gDisconnect = 0, gStable = 0, gDrop = 0, gLowPing = 0, gHighPing = 0, gSuppGood = 0, gSuppHard = 0;
   list.forEach(s => {
     gNoDrop += s.noDrop; gDisconnect += s.disconnect; gStable += s.stable;
-    gDrop += s.eveningDrop; gLowPing += s.lowPing; gSuppGood += s.supportGood; gSuppHard += s.supportHard;
+    gDrop += s.eveningDrop; gLowPing += s.lowPing; gHighPing += s.highPing; gSuppGood += s.supportGood; gSuppHard += s.supportHard;
   });
 
   const priorNoDrop = gNoDrop / totalAllFeedbackUsers;
@@ -5900,6 +5900,7 @@ function renderOperatorExperienceReport() {
   const priorStable = gStable / totalAllFeedbackUsers;
   const priorDrop = gDrop / totalAllFeedbackUsers;
   const priorLowPing = gLowPing / totalAllFeedbackUsers;
+  const priorHighPing = gHighPing / totalAllFeedbackUsers;
   const priorSuppGood = gSuppGood / totalAllFeedbackUsers;
   const priorSuppHard = gSuppHard / totalAllFeedbackUsers;
 
@@ -5936,11 +5937,19 @@ function renderOperatorExperienceReport() {
     if (operatorReportSort === 'noDrop') return bayesExpPct(b.noDrop, b.total, priorNoDrop) - bayesExpPct(a.noDrop, a.total, priorNoDrop) || b.taggedCount - a.taggedCount;
     if (operatorReportSort === 'stable') return bayesExpPct(b.stable, b.total, priorStable) - bayesExpPct(a.stable, a.total, priorStable) || b.taggedCount - a.taggedCount;
     if (operatorReportSort === 'eveningDrop') return bayesExpPct(b.eveningDrop, b.total, priorDrop) - bayesExpPct(a.eveningDrop, a.total, priorDrop) || b.taggedCount - a.taggedCount;
+    if (operatorReportSort === 'disconnect') return bayesExpPct(b.disconnect, b.total, priorDisconnect) - bayesExpPct(a.disconnect, a.total, priorDisconnect) || b.taggedCount - a.taggedCount;
     if (operatorReportSort === 'lowPing') return bayesExpPct(b.lowPing, b.total, priorLowPing) - bayesExpPct(a.lowPing, a.total, priorLowPing) || b.taggedCount - a.taggedCount;
     if (operatorReportSort === 'supportHard') return bayesExpPct(b.supportHard, b.total, priorSuppHard) - bayesExpPct(a.supportHard, a.total, priorSuppHard) || b.taggedCount - a.taggedCount;
     if (operatorReportSort === 'supportGood') return bayesExpPct(b.supportGood, b.total, priorSuppGood) - bayesExpPct(a.supportGood, a.total, priorSuppGood) || b.taggedCount - a.taggedCount;
     return b.taggedCount - a.taggedCount || b.total - a.total;
   });
+
+  const infoBanner = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text3);line-height:1.4;">
+      <span style="font-size:14px;flex-shrink:0;">💡</span>
+      <span><b>Nasıl Hesaplanır?</b> Oranlar, hız testi yapan ve deneyimini paylaşan gerçek kullanıcıların bildirimlerinden derlenir. Az sayıda bildirimi olan sağlayıcıların yanıltıcı sıralama oluşturmaması için istatistiksel güven dengelemesi uygulanır.</span>
+    </div>
+  `;
 
   const sortBar = `
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
@@ -5951,21 +5960,25 @@ function renderOperatorExperienceReport() {
         <button type="button" class="sort-btn ${operatorReportSort === 'total' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('total')">📊 Tümü</button>
         <button type="button" class="sort-btn ${operatorReportSort === 'noDrop' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('noDrop')">🟢 Kesintisiz</button>
         <button type="button" class="sort-btn ${operatorReportSort === 'stable' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('stable')">⚡ Hız Stabilitesi</button>
-        <button type="button" class="sort-btn ${operatorReportSort === 'eveningDrop' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('eveningDrop')">📉 Akşam Düşüşü</button>
         <button type="button" class="sort-btn ${operatorReportSort === 'lowPing' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('lowPing')">🎮 Düşük Ping</button>
+        <button type="button" class="sort-btn ${operatorReportSort === 'eveningDrop' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('eveningDrop')">📉 Akşam Düşüşü</button>
+        <button type="button" class="sort-btn ${operatorReportSort === 'disconnect' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('disconnect')">⚠️ Kopma</button>
       </div>
     </div>
   `;
 
   const tableHeader = `
-    <div style="display:grid;grid-template-columns:160px 1fr 1fr 1fr 90px;gap:12px;padding:8px 12px;background:var(--surface2);border-radius:6px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px;">
+    <div style="display:grid;grid-template-columns:160px 1.25fr 1.25fr 90px;gap:12px;padding:8px 12px;background:var(--surface2);border-radius:6px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px;">
       <div>Sağlayıcı</div>
-      <div>Bağlantı Kalitesi</div>
-      <div>Hız &amp; Ping Durumu</div>
-      <div>Müşteri Desteği</div>
+      <div>👍 Güçlü Yönler (Olumlu)</div>
+      <div>⚠️ Kronik Sorunlar (Dikkat)</div>
       <div style="text-align:right;">Geri Bildirim</div>
     </div>
   `;
+
+  const highlightStyle = (key) => operatorReportSort === key
+    ? 'border:1px solid var(--accent);box-shadow:0 0 5px rgba(0,212,255,0.35);font-weight:700;'
+    : 'border:1px solid transparent;';
 
   const tableRows = sortedList.map(item => {
     const color = ic(item.iss);
@@ -5974,30 +5987,54 @@ function renderOperatorExperienceReport() {
     const stablePct = bayesExpPct(item.stable, item.total, priorStable);
     const dropPct = bayesExpPct(item.eveningDrop, item.total, priorDrop);
     const pingPct = bayesExpPct(item.lowPing, item.total, priorLowPing);
+    const highPingPct = bayesExpPct(item.highPing, item.total, priorHighPing);
     const supportGoodPct = bayesExpPct(item.supportGood, item.total, priorSuppGood);
     const supportHardPct = bayesExpPct(item.supportHard, item.total, priorSuppHard);
 
-    const qualityBadge = noDropPct >= 40
-      ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;background:rgba(34,197,94,0.12);color:var(--success);font-size:10px;font-weight:600;">🟢 %${noDropPct} Kesintisiz</span>`
-      : (disconnectPct > 0 ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;background:rgba(245,158,11,0.12);color:var(--warn);font-size:10px;font-weight:600;">⚠️ %${disconnectPct} Kopma</span>` : `<span style="color:var(--text3);font-size:10px;">—</span>`);
+    const positiveBadges = [];
+    if (noDropPct >= 20 || (operatorReportSort === 'noDrop' && item.noDrop > 0)) {
+      positiveBadges.push(`<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;background:rgba(34,197,94,0.12);color:var(--success);font-size:10px;font-weight:600;${highlightStyle('noDrop')}">🟢 %${noDropPct} Kesintisiz</span>`);
+    }
+    if (stablePct >= 20 || (operatorReportSort === 'stable' && item.stable > 0)) {
+      positiveBadges.push(`<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;background:rgba(0,212,255,0.12);color:var(--accent);font-size:10px;font-weight:600;${highlightStyle('stable')}">⚡ %${stablePct} Stabil</span>`);
+    }
+    if (pingPct >= 15 || (operatorReportSort === 'lowPing' && item.lowPing > 0)) {
+      positiveBadges.push(`<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;background:rgba(167,139,250,0.12);color:#a78bfa;font-size:10px;font-weight:600;${highlightStyle('lowPing')}">🎮 %${pingPct} Düşük Ping</span>`);
+    }
+    if (supportGoodPct >= 20) {
+      positiveBadges.push(`<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;background:rgba(56,189,248,0.12);color:#38bdf8;font-size:10px;font-weight:600;${highlightStyle('supportGood')}">📞 %${supportGoodPct} İlgili Destek</span>`);
+    }
 
-    const speedBadge = stablePct >= 40
-      ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;background:rgba(0,212,255,0.12);color:var(--accent);font-size:10px;font-weight:600;">⚡ %${stablePct} Stabil</span>`
-      : (dropPct > 0 ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;background:rgba(245,158,11,0.12);color:var(--warn);font-size:10px;font-weight:600;">📉 %${dropPct} Akşam Düşüşü</span>` : (pingPct > 0 ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;background:rgba(167,139,250,0.12);color:#a78bfa;font-size:10px;font-weight:600;">🎮 %${pingPct} Düşük Ping</span>` : `<span style="color:var(--text3);font-size:10px;">—</span>`));
+    const chronicBadges = [];
+    if (dropPct >= 15 || (operatorReportSort === 'eveningDrop' && item.eveningDrop > 0)) {
+      chronicBadges.push(`<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;background:rgba(245,158,11,0.12);color:var(--warn);font-size:10px;font-weight:600;${highlightStyle('eveningDrop')}">📉 %${dropPct} Akşam Düşüşü</span>`);
+    }
+    if (disconnectPct >= 15 || (operatorReportSort === 'disconnect' && item.disconnect > 0)) {
+      chronicBadges.push(`<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;background:rgba(239,68,68,0.12);color:var(--danger);font-size:10px;font-weight:600;${highlightStyle('disconnect')}">⚠️ %${disconnectPct} Kopma</span>`);
+    }
+    if (highPingPct >= 15) {
+      chronicBadges.push(`<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;background:rgba(239,68,68,0.12);color:var(--danger);font-size:10px;font-weight:600;">🕹️ %${highPingPct} Yüksek Ping</span>`);
+    }
+    if (supportHardPct >= 15) {
+      chronicBadges.push(`<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;background:rgba(245,158,11,0.12);color:var(--warn);font-size:10px;font-weight:600;${highlightStyle('supportHard')}">☎️ %${supportHardPct} Ulaşım Zor</span>`);
+    }
 
-    const supportBadge = supportGoodPct >= 40
-      ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;background:rgba(56,189,248,0.12);color:#38bdf8;font-size:10px;font-weight:600;">📞 %${supportGoodPct} İlgili</span>`
-      : (supportHardPct > 0 ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;background:rgba(239,68,68,0.12);color:var(--danger);font-size:10px;font-weight:600;">☎️ %${supportHardPct} Ulaşım Zor</span>` : `<span style="color:var(--text3);font-size:10px;">—</span>`);
+    const posContent = positiveBadges.length
+      ? `<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">${positiveBadges.join('')}</div>`
+      : `<span style="color:var(--text3);font-size:10px;">—</span>`;
+
+    const chronicContent = chronicBadges.length
+      ? `<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">${chronicBadges.join('')}</div>`
+      : `<span style="display:inline-flex;align-items:center;gap:3px;color:var(--success);font-size:10px;font-weight:500;opacity:0.9;">✓ Kronik bildirim yok</span>`;
 
     return `
-      <div style="display:grid;grid-template-columns:160px 1fr 1fr 1fr 90px;align-items:center;gap:12px;padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;">
+      <div style="display:grid;grid-template-columns:160px 1.25fr 1.25fr 90px;align-items:center;gap:12px;padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;">
         <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
           <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;"></span>
           <span title="${escAttr(item.iss)}">${escHtml(item.iss)}</span>
         </div>
-        <div>${qualityBadge}</div>
-        <div>${speedBadge}</div>
-        <div>${supportBadge}</div>
+        <div>${posContent}</div>
+        <div>${chronicContent}</div>
         <div style="text-align:right;font-size:11px;color:var(--text2);font-family:var(--font-mono);font-weight:600;" title="${item.total} farklı adreste, toplam ${item.taggedCount} etiketli kullanıcı deneyim bildirimi">
           ${item.taggedCount} Veri
         </div>
@@ -6005,7 +6042,7 @@ function renderOperatorExperienceReport() {
     `;
   }).join('');
 
-  container.innerHTML = sortBar + '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;border:1px solid var(--border);background:var(--surface);"><div style="min-width:620px;">' + tableHeader + tableRows + '</div></div>';
+  container.innerHTML = infoBanner + sortBar + '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;border:1px solid var(--border);background:var(--surface);"><div style="min-width:680px;">' + tableHeader + tableRows + '</div></div>';
 }
 
 let operatorReportSort = 'total';

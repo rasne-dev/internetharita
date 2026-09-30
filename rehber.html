@@ -276,6 +276,8 @@ html.light nav { background: rgba(255,255,255,0.94); }
 .badge-vdsl { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
 .badge-cable { background: rgba(0,212,255,0.15); color: #00d4ff; border: 1px solid rgba(0,212,255,0.3); }
 .badge-adsl { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+.badge-wisp { background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); }
+.badge-satellite { background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); }
 
 .tech-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
 .tech-card p { font-size: 13px; color: var(--text2); line-height: 1.55; margin-bottom: 16px; flex-grow: 1; }
@@ -591,6 +593,90 @@ tr:hover td { background: rgba(255,255,255,0.02); }
           </div>
         </div>
       </article>
+
+      <!-- ADSL / ADSL2+ -->
+      <article class="tech-card searchable">
+        <div class="tech-card-header">
+          <span class="badge badge-adsl">ESKİ BAKIR HAT</span>
+          <span style="font-size:20px;">📞</span>
+        </div>
+        <h3>ADSL / ADSL2+ (Geleneksel Telefon Hattı)</h3>
+        <p>Santralden evinize kadar tamamen eski bakır telefon telleriyle gelen geleneksel internet türüdür. Santrale olan kablo mesafesine ve bina içi tesisat kalitesine oldukça duyarlıdır; yağışlı havalarda ve akşam saatlerinde hız düşüşü ve kopmalar yaşanabilir. Fiber veya VDSL dönüşümü henüz ulaşmamış kırsal veya eski yerleşimlerde kullanılmaktadır.</p>
+        <div class="tech-specs">
+          <div class="tech-spec-item">
+            <span class="tech-spec-label">Maks. Download</span>
+            <span class="tech-spec-value">16 - 24 Mbps</span>
+          </div>
+          <div class="tech-spec-item">
+            <span class="tech-spec-label">Maks. Upload</span>
+            <span class="tech-spec-value">1 - 2 Mbps</span>
+          </div>
+          <div class="tech-spec-item">
+            <span class="tech-spec-label">Ortalama Ping</span>
+            <span class="tech-spec-value">25 - 60 ms</span>
+          </div>
+          <div class="tech-spec-item">
+            <span class="tech-spec-label">Hat Tipi</span>
+            <span class="tech-spec-value">Bakır Telefon Kablosu</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- SABİT KABLOSUZ / AIRFIBER -->
+      <article class="tech-card searchable">
+        <div class="tech-card-header">
+          <span class="badge badge-wisp">HAVADAN KABLOSUZ</span>
+          <span style="font-size:20px;">📡</span>
+        </div>
+        <h3>Sabit Kablosuz / Airfiber (Havadan İnternet)</h3>
+        <p>Kablo altyapısının (fiber veya bakır telefon hattı) bulunmadığı köylerde, kırsal bölgelerde, yazlıklarda veya sanayi sitelerinde kullanılır. Çatıya takılan küçük bir alıcı çanak/anten, sağlayıcının bölgedeki verici kulesini doğrudan görerek kablosuz bağlantı kurar. Daire içine ise standart internet kablosu iner.</p>
+        <div class="tech-specs">
+          <div class="tech-spec-item">
+            <span class="tech-spec-label">Maks. Download</span>
+            <span class="tech-spec-value">20 - 100 Mbps</span>
+          </div>
+          <div class="tech-spec-item">
+            <span class="tech-spec-label">Maks. Upload</span>
+            <span class="tech-spec-value">5 - 20 Mbps</span>
+          </div>
+          <div class="tech-spec-item">
+            <span class="tech-spec-label">Ortalama Ping</span>
+            <span class="tech-spec-value">15 - 40 ms</span>
+          </div>
+          <div class="tech-spec-item">
+            <span class="tech-spec-label">Bağlantı Türü</span>
+            <span class="tech-spec-value">Kablosuz Çatı Anteni</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- UYDU İNTERNETİ / STARLINK -->
+      <article class="tech-card searchable">
+        <div class="tech-card-header">
+          <span class="badge badge-satellite">UZAY / UYDU</span>
+          <span style="font-size:20px;">🛰️</span>
+        </div>
+        <h3>Uydu İnterneti (Starlink &amp; Yeni Nesil Uydular)</h3>
+        <p>Karasal kablo ve baz istasyonunun hiç ulaşamadığı dağ evleri, yaylalar, tekneler veya çok uzak kırsal yerleşimlerde kullanılır. Açık gökyüzünü gören motorlu bir uydu çanağı, uzaydaki alçak yörünge uydularıyla doğrudan haberleşir. Eski hantal uyduların aksine online oyun ve görüntülü görüşmeye elverişli düşük gecikme sunar.</p>
+        <div class="tech-specs">
+          <div class="tech-spec-item">
+            <span class="tech-spec-label">Maks. Download</span>
+            <span class="tech-spec-value">50 - 220 Mbps</span>
+          </div>
+          <div class="tech-spec-item">
+            <span class="tech-spec-label">Maks. Upload</span>
+            <span class="tech-spec-value">10 - 25 Mbps</span>
+          </div>
+          <div class="tech-spec-item">
+            <span class="tech-spec-label">Ortalama Ping</span>
+            <span class="tech-spec-value">25 - 50 ms</span>
+          </div>
+          <div class="tech-spec-item">
+            <span class="tech-spec-label">Bağlantı Türü</span>
+            <span class="tech-spec-value">Alçak Yörünge Uydu Çanağı</span>
+          </div>
+        </div>
+      </article>
     </div>
 
     <!-- TABLO -->
@@ -644,8 +730,24 @@ tr:hover td { background: rgba(255,255,255,0.02); }
             <td>16 - 24 Mbps</td>
             <td>1 - 2 Mbps</td>
             <td>25 - 60 ms</td>
-            <td>Çok Yüksek</td>
+            <td>Çok Yüksek (Mesafe &amp; Nem)</td>
             <td>Terk Ediliyor</td>
+          </tr>
+          <tr>
+            <td><strong>Sabit Kablosuz / Airfiber</strong></td>
+            <td>20 - 100 Mbps</td>
+            <td>5 - 20 Mbps</td>
+            <td>15 - 40 ms</td>
+            <td>Hava Durumu &amp; Görüş Açısı</td>
+            <td>Kırsal / Altyapısız Alanlar</td>
+          </tr>
+          <tr>
+            <td><strong>Uydu İnterneti (Starlink vb.)</strong></td>
+            <td>50 - 220 Mbps</td>
+            <td>10 - 25 Mbps</td>
+            <td>25 - 50 ms</td>
+            <td>Açık Gökyüzü Görüşü &amp; Yoğun Yağış</td>
+            <td>Kırsal / Deniz / Dağ</td>
           </tr>
         </tbody>
       </table>
