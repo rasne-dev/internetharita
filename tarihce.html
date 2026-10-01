@@ -106,7 +106,7 @@
     html.light .btn-cta-lg { color: #ffffff !important; background: linear-gradient(135deg, var(--accent), var(--accent2)); box-shadow: 0 4px 16px rgba(0,136,204,0.3); }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: auto; }
     body {
       background-color: var(--bg);
       color: var(--text);
@@ -508,6 +508,85 @@
       margin-bottom: 14px;
     }
 
+    /* İNTERAKTİF ÇİZİM ALANI (.card-art) */
+    .card-art {
+      width: 100%;
+      height: 135px;
+      background: radial-gradient(ellipse at 50% 50%, rgba(0, 212, 255, 0.08), transparent 75%), rgba(7, 11, 15, 0.65);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin: 8px 0 14px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.35s ease;
+      position: relative;
+    }
+    html.light .card-art {
+      background: radial-gradient(ellipse at 50% 50%, rgba(0, 136, 204, 0.06), transparent 75%), rgba(235, 241, 248, 0.75);
+      border-color: var(--border);
+    }
+    .art-svg {
+      width: 100%;
+      height: 100%;
+      max-width: 290px;
+      max-height: 125px;
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 3.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+      filter: drop-shadow(0 0 6px var(--accent-glow));
+      transition: transform 0.4s ease;
+    }
+    .art-svg.tr {
+      stroke: #f87171;
+      filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.35));
+    }
+    html.light .art-svg.tr {
+      stroke: #dc2626;
+      filter: drop-shadow(0 0 5px rgba(220, 38, 38, 0.2));
+    }
+    .timeline-card:hover .art-svg {
+      transform: scale(1.03);
+    }
+    .art-svg path.draw-path {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      transition: stroke-dashoffset 1.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .timeline-item.active .art-svg path.draw-path {
+      stroke-dashoffset: 0;
+    }
+    .art-svg .fl {
+      stroke: #f59e0b;
+      stroke-width: 3.5;
+      stroke-dasharray: 2 8;
+      opacity: 0;
+      transition: opacity 0.4s ease 0.8s;
+    }
+    .timeline-item.active .art-svg .fl {
+      opacity: 1;
+      animation: artFlow 1.1s linear infinite;
+    }
+    @keyframes artFlow {
+      to { stroke-dashoffset: -10; }
+    }
+    .art-svg text {
+      fill: var(--text);
+      stroke: none;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      text-anchor: middle;
+      opacity: 0;
+      transition: opacity 0.5s ease 0.9s;
+    }
+    .timeline-item.active .art-svg text {
+      opacity: 0.95;
+    }
+
     /* KART İÇİ İNTERAKTİF ÖZELLİKLER */
     .card-meta-bar {
       display: flex;
@@ -559,6 +638,17 @@
       font-size: 11px;
       color: var(--text3);
       font-style: italic;
+    }
+    .nostalgia-box {
+      margin-top: 12px;
+      background: rgba(239, 68, 68, 0.06);
+      border: 1px solid rgba(239, 68, 68, 0.22);
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    html.light .nostalgia-box {
+      background: rgba(220, 38, 38, 0.05);
+      border-color: rgba(220, 38, 38, 0.2);
     }
 
     /* RETRO TERMINAL EKRANI (ARPANET & ODTÜ) */
@@ -656,6 +746,8 @@
         justify-content: flex-start;
       }
       .timeline-card { width: 100%; }
+      .card-art { height: 115px; margin: 6px 0 10px; }
+      .art-svg { max-height: 105px; max-width: 240px; }
       .hero-journey { padding: 40px 16px 20px; }
     }
   </style>
@@ -873,8 +965,16 @@
           <span>🔊</span> <strong>56K Çevirmeli Ağ Sesini Dinle (Nostalji)</strong>
         </button>
 
-        <div class="nostalgia-quote">
-          "Bir MP3 şarkıyı (3 MB) indirmek yarım saat sürer, tam %99'a geldiğinde biri telefonu kaldırırsa indirme tamamen başa dönerdi!"
+        <div class="nostalgia-box" style="margin-top:12px; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.22); border-radius:8px; padding:10px 14px;">
+          <div style="font-weight:700; font-size:12px; color:#f87171; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+            <span>⚠️</span> O Dönemin Unutulmaz Çileleri
+          </div>
+          <ul style="font-size:11.5px; color:var(--text2); line-height:1.6; padding-left:18px; margin:0;">
+            <li><strong>Telefon Meşgul Çalardı:</strong> İnternetteyken evi kimse arayamazdı; acil ulaşmak isteyen akrabalar kapıya dayanırdı.</li>
+            <li><strong>Ahizeyi Kaldıran Bağlantıyı Koparırdı:</strong> İçeriden biri telefonu kaldırıp <em>"Alooo?!"</em> dediği an internet kopar, 1 saatte inen şarkı %99'da heba olurdu.</li>
+            <li><strong>Dakikası Paraydı:</strong> İnternet sabit ücretli değildi; telefon faturasına dakika dakika yazardı. Gençler gece 24:00 indirim tarifesini beklerdi.</li>
+            <li><strong>Modem Sesini Yastıkla Bastırma:</strong> Gece bağlanırken o yüksek cızırtılı ıslık sesini evdekiler duymasın diye kasanın / modemin üstüne yastık bastırılırdı!</li>
+          </ul>
         </div>
         <div class="card-meta-bar" style="margin-top:12px;">
           <span>Bağlantı Türü: Sabit Ev Telefonu Hattı</span>
@@ -898,6 +998,31 @@
         <div class="card-meta-bar">
           <span>Yenilik: Telefon Meşgul Olmadan Kesintisiz İnternet</span>
           <span class="speed-badge">🚀 256 Kbps</span>
+        </div>
+      </article>
+    </div>
+
+    <!-- 2005-2006: WI-FI ÇAĞI VE KABLOLARDAN KURTULUŞ -->
+    <div class="timeline-item" data-year="2006" data-speed="54 Mbps" data-tech="Wi-Fi (802.11g) Kablosuz Ağ" data-scope="world">
+      <div class="timeline-node">📶</div>
+      <article class="timeline-card">
+        <div class="card-top">
+          <span class="year-tag">2005 - 2006</span>
+          <span class="scope-pill scope-world">🌍 Dünya &amp; Türkiye</span>
+        </div>
+        <h2 class="card-title">Kablolardan Kurtuluş: Wi-Fi ve Kablosuz Özgürlük</h2>
+        <p class="card-desc">
+          Eskiden evin her yerine metrelerce mavi ethernet kablosu çekilir, kapı altlarından kablo geçirilirdi. Antenli kablosuz modemlerin ve <strong>Wi-Fi (802.11g - 54 Mbps)</strong> standardının yaygınlaşmasıyla internet havadan akmaya başladı. Dizüstü bilgisayarla koltukta veya yatakta internete girme lüksü doğdu, kafelerde <em>"Wi-Fi şifresi nedir?"</em> sorma kültürü hayatımızın merkezine yerleşti.
+        </p>
+        <div class="retro-terminal" style="font-size:12px;">
+          &gt; KABLOSUZ AĞLAR TARANIYOR...<br>
+          &gt; BULUNAN AĞ: "EV_MODEM_KABLOSUZ" [Sinyal: %98 - 802.11g]<br>
+          &gt; WPA ŞİFRESİ DOĞRULANIYOR... BAĞLANDI (54.0 Mbps)<br>
+          &gt; ARTIK ODALAR ARASI MAVİ KABLO ÇEKMEYE SON!<span class="retro-cursor"></span>
+        </div>
+        <div class="card-meta-bar" style="margin-top:12px;">
+          <span>Yenilik: Antenli Modemler &amp; Kablosuz Yaşam</span>
+          <span class="speed-badge">📶 54 Mbps</span>
         </div>
       </article>
     </div>
@@ -1120,12 +1245,115 @@
       }
     }
 
+    // ==========================================
+    // 3.5. İNTERAKTİF ÇİZİM SANATI ENJEKSİYONU (VECTOR ARTWORK)
+    // ==========================================
+    const ART_DATA = {
+      1969: {
+        w: 1,
+        p: ["M30 40h80v56h-80z","M290 40h80v56h-80z","M30 204h80v56h-80z","M290 204h80v56h-80z","M55 110h30","M315 110h30","M55 274h30","M315 274h30"],
+        f: ["M112 68h176","M70 98v104","M330 98v104","M112 232h176","M112 98l176 104"],
+        x: [[70,75,"UCLA",14],[330,75,"SRI",14],[70,239,"UCSB",14],[330,239,"UTAH",14],[200,150,"LO",34]]
+      },
+      1983: {
+        w: 1,
+        p: ["M40 150a50 50 0 1 0 100 0a50 50 0 1 0-100 0","M260 150a50 50 0 1 0 100 0a50 50 0 1 0-100 0","M135 150h130","M245 135l20 15-20 15","M70 130h.1","M110 160h.1","M300 130h.1","M330 165h.1"],
+        f: ["M140 150h120"],
+        x: [[200,215,"TCP/IP",28]]
+      },
+      1991: {
+        w: 1,
+        p: ["M50 40h300v210h-300z","M50 80h300","M70 60h.1","M90 60h.1","M110 60h.1","M140 53h190v14h-190z","M75 115h130","M75 140h200","M75 165h160","M250 170l0 60 16-14 12 26 12-6-12-26 22-2z"],
+        f: ["M75 195h100"],
+        x: [[130,228,"www",26]]
+      },
+      1993: {
+        w: 0,
+        p: ["M170 30h60v40h-60z","M125 40h40v20h-40z","M235 40h40v20h-40z","M200 70v15","M110 268h180","M135 268v-55h130v55","M165 213l35-32 35 32","M185 268v-30h30v30"],
+        f: ["M200 92v75","M175 105c15 10 35 10 50 0"],
+        x: [[200,292,"metu.edu.tr",15]]
+      },
+      1996: {
+        w: 0,
+        p: ["M70 80a20 20 0 1 0 40 0a20 20 0 1 0-40 0","M250 110a20 20 0 1 0 40 0a20 20 0 1 0-40 0","M80 230a20 20 0 1 0 40 0a20 20 0 1 0-40 0","M110 88l140 18","M94 100l4 110","M116 220l138-98"],
+        f: ["M110 88l140 18","M94 100l4 110","M116 220l138-98"],
+        x: [[90,50,"İSTANBUL",12],[270,78,"ANKARA",12],[100,272,"İZMİR",12],[310,235,"2 Mbps",22]]
+      },
+      2000: {
+        w: 0,
+        p: ["M70 210h120v40h-120z","M70 190c0-25 20-35 60-35s60 10 60 35","M230 190h120v50h-120z","M250 215h.1","M270 215h.1","M290 215h.1","M190 230c20 20 20 20 40 0"],
+        f: ["M70 100c15-30 30 30 45 0s30 30 45 0 30 30 45 0 30 30 45 0 30 30 45 0"],
+        x: [[130,135,"146",28],[290,160,"56K",28]]
+      },
+      2004: {
+        w: 0,
+        p: ["M110 170h180v60h-180z","M140 170v-40","M260 170v-40","M140 200h.1","M165 200h.1","M190 200h.1","M50 200h60","M290 200h60","M20 185h30v30h-30z","M300 55h70v40h-25l-12 12v-12h-33z"],
+        f: ["M50 200h60","M290 200h60"],
+        x: [[200,100,"ADSL",36],[335,80,"MSN",13]]
+      },
+      2006: {
+        w: 1,
+        p: ["M120 200h160v42h-160z","M140 242v8","M260 242v8","M140 200l-25-65","M260 200l25-65","M150 221h.1","M175 221h.1","M200 221h.1","M225 221h.1","M250 221h.1","M165 145a40 40 0 0 1 70 0","M140 115a75 75 0 0 1 120 0","M115 85a110 110 0 0 1 170 0"],
+        f: ["M165 145a40 40 0 0 1 70 0","M140 115a75 75 0 0 1 120 0","M115 85a110 110 0 0 1 170 0"],
+        x: [[200,278,"Wi-Fi · 54 Mbps",16],[200,60,"802.11g",14]]
+      },
+      2009: {
+        w: 0,
+        p: ["M200 250v-150","M170 250l30-150 30 150","M185 200h30","M175 235h50","M170 90a40 40 0 0 1 60 0","M155 70a65 65 0 0 1 90 0","M140 50a90 90 0 0 1 120 0","M290 160h50a8 8 0 0 1 8 8v80a8 8 0 0 1-8 8h-50a8 8 0 0 1-8-8v-80a8 8 0 0 1 8-8z"],
+        f: ["M215 140l65 45"],
+        x: [[80,200,"3G",54]]
+      },
+      2016: {
+        w: 0,
+        p: ["M20 200c80 0 120 50 220 50","M20 215c80 0 120 35 220 35","M20 230c80 0 120 20 220 20","M240 60h110v190h-110z","M265 100h.1M295 100h.1M325 100h.1M265 140h.1M295 140h.1M325 140h.1M265 180h.1M295 180h.1M325 180h.1"],
+        f: ["M20 200c80 0 120 50 220 50","M20 230c80 0 120 20 220 20"],
+        x: [[120,120,"FTTH",34],[120,160,"4.5G",24]]
+      },
+      2026: {
+        w: 0,
+        p: ["M100 150a100 100 0 1 0 200 0a100 100 0 1 0-200 0","M100 150h200","M200 50c-60 40-60 160 0 200","M200 50c60 40 60 160 0 200","M118 100h164","M118 200h164","M330 40h20v12h-20z","M322 44h8","M350 44h8"],
+        f: ["M25 215c60 60 280 50 350-95"],
+        x: [[200,292,"Fiber · 5G · Starlink",15]]
+      }
+    };
+
+    function initCardArtwork() {
+      const items = document.querySelectorAll('.timeline-item');
+      items.forEach(item => {
+        const yr = item.getAttribute('data-year');
+        const art = ART_DATA[yr];
+        if (!art) return;
+        const card = item.querySelector('.timeline-card');
+        if (!card || card.querySelector('.card-art')) return;
+
+        const topEl = card.querySelector('.card-top');
+        const artDiv = document.createElement('div');
+        artDiv.className = 'card-art';
+
+        const paths = (art.p || []).map((d, idx) => `<path class="draw-path" d="${d}" pathLength="1" style="transition-delay:${idx * 70}ms"/>`).join('');
+        const flows = (art.f || []).map(d => `<path class="fl" d="${d}"/>`).join('');
+        const texts = (art.x || []).map(t => `<text x="${t[0]}" y="${t[1]}" font-size="${t[3]}">${t[2]}</text>`).join('');
+
+        artDiv.innerHTML = `<svg viewBox="0 0 400 300" class="art-svg ${art.w ? '' : 'tr'}">${paths}${flows}${texts}</svg>`;
+
+        if (topEl && topEl.nextElementSibling) {
+          card.insertBefore(artDiv, topEl.nextElementSibling);
+        } else {
+          card.appendChild(artDiv);
+        }
+      });
+    }
+
+    // Başlangıçta çizimleri enjekte et
+    initCardArtwork();
+
     window.addEventListener('scroll', updateTimelineOnScroll, { passive: true });
     window.addEventListener('resize', () => {
       adjustSpineHeight();
       updateTimelineOnScroll();
     });
     window.addEventListener('DOMContentLoaded', () => {
+      initCardArtwork();
       adjustSpineHeight();
       updateTimelineOnScroll();
     });
@@ -1155,8 +1383,8 @@
             toggleAutoScroll(); // Sonuna gelince dur
             return;
           }
-          window.scrollBy({ top: 3, behavior: 'auto' });
-        }, 22);
+          window.scrollBy({ top: 6, behavior: 'auto' });
+        }, 18);
       } else {
         isAutoPlaying = false;
         clearInterval(autoPlayInterval);
@@ -1166,6 +1394,13 @@
         btn.style.color = '';
       }
     }
+
+    // Fare tekerleğiyle kaydırmayı hızlandır (Zaman tüneli akıcılığı için)
+    window.addEventListener('wheel', (e) => {
+      if (Math.abs(e.deltaY) >= 40) {
+        window.scrollBy({ top: e.deltaY * 0.45, behavior: 'auto' });
+      }
+    }, { passive: true });
 
     // ==========================================
     // 5. NOSTALJİK 56K MODEM SESİ SENTEZLEYİCİSİ (WEB AUDIO API)
