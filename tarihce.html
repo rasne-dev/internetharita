@@ -58,6 +58,52 @@
       --text3: #758ca3;
     }
 
+    /* Light Tema İyileştirmeleri */
+    html.light #warpCanvas { opacity: 0.35; }
+    html.light .hud-bar { background: rgba(255, 255, 255, 0.95); border-bottom-color: var(--border); }
+    html.light .hud-label { color: var(--text3); }
+    html.light .hud-value { color: var(--accent); text-shadow: none; }
+    html.light .hud-value small { color: var(--text2); }
+    html.light .autoplay-btn { background: rgba(0,136,204,0.08); border-color: var(--accent); color: var(--accent); }
+    html.light .autoplay-btn:hover { background: rgba(0,136,204,0.16); box-shadow: 0 2px 12px rgba(0,136,204,0.2); }
+    html.light .hero-badge { background: rgba(0,136,204,0.08); border-color: rgba(0,136,204,0.25); color: var(--accent); }
+    html.light .hero-journey h1 {
+      background: linear-gradient(135deg, #0f1923 45%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    html.light .hero-journey p { color: var(--text2); }
+    html.light .scroll-hint { color: var(--text3); }
+    html.light .timeline-spine { background: #d4e0ee; }
+    html.light .timeline-node { background: #ffffff; border-color: #bfd0e4; box-shadow: 0 3px 12px rgba(0,0,0,0.08); }
+    html.light .timeline-item.active .timeline-node { background: #ebf1f8; border-color: var(--accent); box-shadow: 0 0 16px var(--accent-glow); }
+    html.light .timeline-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-color: var(--border);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+    }
+    html.light .timeline-item.active .timeline-card {
+      border-color: rgba(0, 136, 204, 0.35);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 0 20px rgba(0, 136, 204, 0.08);
+    }
+    html.light .card-title { color: var(--text); }
+    html.light .card-desc { color: var(--text2); }
+    html.light .card-meta-bar { background: var(--surface2); border-color: var(--border); color: var(--text2); }
+    html.light .year-tag { background: rgba(0,136,204,0.1); border-color: rgba(0,136,204,0.25); color: var(--accent); }
+    html.light .year-tag-tr { color: #dc2626 !important; background: rgba(220,38,38,0.08) !important; border-color: rgba(220,38,38,0.25) !important; }
+    html.light .year-tag-now { background: var(--accent) !important; color: #ffffff !important; }
+    html.light .scope-now { background: rgba(22,163,74,0.1) !important; color: #15803d !important; border-color: rgba(22,163,74,0.25) !important; }
+    html.light .scope-world { background: rgba(2,132,199,0.1); color: #0284c7; border-color: rgba(2,132,199,0.25); }
+    html.light .scope-tr { background: rgba(220,38,38,0.08); color: #dc2626; border-color: rgba(220,38,38,0.25); }
+    html.light .retro-terminal { background: #0b1118; border-color: #16a34a; box-shadow: 0 4px 14px rgba(0,0,0,0.12); }
+    html.light .nostalgia-quote { background: rgba(0,136,204,0.05); color: var(--text2); border-left-color: var(--accent); }
+    html.light .sound-btn { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.4); color: #b45309; }
+    html.light .sound-btn:hover { background: rgba(245,158,11,0.22); box-shadow: 0 2px 10px rgba(245,158,11,0.25); }
+    html.light .footer-cta { background: linear-gradient(135deg, rgba(0,136,204,0.07), rgba(168,85,247,0.07)); border-color: var(--border); }
+    html.light .footer-cta h3 { color: var(--text); }
+    html.light .footer-cta p { color: var(--text2); }
+    html.light .btn-cta-lg { color: #ffffff !important; background: linear-gradient(135deg, var(--accent), var(--accent2)); box-shadow: 0 4px 16px rgba(0,136,204,0.3); }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
     body {
@@ -199,7 +245,6 @@
       border-bottom: 1px solid var(--border);
       padding: 8px 16px;
     }
-    html.light .hud-bar { background: rgba(245, 248, 252, 0.92); }
     .hud-inner {
       max-width: 1100px;
       margin: 0 auto;
@@ -451,7 +496,7 @@
     .card-title {
       font-size: 18px;
       font-weight: 800;
-      color: #fff;
+      color: var(--text);
       margin-bottom: 8px;
       line-height: 1.35;
     }
@@ -702,7 +747,7 @@
     </div>
 
     <!-- 1969: ARPANET -->
-    <div class="timeline-item active" data-year="1969" data-speed="50 Kbps" data-tech="ARPANET" data-scope="world">
+    <div class="timeline-item active" data-year="1969" data-speed="50 Kbps" data-tech="İlk Bilgisayar Ağı" data-scope="world">
       <div class="timeline-node">⚡</div>
       <article class="timeline-card">
         <div class="card-top">
@@ -714,20 +759,20 @@
           29 Ekim 1969'da UCLA ile Stanford Üniversitesi arasındaki ilk bilgisayar ağı kuruldu. Araştırmacılar <strong>"LOGIN"</strong> kelimesini göndermek istedi; ancak sistem <strong>"L"</strong> ve <strong>"O"</strong> harflerini ilettikten hemen sonra çöktü. Böylece internetin tarihindeki ilk mesaj istemsizce <em>"LO"</em> (Bak / Gör) oldu!
         </p>
         <div class="retro-terminal">
-          &gt; CONNECTING 10.0.0.1... OK<br>
-          &gt; TRANSMITTING: "L"... SENT<br>
-          &gt; TRANSMITTING: "O"... SENT<br>
-          &gt; SYSTEM CRASH: BUFFER OVERFLOW<span class="retro-cursor"></span>
+          &gt; BAĞLANTI KURULUYOR... TAMAM<br>
+          &gt; İLETİLEN HARF: "L"... GÖNDERİLDİ<br>
+          &gt; İLETİLEN HARF: "O"... GÖNDERİLDİ<br>
+          &gt; SİSTEM KESİLDİ: BAĞLANTI KOPTU (İLK MESAJ: "LO")<span class="retro-cursor"></span>
         </div>
         <div class="card-meta-bar" style="margin-top:12px;">
-          <span>Bağlantı Türü: Kiralık Telefon Hattı</span>
+          <span>Bağlantı Türü: Telefon Hattı</span>
           <span class="speed-badge">⚡ 50 Kbps</span>
         </div>
       </article>
     </div>
 
     <!-- 1983: TCP/IP -->
-    <div class="timeline-item" data-year="1983" data-speed="56 Kbps" data-tech="TCP/IP" data-scope="world">
+    <div class="timeline-item" data-year="1983" data-speed="56 Kbps" data-tech="Ortak Protokol: TCP/IP" data-scope="world">
       <div class="timeline-node">🌐</div>
       <article class="timeline-card">
         <div class="card-top">
@@ -736,17 +781,17 @@
         </div>
         <h2 class="card-title">İnternetin Ortak Dili Doğuyor: TCP/IP</h2>
         <p class="card-desc">
-          Farklı marka ve mimarideki bilgisayarların birbirleriyle hatasız konuşabilmesi için Vint Cerf ve Bob Kahn tarafından geliştirilen <strong>TCP/IP</strong> standart protokol haline getirildi. Bugün cep telefonunuzdan evinizdeki modeme kadar her cihaz hâlâ bu protokolün kurallarıyla internete bağlanıyor.
+          Farklı marka ve modeldeki bilgisayarların birbirleriyle hatasız konuşabilmesi için geliştirilen <strong>TCP/IP</strong> ortak kural haline getirildi. Bugün cep telefonunuzdan evinizdeki modeme kadar her cihaz hâlâ bu kurallarla internete bağlanıyor.
         </p>
         <div class="card-meta-bar">
-          <span>Temel İlke: Paket Anahtarlama (Paketleme)</span>
+          <span>Özellik: Cihazlar Arası Ortak İletişim Dili</span>
           <span class="speed-badge">📡 56 Kbps</span>
         </div>
       </article>
     </div>
 
     <!-- 1989-1991: WORLD WIDE WEB -->
-    <div class="timeline-item" data-year="1991" data-speed="64 Kbps" data-tech="World Wide Web" data-scope="world">
+    <div class="timeline-item" data-year="1991" data-speed="64 Kbps" data-tech="Web Sayfaları (WWW)" data-scope="world">
       <div class="timeline-node">🕸️</div>
       <article class="timeline-card">
         <div class="card-top">
@@ -755,44 +800,44 @@
         </div>
         <h2 class="card-title">Ağın Örümceği: World Wide Web (WWW)</h2>
         <p class="card-desc">
-          CERN laboratuvarında çalışan İngiliz mühendis <strong>Tim Berners-Lee</strong>, bilim insanlarının birbirlerinin dokümanlarına tıklayarak ulaşabilmesi için <strong>HTML</strong> dilini, <strong>HTTP</strong> transfer kuralını ve ilk web tarayıcısını geliştirdi. Böylece sadece siyah komut satırlarından ibaret olan internet, tıklanabilir sayfalarla insanlığa açıldı.
+          CERN laboratuvarında çalışan İngiliz mühendis <strong>Tim Berners-Lee</strong>, dokümanların tıklanabilir bağlantılarla birbirine bağlanabilmesi için web sayfalarını ve ilk internet tarayıcısını geliştirdi. Böylece sadece siyah komut satırlarından ibaret olan internet, tıklanabilir sayfalarla tüm insanlığa açıldı.
         </p>
         <div class="nostalgia-quote">
           "Dünyanın ilk web sitesi 'info.cern.ch' adresinde yayınlandı ve tasarımı sadece mavi linkler ile siyah yazılardan ibaretti."
         </div>
         <div class="card-meta-bar" style="margin-top:12px;">
-          <span>İlk Web Sitesi: CERN NeXT Bilgisayarı</span>
+          <span>İlk Web Sitesi: info.cern.ch</span>
           <span class="speed-badge">🌐 64 Kbps</span>
         </div>
       </article>
     </div>
 
     <!-- 12 NİSAN 1993: TÜRKİYE'NİN İLK BAĞLANTISI (ODTÜ) -->
-    <div class="timeline-item" data-year="1993" data-speed="64 Kbps" data-tech="PTT Kiralık Hat" data-scope="tr">
+    <div class="timeline-item" data-year="1993" data-speed="64 Kbps" data-tech="Türkiye'nin İlk Bağlantısı" data-scope="tr">
       <div class="timeline-node">🇹🇷</div>
       <article class="timeline-card" style="border-left: 3px solid #ef4444;">
         <div class="card-top">
-          <span class="year-tag" style="color:#f87171;background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);">12 Nisan 1993</span>
+          <span class="year-tag year-tag-tr">12 Nisan 1993</span>
           <span class="scope-pill scope-tr">🇹🇷 Türkiye</span>
         </div>
         <h2 class="card-title">Türkiye'nin İlk 'Ping'i: ODTÜ Sistem Odası</h2>
         <p class="card-desc">
-          Türkiye, internete ilk kez <strong>12 Nisan 1993</strong> günü saat 15:30 sularında bağlandı. ODTÜ Bilgi İşlem Daire Başkanlığı'ndaki yönlendiriciler üzerinden, PTT'den kiralanan <strong>64 Kbps</strong> kapasiteli hatla Washington NSFNet ağına ilk başarılı sinyal gönderildi. Türkiye'nin tescil edilen ilk alan adı <strong>metu.edu.tr</strong> oldu.
+          Türkiye, internete ilk kez <strong>12 Nisan 1993</strong> günü saat 15:30 sularında bağlandı. ODTÜ Bilgi İşlem Daire Başkanlığı üzerinden, PTT'den kiralanan <strong>64 Kbps</strong> hatla Washington ağına ilk başarılı sinyal gönderildi. Türkiye'nin tescil edilen ilk alan adı <strong>metu.edu.tr</strong> oldu.
         </p>
         <div class="retro-terminal">
-          [ODTU-ANKARA] &gt; ping nsfnet.nasa.gov<br>
-          64 bytes from 192.12.184.1: icmp_seq=1 ttl=242 time=280 ms<br>
-          TURKIYE INTERNETE BAGLANDI: 12.04.1993 15:30<span class="retro-cursor"></span>
+          [ODTÜ - ANKARA] &gt; Bağlantı kuruluyor...<br>
+          &gt; WASHINGTON HATTINA ULAŞILDI (Gecikme: 280 ms)<br>
+          &gt; TÜRKİYE İNTERNETE BAĞLANDI: 12 Nisan 1993, 15:30<span class="retro-cursor"></span>
         </div>
         <div class="card-meta-bar" style="margin-top:12px;">
-          <span>Hat Kapasitesi: Ankara - Washington</span>
+          <span>Bağlantı Hattı: Ankara — Washington</span>
           <span class="speed-badge">🇹🇷 64 Kbps</span>
         </div>
       </article>
     </div>
 
     <!-- 1996: TURNET VE TİCARİ İNTERNET -->
-    <div class="timeline-item" data-year="1996" data-speed="2 Mbps" data-tech="TURNET Omurgası" data-scope="tr">
+    <div class="timeline-item" data-year="1996" data-speed="2 Mbps" data-tech="Ulusal İnternet Ağı" data-scope="tr">
       <div class="timeline-node">🏢</div>
       <article class="timeline-card">
         <div class="card-top">
@@ -804,14 +849,14 @@
           Üniversite sınırlarını aşan internet ihtiyacı için Türk Telekom (o zamanki PTT) ve konsorsiyum ortakları <strong>TURNET</strong> (Türkiye Ulusal İnternet Ağı) omurgasını kurdu. İstanbul, Ankara ve İzmir santralleri üzerinden ilk özel servis sağlayıcılar ticari abonelik satmaya başladı.
         </p>
         <div class="card-meta-bar">
-          <span>Ulusal Omurga: 3 Ana Düğüm</span>
+          <span>Bağlantı Merkezleri: İstanbul, Ankara, İzmir</span>
           <span class="speed-badge">⚡ 2 Mbps Omurga</span>
         </div>
       </article>
     </div>
 
     <!-- 1999-2001: 56K DIAL-UP VE 146 ÇAĞI -->
-    <div class="timeline-item" data-year="2000" data-speed="56 Kbps" data-tech="Dial-up (146)" data-scope="tr">
+    <div class="timeline-item" data-year="2000" data-speed="56 Kbps" data-tech="56K Çevirmeli Ağ" data-scope="tr">
       <div class="timeline-node">📞</div>
       <article class="timeline-card">
         <div class="card-top">
@@ -831,14 +876,14 @@
           "Bir MP3 şarkıyı (3 MB) indirmek yarım saat sürer, tam %99'a geldiğinde biri telefonu kaldırırsa indirme tamamen başa dönerdi!"
         </div>
         <div class="card-meta-bar" style="margin-top:12px;">
-          <span>Maksimum Teorik Hız: V.90 Standardı</span>
+          <span>Bağlantı Türü: Sabit Ev Telefonu Hattı</span>
           <span class="speed-badge">📞 56 Kbps</span>
         </div>
       </article>
     </div>
 
     <!-- 2004: ADSL DEVRİMİ -->
-    <div class="timeline-item" data-year="2004" data-speed="256 Kbps" data-tech="TTNet ADSL" data-scope="tr">
+    <div class="timeline-item" data-year="2004" data-speed="256 Kbps" data-tech="Genişbant ADSL" data-scope="tr">
       <div class="timeline-node">⚡</div>
       <article class="timeline-card">
         <div class="card-top">
@@ -850,14 +895,14 @@
           Türk Telekom'un ADSL teknolojisini başlatmasıyla internet devrimi yaşandı. Artık internete girildiğinde telefon meşgul çalmıyordu! İlk paketler <strong>128 Kbps</strong> ve <strong>256 Kbps</strong> hızındaydı ve 3-6 GB kotalar vardı. MSN Messenger, mIRC, Yonja, eMule ve ilk online forumlar Türkiye gençliğinin hayatına girdi.
         </p>
         <div class="card-meta-bar">
-          <span>Yenilik: Kesintisiz Genişbant (Splitter ile Telefon + Net)</span>
+          <span>Yenilik: Telefon Meşgul Olmadan Kesintisiz İnternet</span>
           <span class="speed-badge">🚀 256 Kbps</span>
         </div>
       </article>
     </div>
 
-    <!-- 2008-2009: 3G VE KABLONET DOCSIS -->
-    <div class="timeline-item" data-year="2009" data-speed="8 Mbps" data-tech="3G Mobil & Kablo TV" data-scope="tr">
+    <!-- 2008-2009: 3G VE KABLONET -->
+    <div class="timeline-item" data-year="2009" data-speed="8 Mbps" data-tech="3G Mobil & Kablonet" data-scope="tr">
       <div class="timeline-node">📱</div>
       <article class="timeline-card">
         <div class="card-top">
@@ -866,7 +911,7 @@
         </div>
         <h2 class="card-title">3G ile Cepten İnternet ve Uydunet (Kablonet)</h2>
         <p class="card-desc">
-          30 Temmuz 2009'da Türkiye 3G şebekesine geçti ve cep telefonlarında görüntülü görüşme ile mobil internet çağı başladı. Aynı dönemde Türksat, Kablo TV koaksiyel anten kabloları üzerinden telefon hattı gerektirmeyen bağımsız Uydunet (DOCSIS) paketlerini yaygınlaştırdı. Evlerde hızlar 8 Mbps seviyesine ulaştı.
+          30 Temmuz 2009'da Türkiye 3G şebekesine geçti ve cep telefonlarında görüntülü görüşme ile mobil internet çağı başladı. Aynı dönemde Türksat, televizyon kablosu üzerinden telefon hattı gerektirmeyen Uydunet (Kablonet) paketlerini yaygınlaştırdı. Evlerde hızlar 8 Mbps seviyesine ulaştı.
         </p>
         <div class="card-meta-bar">
           <span>Dönüm Noktası: Akıllı Telefonlar & Mobil Veri</span>
@@ -876,7 +921,7 @@
     </div>
 
     <!-- 2011-2016: FIBER DÖNÜŞÜMÜ VE 4.5G -->
-    <div class="timeline-item" data-year="2016" data-speed="100 Mbps" data-tech="FTTH & 4.5G LTE" data-scope="tr">
+    <div class="timeline-item" data-year="2016" data-speed="100 Mbps" data-tech="Fiber & 4.5G Mobil" data-scope="tr">
       <div class="timeline-node">💡</div>
       <article class="timeline-card">
         <div class="card-top">
@@ -885,26 +930,26 @@
         </div>
         <h2 class="card-title">Camdan Işık Hızı: Evlere Kadar Fiber ve 4.5G</h2>
         <p class="card-desc">
-          Superonline ve Türk Telekom'un büyük yatırımlarıyla binalara doğrudan cam optik kablolar (FTTH/FTTB) çekilmeye başlandı. 1 Nisan 2016'da devreye giren <strong>4.5G (LTE-Advanced)</strong> ile cepten 100+ Mbps hızlar hayal olmaktan çıktı. 4K video akışları ve online oyun kültürü tüm ülkeye yayıldı.
+          Superonline ve Türk Telekom'un yatırımlarıyla binalara doğrudan ışık hızında fiber optik kablolar çekilmeye başlandı. 1 Nisan 2016'da devreye giren <strong>4.5G mobil internet</strong> ile cepten 100+ Mbps hızlar hayal olmaktan çıktı. 4K video akışları ve online oyun kültürü tüm ülkeye yayıldı.
         </p>
         <div class="card-meta-bar">
-          <span>Altyapı: Cam Elyaf Fiber Optik Kıl</span>
+          <span>Altyapı: Işık Hızında Fiber Optik</span>
           <span class="speed-badge">💡 100 Mbps</span>
         </div>
       </article>
     </div>
 
     <!-- 2020+: GİGABİT ÇAĞI, STARLINK VE TOPLULUK VERİSİ -->
-    <div class="timeline-item" data-year="2026" data-speed="1000 Mbps" data-tech="1 Gbps Simetrik & LEO" data-scope="tr">
+    <div class="timeline-item" data-year="2026" data-speed="1000 Mbps" data-tech="Gigabit Fiber & Uydu" data-scope="tr">
       <div class="timeline-node">🚀</div>
       <article class="timeline-card" style="border: 1px solid var(--accent); box-shadow: 0 0 25px rgba(0,212,255,0.15);">
         <div class="card-top">
-          <span class="year-tag" style="background:var(--accent);color:#000;">GÜNÜMÜZ &amp; GELECEK</span>
-          <span class="scope-pill" style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);">⚡ YENİ NESİL</span>
+          <span class="year-tag year-tag-now">GÜNÜMÜZ &amp; GELECEK</span>
+          <span class="scope-pill scope-now">⚡ YENİ NESİL</span>
         </div>
-        <h2 class="card-title">1000 Mbps Simetrik Fiber, Starlink ve internetHarita</h2>
+        <h2 class="card-title">1000 Mbps Fiber, Starlink ve internetHarita</h2>
         <p class="card-desc">
-          Bugün artık evlerde <strong>1.000 Mbps (1 Gbps)</strong> hızlar, uzayda alçak yörüngede dönen Starlink uyduları ve dağ köylerinde çatı anteniyle havadan internet (Airfiber) konuşuluyor. Kullanıcılar artık servis sağlayıcıların vaatlerine değil, <strong>internetHarita</strong> üzerinde binlerce kullanıcının paylaştığı gerçek mahalle ve hız karnelerine bakarak karar veriyor!
+          Bugün artık evlerde <strong>1.000 Mbps (1 Gbps)</strong> hızlar, uzaydan internet sağlayan Starlink uyduları ve çatı anteniyle havadan internet (Airfiber) konuşuluyor. Kullanıcılar artık servis sağlayıcıların vaatlerine değil, <strong>internetHarita</strong> üzerinde binlerce kullanıcının paylaştığı gerçek mahalle ve hız karnelerine bakarak karar veriyor!
         </p>
         <div class="card-meta-bar">
           <span>Bugünün Standardı: Şeffaf &amp; Bağımsız Veri</span>
@@ -1116,8 +1161,8 @@
         clearInterval(autoPlayInterval);
         icon.textContent = '▶️';
         text.textContent = 'Otomatik Oynat';
-        btn.style.borderColor = 'var(--accent)';
-        btn.style.color = 'var(--text)';
+        btn.style.borderColor = '';
+        btn.style.color = '';
       }
     }
 
