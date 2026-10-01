@@ -1383,8 +1383,8 @@
             toggleAutoScroll(); // Sonuna gelince dur
             return;
           }
-          window.scrollBy({ top: 6, behavior: 'auto' });
-        }, 18);
+          window.scrollBy({ top: 1, behavior: 'auto' });
+        }, 20);
       } else {
         isAutoPlaying = false;
         clearInterval(autoPlayInterval);
@@ -1394,6 +1394,15 @@
         btn.style.color = '';
       }
     }
+
+    // Sayfa açıldığında otomatik oynatmayı okuma hızında başlat (İlk başlığın görülmesi için 1.2 sn sonra)
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        if (!isAutoPlaying) {
+          toggleAutoScroll();
+        }
+      }, 1200);
+    });
 
     // Fare tekerleğiyle kaydırmayı hızlandır (Zaman tüneli akıcılığı için)
     window.addEventListener('wheel', (e) => {
