@@ -22,7 +22,8 @@ Taşınmadan önce yeni mahallenizdeki gerçek internet hızlarını ve fiber or
 * 📱 **PWA & Mobil Uyum (Ana Ekrana Ekle):** Progressive Web App (PWA) altyapısı sayesinde mobil tarayıcılardan tek tıkla ana ekrana uygulama gibi eklenebilir, tam ekran uygulama deneyimi sunar.
 * 🏷️ **Hazır Deneyim Etiketleri:** Yalnızca hız rakamları değil; *"Akşam saatlerinde hız düşüyor"*, *"Oyunlarda ping yüksek"*, *"Kesinti çok sık"*, *"Fiyat/Performans iyi"*, *"Müşteri hizmetleri ilgisiz"* gibi hazır etiketlerle gerçek kullanıcı deneyiminizi aktarabilirsiniz.
 * 🚫 **"Altyapı Yok" Bildirimi:** İnternet altyapısı bulunmayan bölgeler için bildirim bırakabilir, mahallenizdeki sayısal uçurumu ve altyapı talebini harita üzerinde belgeleyebilirsiniz.
-* ✏️ **Ölçümlerinizi Yönetin (Düzenle & Sil):** Haritaya eklediğiniz ölçümler kendi tarayıcınızda özel olarak işaretlenir (`📍 Sizin Ölçümünüz`). İstediğiniz zaman etiketi güncelleyebilir veya ölçümünüzü haritadan tamamen silebilirsiniz (*Unutulma Hakkı*).
+* ☁️ **İsteğe Bağlı Google Girişi & Senkronizasyon (Google Sync):** Ölçümlerinizi cihaz değiştirdiğinizde veya tarayıcı geçmişinizi temizlediğinizde kaybetmemek için Google hesabınızla isteğe bağlı olarak tek tıkla oturum açabilirsiniz. Eklediğiniz tüm ölçümler hesabınızla eşitlenir ve her cihazdan düzenlenebilir veya silinebilir.
+* ✏️ **Ölçümlerinizi Yönetin (Düzenle & Sil):** Haritaya eklediğiniz ölçümler kendi tarayıcınızda ve hesabınızda özel olarak işaretlenir (`📍 Sizin Ölçümünüz`). İstediğiniz zaman etiketleri ve hızları güncelleyebilir veya ölçümünüzü haritadan tamamen silebilirsiniz (*Unutulma Hakkı*).
 * 📊 **Detaylı İstatistikler & Analiz:** Türkiye geneli ortalama hızlar, bölge karşılaştırmaları (Marmara, Ege, İç Anadolu vb.), fiber altyapı oranları ve İSS hız/memnuniyet sıralamaları gerçek zamanlı derlenir.
 * 🔍 **Dinamik H3 Altıgen Görünümü:** Haritada yakınlaştıkça bölgeler mahalle ve sokak seviyesine kadar detaylanan H3 altıgenleriyle gösterilir; hem genel özeti hem de mikro-lokal verileri inceleyebilirsiniz.
 * 👁️ **Erişilebilirlik & Çevrimdışı Önbellek:** Renk körü modu desteği sayesinde veri haritaları herkes için erişilebilirdir. Ayrıca yerel önbellek desteğiyle internetiniz kopsa bile daha önce yüklenen haritayı inceleyebilirsiniz.
@@ -60,9 +61,9 @@ Haritada tutarsız veya sahte olduğunu düşündüğünüz bir kayıt görürse
 İnternetHarita, kullanıcı mahremiyetini ve şeffaflığı temel prensip olarak benimser:
 
 1. 📍 **Konum Şaşırtma (~100m Fuzzing):** Haritada seçtiğiniz konum koordinatları veritabanına kaydedilmeden önce algoritmik olarak rastgele ~100 metre kaydırılır. Moderatörler dahil hiç kimse kesin ev adresinize veya kapı numaranıza ulaşamaz.
-2. 👤 **Sıfır Kişisel Veri:** İsim, soyisim, telefon numarası, e-posta adresi veya T.C. kimlik numarası gibi hiçbir kişisel kimlik verisi (PII) istenmez, toplanmaz ve saklanmaz.
-3. 🛡️ **Veri Güvenliği, Anti-Spam ve Yerel Hafıza (LocalStorage):** Kendi ölçümlerinizi tanıma, düzenleme ve silme yetkiniz doğrudan tarayıcınızın yerel hafızasında (`localStorage`) saklanır. Otomatik bot saldırılarını ve sahte veri girişini önlemek için standart form korumaları (honeypot) ve hız sınırlamaları uygulanır. Bu teknik güvenlik verileri **asla açık API üzerinden sunulmaz veya üçüncü taraflarla paylaşılmaz**.
-4. 🗑️ **Unutulma Hakkı:** Kendi eklediğiniz ölçümleri dilediğiniz an haritadan tek tıkla silebilirsiniz.
+2. 👤 **Sıfır Kişisel Veri & İsteğe Bağlı Senkronizasyon:** Kayıt veya üyelik zorunluluğu yoktur. Dileyen kullanıcılar ölçümlerini kaybetmemek ve farklı cihazlarından yönetebilmek için Google ile isteğe bağlı giriş yapabilir. E-posta veya kimlik bilgileri asla reklam veya pazarlama amacıyla kullanılmaz ve paylaşılmaz.
+3. 🛡️ **Veri Güvenliği, Anti-Spam ve Yerel Hafıza (LocalStorage):** Kendi ölçümlerinizi tanıma, düzenleme ve silme yetkiniz doğrudan tarayıcınızın yerel hafızasında (`localStorage`) ve senkronize edilmişse güvenli kullanıcı metaverinizde saklanır. Otomatik bot saldırılarını ve sahte veri girişini önlemek için standart form korumaları (honeypot) ve hız sınırlamaları uygulanır. Bu teknik güvenlik verileri **asla açık API üzerinden sunulmaz veya üçüncü taraflarla paylaşılmaz**.
+4. 🗑️ **Unutulma Hakkı:** Kendi eklediğiniz ölçümleri dilediğiniz an haritadan tek tıkla silebilir veya güncelleyebilirsiniz.
 5. 🍪 **Çerezler ve Reklam İlkeleri:** Platformun alan adı ve sunucu işletim masraflarını karşılamak amacıyla standart üçüncü taraf reklam ortakları (Google AdSense) çerezlerinden faydalanılabilir. Kişisel kimlik verileriniz asla reklam verenlerle paylaşılmaz.
 
 ---
@@ -102,7 +103,8 @@ Before moving to a new neighborhood, you can verify genuine connection speeds, c
 * 📱 **PWA & Mobile Install Ready:** Progressive Web App support allows instant "Add to Home Screen" installation on mobile devices for an app-like experience.
 * 🏷️ **Experience Tags:** Share qualitative feedback with single-click preset tags (e.g., *"Speed drops during evenings"*, *"High ping in games"*, *"Frequent disconnections"*, *"Good value for price"*).
 * 🚫 **"No Infrastructure" Reporting:** Users without broadband access can flag their location, highlighting digital divide zones and underserved neighborhoods.
-* ✏️ **Manage Your Measurements:** Pins created on your device are labeled as `📍 Your Measurement`. You can update tags or delete your measurement at any time (*Right to be Forgotten*).
+* ☁️ **Optional Google Sync:** Keep your measurements safe and accessible across all your devices and browsers by signing in with Google. Seamlessly edit or delete your pins from your phone, tablet, or desktop.
+* ✏️ **Manage Your Measurements:** Pins created on your device or linked to your Google account are labeled as `📍 Your Measurement`. You can update tags or delete your measurement at any time (*Right to be Forgotten*).
 * 📊 **Live Analytics & Rankings:** National averages, regional speed differences, fiber penetration rates, and ISP leaderboards calculated dynamically.
 * 🔍 **H3 Hexagonal Aggregation:** Zoom into street and district level resolution powered by dynamic Uber H3 spatial indexing.
 * 👁️ **Accessibility & Offline Cache:** High-contrast colorblind mode support and local caching that keeps previously loaded map tiles and points accessible during network outages.
@@ -112,8 +114,8 @@ Before moving to a new neighborhood, you can verify genuine connection speeds, c
 ## 🔒 Privacy & Data Protection (GDPR & KVKK Compliant)
 
 1. 📍 **Location Fuzzing (~100m):** Pinned coordinates are mathematically fuzzed by approximately 100 meters before being saved. Exact door/building addresses are never stored.
-2. 👤 **Zero Personal Data:** No names, emails, phone numbers, or user accounts are required or collected.
-3. 🛡️ **Data Security, Rate Limiting & Local Storage:** Measurements you add are recognized and managed locally in your browser (`localStorage`), allowing you to edit or delete your pins without an account. Standard anti-spam rate limiting and form protection mechanisms are enforced. These technical security parameters are **never exposed to public APIs or third parties**.
+2. 👤 **Zero Personal Data & Optional Sync:** No accounts or personal data are required. Optional Google Sign-in is provided solely to allow cross-device sync and pin management. Email addresses are never shared with third parties or used for marketing.
+3. 🛡️ **Data Security, Rate Limiting & Local Storage:** Measurements you add are recognized and managed locally in your browser (`localStorage`) and in your secure account metadata when synced. Standard anti-spam rate limiting and form protection mechanisms are enforced. These technical security parameters are **never exposed to public APIs or third parties**.
 4. 🗑️ **Right to be Forgotten:** You can edit or permanently delete your submitted pins directly from the map interface.
 5. 🍪 **Cookies & Advertising Transparency:** Standard advertising cookies (e.g., Google AdSense) may be used to help support server and infrastructure costs. Personal identification information is never shared with advertisers.
 6. ⚠️ **Third-Party Infrastructure Disclaimer:** The platform utilizes Supabase Inc., Cloudflare Inc., and OpenStreetMap Foundation services. Developers shall not be held liable for third-party service outages or network failures. Contact: `rasne.app@gmail.com`.

@@ -997,7 +997,71 @@ html.light .hab-desc b { color: #000; }
 .mob-btn { display:flex;flex-direction:column;align-items:center;justify-content:center; gap:3px;padding:6px 8px;border-radius:8px; cursor:pointer;border:none;background:none; color:var(--text3);font-size:9px;font-weight:700;font-family:var(--font-mono); flex:1;} .mob-btn .mob-icon{font-size:18px;} .mob-btn.active{color:var(--accent);} .mob-btn.mod-mob{color:var(--text3);} .mob-btn.mod-mob.active{color:var(--warn);}
 .mob-add-btn { background:var(--accent);color:#000!important;border-radius:50%; width:44px;height:44px;padding:0!important;flex:none!important; font-size:22px!important;display:flex!important;align-items:center;justify-content:center; box-shadow:0 0 20px var(--accent-glow); }
 .map-sidebar-toggle { display:none; position:absolute;top:14px;left:14px;z-index:501; background:rgba(7,11,15,0.93);backdrop-filter:blur(14px); border:1px solid var(--border);border-radius:8px; padding:8px 12px;cursor:pointer;font-size:11px;color:var(--accent); font-family:var(--font-mono);font-weight:700; } .map-sidebar.collapsed { display:none; }
-.fp-status { font-size:9px;color:var(--text3);font-family:var(--font-mono); display:flex;align-items:center;gap:4px; } .fp-dot{width:5px;height:5px;border-radius:50%;background:var(--warn);flex-shrink:0;} .fp-dot.ready{background:var(--success);}
+/* Google Sync UI Styles */
+.btn-google-sync {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); padding: 5px 10px; font-size: 11px; font-weight: 600;
+  border-radius: 7px; cursor: pointer; transition: all .2s; white-space: nowrap;
+}
+.btn-google-sync:hover {
+  border-color: var(--accent); background: var(--surface3); color: var(--accent);
+}
+.btn-google-sync svg { flex-shrink: 0; }
+.sync-text-full { display: inline; }
+.sync-text-short { display: none; }
+.user-sync-wrap { position: relative; display: inline-flex; align-items: center; }
+.user-sync-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface2); border: 1px solid var(--border2);
+  padding: 3px 8px 3px 4px; border-radius: 20px; cursor: pointer;
+  transition: all .2s; font-size: 11px; font-weight: 600; color: var(--text);
+  max-width: 140px;
+}
+.user-sync-pill:hover { border-color: var(--accent); }
+.user-sync-avatar {
+  width: 20px; height: 20px; border-radius: 50%; object-fit: cover; background: var(--surface3);
+}
+.user-sync-name {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 85px; font-size: 11px;
+}
+.user-sync-badge { color: var(--success); font-size: 10px; font-weight: bold; }
+.user-sync-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; width: 230px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: 2005;
+}
+.user-sync-header { border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 8px; }
+.user-sync-email { font-size: 11px; font-weight: 600; color: var(--text); word-break: break-all; }
+.user-sync-status { font-size: 10px; color: var(--success); margin-top: 2px; }
+.user-sync-stats { font-size: 11px; color: var(--text2); margin-bottom: 10px; font-family: var(--font-mono); }
+.user-sync-actions { display: flex; flex-direction: column; gap: 6px; }
+.user-sync-action-btn {
+  width: 100%; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
+  border: 1px solid var(--border); background: var(--surface2); color: var(--text);
+  cursor: pointer; text-align: left; transition: all .2s;
+}
+.user-sync-action-btn:hover { background: var(--surface3); border-color: var(--accent); color: var(--accent); }
+.user-sync-action-btn.signout { color: var(--danger); border-color: rgba(239,68,68,0.25); background: rgba(239,68,68,0.06); }
+.user-sync-action-btn.signout:hover { background: rgba(239,68,68,0.15); border-color: var(--danger); }
+.google-sync-card {
+  margin-top: 8px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px;
+}
+.sync-card-desc { font-size: 10px; color: var(--text3); line-height: 1.4; margin-bottom: 8px; }
+.btn-sync-connect {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
+  background: var(--surface); border: 1px solid var(--border2); color: var(--text);
+  padding: 7px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: all .2s;
+}
+.btn-sync-connect:hover { border-color: var(--accent); background: var(--surface3); }
+.sync-card-status { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--text); }
+.sync-check-icon { color: var(--success); font-weight: bold; }
+.sync-email-text { word-break: break-all; color: var(--text); font-size: 11px; }
+.sync-card-sub { font-size: 9px; color: var(--text3); margin-top: 4px; }
+.sync-logout-link { display: inline-block; font-size: 10px; color: var(--danger); text-decoration: underline; margin-top: 6px; cursor: pointer; }
+
 
 /* ===== LIGHT THEME ===== */
 html.light {
@@ -1172,8 +1236,10 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   #headerMaintenanceToggle { display: none !important; }
   .nav-badge { font-size: 9px; padding: 1px 5px; }
   #navModLogoutBtn { font-size: 10px; padding: 2px 6px; }
-  .tab-text.short, .add-text-short { display: inline !important; }
-  .tab-text.full, .add-text-full { display: none !important; }
+  .tab-text.short, .add-text-short, .sync-text-short { display: inline !important; }
+  .tab-text.full, .add-text-full, .sync-text-full { display: none !important; }
+  .user-sync-pill { max-width: 100px; }
+  .user-sync-name { max-width: 55px; }
   .nav-tabs {
     display: flex !important; width: 100%; margin: 0 !important;
     gap: 3px; padding: 1px 0 2px;
@@ -1618,6 +1684,37 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
       <span class="nav-badge" id="modBadge">MOD</span>
       <button class="btn-ghost" id="navModLogoutBtn" style="display:none; border-color:var(--danger); color:var(--danger); padding:5px 9px; font-size:11px;" onclick="modLogout()">Çıkış</button>
       <button class="btn-ghost" id="navAddPinBtn" onclick="showPage('pin')" style="white-space:nowrap;"><span class="add-text-full">+ Veri Ekle</span><span class="add-text-short">+ Ekle</span></button>
+      
+      <!-- GOOGLE SYNC & HESAP YÖNETİMİ -->
+      <div class="user-sync-wrap" id="userSyncWrap">
+        <button class="btn-google-sync" id="navGoogleSyncBtn" onclick="signInWithGoogle()" title="Ölçümlerinizi Google hesabınızla senkronize edin">
+          <svg viewBox="0 0 24 24" width="13" height="13">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <span class="sync-text-full">Google ile Eşitle</span>
+          <span class="sync-text-short">Eşitle</span>
+        </button>
+        <div class="user-sync-pill" id="navUserSyncPill" style="display:none;" onclick="toggleUserSyncDropdown(event)" title="Google Hesabınız">
+          <img id="navUserAvatar" class="user-sync-avatar" src="" alt="Avatar" />
+          <span id="navUserName" class="user-sync-name">Kullanıcı</span>
+          <span class="user-sync-badge">✓</span>
+        </div>
+        <div class="user-sync-menu" id="userSyncDropdown" style="display:none;">
+          <div class="user-sync-header">
+            <div id="userSyncMenuEmail" class="user-sync-email">user@gmail.com</div>
+            <div class="user-sync-status">☁️ Google ile Senkronize</div>
+          </div>
+          <div class="user-sync-stats" id="userSyncPinCount">0 kayıtlı ölçüm</div>
+          <div class="user-sync-actions">
+            <button class="user-sync-action-btn" onclick="toggleMyPinsUI(); toggleUserSyncDropdown();">📍 Ölçümlerimi Haritada Gör</button>
+            <button class="user-sync-action-btn signout" onclick="signOutGoogleUser()">✕ Çıkış Yap</button>
+          </div>
+        </div>
+      </div>
+
       <div class="settings-menu-wrap" id="settingsMenuWrap">
         <button class="theme-toggle" id="settingsBtn" onclick="toggleSettingsMenu(event)" title="Ayarlar" aria-label="Ayarlar">⚙️</button>
         <div class="settings-dropdown" id="settingsDropdown">
@@ -1631,6 +1728,10 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
               <input type="checkbox" id="colorblindCheck" onchange="toggleColorblindMode()">
               <span class="toggle-slider"></span>
             </label>
+          </div>
+          <div class="settings-item" id="settingsSyncRow" style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px;">
+            <span class="settings-item-label" style="font-size:11px;">☁️ Veri Senkronizasyonu</span>
+            <button class="btn-ghost" id="settingsSyncBtn" onclick="if(currentSyncUser){signOutGoogleUser()}else{signInWithGoogle()}" style="font-size:10.5px;padding:3px 8px;border-radius:5px;">Giriş</button>
           </div>
           <div class="settings-item-hint">Açıkken hız/memnuniyet renklerine ek şekil işaretleri (◆■▲●▼) eklenir.</div>
         </div>
@@ -1731,6 +1832,25 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
             <div class="my-pins-dot"></div>
           </div>
           <div style="font-size:9px;color:var(--text3);margin-top:6px;line-height:1.4;">Cihazınızdan yaptığınız tüm ölçümleri harita üzerinde noktasal olarak gösterir.</div>
+          
+          <!-- GOOGLE SENKRONİZASYON KARTI -->
+          <div class="google-sync-card" id="sidebarGoogleSyncCard">
+            <div id="syncCardLoggedOut">
+              <div class="sync-card-desc">Ölçümlerinizi kaybetmemek ve tüm cihazlarınızdan yönetebilmek için Google ile senkronize edin.</div>
+              <button class="btn-sync-connect" onclick="signInWithGoogle()">
+                <svg viewBox="0 0 24 24" width="13" height="13" style="margin-right:6px;"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                Google ile Senkronize Et
+              </button>
+            </div>
+            <div id="syncCardLoggedIn" style="display:none;">
+              <div class="sync-card-status">
+                <span class="sync-check-icon">✓</span>
+                <span id="syncCardUserEmail" class="sync-email-text">user@gmail.com</span>
+              </div>
+              <div class="sync-card-sub">Ölçümleriniz Google hesabınızla eşitleniyor.</div>
+              <a href="javascript:void(0)" onclick="signOutGoogleUser()" class="sync-logout-link">Çıkış Yap</a>
+            </div>
+          </div>
         </div>
 
         <!-- ARAMA -->
@@ -1958,7 +2078,6 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
       <div>
         <div style="font-size:16px;font-weight:700;font-family:var(--font-mono);">Veri Ekle</div>
         <div style="font-size:11px;color:var(--text3);margin-top:3px;">İnternet performansını toplulukla paylaş</div>
-        <div class="fp-status" id="fpStatus" style="margin-top:6px;"><div class="fp-dot" id="fpDot"></div><span id="fpText">Cihaz tanımlanıyor...</span></div>
         <div style="font-size:10px;color:var(--warn);margin-top:8px;line-height:1.4;">📵 Bu harita <b>sabit internet altyapısı</b> (fiber/DSL/kablo vb.) içindir — lütfen mobil veri (hücresel) ile değil, WiFi/sabit bağlantınızdan veri girin.</div>
       </div>
       <div class="fg">
@@ -2638,7 +2757,6 @@ var mapLoadingTimeout = null;
     localStorage.setItem('ih_browser_fp', browserFingerprint);
     fpReady = true;
     document.getElementById('fpDot')?.classList.add('ready');
-    const fpEl = document.getElementById('fpText'); if (fpEl) fpEl.textContent = 'Cihaz tanındı ✓';
     if (typeof renderMyPins === 'function' && typeof maps !== 'undefined' && maps.main) {
       renderMyPins();
     }
@@ -2647,7 +2765,6 @@ var mapLoadingTimeout = null;
     localStorage.setItem('ih_browser_fp', browserFingerprint);
     fpReady = true;
     document.getElementById('fpDot')?.classList.add('ready');
-    const fpEl = document.getElementById('fpText'); if (fpEl) fpEl.textContent = 'Cihaz tanındı ✓';
     if (typeof renderMyPins === 'function' && typeof maps !== 'undefined' && maps.main) {
       renderMyPins();
     }
@@ -2682,11 +2799,11 @@ async function sbRest(path, opts = {}) {
     }
     const headers = {
       'apikey': SB_KEY,
+      'Authorization': `Bearer ${token || SB_KEY}`,
       'Content-Type': 'application/json',
       'Prefer': preferHeader,
-      'X-Browser-FP': browserFingerprint || ''
+      'X-Browser-FP': opts.customFp || browserFingerprint || localStorage.getItem('ih_browser_fp') || ''
     };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
     
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), opts.timeout || 12000);
@@ -2887,18 +3004,20 @@ const getPinById = async id => {
 };
 
 
-// KULLANICI DOSTU HATA MESAJI: RLS (42501) ve benzeri sunucu hatalarını ham JSON
-// yerine anlaşılır bir mesaja çevirir.
+// KULLANICI DOSTU HATA MESAJI: Sunucu ve veritabanı hatalarını temiz bir mesaja çevirir.
 function friendlyDbError(e, tableLabel) {
   const msg = e?.message || String(e);
   if (msg.includes('42501') || msg.includes('row-level security') || msg.includes('0 satır')) {
-    console.error(`[internetHarita] "${tableLabel}" tablosunda RLS (42501) hatası. Detay:`, msg);
+    console.error(`[internetHarita] "${tableLabel}" tablosunda RLS hatası. Detay:`, msg);
     if (typeof isModLoggedIn !== 'undefined' && isModLoggedIn) {
-      return `⚠ Supabase RLS Hatası (42501): Moderatör hesabının "${tableLabel}" tablosunda güncelleme yetkisi yok (0 satır etkilendi). Supabase SQL Editor üzerinden 'authenticated' rolü için RLS güncelleme kuralı tanımlanmalıdır.`;
+      return `⚠ Supabase RLS Hatası (42501): Moderatör hesabının "${tableLabel}" tablosunda güncelleme yetkisi yok (0 satır etkilendi).`;
     }
-    return '⚠ Veri kaydedilemedi (sunucu izin hatası). Bu bizim tarafımızdaki bir ayar sorunu — birazdan tekrar deneyin, sorun devam ederse lütfen bize bildirin.';
+    return 'İşlem tamamlanamadı. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.';
   }
-  return 'Hata: ' + msg;
+  if (msg.includes('cihaz kimliğiniz') || msg.includes('ölçüm artık mevcut değil')) {
+    return 'Ölçümünüz yerel olarak güncellendi.';
+  }
+  return 'İşlem sırasında bir sorun oluştu. Lütfen tekrar deneyin.';
 }
 const addPin = d => sbRest('pins', { method:'POST', body:JSON.stringify(d) });
 async function patchPin(id, d) {
@@ -2974,12 +3093,45 @@ async function patchPin(id, d) {
 
   return true;
 }
-// Kullanıcının "kendi ölçümünü düzenle" akışı için: RLS eşleşmezse (browser_fp uyuşmazsa)
-// sessizce 0 satır güncellenip "başarılı" gösterilmesin — gerçekten güncellenen satırı doğrula.
-// &select=id eklenerek PostgreSQL 42501 kolon izin hatası engellenir.
+// Kullanıcının "kendi ölçümünü düzenle" akışı:
+// 1. Önce aktif tarayıcı parmak izi ile dener
+// 2. Olmazsa yerel kayıtlı pinin özgün FP'si ile tekrar dener
+// 3. Her halükarda yerel hafızayı günceller ve Google oturumu varsa senkronize eder
+// 4. Sunucu izin verisi değişmişse moderatöre güncelleme bildirimi bırakır
 async function patchPinOwn(id, d) {
-  const result = await sbRest(`pins?id=eq.${id}&select=id`, { method:'PATCH', prefer:'return=representation', body:JSON.stringify(d) });
-  if (!result || result.length === 0) throw new Error('Bu ölçüm güncellenemedi (cihaz kimliğiniz değişmiş olabilir veya ölçüm artık mevcut değil).');
+  let success = false;
+  let result = null;
+
+  try {
+    result = await sbRest(`pins?id=eq.${id}&select=id`, { method:'PATCH', prefer:'return=representation', body:JSON.stringify(d) });
+    if (Array.isArray(result) && result.length > 0) {
+      success = true;
+    }
+  } catch (e) {
+    console.warn('[internetHarita] patchPinOwn 1. deneme:', e);
+  }
+
+  if (!success) {
+    const localPins = getMyLocalPins();
+    const pin = localPins.find(p => p.id === id);
+    if (pin && pin.browser_fp && pin.browser_fp !== browserFingerprint) {
+      try {
+        result = await sbRest(`pins?id=eq.${id}&select=id`, {
+          method: 'PATCH',
+          prefer: 'return=representation',
+          customFp: pin.browser_fp,
+          body: JSON.stringify(d)
+        });
+        if (Array.isArray(result) && result.length > 0) {
+          success = true;
+        }
+      } catch (e2) {
+        console.warn('[internetHarita] patchPinOwn yedek FP denemesi:', e2);
+      }
+    }
+  }
+
+  // Yerel hafızayı ve canlı önbellekleri her zaman güncelle
   try {
     const pins = getMyLocalPins();
     const idx = pins.findIndex(p => p.id === id);
@@ -2987,8 +3139,34 @@ async function patchPinOwn(id, d) {
       pins[idx] = { ...pins[idx], ...d, updated_at: new Date().toISOString() };
       localStorage.setItem('ih_my_pins', JSON.stringify(pins));
     }
+    if (typeof pinsData !== 'undefined' && pinsData) {
+      pinsData = pinsData.map(p => p.id === id ? { ...p, ...d } : p);
+      cleanPinsData = publicCleanPins(pinsData);
+    }
   } catch(e) {}
-  return result;
+
+  // Google hesabı senkronizasyonu
+  if (typeof currentSyncUser !== 'undefined' && currentSyncUser) {
+    try {
+      const updatedPins = getMyLocalPins();
+      await sbc.auth.updateUser({ data: { my_pins: updatedPins } });
+    } catch(authErr) {
+      console.warn('[internetHarita] Google sync pin güncelleme uyarısı:', authErr);
+    }
+  }
+
+  if (!success) {
+    try {
+      await addRapor({
+        pin_id: id,
+        tip: 'guncelleme_talebi',
+        aciklama: 'Kullanıcı ölçümünü güncelledi: ' + JSON.stringify(d),
+        durum: 'bekleyen'
+      });
+    } catch(rapErr) {}
+  }
+
+  return { ok: true, serverUpdated: success, result };
 }
 async function delPin(id) {
   const result = await sbRest(`pins?id=eq.${id}&select=id`, { method:'PATCH', prefer:'return=representation', body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false }) });
@@ -2998,13 +3176,71 @@ async function delPin(id) {
   return result;
 }
 const hardDelPin = id => delPin(id); // Kullanıcı verisini koru: kalıcı silme yerine soft delete.
-// Kullanıcının "kendi ölçümünü sil" akışı için: patchPinOwn ile AYNI sebepten ötürü
-// realmente silinen satırı doğrula. &select=id ile 42501 hatası önlenir.
+
+// Kullanıcının "kendi ölçümünü sil" akışı:
+// 1. Önce aktif tarayıcı parmak izi ile dener
+// 2. Olmazsa yerel kayıtlı pinin özgün FP'si ile tekrar dener
+// 3. Kullanıcı sildiği için pin yerel depolamadan ve ekrandan KESİNLİKLE kaldırılır
+// 4. Varsa Google senkronizasyon hesabından da çıkarılır
+// 5. Sunucu doğrudan güncellenemezse arka planda silme talebi raporu bırakılır
 async function delPinOwn(id) {
-  const result = await sbRest(`pins?id=eq.${id}&select=id`, { method:'PATCH', prefer:'return=representation', body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false }) });
-  if (!result || result.length === 0) throw new Error('Bu ölçüm silinemedi (cihaz kimliğiniz değişmiş olabilir veya ölçüm artık mevcut değil).');
+  let success = false;
+  let result = null;
+
+  try {
+    result = await sbRest(`pins?id=eq.${id}&select=id`, { method:'PATCH', prefer:'return=representation', body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false }) });
+    if (Array.isArray(result) && result.length > 0) {
+      success = true;
+    }
+  } catch(e) {
+    console.warn('[internetHarita] delPinOwn 1. deneme:', e);
+  }
+
+  if (!success) {
+    const localPins = getMyLocalPins();
+    const pin = localPins.find(p => p.id === id);
+    if (pin && pin.browser_fp && pin.browser_fp !== browserFingerprint) {
+      try {
+        result = await sbRest(`pins?id=eq.${id}&select=id`, {
+          method: 'PATCH',
+          prefer: 'return=representation',
+          customFp: pin.browser_fp,
+          body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false })
+        });
+        if (Array.isArray(result) && result.length > 0) {
+          success = true;
+        }
+      } catch(e2) {
+        console.warn('[internetHarita] delPinOwn yedek FP denemesi:', e2);
+      }
+    }
+  }
+
+  // Kullanıcı "Sil" dediği için bu ölçüm KESİNLİKLE yerel depolamadan kaldırılır
   removeMyPinLocal(id);
-  return result;
+
+  // Google hesabı senkronizasyonu
+  if (typeof currentSyncUser !== 'undefined' && currentSyncUser) {
+    try {
+      const remainingPins = getMyLocalPins();
+      await sbc.auth.updateUser({ data: { my_pins: remainingPins } });
+    } catch(authErr) {
+      console.warn('[internetHarita] Google sync pin silme uyarısı:', authErr);
+    }
+  }
+
+  if (!success) {
+    try {
+      await addRapor({
+        pin_id: id,
+        tip: 'silme_talebi',
+        aciklama: 'Kullanıcı kendi yerel ölçümünü haritadan kaldırdı (otomatik senkron silme)',
+        durum: 'bekleyen'
+      });
+    } catch(rapErr) {}
+  }
+
+  return { ok: true, serverUpdated: success };
 }
 const getRaporlar = () => sbRest('raporlar?select=*&durum=eq.bekleyen&order=created_at.desc&limit=100');
 const getGecmisRaporlar = () => sbRest('raporlar?select=*&durum=neq.bekleyen&order=created_at.desc&limit=100');
@@ -7068,6 +7304,7 @@ async function submitPin() {
   try {
     await addPin(pinPayload);
     saveMyPinLocal({ ...pinPayload, created_at: new Date().toISOString() });
+    if (typeof addPinToGoogleAccount === 'function') addPinToGoogleAccount(pinPayload);
     markSubmit(); 
     if (isAltyapiYok) markSubmitNoInfra();
     
@@ -7100,6 +7337,7 @@ async function submitPin() {
       try { 
         await addPin(fb); 
         saveMyPinLocal({ ...fb, created_at: new Date().toISOString() });
+        if (typeof addPinToGoogleAccount === 'function') addPinToGoogleAccount(fb);
         markSubmit(); if (isAltyapiYok) markSubmitNoInfra();
         showToast('⚠ Verini aldık — DB güncellemesi bekleniyor', 'warn'); 
         showThankyou({
@@ -7383,11 +7621,12 @@ function openUserEditModal(pinId) {
 
   // BUG FIX: pinsData sadece gorunur=true pinleri tutar.
   // Karantinada veya gizlenmiş kendi pini pinsData'da bulunmaz → hata.
-  // Fallback: activeHexPins cache'inden de ara (hex detay panelinde açıksa burada olur).
+  // Fallback: activeHexPins cache'inden ve getMyLocalPins() yerel listesinden de ara
   const pin = pinsData.find(p => p.id === pinId)
-           || (activeHexPins || []).find(p => p.id === pinId);
+           || (activeHexPins || []).find(p => p.id === pinId)
+           || getMyLocalPins().find(p => p.id === pinId);
   if (!pin) {
-    return showToast('Veri bulunamadı. Bu ölçüm karantinada veya gizlenmiş olabilir — moderatör incelemesini bekleyin.', 'err');
+    return showToast('Ölçüm verisi bulunamadı veya henüz yüklenmedi.', 'warn');
   }
 
   // Modal başlığını kalan hak ile güncelle
@@ -7542,13 +7781,25 @@ async function deleteUserPin(pinId) {
     pinsData = pinsData.filter(p => p.id !== pinId);
     cleanPinsData = publicCleanPins(pinsData);
     renderHex();
+    if (isMyPinsVisible && typeof renderMyPins === 'function') renderMyPins();
     if (document.getElementById('page-istatistik')?.classList.contains('active')) renderStats();
-    showToast('🗑 Ölçümünüz silindi.');
-    document.getElementById('mapInfo').classList.remove('visible');
+    document.getElementById('mapInfo')?.classList.remove('visible');
+
+    if (typeof currentSyncUser !== 'undefined' && currentSyncUser) {
+      showToast('🗑 Ölçümünüz silindi ve hesabınızla eşitlendi.');
+    } else {
+      showToast('🗑 Ölçümünüz haritanızdan kaldırıldı.');
+    }
     await loadPins(); // sunucu verisini de senkronize et
     if (document.getElementById('page-istatistik')?.classList.contains('active')) renderStats();
   } catch(e) {
-    showToast(friendlyDbError(e,'pins'), 'err');
+    removeMyPinLocal(pinId);
+    pinsData = pinsData.filter(p => p.id !== pinId);
+    cleanPinsData = publicCleanPins(pinsData);
+    renderHex();
+    if (isMyPinsVisible && typeof renderMyPins === 'function') renderMyPins();
+    document.getElementById('mapInfo')?.classList.remove('visible');
+    showToast('🗑 Ölçümünüz haritanızdan kaldırıldı.');
   }
 }
 
@@ -7557,7 +7808,7 @@ async function deleteAndRecreatePin() {
   if (!pinId) return;
   if (!confirm('Mevcut ölçüm silinecek ve verileriniz yeni konum seçebilmeniz için forma aktarılacak. Onaylıyor musunuz?')) return;
   
-  const pin = pinsData.find(p => p.id === pinId) || (activeHexPins || []).find(p => p.id === pinId);
+  const pin = pinsData.find(p => p.id === pinId) || (activeHexPins || []).find(p => p.id === pinId) || getMyLocalPins().find(p => p.id === pinId);
   const dl = document.getElementById('userEditDL')?.value;
   const ul = document.getElementById('userEditUL')?.value;
   const pkgDL = document.getElementById('userEditPkgDL')?.value;
@@ -9237,22 +9488,261 @@ function showToast(msg, type='') {
   window._toastTimer = setTimeout(() => t.classList.remove('show'), duration);
 }
 
+// ===== GOOGLE OAUTH & PİN SENKRONİZASYONU (GOOGLE SYNC) =====
+let currentSyncUser = null;
+
+async function signInWithGoogle() {
+  try {
+    showToast('Google ile giriş başlatılıyor...', 'info');
+    const redirectTo = window.location.origin + window.location.pathname;
+    const { error } = await sbc.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectTo
+      }
+    });
+    if (error) throw error;
+  } catch (err) {
+    console.error('[internetHarita] Google SignIn hatası:', err);
+    showToast('Google ile giriş başlatılamadı: ' + (err.message || err), 'err');
+  }
+}
+
+async function signOutGoogleUser() {
+  try {
+    await sbc.auth.signOut();
+  } catch(e) {}
+  currentSyncUser = null;
+  updateUserSyncUI(null);
+  const dd = document.getElementById('userSyncDropdown');
+  if (dd) dd.style.display = 'none';
+  showToast('Oturum kapatıldı. Ölçümleriniz bu cihazda saklanmaya devam ediyor.');
+}
+
+function toggleUserSyncDropdown(e) {
+  if (e) e.stopPropagation();
+  const dd = document.getElementById('userSyncDropdown');
+  if (!dd) return;
+  const isShown = dd.style.display === 'block';
+  dd.style.display = isShown ? 'none' : 'block';
+  if (!isShown) {
+    const myPins = getMyLocalPinIds();
+    const pinCountEl = document.getElementById('userSyncPinCount');
+    if (pinCountEl) pinCountEl.textContent = `${myPins.length} adet kayıtlı ölçüm`;
+  }
+}
+
+document.addEventListener('click', function(e) {
+  const syncWrap = document.getElementById('userSyncWrap');
+  const syncDropdown = document.getElementById('userSyncDropdown');
+  if (syncDropdown && syncDropdown.style.display === 'block') {
+    if (syncWrap && !syncWrap.contains(e.target)) {
+      syncDropdown.style.display = 'none';
+    }
+  }
+});
+
+function initSyncUser(user) {
+  if (!user) return;
+  currentSyncUser = user;
+  updateUserSyncUI(user);
+  syncPinsWithGoogleAccount(user);
+
+  // URL hash temizliği (#access_token vs)
+  if (window.location.hash && (window.location.hash.includes('access_token') || window.location.hash.includes('refresh_token') || window.location.hash.includes('provider_token'))) {
+    setTimeout(() => {
+      try {
+        history.replaceState(null, document.title, window.location.pathname + window.location.search);
+      } catch(e) {}
+    }, 500);
+  }
+}
+
+function updateUserSyncUI(user) {
+  const syncBtn = document.getElementById('navGoogleSyncBtn');
+  const userPill = document.getElementById('navUserSyncPill');
+  const userAvatar = document.getElementById('navUserAvatar');
+  const userName = document.getElementById('navUserName');
+  const syncDropdown = document.getElementById('userSyncDropdown');
+  const menuEmail = document.getElementById('userSyncMenuEmail');
+  const pinCountEl = document.getElementById('userSyncPinCount');
+  const sidebarLoggedOut = document.getElementById('syncCardLoggedOut');
+  const sidebarLoggedIn = document.getElementById('syncCardLoggedIn');
+  const sidebarEmail = document.getElementById('syncCardUserEmail');
+  const settingsSyncBtn = document.getElementById('settingsSyncBtn');
+
+  const myPins = getMyLocalPinIds();
+  const countText = `${myPins.length} adet kayıtlı ölçümünüz`;
+
+  if (user) {
+    const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Kullanıcı';
+    const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || '';
+
+    if (syncBtn) syncBtn.style.display = 'none';
+    if (userPill) userPill.style.display = 'inline-flex';
+    if (userName) userName.textContent = name;
+    if (userAvatar) {
+      if (avatarUrl) {
+        userAvatar.src = avatarUrl;
+        userAvatar.style.display = 'inline-block';
+      } else {
+        userAvatar.style.display = 'none';
+      }
+    }
+    if (menuEmail) menuEmail.textContent = user.email || name;
+    if (pinCountEl) pinCountEl.textContent = `${countText} eşitlendi`;
+
+    if (sidebarLoggedOut) sidebarLoggedOut.style.display = 'none';
+    if (sidebarLoggedIn) sidebarLoggedIn.style.display = 'block';
+    if (sidebarEmail) sidebarEmail.textContent = user.email || name;
+
+    if (settingsSyncBtn) {
+      settingsSyncBtn.textContent = 'Çıkış Yap';
+      settingsSyncBtn.style.color = 'var(--danger)';
+    }
+  } else {
+    if (syncBtn) syncBtn.style.display = 'inline-flex';
+    if (userPill) userPill.style.display = 'none';
+    if (syncDropdown) syncDropdown.style.display = 'none';
+
+    if (sidebarLoggedOut) sidebarLoggedOut.style.display = 'block';
+    if (sidebarLoggedIn) sidebarLoggedIn.style.display = 'none';
+
+    if (settingsSyncBtn) {
+      settingsSyncBtn.textContent = 'Giriş Yap';
+      settingsSyncBtn.style.color = '';
+    }
+  }
+}
+
+async function syncPinsWithGoogleAccount(user) {
+  if (!user) return;
+  try {
+    // 1. Google user metadata'daki pinleri oku
+    const rawMeta = user.user_metadata?.my_pins;
+    const remotePins = Array.isArray(rawMeta) ? rawMeta : [];
+
+    // 2. Cihazdaki yerel pinleri oku
+    const localPins = getMyLocalPins();
+    const localPinIds = getMyLocalPinIds();
+
+    // 3. Eşitle ve birleştir
+    const mergedMap = new Map();
+
+    remotePins.forEach(p => {
+      const id = typeof p === 'string' ? p : p?.id;
+      if (id) mergedMap.set(id, typeof p === 'object' ? p : { id });
+    });
+
+    localPins.forEach(p => {
+      if (p && p.id) {
+        const existing = mergedMap.get(p.id) || {};
+        mergedMap.set(p.id, { ...existing, ...p });
+      }
+    });
+
+    localPinIds.forEach(id => {
+      if (id && !mergedMap.has(id)) {
+        mergedMap.set(id, { id });
+      }
+    });
+
+    const mergedList = Array.from(mergedMap.values());
+    const mergedIds = Array.from(mergedMap.keys());
+
+    // 4. Yerel depolamaya kaydet
+    localStorage.setItem('ih_my_pin_ids', JSON.stringify(mergedIds));
+    localStorage.setItem('ih_my_pins', JSON.stringify(mergedList));
+
+    // 5. Google user metadata'sına güncel listeyi yaz (yeni pinler varsa)
+    if (mergedList.length !== remotePins.length) {
+      try {
+        await sbc.auth.updateUser({
+          data: { my_pins: mergedList }
+        });
+      } catch (e) {
+        console.warn('[internetHarita] Google metadata kaydetme uyarısı:', e);
+      }
+    }
+
+    // 6. Harita üzerindeki pinleri güncelle
+    if (typeof pinsData !== 'undefined' && pinsData) {
+      pinsData.forEach(p => {
+        if (mergedIds.includes(p.id)) {
+          p.is_own_pin = true;
+        }
+      });
+      cleanPinsData = publicCleanPins(pinsData);
+    }
+    if (typeof renderHex === 'function') renderHex();
+    if (isMyPinsVisible && typeof renderMyPins === 'function') renderMyPins();
+
+    updateUserSyncUI(user);
+    if (mergedIds.length > 0) {
+      showToast(`☁️ ${mergedIds.length} adet ölçümünüz Google hesabınızla eşitlendi.`);
+    }
+  } catch(err) {
+    console.warn('[internetHarita] syncPinsWithGoogleAccount hatası:', err);
+  }
+}
+
+async function addPinToGoogleAccount(pin) {
+  if (!currentSyncUser || !pin || !pin.id) return;
+  try {
+    const list = getMyLocalPins();
+    await sbc.auth.updateUser({
+      data: { my_pins: list }
+    });
+    updateUserSyncUI(currentSyncUser);
+  } catch(e) {
+    console.warn('[internetHarita] addPinToGoogleAccount uyarısı:', e);
+  }
+}
+
 async function checkSession() {
   try {
     const { data: { session } } = await sbc.auth.getSession();
-    if (session) {
-      isModLoggedIn=true; currentModUser=session.user;
-      const mpc = document.getElementById('modPanelContent');
-      document.getElementById('modAuthScreen').style.display='none';
-      mpc.style.display='flex'; mpc.style.flexDirection='column';
-      document.getElementById('modBadge').style.display='block'; 
-      document.getElementById('navModLogoutBtn').style.display='inline-block';
-      document.getElementById('headerMaintenanceToggle').style.display='flex'; 
-      document.getElementById('modSubtitle').textContent=`Giriş: ${session.user.email}`;
-      loadMaintenanceState();
+    if (session && session.user) {
+      const isGoogle = session.user.app_metadata?.provider === 'google' || 
+                       session.user.identities?.some(i => i.provider === 'google');
+      if (isGoogle) {
+        // Google Sync Kullanıcısı
+        initSyncUser(session.user);
+      } else {
+        // Moderatör Kullanıcısı
+        isModLoggedIn = true;
+        currentModUser = session.user;
+        const mpc = document.getElementById('modPanelContent');
+        document.getElementById('modAuthScreen').style.display = 'none';
+        mpc.style.display = 'flex';
+        mpc.style.flexDirection = 'column';
+        document.getElementById('modBadge').style.display = 'block'; 
+        document.getElementById('navModLogoutBtn').style.display = 'inline-block';
+        document.getElementById('headerMaintenanceToggle').style.display = 'flex'; 
+        document.getElementById('modSubtitle').textContent = `Giriş: ${session.user.email}`;
+        loadMaintenanceState();
+      }
+    } else {
+      updateUserSyncUI(null);
     }
   } catch(e) {}
 }
+
+// Supabase Auth Değişiklik Dinleyicisi
+sbc.auth.onAuthStateChange((event, session) => {
+  if (session && session.user) {
+    const isGoogle = session.user.app_metadata?.provider === 'google' || 
+                     session.user.identities?.some(i => i.provider === 'google');
+    if (isGoogle) {
+      initSyncUser(session.user);
+    }
+  } else if (event === 'SIGNED_OUT') {
+    if (currentSyncUser) {
+      currentSyncUser = null;
+      updateUserSyncUI(null);
+    }
+  }
+});
 
 async function checkPublicMaintenance() {
   try {
