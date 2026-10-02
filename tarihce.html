@@ -111,6 +111,41 @@
     html.light .footer-cta p { color: var(--text2); }
     html.light .btn-cta-lg { color: #ffffff !important; background: linear-gradient(135deg, var(--accent), var(--accent2)); box-shadow: 0 4px 16px rgba(0,136,204,0.3); }
 
+    /* Light Tema Narrator Stilleri */
+    html.light .narrator-dock {
+      background: rgba(255, 255, 255, 0.96);
+      border-color: rgba(0, 136, 204, 0.35);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.12), 0 0 20px rgba(0, 136, 204, 0.12);
+    }
+    html.light .timeline-item.narrating .timeline-card {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 22px rgba(0, 136, 204, 0.3), 0 10px 30px rgba(0,0,0,0.08) !important;
+    }
+    html.light .card-speak-btn {
+      background: rgba(0, 136, 204, 0.08);
+      border-color: rgba(0, 136, 204, 0.25);
+      color: var(--accent);
+    }
+    html.light .card-speak-btn:hover {
+      background: rgba(0, 136, 204, 0.16);
+      border-color: var(--accent);
+    }
+    html.light .card-speak-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+    html.light .hero-voice-btn {
+      background: linear-gradient(135deg, rgba(0, 136, 204, 0.12), rgba(168, 85, 247, 0.12));
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    html.light .narrator-current-title { color: var(--text); }
+    html.light .narrator-btn { background: var(--surface2); border-color: var(--border); color: var(--text); }
+    html.light .narrator-btn-play { color: #fff; }
+    html.light .narrator-speed-group { background: var(--surface2); border-color: var(--border); }
+    html.light .narrator-speed-btn { color: var(--text2); }
+    html.light .narrator-speed-btn.active { background: var(--accent); color: #fff; }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: auto; }
     body {
@@ -312,6 +347,238 @@
     .autoplay-btn:hover {
       box-shadow: 0 0 12px rgba(0,212,255,0.4);
       transform: translateY(-1px);
+    }
+
+    /* SESLİ ANLATICI (NARRATOR) STILLERI */
+    .timeline-item.narrating .timeline-card {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 28px var(--accent-glow), 0 12px 35px rgba(0,0,0,0.5) !important;
+    }
+    .timeline-item.narrating .timeline-node {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 20px var(--accent) !important;
+      transform: translate(-50%, -50%) scale(1.22) !important;
+    }
+
+    .card-speak-btn {
+      background: rgba(0, 212, 255, 0.08);
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      padding: 3px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all .2s;
+    }
+    .card-speak-btn:hover {
+      background: rgba(0, 212, 255, 0.18);
+      border-color: var(--accent);
+      box-shadow: 0 0 10px rgba(0, 212, 255, 0.25);
+      transform: translateY(-1px);
+    }
+    .card-speak-btn.active {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .hero-voice-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, rgba(0, 212, 255, 0.18), rgba(168, 85, 247, 0.2));
+      border: 1px solid var(--accent);
+      color: var(--text);
+      font-weight: 700;
+      font-size: 13.5px;
+      padding: 10px 22px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all .25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 18px rgba(0, 212, 255, 0.2);
+    }
+    .hero-voice-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 26px rgba(0, 212, 255, 0.4);
+      background: linear-gradient(135deg, rgba(0, 212, 255, 0.28), rgba(168, 85, 247, 0.3));
+    }
+    .hero-voice-btn .pulse-mic {
+      display: inline-block;
+      animation: pulseMic 1.8s infinite;
+    }
+    @keyframes pulseMic {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.25); }
+    }
+
+    /* YÜZEN SES ÇALAR (FLOATING DOCK) */
+    .narrator-dock {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(140%);
+      z-index: 999;
+      width: min(840px, calc(100vw - 28px));
+      background: rgba(13, 21, 32, 0.94);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(0, 212, 255, 0.32);
+      border-radius: 14px;
+      padding: 9px 16px;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7), 0 0 25px rgba(0, 212, 255, 0.15);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .narrator-dock.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .narrator-dock-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      width: 100%;
+    }
+    .narrator-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      flex: 1;
+    }
+    .narrator-wave {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .wave-bar {
+      width: 3px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: height 0.15s ease;
+    }
+    .narrator-dock.speaking .wave-bar:nth-child(1) { animation: wavePulse 0.8s ease-in-out infinite; }
+    .narrator-dock.speaking .wave-bar:nth-child(2) { animation: wavePulse 0.9s ease-in-out 0.2s infinite; }
+    .narrator-dock.speaking .wave-bar:nth-child(3) { animation: wavePulse 0.75s ease-in-out 0.35s infinite; }
+    .narrator-dock.speaking .wave-bar:nth-child(4) { animation: wavePulse 0.85s ease-in-out 0.1s infinite; }
+    @keyframes wavePulse {
+      0%, 100% { height: 4px; }
+      50% { height: 18px; }
+    }
+    .narrator-text-wrap {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .narrator-badge {
+      font-size: 9.5px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
+    .narrator-current-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.35;
+    }
+    .narrator-dock-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .narrator-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .narrator-btn:hover {
+      background: var(--surface3);
+      color: var(--accent);
+      border-color: rgba(0, 212, 255, 0.4);
+      transform: scale(1.05);
+    }
+    .narrator-btn-play {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #000;
+      border: none;
+      font-weight: 800;
+      font-size: 15px;
+      box-shadow: 0 2px 10px var(--accent-glow);
+    }
+    .narrator-btn-play:hover {
+      transform: scale(1.08);
+      box-shadow: 0 4px 16px var(--accent-glow);
+      color: #000;
+    }
+    .narrator-speed-group {
+      display: flex;
+      align-items: center;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .narrator-speed-btn {
+      background: transparent;
+      border: none;
+      color: var(--text2);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 6px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .narrator-speed-btn:hover {
+      color: var(--text);
+    }
+    .narrator-speed-btn.active {
+      background: var(--accent);
+      color: #000;
+      font-weight: 800;
+    }
+    .narrator-btn-close {
+      color: var(--text3);
+      font-size: 14px;
+      margin-left: 2px;
+    }
+    .narrator-btn-close:hover {
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.4);
     }
 
     /* HERO */
@@ -755,6 +1022,38 @@
       .card-art { height: 115px; margin: 6px 0 10px; }
       .art-svg { max-height: 105px; max-width: 240px; }
       .hero-journey { padding: 40px 16px 20px; }
+
+      /* Mobil Narrator */
+      .narrator-dock {
+        bottom: 12px;
+        width: calc(100vw - 16px);
+        padding: 8px 10px;
+        border-radius: 12px;
+      }
+      .narrator-dock-inner {
+        gap: 8px;
+      }
+      .narrator-current-title {
+        font-size: 11.5px;
+        max-width: 140px;
+      }
+      .narrator-speed-group {
+        display: none;
+      }
+      .narrator-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 11px;
+      }
+      .narrator-btn-play {
+        width: 32px;
+        height: 32px;
+        font-size: 13px;
+      }
+      .hero-voice-btn {
+        font-size: 12px;
+        padding: 8px 16px;
+      }
     }
   </style>
 </head>
@@ -821,6 +1120,9 @@
       </div>
 
       <div class="hud-controls">
+        <button type="button" class="autoplay-btn" id="narratorHudBtn" onclick="toggleNarrator()">
+          <span id="narratorHudIcon">🎙️</span> <span id="narratorHudText">Sesli Dinle</span>
+        </button>
         <button type="button" class="autoplay-btn" id="autoPlayBtn" onclick="toggleAutoScroll()">
           <span id="autoPlayIcon">▶️</span> <span id="autoPlayText">Otomatik Oynat</span>
         </button>
@@ -833,6 +1135,12 @@
     <div class="hero-badge">⚡ İNTERAKTİF ZAMAN YOLCULUĞU</div>
     <h1>İnternetin Dünyada ve Türkiye'deki Yolculuğu</h1>
     <p>50 Kbps'lik ilk deneysel paketten 1000 Mbps simetrik ev fiberlerine ve uzaydaki Starlink uydularına: İnternetin nasıl doğduğunu ve Türkiye'ye nasıl yayıldığını keşfedin.</p>
+    <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
+      <button type="button" class="hero-voice-btn" onclick="startNarrator(0)">
+        <span class="pulse-mic">🎙️</span>
+        <span>Tarihçeyi Sesli Dinle (Rehber)</span>
+      </button>
+    </div>
     <div class="scroll-hint" onclick="window.scrollBy({top: window.innerHeight * 0.7, behavior: 'smooth'})">
       <span>AŞAĞI KAYDIR VE GEÇMİŞİ BAŞLAT</span>
       <span>▼</span>
@@ -850,8 +1158,14 @@
       <div class="timeline-node">⚡</div>
       <article class="timeline-card">
         <div class="card-top">
-          <span class="year-tag">1969</span>
-          <span class="scope-pill scope-world">🌍 Dünya</span>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="year-tag">1969</span>
+            <span class="scope-pill scope-world">🌍 Dünya</span>
+          </div>
+          <button type="button" class="card-speak-btn" onclick="speakEraByIndex(0)" title="Bu dönemi sesli dinle" aria-label="Bu dönemi sesli dinle">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <span>Dinle</span>
+          </button>
         </div>
         <h2 class="card-title">İlk Kıvılcım: ARPANET ve Tarihin İlk Mesajı</h2>
         <p class="card-desc">
@@ -875,8 +1189,14 @@
       <div class="timeline-node">🌐</div>
       <article class="timeline-card">
         <div class="card-top">
-          <span class="year-tag">1 Ocak 1983</span>
-          <span class="scope-pill scope-world">🌍 Dünya</span>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="year-tag">1 Ocak 1983</span>
+            <span class="scope-pill scope-world">🌍 Dünya</span>
+          </div>
+          <button type="button" class="card-speak-btn" onclick="speakEraByIndex(1)" title="Bu dönemi sesli dinle" aria-label="Bu dönemi sesli dinle">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <span>Dinle</span>
+          </button>
         </div>
         <h2 class="card-title">İnternetin Ortak Dili Doğuyor: TCP/IP</h2>
         <p class="card-desc">
@@ -894,8 +1214,14 @@
       <div class="timeline-node">🕸️</div>
       <article class="timeline-card">
         <div class="card-top">
-          <span class="year-tag">1989 - 1991</span>
-          <span class="scope-pill scope-world">🌍 Dünya</span>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="year-tag">1989 - 1991</span>
+            <span class="scope-pill scope-world">🌍 Dünya</span>
+          </div>
+          <button type="button" class="card-speak-btn" onclick="speakEraByIndex(2)" title="Bu dönemi sesli dinle" aria-label="Bu dönemi sesli dinle">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <span>Dinle</span>
+          </button>
         </div>
         <h2 class="card-title">Ağın Örümceği: World Wide Web (WWW)</h2>
         <p class="card-desc">
@@ -916,8 +1242,14 @@
       <div class="timeline-node">🇹🇷</div>
       <article class="timeline-card" style="border-left: 3px solid #ef4444;">
         <div class="card-top">
-          <span class="year-tag year-tag-tr">12 Nisan 1993</span>
-          <span class="scope-pill scope-tr">🇹🇷 Türkiye</span>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="year-tag year-tag-tr">12 Nisan 1993</span>
+            <span class="scope-pill scope-tr">🇹🇷 Türkiye</span>
+          </div>
+          <button type="button" class="card-speak-btn" onclick="speakEraByIndex(3)" title="Bu dönemi sesli dinle" aria-label="Bu dönemi sesli dinle">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <span>Dinle</span>
+          </button>
         </div>
         <h2 class="card-title">Türkiye'nin İlk 'Ping'i: ODTÜ Sistem Odası</h2>
         <p class="card-desc">
@@ -940,8 +1272,14 @@
       <div class="timeline-node">🏢</div>
       <article class="timeline-card">
         <div class="card-top">
-          <span class="year-tag">1996</span>
-          <span class="scope-pill scope-tr">🇹🇷 Türkiye</span>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="year-tag">1996</span>
+            <span class="scope-pill scope-tr">🇹🇷 Türkiye</span>
+          </div>
+          <button type="button" class="card-speak-btn" onclick="speakEraByIndex(4)" title="Bu dönemi sesli dinle" aria-label="Bu dönemi sesli dinle">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <span>Dinle</span>
+          </button>
         </div>
         <h2 class="card-title">TURNET ile İnternet Halka ve Şirketlere Açılıyor</h2>
         <p class="card-desc">
@@ -959,8 +1297,14 @@
       <div class="timeline-node">📞</div>
       <article class="timeline-card">
         <div class="card-top">
-          <span class="year-tag">1999 - 2001</span>
-          <span class="scope-pill scope-tr">🇹🇷 Türkiye &amp; Dünya</span>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="year-tag">1999 - 2001</span>
+            <span class="scope-pill scope-tr">🇹🇷 Türkiye &amp; Dünya</span>
+          </div>
+          <button type="button" class="card-speak-btn" onclick="speakEraByIndex(5)" title="Bu dönemi sesli dinle" aria-label="Bu dönemi sesli dinle">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <span>Dinle</span>
+          </button>
         </div>
         <h2 class="card-title">Efsane Çevirmeli Ağ (Dial-up 56K) ve 146 Dönemi</h2>
         <p class="card-desc">
@@ -994,8 +1338,14 @@
       <div class="timeline-node">⚡</div>
       <article class="timeline-card">
         <div class="card-top">
-          <span class="year-tag">2004</span>
-          <span class="scope-pill scope-tr">🇹🇷 Türkiye</span>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="year-tag">2004</span>
+            <span class="scope-pill scope-tr">🇹🇷 Türkiye</span>
+          </div>
+          <button type="button" class="card-speak-btn" onclick="speakEraByIndex(6)" title="Bu dönemi sesli dinle" aria-label="Bu dönemi sesli dinle">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <span>Dinle</span>
+          </button>
         </div>
         <h2 class="card-title">Büyük Kırılma: ADSL ve Sabit Ücretli İnternet</h2>
         <p class="card-desc">
@@ -1013,8 +1363,14 @@
       <div class="timeline-node">📶</div>
       <article class="timeline-card">
         <div class="card-top">
-          <span class="year-tag">2005 - 2006</span>
-          <span class="scope-pill scope-world">🌍 Dünya &amp; Türkiye</span>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="year-tag">2005 - 2006</span>
+            <span class="scope-pill scope-world">🌍 Dünya &amp; Türkiye</span>
+          </div>
+          <button type="button" class="card-speak-btn" onclick="speakEraByIndex(7)" title="Bu dönemi sesli dinle" aria-label="Bu dönemi sesli dinle">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <span>Dinle</span>
+          </button>
         </div>
         <h2 class="card-title">Kablolardan Kurtuluş: Wi-Fi ve Kablosuz Özgürlük</h2>
         <p class="card-desc">
@@ -1038,8 +1394,14 @@
       <div class="timeline-node">📱</div>
       <article class="timeline-card">
         <div class="card-top">
-          <span class="year-tag">2008 - 2009</span>
-          <span class="scope-pill scope-tr">🇹🇷 Türkiye</span>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="year-tag">2008 - 2009</span>
+            <span class="scope-pill scope-tr">🇹🇷 Türkiye</span>
+          </div>
+          <button type="button" class="card-speak-btn" onclick="speakEraByIndex(8)" title="Bu dönemi sesli dinle" aria-label="Bu dönemi sesli dinle">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <span>Dinle</span>
+          </button>
         </div>
         <h2 class="card-title">3G ile Cepten İnternet ve Uydunet (Kablonet)</h2>
         <p class="card-desc">
@@ -1057,8 +1419,14 @@
       <div class="timeline-node">💡</div>
       <article class="timeline-card">
         <div class="card-top">
-          <span class="year-tag">2011 - 2016</span>
-          <span class="scope-pill scope-tr">🇹🇷 Türkiye</span>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="year-tag">2011 - 2016</span>
+            <span class="scope-pill scope-tr">🇹🇷 Türkiye</span>
+          </div>
+          <button type="button" class="card-speak-btn" onclick="speakEraByIndex(9)" title="Bu dönemi sesli dinle" aria-label="Bu dönemi sesli dinle">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <span>Dinle</span>
+          </button>
         </div>
         <h2 class="card-title">Camdan Işık Hızı: Evlere Kadar Fiber ve 4.5G</h2>
         <p class="card-desc">
@@ -1076,8 +1444,14 @@
       <div class="timeline-node">🚀</div>
       <article class="timeline-card" style="border: 1px solid var(--accent); box-shadow: 0 0 25px rgba(0,212,255,0.15);">
         <div class="card-top">
-          <span class="year-tag year-tag-now">GÜNÜMÜZ &amp; GELECEK</span>
-          <span class="scope-pill scope-now">⚡ YENİ NESİL</span>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="year-tag year-tag-now">GÜNÜMÜZ &amp; GELECEK</span>
+            <span class="scope-pill scope-now">⚡ YENİ NESİL</span>
+          </div>
+          <button type="button" class="card-speak-btn" onclick="speakEraByIndex(10)" title="Bu dönemi sesli dinle" aria-label="Bu dönemi sesli dinle">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <span>Dinle</span>
+          </button>
         </div>
         <h2 class="card-title">1000 Mbps Fiber, Starlink ve internetHarita</h2>
         <p class="card-desc">
@@ -1099,6 +1473,36 @@
       <a href="/#pin" class="btn-cta-lg">📍 Deneyimini Haritaya Ekle</a>
     </div>
   </div>
+
+  <!-- YÜZEN SESLİ ANLATICI OYNATICI (FLOATING NARRATOR DOCK) -->
+  <aside class="narrator-dock" id="narratorDock" role="region" aria-label="Sesli Anlatıcı Çaları">
+    <div class="narrator-dock-inner">
+      <div class="narrator-info">
+        <div class="narrator-wave" id="narratorWave">
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+        </div>
+        <div class="narrator-text-wrap">
+          <span class="narrator-badge">🎙️ SESLİ ANLATICI</span>
+          <span class="narrator-current-title" id="narratorCurrentTitle">1969 · İlk Kıvılcım: ARPANET</span>
+        </div>
+      </div>
+
+      <div class="narrator-dock-controls">
+        <button type="button" class="narrator-btn" onclick="prevEra()" title="Önceki Dönem" aria-label="Önceki Dönem">⏮</button>
+        <button type="button" class="narrator-btn narrator-btn-play" id="narratorPlayPauseBtn" onclick="toggleNarratorPlayPause()" title="Oynat / Duraklat" aria-label="Oynat / Duraklat">⏸</button>
+        <button type="button" class="narrator-btn" onclick="nextEra()" title="Sonraki Dönem" aria-label="Sonraki Dönem">⏭</button>
+        <div class="narrator-speed-group">
+          <button type="button" class="narrator-speed-btn active" onclick="setNarratorSpeed(1.0, this)">1x</button>
+          <button type="button" class="narrator-speed-btn" onclick="setNarratorSpeed(1.25, this)">1.25x</button>
+          <button type="button" class="narrator-speed-btn" onclick="setNarratorSpeed(1.5, this)">1.5x</button>
+        </div>
+        <button type="button" class="narrator-btn narrator-btn-close" onclick="stopNarrator()" title="Sesli Anlatımı Kapat" aria-label="Kapat">✕</button>
+      </div>
+    </div>
+  </aside>
 
   <script>
     // ==========================================
@@ -1513,6 +1917,296 @@
         if (t === 'light' && btn) btn.textContent = '🌙';
       } catch(e) {}
     })();
+
+    // ==========================================
+    // 7. İNTERAKTİF SESLİ ANLATICI REHBER (SPEECH SYNTHESIS ENGINE)
+    // ==========================================
+    const NARRATION_SCRIPTS = [
+      {
+        year: '1969',
+        title: 'ARPANET ve İlk Mesaj',
+        text: "1969 yılı: İnternetin ilk kıvılcımı ARPANET. Kaliforniya Üniversitesi ile Stanford arasında tarihin ilk bilgisayar ağı kuruldu. Araştırmacılar 'LOGIN' yazmak isterken sistem ilk iki harften sonra çöktü ve tarihin ilk mesajı istemsizce 'LO' oldu."
+      },
+      {
+        year: '1983',
+        title: 'TCP/IP Ortak Protokolü',
+        text: "1983 yılı: İnternetin ortak dili TCP/IP doğuyor. Farklı marka ve modeldeki bilgisayarların birbirleriyle hatasız konuşmasını sağlayan bu kurallar, bugün cep telefonunuzdan evinizdeki modeme kadar her cihazın temel iletişim dilidir."
+      },
+      {
+        year: '1991',
+        title: 'World Wide Web (WWW)',
+        text: "1991 yılı: World Wide Web yani web sayfaları çağı. CERN laboratuvarında Tim Berners-Lee tarafından geliştirilen web sayfaları ve tıklanabilir bağlantılar, siyah ekranlı komut satırlarını geride bırakıp interneti tüm insanlığa açtı."
+      },
+      {
+        year: '1993',
+        title: "Türkiye'nin İlk Bağlantısı: ODTÜ",
+        text: "12 Nisan 1993: Türkiye'nin ilk internet bağlantısı. ODTÜ Bilgi İşlem Daire Başkanlığı üzerinden PTT'den kiralanan 64 kilobitlik hatla Washington ağına ilk sinyal başarıyla iletildi. Türkiye'nin ilk tescil edilen alan adı metu.edu.tr oldu."
+      },
+      {
+        year: '1996',
+        title: 'TURNET ve Ticari İnternet',
+        text: "1996 yılı: TURNET omurgasıyla internet halka açılıyor. Üniversite sınırlarını aşan internet ihtiyacı için Türk Telekom ulusal omurgayı kurdu. İstanbul, Ankara ve İzmir santralleri üzerinden ilk ticari internet abonelikleri satılmaya başlandı."
+      },
+      {
+        year: '2000',
+        title: '56K Çevirmeli Ağ ve 146',
+        text: "2000 yılı: Efsane 56K çevirmeli ağ ve 146 dönemi. Sabit ev telefonuna takılan modemlerin çıkardığı o unutulmaz cızırtılı sesler, internetteyken meşgul çalan telefonlar ve gece yarısı indirimli tarifelerle Türkiye kitleler halinde internetle tanıştı."
+      },
+      {
+        year: '2004',
+        title: 'ADSL Devrimi',
+        text: "2004 yılı: Büyük kırılma, ADSL devrimi. Türk Telekom'un ADSL hizmetini başlatmasıyla telefon hattı meşgul olmadan kesintisiz internet hayatımıza girdi. 256 kilobit hızlar, MSN Messenger ve forumlar bir neslin hayatını değiştirdi."
+      },
+      {
+        year: '2006',
+        title: 'Wi-Fi ve Kablosuz Özgürlük',
+        text: "2006 yılı: Kablolardan kurtuluş ve Wi-Fi çağı. Evin içine çekilen metrelerce mavi kablolar yerini 54 megabitlik kablosuz modemlere bıraktı. İnternet havadan akmaya başladı ve kafelerde 'Wi-Fi şifresi nedir?' sorma kültürü doğdu."
+      },
+      {
+        year: '2009',
+        title: '3G Mobil İnternet ve Kablonet',
+        text: "2009 yılı: 3G ile mobilden internet ve Kablonet. Türkiye 3G şebekesine geçti; cep telefonlarından görüntülü görüşme ve hızlı mobil veri başladı. Evlerde ise televizyon kablosundan gelen internetle 8 megabit hızlara ulaşıldı."
+      },
+      {
+        year: '2016',
+        title: 'Evlere Fiber ve 4.5G',
+        text: "2016 yılı: Işık hızında Fiber ve 4.5G. Binalara kadar uzanan fiber optik cam kablolar ve 4.5G mobil şebeke sayesinde 100 megabit üzeri hızlar hayatımızın parçası oldu. 4K videolar ve kesintisiz online oyun kültürü başladı."
+      },
+      {
+        year: '2026',
+        title: 'Gigabit Fiber, Starlink ve internetHarita',
+        text: "Günümüz ve gelecek: 1000 megabit Gigabit fiberler, uzaydan internet sunan Starlink uyduları ve internetHarita. Artık kullanıcılar servis sağlayıcı vaatlerine değil, platformumuzdaki gerçek kullanıcı hız ve mahalle karnelerine bakarak karar veriyor."
+      }
+    ];
+
+    let narratorCurrentIdx = -1;
+    let isNarratorPlaying = false;
+    let isNarratorPaused = false;
+    let narratorSpeed = 1.0;
+    let trVoice = null;
+    let currentUtterance = null;
+    let narratorTimer = null;
+
+    function initVoiceSynthesis() {
+      if (!('speechSynthesis' in window)) return;
+      const selectVoice = () => {
+        const voices = window.speechSynthesis.getVoices();
+        trVoice = voices.find(v => v.lang && (v.lang === 'tr-TR' || v.lang.toLowerCase().startsWith('tr'))) ||
+                  voices.find(v => v.name && v.name.toLowerCase().includes('turkish')) || null;
+      };
+      selectVoice();
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = selectVoice;
+      }
+    }
+    initVoiceSynthesis();
+
+    function speakEraByIndex(idx) {
+      if (!('speechSynthesis' in window)) {
+        alert('Tarayıcınız ses sentezleme (Web Speech TTS) özelliğini desteklemiyor.');
+        return;
+      }
+      if (idx < 0 || idx >= NARRATION_SCRIPTS.length) return;
+
+      // Otomatik kaydırma açıksa durdur
+      if (typeof isAutoPlaying !== 'undefined' && isAutoPlaying) {
+        toggleAutoScroll();
+      }
+
+      clearTimeout(narratorTimer);
+      window.speechSynthesis.cancel();
+
+      narratorCurrentIdx = idx;
+      const data = NARRATION_SCRIPTS[idx];
+      const items = document.querySelectorAll('.timeline-item');
+      const targetItem = items[idx];
+
+      // Kart stillerini ve butonlarını güncelle
+      items.forEach((item, i) => {
+        const btn = item.querySelector('.card-speak-btn');
+        if (i === idx) {
+          item.classList.add('narrating', 'active');
+          if (btn) {
+            btn.classList.add('active');
+            btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg> <span>Durdur</span>`;
+            btn.setAttribute('onclick', 'stopNarrator()');
+          }
+        } else {
+          item.classList.remove('narrating');
+          if (btn) {
+            btn.classList.remove('active');
+            btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg> <span>Dinle</span>`;
+            btn.setAttribute('onclick', `speakEraByIndex(${i})`);
+          }
+        }
+      });
+
+      // Hedef karta odaklan
+      if (targetItem) {
+        targetItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      // HUD ve Dock güncellemesi
+      const dock = document.getElementById('narratorDock');
+      const dockTitle = document.getElementById('narratorCurrentTitle');
+      const playPauseBtn = document.getElementById('narratorPlayPauseBtn');
+      const hudBtn = document.getElementById('narratorHudBtn');
+      const hudIcon = document.getElementById('narratorHudIcon');
+      const hudText = document.getElementById('narratorHudText');
+
+      if (dock) dock.classList.add('visible', 'speaking');
+      if (dockTitle) dockTitle.textContent = `${data.year} · ${data.title}`;
+      if (playPauseBtn) playPauseBtn.textContent = '⏸';
+
+      if (hudBtn && hudIcon && hudText) {
+        hudIcon.textContent = '⏹️';
+        hudText.textContent = 'Durdur';
+        hudBtn.style.borderColor = 'var(--accent)';
+        hudBtn.style.color = 'var(--accent)';
+      }
+
+      // HUD göstergelerini senkronize et
+      if (targetItem) {
+        const year = targetItem.getAttribute('data-year');
+        const speed = targetItem.getAttribute('data-speed');
+        const tech = targetItem.getAttribute('data-tech');
+        if (hudYear) hudYear.innerHTML = `${year} <small>Yılı</small>`;
+        if (hudSpeed) {
+          const parts = (speed || '').split(' ');
+          hudSpeed.innerHTML = `${parts[0] || ''} <small>${parts[1] || ''}</small>`;
+        }
+        if (hudTech && tech) {
+          hudTech.textContent = tech;
+          if (hudTechWrap) hudTechWrap.style.display = 'flex';
+        }
+      }
+
+      isNarratorPlaying = true;
+      isNarratorPaused = false;
+
+      // Utterance oluştur ve oku
+      currentUtterance = new SpeechSynthesisUtterance(data.text);
+      currentUtterance.lang = 'tr-TR';
+      if (trVoice) currentUtterance.voice = trVoice;
+      currentUtterance.rate = narratorSpeed;
+
+      currentUtterance.onend = () => {
+        if (!isNarratorPlaying) return;
+        if (narratorCurrentIdx < NARRATION_SCRIPTS.length - 1) {
+          narratorTimer = setTimeout(() => {
+            if (isNarratorPlaying) {
+              speakEraByIndex(narratorCurrentIdx + 1);
+            }
+          }, 850);
+        } else {
+          stopNarrator();
+        }
+      };
+
+      currentUtterance.onerror = (e) => {
+        if (e.error !== 'canceled') {
+          console.warn('SpeechSynthesis error:', e);
+          stopNarrator();
+        }
+      };
+
+      window.speechSynthesis.speak(currentUtterance);
+    }
+
+    function toggleNarratorPlayPause() {
+      if (!isNarratorPlaying) {
+        startNarrator(narratorCurrentIdx >= 0 ? narratorCurrentIdx : 0);
+        return;
+      }
+      const dock = document.getElementById('narratorDock');
+      const playPauseBtn = document.getElementById('narratorPlayPauseBtn');
+
+      if (isNarratorPaused) {
+        window.speechSynthesis.resume();
+        isNarratorPaused = false;
+        if (dock) dock.classList.add('speaking');
+        if (playPauseBtn) playPauseBtn.textContent = '⏸';
+      } else {
+        window.speechSynthesis.pause();
+        isNarratorPaused = true;
+        if (dock) dock.classList.remove('speaking');
+        if (playPauseBtn) playPauseBtn.textContent = '▶️';
+      }
+    }
+
+    function stopNarrator() {
+      clearTimeout(narratorTimer);
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      isNarratorPlaying = false;
+      isNarratorPaused = false;
+
+      const dock = document.getElementById('narratorDock');
+      const playPauseBtn = document.getElementById('narratorPlayPauseBtn');
+      const hudBtn = document.getElementById('narratorHudBtn');
+      const hudIcon = document.getElementById('narratorHudIcon');
+      const hudText = document.getElementById('narratorHudText');
+
+      if (dock) dock.classList.remove('visible', 'speaking');
+      if (playPauseBtn) playPauseBtn.textContent = '▶️';
+
+      if (hudBtn && hudIcon && hudText) {
+        hudIcon.textContent = '🎙️';
+        hudText.textContent = 'Sesli Dinle';
+        hudBtn.style.borderColor = '';
+        hudBtn.style.color = '';
+      }
+
+      document.querySelectorAll('.timeline-item').forEach((item, i) => {
+        item.classList.remove('narrating');
+        const btn = item.querySelector('.card-speak-btn');
+        if (btn) {
+          btn.classList.remove('active');
+          btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg> <span>Dinle</span>`;
+          btn.setAttribute('onclick', `speakEraByIndex(${i})`);
+        }
+      });
+    }
+
+    function toggleNarrator() {
+      if (isNarratorPlaying) {
+        stopNarrator();
+      } else {
+        startNarrator(narratorCurrentIdx >= 0 ? narratorCurrentIdx : 0);
+      }
+    }
+
+    function startNarrator(startIdx = 0) {
+      speakEraByIndex(startIdx);
+    }
+
+    function nextEra() {
+      if (narratorCurrentIdx < NARRATION_SCRIPTS.length - 1) {
+        speakEraByIndex(narratorCurrentIdx + 1);
+      }
+    }
+
+    function prevEra() {
+      if (narratorCurrentIdx > 0) {
+        speakEraByIndex(narratorCurrentIdx - 1);
+      }
+    }
+
+    function setNarratorSpeed(speed, btn) {
+      narratorSpeed = speed;
+      document.querySelectorAll('.narrator-speed-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      if (isNarratorPlaying && !isNarratorPaused && narratorCurrentIdx >= 0) {
+        speakEraByIndex(narratorCurrentIdx);
+      }
+    }
+
+    window.addEventListener('beforeunload', () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    });
   </script>
 </body>
 </html>

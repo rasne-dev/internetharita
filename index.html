@@ -1623,9 +1623,19 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
   border-radius: 4px;
   transition: all .15s;
 }
+.leaflet-control-locate a svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  transition: transform .15s ease;
+}
 .leaflet-control-locate a:hover {
   background: var(--surface2) !important;
   transform: scale(1.08);
+}
+.leaflet-control-locate a:hover svg {
+  transform: scale(1.1);
 }
 @media (max-width: 480px) {
   .scorecard-modal { padding: 10px; }
@@ -4624,7 +4634,7 @@ async function initMainMap() {
   const locateControl = L.control({ position: 'bottomright' });
   locateControl.onAdd = function() {
     const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-locate');
-    div.innerHTML = `<a href="javascript:void(0)" title="Konumuma Git (Bölgeyi Bul)" role="button" aria-label="Konumuma Git">🎯</a>`;
+    div.innerHTML = `<a href="javascript:void(0)" title="Konumuma Git (Bölgeyi Bul)" role="button" aria-label="Konumuma Git"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></a>`;
     div.onclick = function(e) {
       if (e.stopPropagation) e.stopPropagation();
       if (e.preventDefault) e.preventDefault();
@@ -4686,7 +4696,7 @@ function locateUserOnMainMap() {
       const lng = pos.coords.longitude;
       if (maps.main) {
         flyToResult(lat, lng, 'Mevcut Konumum', 'Bulunduğunuz Konum');
-        showToast('🎯 Bulunduğunuz konuma gidildi!');
+        showToast('📍 Bulunduğunuz konuma gidildi!');
       }
     },
     err => {
