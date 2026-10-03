@@ -1778,11 +1778,12 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
               <span class="toggle-slider"></span>
             </label>
           </div>
-          <div class="settings-item" id="settingsSyncRow" style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px;">
+          <div class="settings-item-hint" style="margin-top:2px;margin-bottom:6px;">Hız ve memnuniyet renklerine ek şekil işaretleri (◆■▲●▼) eklenir.</div>
+          <div class="settings-item" id="settingsSyncRow" style="border-top:1px solid var(--border);padding-top:8px;margin-top:6px;">
             <span class="settings-item-label" style="font-size:11px;">☁️ Veri Senkronizasyonu</span>
             <button class="btn-ghost" id="settingsSyncBtn" onclick="if(currentSyncUser){signOutGoogleUser()}else{signInWithGoogle()}" style="font-size:10.5px;padding:3px 8px;border-radius:5px;">Giriş</button>
           </div>
-          <div class="settings-item-hint">Açıkken hız/memnuniyet renklerine ek şekil işaretleri (◆■▲●▼) eklenir.</div>
+          <div class="settings-item-hint" id="settingsSyncHint" style="font-size:10px;color:var(--text3);margin-top:2px;margin-bottom:6px;">Ölçümlerinizi Google hesabınızla eşitler.</div>
           <div class="settings-item" style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px;">
             <span class="settings-item-label" style="font-size:11px;">🍪 Reklam Çerezleri</span>
             <button class="btn-ghost" type="button" data-consent-open style="font-size:10.5px;padding:3px 8px;border-radius:5px;">Tercihler</button>
@@ -1875,8 +1876,18 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
           <div class="my-pins-toggle" id="myPinsToggle" onclick="toggleMyPinsUI()">
             <div class="my-pins-label">📍 Ölçümlerimi Haritada Gör</div>
             <div class="my-pins-dot"></div>
-          </div>
           <div style="font-size:9px;color:var(--text3);margin-top:6px;line-height:1.4;">Cihazınızdan yaptığınız tüm ölçümleri harita üzerinde noktasal olarak gösterir.</div>
+
+          <!-- KULLANICI ÖLÇÜMLERİ LİSTESİ -->
+          <div class="user-pins-accordion" style="margin-top:8px;">
+            <button type="button" class="user-pins-collapse-btn" id="userPinsToggleBtn" onclick="toggleUserPinsAccordion()" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;">
+              <span id="userPinsListTitle">📋 Eklediğim Ölçümler (0)</span>
+              <span id="userPinsListArrow" style="font-size:9px;color:var(--text3);transition:transform .2s;">▼</span>
+            </button>
+            <div id="userPinsListBox" style="display:none;margin-top:6px;max-height:280px;overflow-y:auto;flex-direction:column;gap:6px;">
+              <!-- Javascript ile dinamik doldurulur -->
+            </div>
+          </div>
           
           <!-- GOOGLE SENKRONİZASYON KARTI -->
           <div class="google-sync-card" id="sidebarGoogleSyncCard">
@@ -3014,6 +3025,7 @@ function toggleMyPinsUI() {
 }
 
 function renderMyPins() {
+  if (typeof renderUserPinsList === 'function') renderUserPinsList();
   if (!maps.main) return;
   if (myPinsLayer) maps.main.removeLayer(myPinsLayer);
   if (!isMyPinsVisible) return;
@@ -3061,6 +3073,120 @@ function renderMyPins() {
       </div>
     `);
   });
+}
+
+function getAllUserPins() {
+  const localPins = getMyLocalPins();
+  const myPinIds = new Set(getMyLocalPinIds());
+  const map = new Map();
+  (pinsData || []).forEach(p => {
+    if (p.is_own_pin || myPinIds.has(p.id) || (browserFingerprint && p.browser_fp === browserFingerprint)) {
+      map.set(p.id, { ...p, is_own_pin: true });
+    }
+  });
+  localPins.forEach(p => {
+    if (!map.has(p.id)) {
+      map.set(p.id, { ...p, is_own_pin: true });
+    } else {
+      map.set(p.id, { ...map.get(p.id), ...p, is_own_pin: true });
+    }
+  });
+  return Array.from(map.values()).sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+}
+
+let isUserPinsAccordionOpen = false;
+function toggleUserPinsAccordion() {
+  isUserPinsAccordionOpen = !isUserPinsAccordionOpen;
+  const box = document.getElementById('userPinsListBox');
+  const arrow = document.getElementById('userPinsListArrow');
+  if (box) {
+    box.style.display = isUserPinsAccordionOpen ? 'flex' : 'none';
+  }
+  if (arrow) {
+    arrow.textContent = isUserPinsAccordionOpen ? '▲' : '▼';
+  }
+  if (isUserPinsAccordionOpen) {
+    renderUserPinsList();
+  }
+}
+
+function focusUserPinOnMap(pinId, lat, lng) {
+  if (!lat || !lng) return showToast('Konum koordinatı bulunamadı', 'err');
+  showPage('harita');
+  if (window.innerWidth <= 768 && document.getElementById('mapSidebar')?.classList.contains('mobile-open')) {
+    toggleMapSidebar();
+  }
+  if (!isMyPinsVisible) {
+    isMyPinsVisible = true;
+    document.getElementById('myPinsToggle')?.classList.add('active');
+    renderMyPins();
+  }
+  if (maps.main) {
+    maps.main.setView([lat, lng], 17);
+    setTimeout(() => {
+      if (myPinsLayer) {
+        myPinsLayer.eachLayer(layer => {
+          if (layer.getLatLng && Math.abs(layer.getLatLng().lat - lat) < 0.0003 && Math.abs(layer.getLatLng().lng - lng) < 0.0003) {
+            layer.openPopup();
+          }
+        });
+      }
+    }, 300);
+  }
+}
+
+function renderUserPinsList() {
+  const box = document.getElementById('userPinsListBox');
+  const title = document.getElementById('userPinsListTitle');
+  const userPins = getAllUserPins();
+  
+  if (title) {
+    title.textContent = `📋 Eklediğim Ölçümler (${userPins.length})`;
+  }
+  if (!box) return;
+
+  if (userPins.length === 0) {
+    box.innerHTML = `
+      <div style="font-size:10px;color:var(--text3);padding:10px 8px;text-align:center;background:var(--surface2);border-radius:6px;border:1px dashed var(--border);line-height:1.4;">
+        Henüz bu cihazda kayıtlı bir ölçümünüz yok.<br>
+        <a href="javascript:void(0)" onclick="showPage('pin')" style="color:var(--accent);font-weight:600;display:inline-block;margin-top:4px;">+ Hızını Test Et &amp; Ekle</a>
+      </div>
+    `;
+    return;
+  }
+
+  box.innerHTML = userPins.map(p => {
+    const locParts = [p.mahalle, p.ilce, p.il].filter(Boolean);
+    const locStr = locParts.length ? locParts.join(', ') : (p.lat ? `${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}` : 'Konum Belirtilmemiş');
+    const isApproved = p.gorunur === true && !p.is_quarantine;
+    const statusBg = isApproved ? 'rgba(34,197,94,.12)' : 'rgba(245,158,11,.12)';
+    const statusColor = isApproved ? 'var(--success)' : 'var(--warn)';
+    const statusText = isApproved ? 'YAYINDA' : 'İNCELEMEDE';
+    const brandColor = ic(p.iss);
+    const spColor = speedColor(p.gercek_dl);
+    const speedText = p.is_altyapi_yok ? 'Altyapı Yok' : (p.gercek_dl ? `${p.gercek_dl} Mbps ↓` : '—');
+
+    return `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 9px;display:flex;flex-direction:column;gap:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+          <span style="font-weight:600;font-size:10.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;" title="${escAttr(locStr)}">📍 ${escHtml(locStr)}</span>
+          <span style="font-size:8px;padding:1px 5px;border-radius:4px;font-family:var(--font-mono);font-weight:700;background:${statusBg};color:${statusColor};letter-spacing:0.3px;">${statusText}</span>
+        </div>
+        <div style="font-size:9.5px;display:flex;align-items:center;justify-content:space-between;gap:4px;">
+          <span><b style="color:${brandColor};">● ${escHtml(p.iss || 'İSS')}</b> · ${(p.baglanti_turu||'').toUpperCase()}</span>
+          <span style="font-family:var(--font-mono);font-weight:700;color:${spColor};">${speedText}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;padding-top:4px;border-top:1px dashed var(--border);font-size:9px;">
+          <span style="font-family:var(--font-mono);color:var(--accent);font-weight:600;">#${escHtml(p.id)}</span>
+          <div style="display:flex;gap:6px;align-items:center;">
+            ${p.lat ? `<a href="javascript:void(0)" onclick="focusUserPinOnMap('${p.id}', ${p.lat}, ${p.lng})" style="color:var(--accent);text-decoration:none;font-weight:600;">📍 Göster</a>` : ''}
+            <a href="javascript:void(0)" onclick="openUserEditModal('${p.id}')" style="color:var(--text2);text-decoration:none;font-weight:600;">✏️ Düzenle</a>
+            <a href="javascript:void(0)" onclick="deleteUserPin('${p.id}')" style="color:var(--danger);text-decoration:none;font-weight:600;">🗑 Sil</a>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 // GÜVENLİK: Herkese açık harita verisi (anon) sadece haritada gösterilen alanları içermeli.
@@ -7908,6 +8034,7 @@ async function deleteUserPin(pinId) {
     cleanPinsData = publicCleanPins(pinsData);
     renderHex();
     if (isMyPinsVisible && typeof renderMyPins === 'function') renderMyPins();
+    if (typeof renderUserPinsList === 'function') renderUserPinsList();
     if (document.getElementById('page-istatistik')?.classList.contains('active')) renderStats();
     document.getElementById('mapInfo')?.classList.remove('visible');
 
@@ -7924,6 +8051,7 @@ async function deleteUserPin(pinId) {
     cleanPinsData = publicCleanPins(pinsData);
     renderHex();
     if (isMyPinsVisible && typeof renderMyPins === 'function') renderMyPins();
+    if (typeof renderUserPinsList === 'function') renderUserPinsList();
     document.getElementById('mapInfo')?.classList.remove('visible');
     showToast('🗑 Ölçümünüz haritanızdan kaldırıldı.');
   }
@@ -9763,6 +9891,7 @@ function updateUserSyncUI(user) {
       settingsSyncBtn.style.color = '';
     }
   }
+  if (typeof renderUserPinsList === 'function') renderUserPinsList();
 }
 
 async function syncPinsWithGoogleAccount(user) {
