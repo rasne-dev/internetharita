@@ -74,6 +74,8 @@
   function init() {
     var c = get();
     applyConsent(c);
+    // Google CMP (Avrupa GDPR/TCF) aktifse yerel onay banner'ını bastırarak çakışmayı önle
+    if (typeof window.__tcfapi === 'function') return;
     if (!c) {
       open();
     }
