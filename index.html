@@ -2,11 +2,13 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://openfpcdn.io https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://*.openstreetmap.org https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.googleadservices.com; connect-src 'self' https://vpnaxxxoiomorcvloend.supabase.co https://speed.cloudflare.com https://*.cloudflare.com https://nominatim.openstreetmap.org https://turkiyeapi.dev https://api.turkiyeapi.dev https://openfpcdn.io https://ipwhois.app https://ipinfo.io https://*.freeipapi.com https://free.freeipapi.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com; frame-src 'self' https://googleads.g.doubleclick.net https://*.googlesyndication.com https://*.google.com; worker-src 'self' blob:; manifest-src 'self' data:; base-uri 'none'; object-src 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- Google AdSense Doğrulama ve Reklam Kodu -->
+<script>(adsbygoogle=window.adsbygoogle||[]).requestNonPersonalizedAds=1;adsbygoogle.pauseAdRequests=1;</script><!-- tercih gelene kadar duraklat ve kişiselleştirmeyi kapalı tut (consent.js açar) -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9484247825024770" crossorigin="anonymous"></script>
+<script src="consent.js" defer></script>
 <title>İnternet Altyapı Haritası &amp; Altyapı Sorgulama — İnternetHarita</title>
 <meta name="description" content="Türkiye'nin mahalle ve ilçe bazlı bağımsız internet altyapı haritası ve altyapı sorgulama platformu. Adresinizde fiber, VDSL veya Kablonet var mı haritada anında sorgulayın, gerçek hız testlerini inceleyin.">
 <meta name="keywords" content="altyapı haritası, altyapı sorgulama, internet altyapı sorgulama, internet haritası, fiber haritası, fiber altyapı sorgulama, vdsl altyapı sorgulama, türkiye internet haritası, internet hız testi, mahallemde fiber var mı, turknet gigafiber haritası, superonline fiber sorgulama, türk telekom altyapı haritası">
@@ -137,7 +139,10 @@
 <script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js" integrity="sha384-nKUDlg+fT0U/eEt4KWP9n034kLe/eVj6k7CVjbu6qfRhJdEyinlGajS9+9AU+UZ5" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js" integrity="sha384-3wY11tldQ5+yWqAvmTN4XtQvnjoTva0cV15O/O/O5NTtp0ivVopSzLOzsVXWZse9" crossorigin="anonymous"></script>
 <!-- FingerprintJS for browser fingerprinting -->
-<script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
+<!-- GÜVENLİK DÜZELTMESİ: Önceden "@3" yüzen etiketle ve SRI olmadan yükleniyordu (üstteki yorum
+     FingerprintJS'in openfpcdn.io'dan geldiğini söylüyordu ama gerçekte jsDelivr'den geliyordu).
+     Artık 3.4.2'ye sabitli + SRI. Hash, registry.npmjs.org paketindeki dist/fp.min.js'ten hesaplandı. -->
+<script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3.4.2/dist/fp.min.js" integrity="sha384-RGoAjUH4gJ40bAD0YPezgdsNOCbBWQlNwdWfA981c/7NgIyqm+TeAelFv346J7UO" crossorigin="anonymous"></script>
 <!-- Favicons & Google Search Logo Requirements -->
 <link rel="icon" href="/favicon.ico?v=3" sizes="any">
 <link rel="icon" type="image/svg+xml" href="/logo.svg?v=3">
@@ -158,7 +163,7 @@
   --bg: #070b0f; --surface: #0d1318; --surface2: #141c24; --surface3: #1c2733;
   --border: #1e2d3d; --border2: #243444;
   --accent: #00d4ff; --accent-dim: rgba(0,212,255,0.12); --accent-glow: rgba(0,212,255,0.25);
-  --text: #e2eaf4; --text2: #8fa3b8; --text3: #4a6278;
+  --text: #e2eaf4; --text2: #8fa3b8; --text3: #7a92a8;
   --s1: #800080; --s2: #1E88E5; --s3: #43A047; --s4: #FB8C00; --s5: #E53935;
   --m1: #22c55e; --m2: #84cc16; --m3: #eab308; --m4: #ef4444;
   --danger: #ef4444; --success: #22c55e; --warn: #f59e0b;
@@ -1068,7 +1073,7 @@ html.light {
   --bg:#f0f4f8; --surface:#ffffff; --surface2:#e8edf3; --surface3:#dde4ed;
   --border:#c8d3dc; --border2:#b5c2cc;
   --accent:#0077cc; --accent-dim:rgba(0,119,204,.10); --accent-glow:rgba(0,119,204,.20);
-  --text:#1a2332; --text2:#3d5368; --text3:#6a8096;
+  --text:#1a2332; --text2:#3d5368; --text3:#51687d;
   --danger:#dc2626; --success:#16a34a; --warn:#d97706;
 }
 /* Body & global */
@@ -1644,12 +1649,46 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
   .scorecard-social-grid { gap: 5px; }
   .scorecard-sbtn { padding: 7px 3px; font-size: 10px; }
 }
+
+/* ===== UX / ERİŞİLEBİLİRLİK İYİLEŞTİRMELERİ (yalnızca ekleme, mevcut kurallar korunur) ===== */
+/* Mobil tarayıcılarda 100vh adres çubuğunu hesaba katmaz → harita altı/lejant kesiliyordu. dvh destekleyenlerde düzelir. */
+#page-harita { height: calc(100dvh - var(--nav-h)); }
+.mod-auth { min-height: calc(100dvh - 56px - 40px); }
+/* iOS Safari, 16px'ten küçük alanlara odaklanınca sayfayı otomatik yakınlaştırıyordu */
+@media (max-width: 768px) {
+  .fi, .fs, .fta, .fiu input, .search-input { font-size: 16px; }
+}
+/* Dokunmatik cihazlarda küçük hedefleri (≈20px) en az ~40px'e çıkar */
+@media (pointer: coarse) {
+  .chip { padding: 8px 11px; font-size: 11px; }
+  .mode-tab { padding: 11px 6px; }
+  .sidebar-collapse-btn { width: 34px; height: 34px; font-size: 11px; }
+  .modal-close, .speedtest-close { min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; }
+  .sort-btn { padding: 9px 13px; font-size: 11px; }
+  .user-pin-action { padding: 9px 6px; font-size: 10px; }
+  .hex-pins-toggle { padding: 11px; font-size: 11px; }
+}
+/* Çok küçük (8-9px) yardımcı metinler okunamıyordu */
+.settings-item-hint, .kvkk-detail, .sr-label, .ty-stat-label, .rstat-label, .sum-label { font-size: max(10px, 1em); }
+.modal-close, .speedtest-close { cursor: pointer; }
+.modal-close:hover, .speedtest-close:hover { color: var(--text); }
 </style>
+<!-- Clickjacking koruması: HTTP frame-ancestors başlığı GitHub Pages'te ayarlanamadığı için JS yedeği -->
+<script>
+  (function(){
+    try {
+      if (window.top !== window.self) {
+        document.documentElement.style.visibility = 'hidden';
+        window.top.location.href = window.self.location.href;
+      }
+    } catch(e) { document.documentElement.style.visibility = 'hidden'; }
+  })();
+</script>
 <!-- Tema erken init — flash önleme -->
 <script>
   (function(){
     try {
-      var t = localStorage.getItem('ih_theme') || 'dark';
+      var t = localStorage.getItem('ih_theme') || (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
       if (t === 'light') document.documentElement.classList.add('light');
       if (localStorage.getItem('ih_colorblind') === 'true') document.documentElement.classList.add('colorblind-mode');
     } catch(e) {}
@@ -1744,6 +1783,10 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
             <button class="btn-ghost" id="settingsSyncBtn" onclick="if(currentSyncUser){signOutGoogleUser()}else{signInWithGoogle()}" style="font-size:10.5px;padding:3px 8px;border-radius:5px;">Giriş</button>
           </div>
           <div class="settings-item-hint">Açıkken hız/memnuniyet renklerine ek şekil işaretleri (◆■▲●▼) eklenir.</div>
+          <div class="settings-item" style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px;">
+            <span class="settings-item-label" style="font-size:11px;">🍪 Reklam Çerezleri</span>
+            <button class="btn-ghost" type="button" data-consent-open style="font-size:10.5px;padding:3px 8px;border-radius:5px;">Tercihler</button>
+          </div>
         </div>
       </div>
     </div>
@@ -2971,13 +3014,15 @@ function renderMyPins() {
 // gibi HASSAS alanları da herkese açık REST API'den okunabilir hale getiriyordu (herkes bu
 // alanları API'den doğrudan çekip kullanıcıları cihaz bazlı takip edebilirdi). Bu alanlar
 // moderatör panelinde (getAllPinsAdmin, authenticated) hâlâ erişilebilir durumda.
-function applyModOverrides(pins) {
+function applyModOverrides(pins, authoritative) {
+  // authoritative=true: liste sunucudan taze geldi (moderatör tam listesi). Bu durumda eski adminPinsCache'ten
+  // pin 'diriltilmez'; aksi halde sunucuda silinmiş/gizlenmiş bir pin sayaçta hayalet olarak kalıyordu.
   if (!pins || !Array.isArray(pins)) return pins;
   try {
     const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
     if (Object.keys(overrides).length === 0) return pins;
     const updated = pins.map(p => overrides[p.id] ? { ...p, ...overrides[p.id] } : p);
-    if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
+    if (!authoritative && typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
       adminPinsCache.forEach(ap => {
         const ov = overrides[ap.id];
         if (ov && ov.gorunur === true && !updated.some(u => u.id === ap.id)) {
@@ -3001,7 +3046,7 @@ const getAllPinsAdmin = async () => {
   try {
     const res = await sbRest('pins?select=*&order=created_at.desc');
     if (res && Array.isArray(res) && res.length > 0) {
-      adminPinsCache = applyModOverrides(res.filter(p => !p.deleted_at));
+      adminPinsCache = applyModOverrides(res.filter(p => !p.deleted_at), true);
       return adminPinsCache;
     }
   } catch(e) {}
@@ -4330,7 +4375,7 @@ function enhanceInteractiveControls(root = document) {
   root.querySelectorAll('.chip, .mode-tab, .cbtn, .feedback-tag, .sbtn, .my-pins-toggle, .map-sidebar-toggle, .sidebar-collapse-btn, .info-close').forEach(el => {
     if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
     if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
-    if (!el.hasAttribute('aria-label')) el.setAttribute('aria-label', (el.textContent || '').trim());
+    if (!el.hasAttribute('aria-label')) el.setAttribute('aria-label', el.classList.contains('info-close') ? 'Kapat' : (el.getAttribute('title') || el.textContent || '').trim());
     if (!el.dataset.keyboardReady) {
       el.dataset.keyboardReady = '1';
       el.addEventListener('keydown', event => {
@@ -9278,10 +9323,13 @@ async function saveEdit() {
   // var — buton devre dışı bırakılmazsa hızlı çift tıklamada aynı İSS iki kez eklenebiliyordu.
   const saveBtn = document.getElementById('editSaveBtn');
   if (saveBtn) { if (saveBtn.disabled) return; saveBtn.disabled = true; saveBtn.textContent = 'Kaydediliyor...'; }
+  // DÜZELTME: issNowApproved daha önce try içinde 'let' ile tanımlanıyordu; eski-şema
+  // yedek yolu (catch bloğu) bu değişkene eriştiğinde ReferenceError fırlatıyordu.
+  let issNowApproved = false;
   try {
     // Her zaman taze cache
     await loadIssListAndRenderChips();
-    let issNowApproved = isApprovedPublicIss(newIss);
+    issNowApproved = isApprovedPublicIss(newIss);
     // Moderatör görünür yaptıysa ama ISS listede yoksa → otomatik ekle
     if (isGorunur && !issNowApproved) {
       try {
@@ -9796,7 +9844,7 @@ function toggleTheme() {
 }
 // Sayfa yüklenince butonu senkronize et (class zaten head'de eklendi)
 document.addEventListener('DOMContentLoaded', function() {
-  const saved = localStorage.getItem('ih_theme') || 'dark';
+  const saved = localStorage.getItem('ih_theme') || (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
   const btn = document.getElementById('themeBtn');
   if (btn) btn.textContent = saved === 'light' ? '🌙' : '☀️';
   const meta = document.getElementById('themeColorMeta');
@@ -10952,11 +11000,14 @@ function liveLogAppend(direction, mbps) {
 // Yükleme testi için bellek dostu, GC baskısı yapmayan sabit boyutlu Blob'lar
 let _cfSpeedEngine = null;
 
+// Güvenlik: dinamik import() SRI doğrulayamaz; bu yüzden CDN yedeği varsayılan KAPALI. Gerekirse true yapın.
+const ALLOW_CDN_ENGINE_FALLBACK = false;
 async function getSpeedEngineClass() {
   try {
     const mod = await import('./speedtest.js');
     return mod.default || mod;
   } catch (e) {
+    if (!ALLOW_CDN_ENGINE_FALLBACK) throw e;
     console.warn('Yerel speedtest.js yüklenemedi, CDN yedeği deneniyor...', e);
     const mod = await import('https://cdn.jsdelivr.net/npm/@cloudflare/speedtest@1.14.1/dist/speedtest.js');
     return mod.default || mod;
@@ -11278,6 +11329,132 @@ function acceptCookieConsent() {
     setTimeout(function() { banner.style.display = 'none'; }, 300);
   }
 }
+</script>
+
+<script>
+/* ===== MODAL ERİŞİLEBİLİRLİĞİ (ekleme; mevcut aç/kapa fonksiyonlarına dokunmaz) =====
+   - role="dialog" / aria-modal / aria-labelledby
+   - Açılınca odak modala taşınır, Tab modal içinde döner, kapanınca odak eski yerine döner
+   - × kapat düğmeleri klavye ile (Enter/Boşluk) ve ekran okuyucuyla kullanılabilir
+   - Üst gezinmede aktif sekmeye aria-current="page" */
+(function () {
+  var SEL = '.modal-bg, .speedtest-modal, .thankyou-modal';
+  var openers = new WeakMap();
+  var FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  function visible(el) { return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length); }
+  function boxOf(m) { return m.querySelector('.modal, .speedtest-box, .thankyou-box') || m; }
+
+  function setupModal(m) {
+    if (m.dataset.a11yReady) return;
+    m.dataset.a11yReady = '1';
+    m.setAttribute('role', 'dialog');
+    m.setAttribute('aria-modal', 'true');
+    var title = m.querySelector('.modal-title, .speedtest-title, .ty-title');
+    if (title) {
+      if (!title.id) title.id = (m.id || 'dlg') + '-title';
+      m.setAttribute('aria-labelledby', title.id);
+    }
+    var box = boxOf(m);
+    if (!box.hasAttribute('tabindex')) box.setAttribute('tabindex', '-1');
+    box.style.outline = 'none';
+    m.querySelectorAll('.modal-close, .speedtest-close').forEach(function (c) {
+      c.setAttribute('role', 'button'); c.setAttribute('tabindex', '0'); c.setAttribute('aria-label', 'Kapat');
+      c.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); c.click(); }
+      });
+    });
+  }
+
+  function onToggle(m) {
+    var isOpen = m.classList.contains('open');
+    var wasOpen = m.dataset.a11yOpen === '1';
+    if (isOpen && !wasOpen) {
+      m.dataset.a11yOpen = '1';
+      openers.set(m, document.activeElement);
+      // Mobilde klavyeyi kendiliğinden açmamak için odak ilk alana değil kutunun kendisine verilir
+      setTimeout(function () { try { boxOf(m).focus({ preventScroll: true }); } catch (e) {} }, 30);
+    } else if (!isOpen && wasOpen) {
+      m.dataset.a11yOpen = '0';
+      var prev = openers.get(m);
+      if (prev && document.contains(prev) && typeof prev.focus === 'function') { try { prev.focus({ preventScroll: true }); } catch (e) {} }
+    }
+  }
+
+  function init() {
+    var modals = document.querySelectorAll(SEL);
+    var mo = new MutationObserver(function (list) {
+      list.forEach(function (r) { if (r.target.matches && r.target.matches(SEL)) onToggle(r.target); });
+    });
+    modals.forEach(function (m) { setupModal(m); mo.observe(m, { attributes: true, attributeFilter: ['class'] }); });
+
+    // Tab tuzağı: açık olan en üstteki modal içinde döndür
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Tab') return;
+      var open = Array.prototype.filter.call(document.querySelectorAll(SEL), function (m) { return m.classList.contains('open'); });
+      if (!open.length) return;
+      var box = boxOf(open[open.length - 1]);
+      var items = Array.prototype.filter.call(box.querySelectorAll(FOCUSABLE), visible);
+      if (!items.length) { e.preventDefault(); box.focus(); return; }
+      var first = items[0], last = items[items.length - 1], a = document.activeElement;
+      if (!box.contains(a)) { e.preventDefault(); first.focus(); }
+      else if (e.shiftKey && (a === first || a === box)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && a === last) { e.preventDefault(); first.focus(); }
+    });
+
+    // Üst gezinme: aktif sekme için aria-current
+    var tabs = document.querySelectorAll('.nav-tab');
+    function syncTabs() { tabs.forEach(function (t) { if (t.classList.contains('active')) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); }); }
+    var tmo = new MutationObserver(syncTabs);
+    tabs.forEach(function (t) { tmo.observe(t, { attributes: true, attributeFilter: ['class'] }); });
+    syncTabs();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+
+<script>
+/* ===== HARİTA ↔ MOD PANELİ SENKRONU (ekleme) =====
+   Sorun: Harita verisi sadece sayfa açılışında ve bazı işlemlerden sonra çekiliyordu; sekme saatlerce açık
+   kalınca haritadaki sayı (örn. 284) mod panelindeki taze sayıdan (285) geri kalıyordu.
+   - Sekme tekrar görünür olunca ve görünürken 5 dk'da bir pinler yeniden çekilir (loadPins zaten tekil çalışır)
+   - Mod paneli sayısı ile harita sayısı farklıysa pinler bir kez yeniden çekilir; fark sürerse konsola
+     hangi pin ID'lerinin farklı olduğu yazılır (sunucu/RLS kaynaklı gerçek fark teşhisi için). */
+(function () {
+  var lastSync = Date.now(), lastMismatch = 0;
+  function refresh() {
+    if (typeof loadPins !== 'function') return;
+    lastSync = Date.now();
+    try { var r = loadPins(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && Date.now() - lastSync > 120000) refresh();
+  });
+  setInterval(function () { if (!document.hidden) refresh(); }, 300000);
+
+  function visibleOf(list) {
+    return list.filter(function (p) { return p.gorunur === true && !p.is_quarantine && !isSpam(p) && isApprovedPublicIss(p.iss); });
+  }
+  if (typeof updateModStatsSummary === 'function') {
+    var orig = updateModStatsSummary;
+    window.updateModStatsSummary = function (pins) {
+      var out = orig.apply(this, arguments);
+      try {
+        var all = pins || adminPinsCache || [];
+        var vis = visibleOf(all);
+        if (vis.length !== cleanPinsData.length) {
+          var mapIds = {}; cleanPinsData.forEach(function (p) { mapIds[p.id] = 1; });
+          var modIds = {}; vis.forEach(function (p) { modIds[p.id] = 1; });
+          var onlyMod = vis.filter(function (p) { return !mapIds[p.id]; }).map(function (p) { return p.id; });
+          var onlyMap = cleanPinsData.filter(function (p) { return !modIds[p.id]; }).map(function (p) { return p.id; });
+          if (Date.now() - lastMismatch > 30000) { lastMismatch = Date.now(); refresh(); }
+          else console.warn('[internetHarita] Harita (' + cleanPinsData.length + ') ile mod paneli (' + vis.length + ') farklı. Sadece panelde:', onlyMod, 'Sadece haritada:', onlyMap);
+        }
+      } catch (e) {}
+      return out;
+    };
+  }
+})();
 </script>
 </body>
 </html>

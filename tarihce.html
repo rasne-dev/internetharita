@@ -6,7 +6,9 @@
   <title>İnternetin Yolculuğu — Dünyada ve Türkiye'de İnternet Tarihçesi | internetHarita</title>
   <meta name="description" content="1969 ARPANET'ten 1993 ODTÜ'ye, 56K çevirmeli ağdan günümüz Gigabit fiber ve Starlink uydularına: İnternetin dünyadaki ve Türkiye'deki interaktif görsel yolculuğu.">
   <link rel="canonical" href="https://internetharita.com.tr/tarihce.html">
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9484247825024770" crossorigin="anonymous"></script>
+<script>(adsbygoogle=window.adsbygoogle||[]).requestNonPersonalizedAds=1;adsbygoogle.pauseAdRequests=1;</script><!-- tercih gelene kadar duraklat ve kişiselleştirmeyi kapalı tut (consent.js açar) -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9484247825024770" crossorigin="anonymous"></script>
+<script src="consent.js" defer></script>
   <link rel="icon" href="/favicon.ico?v=3" sizes="any">
   <link rel="icon" type="image/svg+xml" href="/logo.svg?v=3">
   <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png?v=3">
@@ -19,7 +21,7 @@
   <script>
     (function(){
       try {
-        var t = localStorage.getItem('ih_theme') || 'dark';
+        var t = localStorage.getItem('ih_theme') || (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
         if (t === 'light') document.documentElement.classList.add('light');
       } catch(e) {}
     })();
@@ -1912,7 +1914,7 @@
     }
     (function initThemeBtn(){
       try {
-        var t = localStorage.getItem('ih_theme') || 'dark';
+        var t = localStorage.getItem('ih_theme') || (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
         var btn = document.getElementById('themeBtn');
         if (t === 'light' && btn) btn.textContent = '🌙';
       } catch(e) {}
