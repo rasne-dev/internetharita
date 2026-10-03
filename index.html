@@ -8086,9 +8086,23 @@ async function submitReport() {
   resetBtn();
 }
 
+const AUTHORIZED_MOD_EMAILS = ['rasne.app@gmail.com', 'ensarkarali@gmail.com'];
+function isAuthorizedModEmail(email) {
+  if (!email) return false;
+  return AUTHORIZED_MOD_EMAILS.includes(String(email).toLowerCase().trim());
+}
+
 async function modLogin() {
   try {
-    const { data, error } = await sbc.auth.signInWithPassword({ email: document.getElementById('modEmail').value, password: document.getElementById('modPw').value }); if (error) throw error;
+    const emailVal = (document.getElementById('modEmail').value || '').trim();
+    if (!isAuthorizedModEmail(emailVal)) {
+      throw new Error('Bu e-posta adresi moderatör yetkisine sahip değil.');
+    }
+    const { data, error } = await sbc.auth.signInWithPassword({ email: emailVal, password: document.getElementById('modPw').value }); if (error) throw error;
+    if (!isAuthorizedModEmail(data.user?.email)) {
+      await sbc.auth.signOut();
+      throw new Error('Yetkisiz moderatör hesabı.');
+    }
     isModLoggedIn=true; currentModUser=data.user;
     const mpc = document.getElementById('modPanelContent');
     document.getElementById('modAuthScreen').style.display='none';
@@ -9858,10 +9872,10 @@ async function checkSession() {
       const isGoogle = session.user.app_metadata?.provider === 'google' || 
                        session.user.identities?.some(i => i.provider === 'google');
       if (isGoogle) {
-        // Google Sync Kullanıcısı
+        // Google Sync Kullanıcısı (asla mod paneline erişemez)
         initSyncUser(session.user);
-      } else {
-        // Moderatör Kullanıcısı
+      } else if (isAuthorizedModEmail(session.user.email)) {
+        // Moderatör Kullanıcısı (sadece yetkili e-postalar)
         isModLoggedIn = true;
         currentModUser = session.user;
         const mpc = document.getElementById('modPanelContent');
@@ -9873,6 +9887,8 @@ async function checkSession() {
         document.getElementById('headerMaintenanceToggle').style.display = 'flex'; 
         document.getElementById('modSubtitle').textContent = `Giriş: ${session.user.email}`;
         loadMaintenanceState();
+      } else {
+        updateUserSyncUI(null);
       }
     } else {
       updateUserSyncUI(null);
@@ -9887,12 +9903,17 @@ sbc.auth.onAuthStateChange((event, session) => {
                      session.user.identities?.some(i => i.provider === 'google');
     if (isGoogle) {
       initSyncUser(session.user);
+    } else if (isAuthorizedModEmail(session.user.email)) {
+      isModLoggedIn = true;
+      currentModUser = session.user;
     }
   } else if (event === 'SIGNED_OUT') {
     if (currentSyncUser) {
       currentSyncUser = null;
       updateUserSyncUI(null);
     }
+    isModLoggedIn = false;
+    currentModUser = null;
   }
 });
 
