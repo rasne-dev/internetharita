@@ -9837,6 +9837,22 @@ async function addPinToGoogleAccount(pin) {
 
 async function checkSession() {
   try {
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const queryParams = new URLSearchParams(window.location.search);
+    const authErrDesc = hashParams.get('error_description') || queryParams.get('error_description');
+    const authErrCode = hashParams.get('error_code') || queryParams.get('error_code');
+    if (authErrDesc || authErrCode) {
+      console.warn('[internetHarita] OAuth yönlendirme hatası:', authErrCode, authErrDesc);
+      if (authErrCode === 'signup_disabled') {
+        showToast('⚠️ Google ile yeni kayıt kabulü şu anda kapalı.', 'warn');
+      } else {
+        showToast('Giriş başarısız: ' + (authErrDesc || authErrCode), 'err');
+      }
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    }
+
     const { data: { session } } = await sbc.auth.getSession();
     if (session && session.user) {
       const isGoogle = session.user.app_metadata?.provider === 'google' || 
