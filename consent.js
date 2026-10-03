@@ -1,9 +1,9 @@
-/* İnternetHarita — Reklam çerezi onayı (temkinli / açık rıza modeli)
-   - Reklam yalnızca kullanıcı "Kabul Et" derse gösterilir. Reddeden veya seçim yapmayan kullanıcıya reklam isteği gönderilmez
-     (adsbygoogle.pauseAdRequests=1). AdSense etiketi ise sayfa kaynağında durur (Google'ın site doğrulaması için).
-   - Seçim localStorage'da saklanır; ayarlar menüsü ve gizlilik sayfasından değiştirilebilir.
-   - "Reddet" ve "Kabul Et" eşit görünürlükte; seçim localStorage'da saklanır ve istenildiğinde değiştirilebilir.
-   - Harita, hız testi ve diğer tüm özellikler seçimden bağımsız çalışır. */
+/* İnternetHarita — Reklam çerezi ve kişiselleştirme tercihi (NPA / Hibrit model)
+   - Reklam akışı hiçbir zaman durdurulmaz (gelir kaybı önlenir).
+   - Onay verilmediğinde veya reddedildiğinde Google'a requestNonPersonalizedAds = 1 bildirilir (yalnızca bağlamsal reklam çıkar, profil/hedefleme çerezi bırakılmaz).
+   - Kullanıcı "Kabul Et" derse requestNonPersonalizedAds = 0 olur (kişiselleştirilmiş reklamlar devreye girer).
+   - Seçim localStorage'da saklanır; ayarlar menüsü ve gizlilik sayfasından her an değiştirilebilir.
+   - Harita, hız testi ve tüm servisler çerez tercihinden bağımsız eksiksiz çalışır. */
 (function () {
   'use strict';
   var KEY = 'ih_consent_ads', TS = 'ih_consent_ts';
@@ -14,21 +14,13 @@
 
   function ads() { return (window.adsbygoogle = window.adsbygoogle || []); }
 
-  // Seçim yapılana kadar reklam istekleri duraklatılır ve (olası bir erken istekte bile) kişiselleştirme kapalı tutulur.
-  function pauseAds() { var a = ads(); a.requestNonPersonalizedAds = 1; a.pauseAdRequests = 1; }
-
-  function startAds() {
-    // Statik etiket yoksa (yedek) scripti ekle
-    if (!document.querySelector('script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]') && !window.__ihAdsInjected) {
-      window.__ihAdsInjected = true;
-      var s = document.createElement('script');
-      s.async = true; s.src = ADS_SRC; s.crossOrigin = 'anonymous';
-      document.head.appendChild(s);
-    }
+  function applyConsent(v) {
     var a = ads();
-    a.requestNonPersonalizedAds = 0;
-    a.pauseAdRequests = 0;
-    window.__ihAdsLoaded = true;
+    if (v === 'granted') {
+      a.requestNonPersonalizedAds = 0;
+    } else {
+      a.requestNonPersonalizedAds = 1;
+    }
   }
 
   function injectStyle() {
@@ -51,11 +43,13 @@
 
   function choose(v) {
     var prev = get();
-    set(v); closeBanner();
-    if (v === 'granted') { startAds(); return; }
-    // Onay geri çekildi: yüklü reklamı durdurmak için sayfayı yenile (yenilenince reklam istekleri duraklı başlar)
-    pauseAds();
-    if (prev === 'granted' && window.__ihAdsLoaded) location.reload();
+    set(v);
+    closeBanner();
+    applyConsent(v);
+    // Önceden izinliydi ve şimdi reddedildiyse ya da tam tersiyse reklam durumunu güncellemek için sayfayı yenile
+    if (prev && prev !== v) {
+      location.reload();
+    }
   }
 
   function open() {
@@ -64,9 +58,9 @@
     var b = document.createElement('div');
     b.id = 'ihConsent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Çerez tercihleri');
     b.innerHTML =
-      '<p>Siteyi ücretsiz tutmak için Google AdSense reklamları gösteriyoruz. Kabul ederseniz Google ve iş ortakları ' +
-      'cihazınızda reklam çerezleri kullanabilir. Reddederseniz hiçbir reklam yüklenmez ve reklam çerezi bırakılmaz; ' +
-      'harita ve tüm özellikler aynen çalışır. Tercihinizi istediğiniz zaman ayarlardan değiştirebilirsiniz. ' +
+      '<p>Sitemizi ücretsiz sunabilmek amacıyla reklamlar gösteriyoruz. ' +
+      '<b>Kabul Et</b> seçeneğiyle ilgi alanlarınıza uygun kişiselleştirilmiş reklamları onaylayabilir, ' +
+      '<b>Reddet</b> ile profil verileriniz işlenmeksizin yalnızca kişiselleştirilmemiş reklamları tercih edebilirsiniz. ' +
       '<a href="gizlilik-politikasi.html#cerezler">Ayrıntılar</a></p>' +
       '<div class="ihc-row"><button type="button" id="ihcDeny">Reddet</button><button type="button" id="ihcAllow">Kabul Et</button></div>';
     document.body.appendChild(b);
@@ -79,12 +73,15 @@
 
   function init() {
     var c = get();
-    if (c === 'granted') startAds();
-    else { pauseAds(); if (c !== 'denied') open(); }
+    applyConsent(c);
+    if (!c) {
+      open();
+    }
     document.addEventListener('click', function (e) {
       var t = e.target.closest && e.target.closest('[data-consent-open]');
       if (t) { e.preventDefault(); open(); }
     });
   }
+
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
