@@ -1882,6 +1882,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
           <div class="google-sync-card" id="sidebarGoogleSyncCard">
             <div id="syncCardLoggedOut">
               <div class="sync-card-desc">Ölçümlerinizi kaybetmemek ve tüm cihazlarınızdan yönetebilmek için Google ile senkronize edin.</div>
+              <div style="font-size:10px;color:var(--text3);margin:4px 0 8px;line-height:1.3;">Giriş doğrulaması güvenli bulut altyapımız (vpnaxxxoiomorcvloend.supabase.co) üzerinden yürütülür.</div>
               <button class="btn-sync-connect" onclick="signInWithGoogle()">
                 <svg viewBox="0 0 24 24" width="13" height="13" style="margin-right:6px;"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
                 Google ile Senkronize Et
@@ -3049,6 +3050,7 @@ function renderMyPins() {
       <div class="popup-inner">
         <div class="popup-title">Senin Ölçümün <span class="own-pin-badge" style="margin-left:0;margin-top:4px;background:${isApproved?'var(--accent)':'var(--warn)'};color:#000;">${statusText}</span></div>
         <div style="font-size:9px;color:var(--text3);margin-bottom:8px;line-height:1.3;">${statusDesc}</div>
+        <div class="popup-row"><span class="popup-key">Veri No</span><span class="popup-val" style="font-family:var(--font-mono);font-weight:700;color:var(--accent);">#${p.id}</span></div>
         <div class="popup-row"><span class="popup-key">İSS</span><span class="popup-val">${escHtml(p.iss)}</span></div>
         <div class="popup-row"><span class="popup-key">Hız</span><span class="popup-val" style="color:${color}">${p.gercek_dl} Mbps ↓</span></div>
         <div class="popup-row"><span class="popup-key">Tarih</span><span class="popup-val">${dateStr}</span></div>
@@ -3645,6 +3647,16 @@ function getQuarantineReasons(p, groupPins = null) {
   if (!p) return reasons;
   const pins = (groupPins && groupPins.length) ? groupPins : [p];
 
+  // 0. Manuel Gizlenme Durumu (Moderatör veya sistemce gizlenmiş)
+  if (p.gorunur === false) {
+    reasons.unshift({
+      type: 'manual_hidden',
+      icon: '🙈',
+      title: 'Yayından Gizlenmiş (gorunur = false)',
+      detail: 'Bu pin moderatör tarafından gizlenmiş veya harita genel görünümünden kaldırılmış.'
+    });
+  }
+
   // 1. Yeni / Onaysız İSS ("Diğer" seçilerek girilenler)
   const isUnapproved = !isApprovedPublicIss(p.iss);
   if (p.custom_iss || isUnapproved) {
@@ -3754,14 +3766,17 @@ function getQuarantineReasons(p, groupPins = null) {
     });
   }
 
-  // Eğer hiçbir sebep tespit edilemediyse ama karantinadaysa
-  if (!reasons.length && (p.is_quarantine || p.gorunur === false)) {
-    reasons.push({
-      type: 'manual_quarantine',
-      icon: '🔒',
-      title: 'Karantina İncelemesi',
-      detail: 'Kayıt moderatör incelemesi bekliyor veya manuel olarak gizlenmiş.'
-    });
+  // 6. Karantina Durumu (Özel bir sebep yoksa güvenlik/filtre kontrolü)
+  if (p.is_quarantine) {
+    const hasSpecificReason = reasons.some(r => r.type !== 'manual_hidden');
+    if (!hasSpecificReason) {
+      reasons.push({
+        type: 'quarantine_review',
+        icon: '🛡️',
+        title: 'Güvenlik / Otomatik Filtre İncelemesi',
+        detail: 'Sıklık limiti (Rate Limit), yeni kayıt incelemesi veya otomatik güvenlik filtresi onayı bekliyor.'
+      });
+    }
   }
 
   return reasons;
@@ -5000,6 +5015,7 @@ function renderModPins() {
         <div class="popup-row"><span class="popup-key">Altyapı</span><span class="popup-val" style="font-size:10px">${escHtml((p.altyapi_sahibi||'').replace(/,/g,', ')) || '—'}</span></div>
         <div class="popup-row"><span class="popup-key">Puan</span><span class="popup-val" style="color:${memColor(p.puan)}">${memShapeHtml(p.puan)}${p.puan}/10</span></div>
         <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+          <div class="mod-popup-row"><span class="mod-popup-key">Veri No:</span><span class="mod-popup-val" style="color:var(--accent);font-family:var(--font-mono);font-weight:700;">#${p.id}</span></div>
           <div class="mod-popup-row"><span class="mod-popup-key">Cihaz FP:</span><span class="mod-popup-val" style="color:var(--warn)">${escHtml(p.browser_fp||p.ip_hash||'Bilinmiyor')}</span></div>
           <div class="mod-popup-row"><span class="mod-popup-key">Konum:</span><span class="mod-popup-val">${escHtml(p.il||'')} › ${escHtml(p.ilce||'')}</span></div>
           <div class="mod-popup-row"><span class="mod-popup-key">Zaman:</span><span class="mod-popup-val">${tarihStr}</span></div>
@@ -5324,7 +5340,7 @@ function toggleHexPinsList() {
           
           return `<div class="hex-pin-item ${isOwnPin ? 'own' : ''}">
             <div class="hex-pin-header">
-              <span class="hex-pin-iss" style="color:${c}">● ${escHtml(p.iss)}</span>
+              <span class="hex-pin-iss" style="color:${c}">● ${escHtml(p.iss)} <span style="font-family:var(--font-mono);font-size:9px;color:var(--text3);font-weight:normal;">#${p.id}</span></span>
               <div style="display:flex;align-items:center;gap:3px;">
                 ${connBadge}${extraBadges}${ownPinBadge}
               </div>
@@ -7743,7 +7759,7 @@ function openUserEditModal(pinId) {
   const remaining = getRemainingEdits(pinId);
   const titleEl = document.querySelector('#userEditModal .modal-title');
   if (titleEl) {
-    titleEl.innerHTML = `✏️ Ölçümümü Güncelle <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);font-weight:400;">(bugün ${USER_EDIT_DAILY_LIMIT - remaining}/${USER_EDIT_DAILY_LIMIT} düzenleme)</span>`;
+    titleEl.innerHTML = `✏️ Ölçümümü Güncelle <span style="font-family:var(--font-mono);font-size:11px;color:var(--accent);font-weight:700;">#${pinId}</span> <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);font-weight:400;">(bugün ${USER_EDIT_DAILY_LIMIT - remaining}/${USER_EDIT_DAILY_LIMIT} düzenleme)</span>`;
   }
 
   document.getElementById('userEditPinId').value = pinId;
@@ -7987,7 +8003,7 @@ function openReportModal(pinId, locStr) {
   document.getElementById('reportHexId').value = '';
   document.getElementById('reportBolge').value = locStr || '';
   if (locStr) {
-    document.getElementById('reportLocationText').textContent = locStr;
+    document.getElementById('reportLocationText').textContent = (pinId ? `[Veri #${pinId}] ` : '') + locStr;
     document.getElementById('reportLocationInfo').style.display = 'block';
   } else {
     document.getElementById('reportLocationInfo').style.display = 'none';
@@ -8860,7 +8876,7 @@ function filterModYorumList() {
     return `
       <tr>
         <td style="color:var(--text3);white-space:nowrap;">
-          ${tarihStr}<br><span style="font-size:10px;color:var(--accent);font-family:var(--font-mono)">${saatStr}</span>
+          ${tarihStr}<br><span style="font-size:10px;color:var(--accent);font-family:var(--font-mono)">${saatStr} · #${p.id}</span>
         </td>
         <td>
           <div style="display:flex;align-items:center;gap:6px;">
@@ -8942,7 +8958,12 @@ async function loadSikayetler() {
               ${header}
               ${spam?'<div style="color:var(--danger);font-size:9px;font-family:var(--font-mono);margin-bottom:4px;">⚠ SPAM/ŞÜPHELİ</div>':''}${quarantine?'<div style="color:var(--warn);font-size:9px;font-family:var(--font-mono);margin-bottom:4px;">🔒 KARANTİNA</div>':''}
               <div class="mod-info">${escHtml(p.iss)} · ${(p.baglanti_turu||'').toUpperCase()} · ${p.gercek_dl}↓ / ${p.gercek_ul||0}↑ Mbps${allSame&&isMulti?' <span style="color:var(--text3);font-size:9px">(tümü aynı)</span>':''}</div>
-              <div class="mod-meta">📍 ${locStr||'?'}<br>🔑 FP: ${escHtml(fp.slice(0,12))}...<br>${p.gorunur?'👁 Görünür':'🙈 Gizli'} · ${gPins.length} pin</div>
+              <div class="mod-meta">
+                <div style="font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--accent);margin-bottom:3px;">
+                  ${isMulti ? `🔖 Veri No: #${gPins.map(x=>x.id).join(', #')}` : `🔖 Veri No: #${p.id}`}
+                </div>
+                📍 ${locStr||'?'}<br>🔑 FP: ${escHtml(fp.slice(0,12))}...<br>${p.gorunur?'👁 Görünür':'🙈 Gizli'} · ${gPins.length} pin
+              </div>
               ${reasonsHtml}
               ${p.yorum?`<div class="user-comment-box">${escHtml(p.yorum)}</div>`:''}
             </div>
@@ -9113,7 +9134,7 @@ function renderAdminTable(pins) {
 
     return `<tr style="background:${rowBg}">
       <td><input type="checkbox" class="pin-check" value="${p.id}"></td>
-      <td style="color:var(--text3);white-space:nowrap;">${tarihStr}<br><span style="font-size:10px;color:var(--accent);font-family:var(--font-mono)">${saatStr}</span></td>
+      <td style="color:var(--text3);white-space:nowrap;">${tarihStr}<br><span style="font-size:10px;color:var(--accent);font-family:var(--font-mono)">${saatStr} · #${p.id}</span></td>
       <td>
         <div style="display:flex;align-items:center;gap:6px;">
           <div style="width:3px;height:12px;background:${brandColor};border-radius:2px;"></div>
@@ -9326,6 +9347,8 @@ async function openEditModal(id) {
     await loadIssListAndRenderChips();
     let p = adminPinsCache.find(x=>x.id===id); if (!p) { const res = await getPinById(id); p = res?.[0]; } if (!p) return showToast('Pin bulunamadı','err');
     document.getElementById('editPinId').value=id;
+    const editTitle = document.querySelector('#editModal .modal-title');
+    if (editTitle) editTitle.innerHTML = `✏️ Pin Düzenle <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent);font-weight:700;">#${id}</span>`;
     // Pin durumunu göster
     const statusEl = document.getElementById('editPinStatus');
     if (statusEl) {

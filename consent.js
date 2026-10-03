@@ -58,11 +58,11 @@
     var b = document.createElement('div');
     b.id = 'ihConsent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Çerez tercihleri');
     b.innerHTML =
-      '<p>Sitemizi ücretsiz sunabilmek amacıyla reklamlar gösteriyoruz. ' +
-      '<b>Kabul Et</b> seçeneğiyle ilgi alanlarınıza uygun kişiselleştirilmiş reklamları onaylayabilir, ' +
-      '<b>Reddet</b> ile profil verileriniz işlenmeksizin yalnızca kişiselleştirilmemiş reklamları tercih edebilirsiniz. ' +
+      '<p>Bağımsız altyapı projemizi tamamen ücretsiz ve reklamsız aboneliksiz tutabilmek, alan adı, sunucu ve harita altyapı masraflarını karşılayabilmek için mecburen reklam gösteriyoruz. Desteğiniz için çok teşekkür ederiz! ' +
+      '<b>Kabul Et &amp; Destek Ol</b> seçeneğiyle ilgi alanlarınıza uygun kişiselleştirilmiş reklamları onaylayabilir, ' +
+      '<b>Reddet</b> ile profil verileriniz işlenmeksizin yalnızca genel (kişiselleştirilmemiş) reklamları tercih edebilirsiniz. ' +
       '<a href="gizlilik-politikasi.html#cerezler">Ayrıntılar</a></p>' +
-      '<div class="ihc-row"><button type="button" id="ihcDeny">Reddet</button><button type="button" id="ihcAllow">Kabul Et</button></div>';
+      '<div class="ihc-row"><button type="button" id="ihcDeny">Reddet</button><button type="button" id="ihcAllow">Kabul Et &amp; Destek Ol</button></div>';
     document.body.appendChild(b);
     document.getElementById('ihcDeny').onclick = function () { choose('denied'); };
     document.getElementById('ihcAllow').onclick = function () { choose('granted'); };
