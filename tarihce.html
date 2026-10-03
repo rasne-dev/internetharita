@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
@@ -2016,7 +2016,15 @@
       }
 
       clearTimeout(narratorTimer);
-      window.speechSynthesis.cancel();
+
+      // Eski konuşma dinleyicilerini temizle (önceki iptalden doğan hata olaylarının stopNarrator tetiklemesini önler)
+      if (currentUtterance) {
+        currentUtterance.onend = null;
+        currentUtterance.onerror = null;
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
 
       narratorCurrentIdx = idx;
       const data = NARRATION_SCRIPTS[idx];
@@ -2086,33 +2094,40 @@
       isNarratorPlaying = true;
       isNarratorPaused = false;
 
-      // Utterance oluştur ve oku
-      currentUtterance = new SpeechSynthesisUtterance(data.text);
-      currentUtterance.lang = 'tr-TR';
-      if (trVoice) currentUtterance.voice = trVoice;
-      currentUtterance.rate = narratorSpeed;
+      // Web Speech motorunun cancel sonrası temizliği için kısa gecikme (Chromium yarış durumunu engeller)
+      setTimeout(() => {
+        if (!isNarratorPlaying || narratorCurrentIdx !== idx) return;
 
-      currentUtterance.onend = () => {
-        if (!isNarratorPlaying) return;
-        if (narratorCurrentIdx < NARRATION_SCRIPTS.length - 1) {
-          narratorTimer = setTimeout(() => {
-            if (isNarratorPlaying) {
-              speakEraByIndex(narratorCurrentIdx + 1);
-            }
-          }, 850);
-        } else {
-          stopNarrator();
-        }
-      };
+        const utter = new SpeechSynthesisUtterance(data.text);
+        utter.lang = 'tr-TR';
+        if (trVoice) utter.voice = trVoice;
+        utter.rate = narratorSpeed;
 
-      currentUtterance.onerror = (e) => {
-        if (e.error !== 'canceled') {
+        utter.onend = () => {
+          if (!isNarratorPlaying || currentUtterance !== utter) return;
+          if (narratorCurrentIdx < NARRATION_SCRIPTS.length - 1) {
+            narratorTimer = setTimeout(() => {
+              if (isNarratorPlaying) {
+                speakEraByIndex(narratorCurrentIdx + 1);
+              }
+            }, 850);
+          } else {
+            stopNarrator();
+          }
+        };
+
+        utter.onerror = (e) => {
+          if (currentUtterance !== utter) return;
+          // İptal veya hız değişimi kesintileri gerçek hata değildir, oynatıcıyı kapatma
+          if (e.error === 'canceled' || e.error === 'interrupted') return;
           console.warn('SpeechSynthesis error:', e);
           stopNarrator();
-        }
-      };
+        };
 
-      window.speechSynthesis.speak(currentUtterance);
+        currentUtterance = utter;
+        window.__ihSpeechUtterance = utter; // Bellek temizliği (GC) koruması
+        window.speechSynthesis.speak(utter);
+      }, 60);
     }
 
     function toggleNarratorPlayPause() {
@@ -2138,9 +2153,14 @@
 
     function stopNarrator() {
       clearTimeout(narratorTimer);
+      if (currentUtterance) {
+        currentUtterance.onend = null;
+        currentUtterance.onerror = null;
+      }
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
+      currentUtterance = null;
       isNarratorPlaying = false;
       isNarratorPaused = false;
 
@@ -2199,7 +2219,8 @@
       narratorSpeed = speed;
       document.querySelectorAll('.narrator-speed-btn').forEach(b => b.classList.remove('active'));
       if (btn) btn.classList.add('active');
-      if (isNarratorPlaying && !isNarratorPaused && narratorCurrentIdx >= 0) {
+      if (isNarratorPlaying && narratorCurrentIdx >= 0) {
+        if (isNarratorPaused) return;
         speakEraByIndex(narratorCurrentIdx);
       }
     }

@@ -1,4 +1,4 @@
-const CACHE = 'iharita-v38';
+const CACHE = 'iharita-v39';
 const ASSETS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
