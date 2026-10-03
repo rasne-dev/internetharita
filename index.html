@@ -1819,19 +1819,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
   </div>
 </div>
 
-<!-- ŞEFFAF ÇEREZ & DESTEK BİLDİRİMİ -->
-<div id="cookieConsentBanner" class="cookie-consent-banner" style="display:none;">
-  <div class="ccb-content">
-    <div class="ccb-icon">🍪</div>
-    <div class="ccb-text">
-      <strong style="color:var(--text);">Şeffaf Çerez &amp; Destek Bildirimi:</strong> Sitemizde, alan adı, sunucu ve harita altyapı masraflarını karşılayabilmek amacıyla Google standart reklam çerezleri kullanılmaktadır. Hiçbir kişisel kimlik veriniz toplanmaz veya paylaşılmaz. Anlayışınız ve desteğiniz için teşekkür ederiz!
-      <a href="javascript:void(0)" onclick="openKvkkModal()" style="color:var(--accent); text-decoration:underline; margin-left:4px;">Aydınlatma Metni</a>
-    </div>
-  </div>
-  <div class="ccb-actions">
-    <button class="btn-primary" onclick="acceptCookieConsent()" style="padding:8px 18px; font-size:11px; white-space:nowrap;">Anladım &amp; Kabul Et</button>
-  </div>
-</div>
+
 
 <div id="page-harita" class="page active">
   <div id="map" tabindex="-1" aria-label="Türkiye internet altyapı haritası"></div>
@@ -2572,7 +2560,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
 
       <p style="margin-bottom:8px;"><b style="color:var(--text);">5) Yerel Depolama (LocalStorage) &amp; Ölçüm Yönetimi:</b> Tema tercihiniz (karanlık/aydınlık) ile eklediğiniz ölçümleri üyelik gerektirmeden tanıyabilmeniz için tarayıcınızın yerel hafızası (<code>localStorage</code>) kullanılır. Haritadaki kendi ölçümünüzü dilediğiniz an <b>"✏️ Düzenle"</b> veya <b>"🗑 Sil"</b> butonlarıyla kalıcı olarak silebilirsiniz (Unutulma Hakkı). Sistemde kimlik veya e-posta kaydı tutulmadığından ölçüm yönetimi yalnızca verinin eklendiği cihaz ve tarayıcı üzerinden gerçekleştirilebilir.</p>
 
-      <p style="margin-bottom:8px;"><b style="color:var(--text);">6) Çerezler ve Reklamlar (Google AdSense):</b> Alan adı, sunucu ve harita altyapı işletim masraflarını karşılamak amacıyla Google AdSense standart reklam çerezleri kullanılabilir. Kullanıcılar kişiselleştirilmiş reklam tercihlerini <a href="https://myadcenter.google.com" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">Google Reklam Merkezi</a> üzerinden kolayca yönetebilir veya kapatabilir.</p>
+      <p style="margin-bottom:8px;"><b style="color:var(--text);">6) Çerezler ve Reklam Tercihleri (Google AdSense):</b> Sitemizi ücretsiz sunabilmek amacıyla reklamlar gösterilmektedir. Ziyaretçilerimiz onay penceresi veya Ayarlar menüsü üzerinden <b>"Kabul Et"</b> ile kişiselleştirilmiş reklamları onaylayabilir, <b>"Reddet"</b> seçeneği ile profil verileri işlenmeksizin yalnızca kişiselleştirilmemiş (bağlamsal) reklamları tercih edebilir. Tercihinizi dilediğiniz an <button type="button" data-consent-open style="background:none;border:none;color:var(--accent);text-decoration:underline;cursor:pointer;font:inherit;padding:0;">buradan</button> değiştirebilirsiniz.</p>
 
       <p style="margin-bottom:8px;"><b style="color:var(--text);">7) Üçüncü Taraf Altyapı Sağlayıcıları ve Sorumluluk Sınırı:</b> Platform; veritabanı için <b>Supabase Inc.</b>, hız sinyalleri için <b>Cloudflare Inc.</b> ve harita için <b>OpenStreetMap Foundation</b> küresel bulut hizmetlerini kullanır. Üçüncü taraf servis kaynaklı kesinti veya aksaklıklardan platform geliştiricileri sorumlu tutulamaz.</p>
 
@@ -2586,7 +2574,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
 </div>
 
 <!-- İLK GİRİŞ KARŞILAMA VE REHBER TUR MODALI -->
-<div class="modal-bg" id="welcomeModal" onclick="if(event.target===this)closeWelcomeModal(true)">
+<div class="modal-bg" id="welcomeModal" style="z-index:9900;" onclick="if(event.target===this)closeWelcomeModal(true)">
   <div class="modal" style="max-width:540px; max-height:88vh; overflow-y:auto;">
     <span class="modal-close" onclick="closeWelcomeModal(true)">×</span>
     <div class="modal-title" style="display:flex;align-items:center;gap:8px;">
@@ -9876,6 +9864,36 @@ async function checkPublicMaintenance() {
   } catch(e) { /* ignore silently */ }
 }
 
+function openWelcomeModal() {
+  const m = document.getElementById('welcomeModal');
+  if (m) {
+    m.classList.add('open');
+    try { m.focus(); } catch(e) {}
+  }
+}
+function closeWelcomeModal(markSeen) {
+  const m = document.getElementById('welcomeModal');
+  if (m) m.classList.remove('open');
+  if (markSeen) {
+    try { localStorage.setItem('ih_welcome_seen', '1'); } catch(e) {}
+  }
+}
+function checkFirstVisitWelcome() {
+  try {
+    if (!localStorage.getItem('ih_welcome_seen')) {
+      setTimeout(() => {
+        const rawHash = (window.location.hash || '').replace(/^#\/?/, '').trim().toLowerCase();
+        const hasSpecificRoute = rawHash && rawHash !== 'harita' && rawHash !== 'tur' && rawHash !== 'rehber-tur';
+        if (!hasSpecificRoute) {
+          openWelcomeModal();
+        }
+      }, 700);
+    }
+  } catch(e) {}
+}
+window.openWelcomeModal = openWelcomeModal;
+window.closeWelcomeModal = closeWelcomeModal;
+
 checkSession(); checkPublicMaintenance(); loadSubmissionPauseState();
 function startupApp() {
   initMainMap();
@@ -11011,32 +11029,7 @@ function closeAboutModal() { document.getElementById('aboutModal').classList.rem
 function closeSettingsMenu() {
   document.getElementById('settingsDropdown')?.classList.remove('open');
 }
-function openWelcomeModal() {
-  const m = document.getElementById('welcomeModal');
-  if (m) m.classList.add('open');
-}
-function closeWelcomeModal(markSeen) {
-  const m = document.getElementById('welcomeModal');
-  if (m) m.classList.remove('open');
-  if (markSeen) {
-    try { localStorage.setItem('ih_welcome_seen', '1'); } catch(e) {}
-  }
-}
-function checkFirstVisitWelcome() {
-  try {
-    if (!localStorage.getItem('ih_welcome_seen')) {
-      setTimeout(() => {
-        // Eğer kullanıcı doğrudan bir alt sayfaya veya modala gitmediyse aç
-        const rawHash = (window.location.hash || '').replace(/^#\/?/, '').trim().toLowerCase();
-        const hasSpecificRoute = rawHash && rawHash !== 'harita' && rawHash !== 'tur' && rawHash !== 'rehber-tur';
-        const anyModalOpen = document.querySelector('.modal-bg.open, .speedtest-modal.open');
-        if (!hasSpecificRoute && !anyModalOpen) {
-          openWelcomeModal();
-        }
-      }, 1000);
-    }
-  } catch(e) {}
-}
+
 function closeSpeedTestModal() {
   if (stRunning && _cfSpeedEngine) {
     try { _cfSpeedEngine.pause(); } catch(e) {}
@@ -11406,26 +11399,7 @@ function pwaDismiss() {
   localStorage.setItem('ih_pwa_dismissed', Date.now().toString());
 }
 
-// ===== ÇEREZ & ŞEFFAFLIK BİLDİRİMİ YÖNETİMİ =====
-(function initCookieConsent() {
-  const consented = localStorage.getItem('ih_cookie_consent');
-  if (!consented) {
-    setTimeout(function() {
-      const banner = document.getElementById('cookieConsentBanner');
-      if (banner) banner.style.display = 'flex';
-    }, 1500);
-  }
-})();
 
-function acceptCookieConsent() {
-  localStorage.setItem('ih_cookie_consent', 'true');
-  const banner = document.getElementById('cookieConsentBanner');
-  if (banner) {
-    banner.style.opacity = '0';
-    banner.style.transition = 'opacity 0.3s ease';
-    setTimeout(function() { banner.style.display = 'none'; }, 300);
-  }
-}
 </script>
 
 <script>
