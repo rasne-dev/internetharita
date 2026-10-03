@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
@@ -1787,6 +1787,10 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
             <span class="settings-item-label" style="font-size:11px;">🍪 Reklam Çerezleri</span>
             <button class="btn-ghost" type="button" data-consent-open style="font-size:10.5px;padding:3px 8px;border-radius:5px;">Tercihler</button>
           </div>
+          <div class="settings-item" style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px;">
+            <span class="settings-item-label" style="font-size:11px;">👋 Tanıtım Rehberi</span>
+            <button class="btn-ghost" type="button" onclick="closeSettingsMenu();openWelcomeModal()" style="font-size:10.5px;padding:3px 8px;border-radius:5px;">Aç</button>
+          </div>
         </div>
       </div>
     </div>
@@ -2577,6 +2581,66 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
         <a href="/gizlilik-politikasi.html" style="color:var(--accent); font-weight:600; text-decoration:none;">📄 Ayrıntılı Gizlilik Politikası Sayfası &rarr;</a>
         <a href="/kullanim-sartlari.html" style="color:var(--text2); text-decoration:none;">Kullanım Şartları</a>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- İLK GİRİŞ KARŞILAMA VE REHBER TUR MODALI -->
+<div class="modal-bg" id="welcomeModal" onclick="if(event.target===this)closeWelcomeModal(true)">
+  <div class="modal" style="max-width:540px; max-height:88vh; overflow-y:auto;">
+    <span class="modal-close" onclick="closeWelcomeModal(true)">×</span>
+    <div class="modal-title" style="display:flex;align-items:center;gap:8px;">
+      <span>👋 internetHarita'ya Hoş Geldiniz!</span>
+    </div>
+    <div style="font-size:12px; color:var(--text2); line-height:1.6; margin-top:8px;">
+      
+      <!-- 1. MADDE: AMACIMIZ -->
+      <div style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:12px; display:flex; gap:12px; align-items:flex-start;">
+        <div style="font-size:22px; line-height:1; flex-shrink:0;">🎯</div>
+        <div>
+          <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:4px;">Amacımız ve Hedefimiz Nedir?</div>
+          <p style="font-size:11px; margin:0; color:var(--text2); line-height:1.5;">
+            internetHarita, Türkiye genelinde operatörlerin reklam vaatleri yerine <b>gerçek kullanıcıların ev ve iş yerlerindeki ölçümlerine</b> dayanan bağımsız bir altyapı ve hız haritasıdır. Taşınırken veya sağlayıcı seçerken sokağınızdaki gerçek hızları şeffafça görmenizi sağlar.
+          </p>
+        </div>
+      </div>
+
+      <!-- 2. MADDE: NASIL VERİ EKLENİR? -->
+      <div style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:12px; display:flex; gap:12px; align-items:flex-start;">
+        <div style="font-size:22px; line-height:1; flex-shrink:0;">⚡</div>
+        <div>
+          <div style="font-size:12px; font-weight:700; color:var(--success); margin-bottom:4px;">Nasıl Veri ve Hız Eklenir?</div>
+          <p style="font-size:11px; margin:0; color:var(--text2); line-height:1.5;">
+            Ekrandaki veya menüdeki <b>"⚡ Hızını Test Et &amp; Ekle"</b> butonuna basarak evinizdeki/işinizdeki bağlantıyı saniyeler içinde ölçebilir, servis sağlayıcınızı seçip anonim olarak haritaya kendi deneyiminizi ekleyebilirsiniz.
+          </p>
+        </div>
+      </div>
+
+      <!-- 3. MADDE: BÖLGENİ NASIL İNCELERSİN & KONUMUMU BUL -->
+      <div style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:14px; display:flex; gap:12px; align-items:flex-start;">
+        <div style="font-size:22px; line-height:1; flex-shrink:0;">📍</div>
+        <div>
+          <div style="font-size:12px; font-weight:700; color:var(--warn); margin-bottom:4px;">Bölgenizi Nasıl İncelersiniz?</div>
+          <p style="font-size:11px; margin:0; color:var(--text2); line-height:1.5;">
+            Sol filtre panelindeki <b>arama çubuğundan</b> il, ilçe veya mahallenizi aratarak oradaki ortalama hızları inceleyebilirsiniz. Ayrıca haritanın <b>sağ altındaki "Konumumu Bul" (📍)</b> butonuna dokunarak bulunduğunuz yerin altyapısını ve çevrenizdeki kullanıcı deneyimlerini anında haritada ortalayabilirsiniz.
+          </p>
+        </div>
+      </div>
+
+      <!-- AKSİYON BUTONLARI -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding-top:6px;">
+        <button type="button" class="btn-primary" onclick="closeWelcomeModal(true)" style="flex:1; min-width:160px; padding:10px 14px; font-size:11.5px; font-weight:700; border-radius:8px; cursor:pointer;">
+          🗺️ Haritayı Keşfet
+        </button>
+        <button type="button" class="btn-ghost" onclick="closeWelcomeModal(true); openSpeedTestModal('standalone');" style="flex:1; min-width:160px; padding:10px 14px; font-size:11.5px; font-weight:600; border-radius:8px; color:var(--accent); border:1px solid var(--accent); cursor:pointer;">
+          ⚡ Hızımı Test Et &amp; Ekle
+        </button>
+      </div>
+
+      <div style="text-align:center; margin-top:10px;">
+        <span style="font-size:10px; color:var(--text3);">Bu rehbere ayarlar (⚙️) menüsündeki <b>"Tanıtım Rehberi"</b> seçeneğinden her an ulaşabilirsiniz.</span>
+      </div>
+
     </div>
   </div>
 </div>
@@ -4543,6 +4607,9 @@ function handleHashRoute() {
   } else if (rawHash === 'about' || rawHash === 'hakkinda') {
     showPage('harita', false);
     openAboutModal();
+  } else if (rawHash === 'tur' || rawHash === 'rehber-tur' || rawHash === 'hosgeldin') {
+    showPage('harita', false);
+    openWelcomeModal();
   } else if (!rawHash || rawHash === 'harita') {
     showPage('harita', false);
   }
@@ -9817,6 +9884,7 @@ function startupApp() {
     mapSearch.value = '';
   }
   handleHashRoute();
+  checkFirstVisitWelcome();
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', startupApp);
@@ -10940,6 +11008,35 @@ function openKvkkModal() { document.getElementById('kvkkModal').classList.add('o
 function closeKvkkModal() { document.getElementById('kvkkModal').classList.remove('open'); }
 function openAboutModal() { document.getElementById('aboutModal').classList.add('open'); }
 function closeAboutModal() { document.getElementById('aboutModal').classList.remove('open'); }
+function closeSettingsMenu() {
+  document.getElementById('settingsDropdown')?.classList.remove('open');
+}
+function openWelcomeModal() {
+  const m = document.getElementById('welcomeModal');
+  if (m) m.classList.add('open');
+}
+function closeWelcomeModal(markSeen) {
+  const m = document.getElementById('welcomeModal');
+  if (m) m.classList.remove('open');
+  if (markSeen) {
+    try { localStorage.setItem('ih_welcome_seen', '1'); } catch(e) {}
+  }
+}
+function checkFirstVisitWelcome() {
+  try {
+    if (!localStorage.getItem('ih_welcome_seen')) {
+      setTimeout(() => {
+        // Eğer kullanıcı doğrudan bir alt sayfaya veya modala gitmediyse aç
+        const rawHash = (window.location.hash || '').replace(/^#\/?/, '').trim().toLowerCase();
+        const hasSpecificRoute = rawHash && rawHash !== 'harita' && rawHash !== 'tur' && rawHash !== 'rehber-tur';
+        const anyModalOpen = document.querySelector('.modal-bg.open, .speedtest-modal.open');
+        if (!hasSpecificRoute && !anyModalOpen) {
+          openWelcomeModal();
+        }
+      }, 1000);
+    }
+  } catch(e) {}
+}
 function closeSpeedTestModal() {
   if (stRunning && _cfSpeedEngine) {
     try { _cfSpeedEngine.pause(); } catch(e) {}
