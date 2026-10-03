@@ -1876,6 +1876,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
           <div class="my-pins-toggle" id="myPinsToggle" onclick="toggleMyPinsUI()">
             <div class="my-pins-label">📍 Ölçümlerimi Haritada Gör</div>
             <div class="my-pins-dot"></div>
+          </div>
           <div style="font-size:9px;color:var(--text3);margin-top:6px;line-height:1.4;">Cihazınızdan yaptığınız tüm ölçümleri harita üzerinde noktasal olarak gösterir.</div>
 
           <!-- KULLANICI ÖLÇÜMLERİ LİSTESİ -->
@@ -8214,20 +8215,32 @@ async function submitReport() {
   resetBtn();
 }
 
-const AUTHORIZED_MOD_EMAILS = ['rasne.app@gmail.com', 'ensarkarali@gmail.com'];
-function isAuthorizedModEmail(email) {
+// Yetkili moderatör e-postalarının SHA-256 kriptografik özetleri (açık kaynak gizlilik koruması)
+const AUTHORIZED_MOD_HASHES = [
+  '90d8bf935ea9498bbb6b37eacbf667f6427500b42585151f83ed19d6ad2673ac', // rasne.app
+  'a6e15373242430468d3aa5f309b48a041789d4d72128c85eda8b084b426329eb'  // kişisel mod
+];
+
+async function isAuthorizedModEmail(email) {
   if (!email) return false;
-  return AUTHORIZED_MOD_EMAILS.includes(String(email).toLowerCase().trim());
+  const normalized = String(email).toLowerCase().trim();
+  try {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(normalized));
+    const hash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    return AUTHORIZED_MOD_HASHES.includes(hash);
+  } catch (e) {
+    return false;
+  }
 }
 
 async function modLogin() {
   try {
     const emailVal = (document.getElementById('modEmail').value || '').trim();
-    if (!isAuthorizedModEmail(emailVal)) {
+    if (!await isAuthorizedModEmail(emailVal)) {
       throw new Error('Bu e-posta adresi moderatör yetkisine sahip değil.');
     }
     const { data, error } = await sbc.auth.signInWithPassword({ email: emailVal, password: document.getElementById('modPw').value }); if (error) throw error;
-    if (!isAuthorizedModEmail(data.user?.email)) {
+    if (!await isAuthorizedModEmail(data.user?.email)) {
       await sbc.auth.signOut();
       throw new Error('Yetkisiz moderatör hesabı.');
     }
@@ -10003,7 +10016,7 @@ async function checkSession() {
       if (isGoogle) {
         // Google Sync Kullanıcısı (asla mod paneline erişemez)
         initSyncUser(session.user);
-      } else if (isAuthorizedModEmail(session.user.email)) {
+      } else if (await isAuthorizedModEmail(session.user.email)) {
         // Moderatör Kullanıcısı (sadece yetkili e-postalar)
         isModLoggedIn = true;
         currentModUser = session.user;
@@ -10026,13 +10039,13 @@ async function checkSession() {
 }
 
 // Supabase Auth Değişiklik Dinleyicisi
-sbc.auth.onAuthStateChange((event, session) => {
+sbc.auth.onAuthStateChange(async (event, session) => {
   if (session && session.user) {
     const isGoogle = session.user.app_metadata?.provider === 'google' || 
                      session.user.identities?.some(i => i.provider === 'google');
     if (isGoogle) {
       initSyncUser(session.user);
-    } else if (isAuthorizedModEmail(session.user.email)) {
+    } else if (await isAuthorizedModEmail(session.user.email)) {
       isModLoggedIn = true;
       currentModUser = session.user;
     }
