@@ -58,7 +58,7 @@
     var b = document.createElement('div');
     b.id = 'ihConsent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Çerez tercihleri');
     b.innerHTML =
-      '<p>Bağımsız altyapı projemizi tamamen ücretsiz ve reklamsız aboneliksiz tutabilmek, alan adı, sunucu ve harita altyapı masraflarını karşılayabilmek için mecburen reklam gösteriyoruz. Desteğiniz için çok teşekkür ederiz! ' +
+      '<p>Bağımsız altyapı projemizi tamamen ücretsiz ve aboneliksiz sunabilmek, alan adı, sunucu ve harita altyapı masraflarını karşılayabilmek amacıyla reklam yayınlıyoruz. Desteğiniz için teşekkür ederiz! ' +
       '<b>Kabul Et &amp; Destek Ol</b> seçeneğiyle ilgi alanlarınıza uygun kişiselleştirilmiş reklamları onaylayabilir, ' +
       '<b>Reddet</b> ile profil verileriniz işlenmeksizin yalnızca genel (kişiselleştirilmemiş) reklamları tercih edebilirsiniz. ' +
       '<a href="gizlilik-politikasi.html#cerezler">Ayrıntılar</a></p>' +
