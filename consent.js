@@ -58,11 +58,11 @@
     var b = document.createElement('div');
     b.id = 'ihConsent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Çerez tercihleri');
     b.innerHTML =
-      '<p>Bağımsız altyapı projemizi tamamen ücretsiz ve aboneliksiz sunabilmek, alan adı, sunucu ve harita altyapı masraflarını karşılayabilmek amacıyla reklam yayınlıyoruz. Desteğiniz için teşekkür ederiz! ' +
-      '<b>Kabul Et &amp; Destek Ol</b> seçeneğiyle ilgi alanlarınıza uygun kişiselleştirilmiş reklamları onaylayabilir, ' +
-      '<b>Reddet</b> ile profil verileriniz işlenmeksizin yalnızca genel (kişiselleştirilmemiş) reklamları tercih edebilirsiniz. ' +
+      '<p>Sitemizde Google reklamları gösterilir. Seçiminiz yalnızca reklamların <b>kişiselleştirilip kişiselleştirilmeyeceğini</b> belirler: ' +
+      '<b>Kabul Et</b> ile ilgi alanlarınıza göre reklamlar, <b>Reddet</b> ile profil verisi kullanılmadan genel reklamlar gösterilir. ' +
+      'Tercihinizi istediğiniz zaman değiştirebilirsiniz. ' +
       '<a href="gizlilik-politikasi.html#cerezler">Ayrıntılar</a></p>' +
-      '<div class="ihc-row"><button type="button" id="ihcDeny">Reddet</button><button type="button" id="ihcAllow">Kabul Et &amp; Destek Ol</button></div>';
+      '<div class="ihc-row"><button type="button" id="ihcDeny">Reddet</button><button type="button" id="ihcAllow">Kabul Et</button></div>';
     document.body.appendChild(b);
     document.getElementById('ihcDeny').onclick = function () { choose('denied'); };
     document.getElementById('ihcAllow').onclick = function () { choose('granted'); };
@@ -71,9 +71,82 @@
   window.ihConsentOpen = open;
   window.ihConsentState = get;
 
+  // ===== Reklam engelleyici algılama (AdGuard, uBlock vb.) =====
+  // Not: id/class adlarında "ad" geçmez; aksi halde engelleyici bu notu da gizler.
+  var SN_KEY = 'ih_support_note_ts', SN_DAYS = 7;
+
+  function snRecentlyClosed() {
+    try { var t = +localStorage.getItem(SN_KEY) || 0; return (Date.now() - t) < SN_DAYS * 864e5; } catch (e) { return false; }
+  }
+
+  function detectBlocker(cb) {
+    var blocked = false;
+    // 1) Yem öğe: engelleyicilerin kozmetik filtreleri bu sınıfları gizler
+    var bait = document.createElement('div');
+    bait.className = 'adsbox ad-banner textads banner-ads';
+    bait.setAttribute('aria-hidden', 'true');
+    bait.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;';
+    bait.innerHTML = '&nbsp;';
+    document.body.appendChild(bait);
+    setTimeout(function () {
+      var cs = window.getComputedStyle ? getComputedStyle(bait) : null;
+      if (!bait.offsetParent || bait.offsetHeight === 0 || (cs && (cs.display === 'none' || cs.visibility === 'hidden'))) blocked = true;
+      bait.remove();
+      // 2) AdSense betiği yüklenemediyse (ağ seviyesinde engel)
+      var a = window.adsbygoogle;
+      if (!a || a.loaded !== true) {
+        var s = document.querySelector('script[src*="adsbygoogle.js"]');
+        if (s) blocked = true;
+      }
+      cb(blocked);
+    }, 2500);
+  }
+
+  function showSupportNote() {
+    if (document.getElementById('ihSupportNote')) return;
+    var st = document.createElement('style');
+    st.textContent =
+      '#ihSupportNote{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:9400;max-width:520px;margin:0 auto;' +
+      'background:var(--bg2,#0d1318);color:var(--text,#e6edf3);border:1px solid var(--border2,var(--border,#2a3a4a));border-left:3px solid var(--accent,#00d4ff);' +
+      'border-radius:12px;padding:12px 40px 12px 14px;box-shadow:0 10px 40px rgba(0,0,0,.45);font:13px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}' +
+      '#ihSupportNote p{margin:0}#ihSupportNote b{color:var(--accent,#00d4ff)}' +
+      '#ihSupportNote .ihs-x{position:absolute;top:6px;right:8px;width:28px;height:28px;border:0;background:transparent;color:var(--text2,#8fa3b8);font-size:18px;cursor:pointer;border-radius:6px}' +
+      '#ihSupportNote .ihs-x:hover{background:rgba(255,255,255,.08);color:var(--text,#e6edf3)}';
+    document.head.appendChild(st);
+    var n = document.createElement('div');
+    n.id = 'ihSupportNote'; n.setAttribute('role', 'status');
+    n.innerHTML =
+      '<button type="button" class="ihs-x" aria-label="Kapat">×</button>' +
+      '<p>👋 Reklam engelleyici kullandığınızı fark ettik. İnternetHarita tamamen ücretsiz ve bağımsız bir projedir; ' +
+      'alan adı, sunucu ve harita masraflarını reklamlarla karşılıyoruz. ' +
+      'Bu siteyi engelleyicinizin <b>izin listesine eklerseniz</b> projenin ayakta kalmasına destek olmuş olursunuz. Teşekkürler!</p>';
+    document.body.appendChild(n);
+    n.querySelector('.ihs-x').onclick = function () {
+      try { localStorage.setItem(SN_KEY, String(Date.now())); } catch (e) {}
+      n.remove();
+    };
+  }
+
+  function maybeSupportNote() {
+    if (snRecentlyClosed()) return;
+    var run = function () {
+      detectBlocker(function (blocked) {
+        if (!blocked) return;
+        // Çerez bildirimi açıksa onunla üst üste binmesin; kapanınca göster
+        var tries = 0;
+        (function wait() {
+          if (document.getElementById('ihConsent') && tries++ < 120) return setTimeout(wait, 1000);
+          showSupportNote();
+        })();
+      });
+    };
+    if (document.readyState === 'complete') run(); else window.addEventListener('load', run);
+  }
+
   function init() {
     var c = get();
     applyConsent(c);
+    maybeSupportNote();
     // Google CMP (Avrupa GDPR/TCF) aktifse yerel onay banner'ını bastırarak çakışmayı önle
     if (typeof window.__tcfapi === 'function') return;
     if (!c) {
