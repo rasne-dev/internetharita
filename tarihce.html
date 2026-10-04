@@ -3,12 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.googleadservices.com; connect-src 'self' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com; frame-src 'self' https://googleads.g.doubleclick.net https://*.googlesyndication.com https://*.google.com; base-uri 'none'; object-src 'none'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>İnternetin Yolculuğu — Dünyada ve Türkiye'de İnternet Tarihçesi | internetHarita</title>
   <meta name="description" content="1969 ARPANET'ten 1993 ODTÜ'ye, 56K çevirmeli ağdan günümüz Gigabit fiber ve Starlink uydularına: İnternetin dünyadaki ve Türkiye'deki interaktif görsel yolculuğu.">
+  <meta name="keywords" content="türkiye internet tarihçesi, arpanet nedir, odtü ilk internet, 56k modem sesi, adsl ne zaman geldi, fiber internet tarihi, internetharita tarihçe">
   <link rel="canonical" href="https://internetharita.com.tr/tarihce.html">
-<script>(adsbygoogle=window.adsbygoogle||[]).requestNonPersonalizedAds=1;</script><!-- varsayılan olarak kişiselleştirilmemiş reklam (consent.js tercihe göre günceller) -->
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9484247825024770" crossorigin="anonymous"></script>
-<script src="consent.js" defer></script>
+
+  <!-- Open Graph / Sosyal Medya -->
+  <meta property="og:title" content="İnternetin Yolculuğu — Dünyada ve Türkiye'de İnternet Tarihçesi | internetHarita">
+  <meta property="og:description" content="1969 ARPANET'ten günümüz Gigabit fiberlerine: İnternetin Türkiye'deki ve dünyadaki interaktif zaman yolculuğu.">
+  <meta property="og:url" content="https://internetharita.com.tr/tarihce.html">
+  <meta property="og:type" content="article">
+  <meta property="og:image" content="https://internetharita.com.tr/favicon-512x512.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:locale" content="tr_TR">
+  <meta property="og:site_name" content="İnternetHarita">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="İnternetin Yolculuğu — internetHarita">
+  <meta name="twitter:description" content="1969'dan günümüze dünyada ve Türkiye'de internet altyapısının interaktif görsel tarihi.">
+  <meta name="twitter:image" content="https://internetharita.com.tr/favicon-512x512.png">
+
+  <!-- Google AdSense Doğrulama ve Reklam Kodu -->
+  <script>(adsbygoogle=window.adsbygoogle||[]).requestNonPersonalizedAds=1;</script><!-- varsayılan olarak kişiselleştirilmemiş reklam (consent.js tercihe göre günceller) -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9484247825024770" crossorigin="anonymous"></script>
+  <script src="consent.js" defer></script>
   <link rel="icon" href="/favicon.ico?v=3" sizes="any">
   <link rel="icon" type="image/svg+xml" href="/logo.svg?v=3">
   <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png?v=3">
@@ -16,6 +36,8 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png?v=3">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=3">
   <link rel="shortcut icon" href="/favicon.ico?v=3">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" id="themeColorMeta" content="#070b0f">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <script>
@@ -1814,20 +1836,12 @@
       }
     }
 
-    // Sayfa açıldığında otomatik oynatmayı okuma hızında başlat (İlk başlığın görülmesi için 1.2 sn sonra)
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        if (!isAutoPlaying) {
-          toggleAutoScroll();
-        }
-      }, 1200);
-    });
-
-    // Fare tekerleğiyle kaydırmayı hızlandır (Zaman tüneli akıcılığı için)
-    window.addEventListener('wheel', (e) => {
-      if (Math.abs(e.deltaY) >= 40) {
-        window.scrollBy({ top: e.deltaY * 0.45, behavior: 'auto' });
-      }
+    // Kullanıcı tekerlekle veya dokunarak müdahale ettiğinde otomatik kaydırmayı durdur
+    window.addEventListener('wheel', () => {
+      if (isAutoPlaying) toggleAutoScroll();
+    }, { passive: true });
+    window.addEventListener('touchstart', () => {
+      if (isAutoPlaying) toggleAutoScroll();
     }, { passive: true });
 
     // ==========================================
@@ -1918,12 +1932,16 @@
       localStorage.setItem('ih_theme', isLight ? 'light' : 'dark');
       var btn = document.getElementById('themeBtn');
       if (btn) btn.textContent = isLight ? '🌙' : '☀️';
+      var meta = document.getElementById('themeColorMeta');
+      if (meta) meta.setAttribute('content', isLight ? '#f5f8fc' : '#070b0f');
     }
     (function initThemeBtn(){
       try {
         var t = localStorage.getItem('ih_theme') || (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
         var btn = document.getElementById('themeBtn');
         if (t === 'light' && btn) btn.textContent = '🌙';
+        var meta = document.getElementById('themeColorMeta');
+        if (meta) meta.setAttribute('content', t === 'light' ? '#f5f8fc' : '#070b0f');
       } catch(e) {}
     })();
 
@@ -2082,6 +2100,13 @@
         hudBtn.style.color = 'var(--accent)';
       }
 
+      const heroVoiceBtn = document.querySelector('.hero-voice-btn');
+      if (heroVoiceBtn) {
+        heroVoiceBtn.innerHTML = '<span class="pulse-mic">⏹️</span><span>Anlatımı Durdur</span>';
+        heroVoiceBtn.style.borderColor = 'var(--accent)';
+        heroVoiceBtn.style.color = 'var(--accent)';
+      }
+
       // HUD göstergelerini senkronize et
       if (targetItem) {
         const year = targetItem.getAttribute('data-year');
@@ -2187,6 +2212,13 @@
         hudBtn.style.color = '';
       }
 
+      const heroVoiceBtn = document.querySelector('.hero-voice-btn');
+      if (heroVoiceBtn) {
+        heroVoiceBtn.innerHTML = '<span class="pulse-mic">🎙️</span><span>Tarihçeyi Sesli Dinle (Rehber)</span>';
+        heroVoiceBtn.style.borderColor = '';
+        heroVoiceBtn.style.color = '';
+      }
+
       document.querySelectorAll('.timeline-item').forEach((item, i) => {
         item.classList.remove('narrating');
         const btn = item.querySelector('.card-speak-btn');
@@ -2207,6 +2239,10 @@
     }
 
     function startNarrator(startIdx = 0) {
+      if (isNarratorPlaying && startIdx === narratorCurrentIdx) {
+        stopNarrator();
+        return;
+      }
       speakEraByIndex(startIdx);
     }
 
@@ -2237,6 +2273,13 @@
         window.speechSynthesis.cancel();
       }
     });
+
+    // PWA Çevrimdışı Desteği & Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
   </script>
 </body>
 </html>
