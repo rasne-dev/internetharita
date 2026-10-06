@@ -22,8 +22,14 @@
 <meta property="og:url" content="https://internetharita.com.tr/rehber.html">
 <meta property="og:type" content="article">
 <meta property="og:image" content="https://internetharita.com.tr/favicon-512x512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
 <meta property="og:locale" content="tr_TR">
+<meta property="og:site_name" content="İnternetHarita">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="İnternet Altyapı Türleri Rehberi & SSS — İnternetHarita">
+<meta name="twitter:description" content="Fiber, VDSL, Kablonet farkları, hız/ping dinamikleri ve binanıza fiber getirme adımları rehberi.">
+<meta name="twitter:image" content="https://internetharita.com.tr/favicon-512x512.png">
 
 <!-- Yapısal Veri (JSON-LD FAQPage & Article) -->
 <script type="application/ld+json">
@@ -1040,6 +1046,8 @@ function toggleTheme() {
       document.documentElement.classList.add('light');
       var btn = document.getElementById('themeBtn');
       if (btn) btn.textContent = '🌙';
+      var meta = document.getElementById('themeColorMeta');
+      if (meta) meta.setAttribute('content', '#f5f8fc');
     }
   } catch(e) {}
 })();

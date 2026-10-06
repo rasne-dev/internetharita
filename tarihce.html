@@ -602,14 +602,47 @@
       color: #000;
       font-weight: 800;
     }
-    .narrator-btn-close {
-      color: var(--text3);
-      font-size: 14px;
-      margin-left: 2px;
-    }
     .narrator-btn-close:hover {
       color: #f87171;
       border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    /* BACK TO TOP */
+    .back-to-top {
+      position: fixed; bottom: 24px; right: 24px; z-index: 998;
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--surface2); border: 1px solid var(--border2);
+      color: var(--accent); font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.35); transition: all .25s ease;
+      opacity: 0; visibility: hidden; transform: translateY(12px);
+    }
+    .back-to-top.visible {
+      opacity: 1; visibility: visible; transform: translateY(0);
+    }
+    .back-to-top:hover {
+      background: var(--accent-dim); border-color: var(--accent);
+      box-shadow: 0 6px 20px var(--accent-glow); transform: translateY(-2px);
+    }
+
+    /* FOOTER */
+    footer.site-footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 20px 48px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text3);
+      position: relative;
+      z-index: 10;
+      background: var(--bg);
+    }
+    footer.site-footer a {
+      color: var(--text2);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    footer.site-footer a:hover {
+      color: var(--accent);
     }
 
     /* HERO */
@@ -1085,6 +1118,17 @@
         font-size: 12px;
         padding: 8px 16px;
       }
+      .back-to-top {
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        right: 16px;
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+      }
+      /* Ses çaları açıkken yukarı çık butonu üstte kalsın */
+      body:has(.narrator-dock.visible) .back-to-top {
+        bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+      }
     }
   </style>
 </head>
@@ -1504,6 +1548,24 @@
       <a href="/#pin" class="btn-cta-lg">📍 Deneyimini Haritaya Ekle</a>
     </div>
   </div>
+
+  <footer class="site-footer">
+    <div style="max-width:1000px; margin:0 auto; display:flex; flex-direction:column; gap:12px; align-items:center;">
+      <div>&copy; 2026 <strong>İnternetHarita</strong> — Bağımsız Türkiye İnternet Altyapı Haritası ve İnternet Tarihçesi.</div>
+      <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center;">
+        <a href="/">Canlı Harita</a>
+        <a href="/speedtest-verileri.html">Speedtest Verileri</a>
+        <a href="/rehber.html">Altyapı Rehberi &amp; SSS</a>
+        <a href="/tarihce.html" style="color:var(--accent); font-weight:600;">İnternetin Tarihçesi</a>
+        <a href="/hakkimizda.html">Hakkımızda</a>
+        <a href="/gizlilik-politikasi.html">Gizlilik &amp; Çerezler</a>
+        <a href="/kullanim-sartlari.html">Kullanım Şartları</a>
+        <a href="/iletisim.html">İletişim</a>
+      </div>
+    </div>
+  </footer>
+
+  <button class="back-to-top" id="backToTop" onclick="scrollToTop()" title="Yukarı Çık" aria-label="Yukarı Çık">↑</button>
 
   <!-- YÜZEN SESLİ ANLATICI OYNATICI (FLOATING NARRATOR DOCK) -->
   <aside class="narrator-dock" id="narratorDock" role="region" aria-label="Sesli Anlatıcı Çaları">
@@ -2273,6 +2335,21 @@
         window.speechSynthesis.cancel();
       }
     });
+
+    // YUKARI ÇIK FONKSİYONU
+    window.addEventListener('scroll', function() {
+      var btt = document.getElementById('backToTop');
+      if (btt) {
+        if (window.pageYOffset > 300) {
+          btt.classList.add('visible');
+        } else {
+          btt.classList.remove('visible');
+        }
+      }
+    });
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
     // PWA Çevrimdışı Desteği & Service Worker
     if ('serviceWorker' in navigator) {
