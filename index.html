@@ -3464,29 +3464,45 @@ function generateUuid() {
 }
 
 function getMyLocalPinIds() {
-  try { return JSON.parse(localStorage.getItem('ih_my_pin_ids') || '[]'); } catch(e) { return []; }
+  try {
+    const ids = JSON.parse(localStorage.getItem('ih_my_pin_ids') || '[]');
+    const localDeleted = getDeletedPinsLocal();
+    return ids.map(String).filter(id => id && !localDeleted.has(id));
+  } catch(e) { return []; }
 }
 function saveMyPinId(id) {
   if (!id) return;
+  const sId = String(id);
+  const localDeleted = getDeletedPinsLocal();
+  if (localDeleted.has(sId)) return;
   try {
-    const ids = getMyLocalPinIds();
-    if (!ids.includes(id)) {
-      ids.push(id);
+    const rawIds = JSON.parse(localStorage.getItem('ih_my_pin_ids') || '[]');
+    const ids = rawIds.map(String).filter(x => x && !localDeleted.has(x));
+    if (!ids.includes(sId)) {
+      ids.push(sId);
       localStorage.setItem('ih_my_pin_ids', JSON.stringify(ids));
     }
   } catch(e) {}
 }
 function getMyLocalPins() {
-  try { return JSON.parse(localStorage.getItem('ih_my_pins') || '[]'); } catch(e) { return []; }
+  try {
+    const list = JSON.parse(localStorage.getItem('ih_my_pins') || '[]');
+    const localDeleted = getDeletedPinsLocal();
+    return list.filter(p => p && p.id && !localDeleted.has(String(p.id)) && !p.deleted_at);
+  } catch(e) { return []; }
 }
 function saveMyPinLocal(pin) {
   if (!pin || !pin.id) return;
-  saveMyPinId(pin.id);
+  const sId = String(pin.id);
+  const localDeleted = getDeletedPinsLocal();
+  if (localDeleted.has(sId)) return;
+  saveMyPinId(sId);
   try {
-    const list = getMyLocalPins();
-    const idx = list.findIndex(p => p.id === pin.id);
-    if (idx >= 0) list[idx] = { ...list[idx], ...pin };
-    else list.unshift(pin);
+    const rawList = JSON.parse(localStorage.getItem('ih_my_pins') || '[]');
+    const list = rawList.filter(p => p && p.id && !localDeleted.has(String(p.id)) && !p.deleted_at);
+    const idx = list.findIndex(p => String(p.id) === sId);
+    if (idx >= 0) list[idx] = { ...list[idx], ...pin, id: sId };
+    else list.unshift({ ...pin, id: sId });
     if (list.length > 50) list.splice(50);
     localStorage.setItem('ih_my_pins', JSON.stringify(list));
   } catch(e) {}
@@ -3495,9 +3511,11 @@ function removeMyPinLocal(pinId) {
   if (!pinId) return;
   const sId = String(pinId);
   try {
-    const ids = getMyLocalPinIds().filter(id => String(id) !== sId);
+    const rawIds = JSON.parse(localStorage.getItem('ih_my_pin_ids') || '[]');
+    const ids = rawIds.map(String).filter(id => id !== sId);
     localStorage.setItem('ih_my_pin_ids', JSON.stringify(ids));
-    const list = getMyLocalPins().filter(p => String(p.id) !== sId);
+    const rawPins = JSON.parse(localStorage.getItem('ih_my_pins') || '[]');
+    const list = rawPins.filter(p => p && String(p.id) !== sId);
     localStorage.setItem('ih_my_pins', JSON.stringify(list));
 
     const cached = JSON.parse(localStorage.getItem('ih_cached_pins') || 'null');
@@ -3511,8 +3529,9 @@ function removeMyPinLocal(pinId) {
 function toggleMyPinsUI() {
   if (!maps.main) return;
   
+  const localDeleted = getDeletedPinsLocal();
   const myPinIds = new Set(getMyLocalPinIds().map(String));
-  const myPins = pinsData.filter(p => p.is_own_pin || myPinIds.has(String(p.id)) || (browserFingerprint && p.browser_fp === browserFingerprint));
+  const myPins = (pinsData || []).filter(p => !localDeleted.has(String(p.id)) && !p.deleted_at && (p.is_own_pin || myPinIds.has(String(p.id)) || (browserFingerprint && p.browser_fp === browserFingerprint)));
   
   if (!isMyPinsVisible && myPins.length === 0) {
     loadPins();
@@ -3533,8 +3552,9 @@ function renderMyPins() {
   if (!isMyPinsVisible) return;
   
   myPinsLayer = L.layerGroup().addTo(maps.main);
-  const myPinIds = new Set(getMyLocalPinIds());
-  const myPins = pinsData.filter(p => p.is_own_pin || myPinIds.has(p.id) || (browserFingerprint && p.browser_fp === browserFingerprint));
+  const localDeleted = getDeletedPinsLocal();
+  const myPinIds = new Set(getMyLocalPinIds().map(String));
+  const myPins = (pinsData || []).filter(p => !localDeleted.has(String(p.id)) && !p.deleted_at && (p.is_own_pin || myPinIds.has(String(p.id)) || (browserFingerprint && p.browser_fp === browserFingerprint)));
   
   myPins.forEach(p => {
     const isApproved = isPinPublic(p);
@@ -3578,19 +3598,24 @@ function renderMyPins() {
 }
 
 function getAllUserPins() {
-  const localPins = getMyLocalPins();
-  const myPinIds = new Set(getMyLocalPinIds());
+  const localDeleted = getDeletedPinsLocal();
+  const localPins = getMyLocalPins().filter(p => p && !localDeleted.has(String(p.id)) && !p.deleted_at);
+  const myPinIds = new Set(getMyLocalPinIds().map(String).filter(id => !localDeleted.has(id)));
   const map = new Map();
   (pinsData || []).forEach(p => {
-    if (p.is_own_pin || myPinIds.has(p.id) || (browserFingerprint && p.browser_fp === browserFingerprint)) {
-      map.set(p.id, { ...p, is_own_pin: true });
+    const sId = String(p.id);
+    if (localDeleted.has(sId) || p.deleted_at) return;
+    if (p.is_own_pin || myPinIds.has(sId) || (browserFingerprint && p.browser_fp === browserFingerprint)) {
+      map.set(sId, { ...p, is_own_pin: true });
     }
   });
   localPins.forEach(p => {
-    if (!map.has(p.id)) {
-      map.set(p.id, { ...p, is_own_pin: true });
+    const sId = String(p.id);
+    if (localDeleted.has(sId) || p.deleted_at) return;
+    if (!map.has(sId)) {
+      map.set(sId, { ...p, is_own_pin: true });
     } else {
-      map.set(p.id, { ...map.get(p.id), ...p, is_own_pin: true });
+      map.set(sId, { ...map.get(sId), ...p, is_own_pin: true });
     }
   });
   return Array.from(map.values()).sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
@@ -3996,6 +4021,7 @@ async function patchPinOwn(id, d) {
 async function delPin(id) {
   const sId = String(id);
   markPinDeletedLocal(sId);
+  removeMyPinLocal(sId);
   try {
     const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
     if (overrides[sId]) {
@@ -4003,6 +4029,12 @@ async function delPin(id) {
       localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
     }
   } catch(e) {}
+  if (typeof currentSyncUser !== 'undefined' && currentSyncUser) {
+    try {
+      const remaining = getMyLocalPins();
+      sbc.auth.updateUser({ data: { my_pins: remaining } }).catch(() => {});
+    } catch(e) {}
+  }
 
   let success = false;
   // 1. Soft delete (return=minimal kolon erişim kısıtlamalarını engeller)
@@ -4032,6 +4064,7 @@ async function delPin(id) {
 const hardDelPin = id => {
   const sId = String(id);
   markPinDeletedLocal(sId);
+  removeMyPinLocal(sId);
   try {
     const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
     if (overrides[sId]) {
@@ -4039,6 +4072,12 @@ const hardDelPin = id => {
       localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
     }
   } catch(e) {}
+  if (typeof currentSyncUser !== 'undefined' && currentSyncUser) {
+    try {
+      const remaining = getMyLocalPins();
+      sbc.auth.updateUser({ data: { my_pins: remaining } }).catch(() => {});
+    } catch(e) {}
+  }
   return sbRest(`pins?id=eq.${sId}`, { method: 'DELETE', prefer: 'return=minimal' });
 };
 
@@ -5642,8 +5681,8 @@ async function _loadPinsCore() {
     const all = (publicRes || []).filter(p => !localDeleted.has(String(p.id)) && !p.deleted_at);
 
     // 2. Kullanıcının bu tarayıcıdan kaydettiği yerel pinlerini ve ID'lerini oku
-    const myPinIds = new Set(getMyLocalPinIds().map(String));
-    const myLocalPins = getMyLocalPins().filter(p => !localDeleted.has(String(p.id)));
+    const myPinIds = new Set(getMyLocalPinIds().map(String).filter(id => !localDeleted.has(id)));
+    const myLocalPins = getMyLocalPins().filter(p => !localDeleted.has(String(p.id)) && !p.deleted_at);
 
     // Genel pinler içinde bu kullanıcının pinleri varsa işaretle
     all.forEach(p => {
@@ -5654,16 +5693,44 @@ async function _loadPinsCore() {
       }
     });
 
-    // Kullanıcının henüz yayınlanmamış/karantinada olan yerel pinlerini de listeye ekle
-    myLocalPins.forEach(p => {
-      if (localDeleted.has(String(p.id))) return;
-      const idx = all.findIndex(x => String(x.id) === String(p.id));
-      if (idx === -1) {
-        all.push({ ...p, is_own_pin: true, browser_fp: browserFingerprint });
-      } else {
-        all[idx] = { ...all[idx], is_own_pin: true, browser_fp: browserFingerprint };
+    // Kullanıcının henüz yayınlanmamış/karantinada olan yerel pinlerini kontrol et
+    // Sunucuda silinmiş (moderatör veya kullanıcı tarafından) pinleri asla diriltme
+    const missingPins = myLocalPins.filter(p => all.findIndex(x => String(x.id) === String(p.id)) === -1);
+    if (missingPins.length > 0) {
+      try {
+        const checkRes = await sbRest(`pins?id=in.(${missingPins.map(p => encodeURIComponent(p.id)).join(',')})&select=id,deleted_at,gorunur,is_quarantine`);
+        const statusMap = new Map();
+        if (Array.isArray(checkRes)) {
+          checkRes.forEach(item => statusMap.set(String(item.id), item));
+        }
+        missingPins.forEach(p => {
+          const sId = String(p.id);
+          const serverPin = statusMap.get(sId);
+          if (serverPin) {
+            if (serverPin.deleted_at) {
+              markPinDeletedLocal(sId);
+              removeMyPinLocal(sId);
+              return;
+            }
+            all.push({ ...p, ...serverPin, is_own_pin: true, browser_fp: browserFingerprint });
+          } else {
+            // Sunucuda bu ID hiç yoksa (moderatör tarafından silinmiş)
+            const isVeryRecent = p.created_at && (Date.now() - new Date(p.created_at).getTime() < 60000);
+            if (!isVeryRecent) {
+              markPinDeletedLocal(sId);
+              removeMyPinLocal(sId);
+            } else {
+              all.push({ ...p, is_own_pin: true, browser_fp: browserFingerprint });
+            }
+          }
+        });
+      } catch(chkErr) {
+        // Ağ hatası durumunda yerel pinleri ekle
+        missingPins.forEach(p => {
+          all.push({ ...p, is_own_pin: true, browser_fp: browserFingerprint });
+        });
       }
-    });
+    }
 
     // 3. Moderatör oturumu varsa, moderatörün pinlerini yetkili oturumla çekebilir
     if (isModLoggedIn && browserFingerprint) {
@@ -10751,6 +10818,8 @@ function updateUserSyncUI(user) {
 async function syncPinsWithGoogleAccount(user) {
   if (!user) return;
   try {
+    const localDeleted = getDeletedPinsLocal();
+
     // 1. Google user metadata'daki pinleri oku
     const rawMeta = user.user_metadata?.my_pins;
     const remotePins = Array.isArray(rawMeta) ? rawMeta : [];
@@ -10759,36 +10828,88 @@ async function syncPinsWithGoogleAccount(user) {
     const localPins = getMyLocalPins();
     const localPinIds = getMyLocalPinIds();
 
-    // 3. Eşitle ve birleştir
+    // 3. Eşitle ve birleştir (yerel olarak silinmiş olanları doğrudan ele)
     const mergedMap = new Map();
 
     remotePins.forEach(p => {
       const id = typeof p === 'string' ? p : p?.id;
-      if (id) mergedMap.set(id, typeof p === 'object' ? p : { id });
+      if (!id) return;
+      const sId = String(id);
+      if (localDeleted.has(sId)) return;
+      if (typeof p === 'object' && p.deleted_at) return;
+      mergedMap.set(sId, typeof p === 'object' ? { ...p, id: sId } : { id: sId });
     });
 
     localPins.forEach(p => {
-      if (p && p.id) {
-        const existing = mergedMap.get(p.id) || {};
-        mergedMap.set(p.id, { ...existing, ...p });
-      }
+      if (!p || !p.id) return;
+      const sId = String(p.id);
+      if (localDeleted.has(sId) || p.deleted_at) return;
+      const existing = mergedMap.get(sId) || {};
+      mergedMap.set(sId, { ...existing, ...p, id: sId });
     });
 
     localPinIds.forEach(id => {
-      if (id && !mergedMap.has(id)) {
-        mergedMap.set(id, { id });
+      if (!id) return;
+      const sId = String(id);
+      if (localDeleted.has(sId)) return;
+      if (!mergedMap.has(sId)) {
+        mergedMap.set(sId, { id: sId });
       }
     });
+
+    // 4. Sunucu doğrulaması (Moderatör veya başka cihazdan silinmiş pinleri veritabanından doğrula)
+    const candidateIds = Array.from(mergedMap.keys());
+    if (candidateIds.length > 0) {
+      try {
+        const chunkSize = 50;
+        const serverStatuses = new Map();
+        for (let i = 0; i < candidateIds.length; i += chunkSize) {
+          const chunk = candidateIds.slice(i, i + chunkSize);
+          const res = await sbRest(`pins?id=in.(${chunk.map(encodeURIComponent).join(',')})&select=id,deleted_at,gorunur,is_quarantine`);
+          if (Array.isArray(res)) {
+            res.forEach(item => {
+              serverStatuses.set(String(item.id), item);
+            });
+          }
+        }
+
+        for (const sId of candidateIds) {
+          const serverPin = serverStatuses.get(sId);
+          if (serverPin) {
+            if (serverPin.deleted_at) {
+              markPinDeletedLocal(sId);
+              removeMyPinLocal(sId);
+              mergedMap.delete(sId);
+            }
+          } else {
+            // Sunucuda hiç bulunamadıysa (moderatör tarafından silinmiş)
+            const item = mergedMap.get(sId);
+            const isVeryRecent = item && item.created_at && (Date.now() - new Date(item.created_at).getTime() < 60000);
+            if (!isVeryRecent) {
+              markPinDeletedLocal(sId);
+              removeMyPinLocal(sId);
+              mergedMap.delete(sId);
+            }
+          }
+        }
+      } catch (checkErr) {
+        console.warn('[internetHarita] Pin doğrulama kontrolü uyarısı:', checkErr);
+      }
+    }
 
     const mergedList = Array.from(mergedMap.values());
     const mergedIds = Array.from(mergedMap.keys());
 
-    // 4. Yerel depolamaya kaydet
+    // 5. Yerel depolamaya temiz listeyi kaydet
     localStorage.setItem('ih_my_pin_ids', JSON.stringify(mergedIds));
     localStorage.setItem('ih_my_pins', JSON.stringify(mergedList));
 
-    // 5. Google user metadata'sına güncel listeyi yaz (yeni pinler varsa)
-    if (mergedList.length !== remotePins.length) {
+    // 6. Google user metadata'sına güncel listeyi yaz (silinenler temizlendiğinde Google hesabını da arındır)
+    const remoteIdList = remotePins.map(p => String(typeof p === 'string' ? p : p?.id)).filter(Boolean).sort();
+    const currentIdList = [...mergedIds].sort();
+    const needsGoogleUpdate = (remoteIdList.length !== currentIdList.length) || (JSON.stringify(remoteIdList) !== JSON.stringify(currentIdList));
+
+    if (needsGoogleUpdate) {
       try {
         await sbc.auth.updateUser({
           data: { my_pins: mergedList }
@@ -10798,10 +10919,12 @@ async function syncPinsWithGoogleAccount(user) {
       }
     }
 
-    // 6. Harita üzerindeki pinleri güncelle
+    // 7. Harita üzerindeki pinleri güncelle
     if (typeof pinsData !== 'undefined' && pinsData) {
+      const activeDeleted = getDeletedPinsLocal();
+      pinsData = pinsData.filter(p => !activeDeleted.has(String(p.id)) && !p.deleted_at);
       pinsData.forEach(p => {
-        if (mergedIds.includes(p.id)) {
+        if (mergedIds.includes(String(p.id))) {
           p.is_own_pin = true;
         }
       });
@@ -10811,8 +10934,10 @@ async function syncPinsWithGoogleAccount(user) {
     if (isMyPinsVisible && typeof renderMyPins === 'function') renderMyPins();
 
     updateUserSyncUI(user);
+    if (typeof renderUserPinsList === 'function') renderUserPinsList();
+
     if (mergedIds.length > 0) {
-      showToast(`☁️ ${mergedIds.length} adet ölçümünüz Google hesabınızla eşitlendi.`);
+      showToast(`☁️ ${mergedIds.length} adet geçerli ölçümünüz Google hesabınızla eşitlendi.`);
     }
   } catch(err) {
     console.warn('[internetHarita] syncPinsWithGoogleAccount hatası:', err);
