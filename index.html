@@ -182,16 +182,14 @@ nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
   height: var(--nav-h); background: rgba(7,11,15,0.96); backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
-  display: grid;
-  grid-template-columns: minmax(130px, 1fr) auto minmax(130px, 1fr);
-  align-items: center;
-  padding: 0 clamp(16px, 2.5vw, 32px); gap: 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 clamp(16px, 2.5vw, 32px);
 }
 .nav-top-row { display: contents; }
 .logo {
-  grid-column: 1; justify-self: start;
   display: flex; align-items: center; gap: 10px;
   cursor: pointer; text-decoration: none; flex-shrink: 0;
+  z-index: 2;
 }
 .logo-icon {
   width: 32px; height: 32px; border-radius: 9px;
@@ -205,9 +203,9 @@ nav {
 .logo-text span { color: var(--accent); }
 
 .nav-tabs {
-  grid-column: 2; justify-self: center;
+  position: absolute; left: 50%; transform: translateX(-50%);
   display: flex; gap: 5px; align-items: center;
-  margin: 0; flex-shrink: 0;
+  margin: 0; flex-shrink: 0; z-index: 1;
 }
 .nav-tab {
   padding: 7px 12px; border-radius: 8px; cursor: pointer;
@@ -228,9 +226,8 @@ nav {
 .nav-tab.mod-tab.active { color: var(--warn); background: rgba(245,158,11,0.15); border-color: var(--warn); }
 
 .nav-right {
-  grid-column: 3; justify-self: end;
   display: flex; align-items: center; gap: 8px;
-  flex-shrink: 0;
+  flex-shrink: 0; z-index: 2; margin-left: auto;
 }
 .nav-badge {
   font-size: 10px; font-family: var(--font-mono); padding: 3px 8px;
@@ -239,6 +236,11 @@ nav {
 }
 .tab-text.short, .add-text-short { display: none; }
 .tab-text.full, .add-text-full { display: inline; }
+
+@media(min-width: 769px) and (max-width: 1200px) {
+  .tab-text.short, .add-text-short { display: inline !important; }
+  .tab-text.full, .add-text-full { display: none !important; }
+}
 
 /* Desktop + Veri Ekle CTA butonu */
 #navAddPinBtn {
@@ -1702,6 +1704,7 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   .user-sync-pill { max-width: 100px; }
   .user-sync-name { max-width: 55px; }
   .nav-tabs {
+    position: static !important; transform: none !important; left: auto !important;
     display: flex !important; width: 100%; margin: 0 !important;
     gap: 3px; padding: 1px 0 2px;
     align-items: center; justify-content: flex-start;
@@ -3973,8 +3976,19 @@ const addRapor = d => sbRest('raporlar', { method:'POST', body:JSON.stringify(d)
 const patchRapor = (id,d) => sbRest(`raporlar?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
 
 // iss_list tablo helpers
-const getIssList = () => sbRest('iss_list?select=*&order=sort_order.asc,name.asc');
-const addIssToList = d => sbRest('iss_list', { method:'POST', prefer:'resolution=merge-duplicates,return=minimal', body:JSON.stringify(d) });
+const getIssList = () => sbRest('iss_list?select=*&order=sort_order.asc,created_at.asc,id.asc');
+const addIssToList = async d => {
+  if (d.sort_order == null || d.sort_order === 99) {
+    try {
+      const items = (typeof issListCache !== 'undefined' && issListCache.length) ? issListCache : (await getIssList() || []);
+      const maxOrder = items.reduce((max, i) => Math.max(max, Number(i.sort_order) || 0), 0);
+      d.sort_order = Math.max(maxOrder + 10, (items.length + 1) * 10, 100);
+    } catch(e) {
+      d.sort_order = 999;
+    }
+  }
+  return sbRest('iss_list', { method:'POST', prefer:'resolution=merge-duplicates,return=minimal', body:JSON.stringify(d) });
+};
 const patchIssInList = (id, body) => sbRest(`iss_list?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(body) });
 const patchIss = (id,d) => sbRest(`iss_list?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
 const deleteIss = id => sbRest(`iss_list?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' });
@@ -5032,10 +5046,9 @@ function renderISSChips(list) {
     });
     const uniqueList = [...uniqueMap.values()];
 
-    // Popüler olanları başa al, geri kalanları alfabetik sırala
+    // Popüler olanları başa al, geri kalanları sıralı tut (son eklenenler altta)
     const populars = uniqueList.filter(i => isPopularIss(i.name));
-    const others = uniqueList.filter(i => !isPopularIss(i.name))
-      .sort((a,b) => a.name.localeCompare(b.name, 'tr-TR'));
+    const others = uniqueList.filter(i => !isPopularIss(i.name));
     
     const combined = [...populars, ...others];
 
