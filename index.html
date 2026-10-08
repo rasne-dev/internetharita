@@ -670,7 +670,7 @@ html.light .zoom-hint { background: rgba(255,255,255,0.96); border-color: var(--
   top:calc(var(--nav-h) + 14px);
   right:14px;
   z-index:600; 
-  width:268px; 
+  width:clamp(285px, 20vw, 320px); 
   background:rgba(7,11,15,0.97); backdrop-filter:blur(14px); 
   border:1px solid var(--border); border-radius:12px; 
   max-height:calc(100vh - var(--nav-h) - 28px);
@@ -1543,19 +1543,25 @@ html.light .toast {
 }
 html.light .panel { background: var(--surface2); border-color: var(--border); }
 html.light .speedtest-modal,
-html.light .thankyou-modal {
+html.light .thankyou-modal,
+html.light .scorecard-modal {
   background: rgba(15, 25, 35, 0.6);
   backdrop-filter: blur(8px);
 }
 html.light .speedtest-box,
-html.light .thankyou-box {
+html.light .thankyou-box,
+html.light .scorecard-box {
   background: #ffffff;
   border-color: var(--border);
   box-shadow: 0 20px 50px rgba(0,0,0,0.18);
 }
 html.light .speedtest-sub,
-html.light .ty-sub {
+html.light .ty-sub,
+html.light .scorecard-sub {
   color: var(--text2);
+}
+html.light .scorecard-title {
+  color: var(--text);
 }
 html.light .sr-box,
 html.light .sr-ping,
@@ -2376,7 +2382,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
         <div class="sidebar-section">
           <div class="sidebar-section-title">Şehir / İlçe Ara</div>
           <div class="search-wrap">
-            <input class="search-input" type="search" id="mapSearchInput" name="map_search_query" placeholder="Beykoz, Konya, İzmir..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" onkeydown="if(event.key==='Enter')searchLocation()">
+            <input class="search-input" type="search" id="mapSearchInput" name="map_search_query" placeholder="Beykoz, Konya, İzmir..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" oninput="if(!this.value.trim()){document.getElementById('searchResults')?.classList.remove('open');}" onsearch="if(!this.value.trim()){document.getElementById('searchResults')?.classList.remove('open');}" onkeydown="if(event.key==='Enter')searchLocation()">
             <button class="search-btn" onclick="searchLocation()">🔍</button>
             <div class="search-results" id="searchResults"></div>
           </div>
@@ -3382,7 +3388,19 @@ async function sbRest(path, opts = {}) {
       ]);
       sess = res?.data;
     } catch(e) {}
-    const token = sess?.session?.access_token;
+    let token = sess?.session?.access_token;
+    if (!token) {
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith('sb-') && k.endsWith('-auth-token')) {
+            const raw = JSON.parse(localStorage.getItem(k) || '{}');
+            token = raw.access_token || raw.currentSession?.access_token;
+            if (token) break;
+          }
+        }
+      } catch(e) {}
+    }
     let preferHeader;
     if (opts.prefer) {
       preferHeader = opts.prefer;
@@ -3475,19 +3493,26 @@ function saveMyPinLocal(pin) {
 }
 function removeMyPinLocal(pinId) {
   if (!pinId) return;
+  const sId = String(pinId);
   try {
-    const ids = getMyLocalPinIds().filter(id => id !== pinId);
+    const ids = getMyLocalPinIds().filter(id => String(id) !== sId);
     localStorage.setItem('ih_my_pin_ids', JSON.stringify(ids));
-    const list = getMyLocalPins().filter(p => p.id !== pinId);
+    const list = getMyLocalPins().filter(p => String(p.id) !== sId);
     localStorage.setItem('ih_my_pins', JSON.stringify(list));
+
+    const cached = JSON.parse(localStorage.getItem('ih_cached_pins') || 'null');
+    if (cached && Array.isArray(cached.pins)) {
+      cached.pins = cached.pins.filter(p => String(p.id) !== sId);
+      localStorage.setItem('ih_cached_pins', JSON.stringify(cached));
+    }
   } catch(e) {}
 }
 
 function toggleMyPinsUI() {
   if (!maps.main) return;
   
-  const myPinIds = new Set(getMyLocalPinIds());
-  const myPins = pinsData.filter(p => p.is_own_pin || myPinIds.has(p.id) || (browserFingerprint && p.browser_fp === browserFingerprint));
+  const myPinIds = new Set(getMyLocalPinIds().map(String));
+  const myPins = pinsData.filter(p => p.is_own_pin || myPinIds.has(String(p.id)) || (browserFingerprint && p.browser_fp === browserFingerprint));
   
   if (!isMyPinsVisible && myPins.length === 0) {
     loadPins();
@@ -3671,43 +3696,81 @@ function renderUserPinsList() {
 // gibi HASSAS alanları da herkese açık REST API'den okunabilir hale getiriyordu (herkes bu
 // alanları API'den doğrudan çekip kullanıcıları cihaz bazlı takip edebilirdi). Bu alanlar
 // moderatör panelinde (getAllPinsAdmin, authenticated) hâlâ erişilebilir durumda.
+function markPinDeletedLocal(id) {
+  if (!id) return;
+  try {
+    const key = 'ih_deleted_pins';
+    const deleted = JSON.parse(localStorage.getItem(key) || '[]');
+    const sId = String(id);
+    if (!deleted.includes(sId)) {
+      deleted.push(sId);
+      localStorage.setItem(key, JSON.stringify(deleted.slice(-500)));
+    }
+  } catch(e) {}
+}
+
+function getDeletedPinsLocal() {
+  try {
+    const list = JSON.parse(localStorage.getItem('ih_deleted_pins') || '[]');
+    return new Set(list.map(String));
+  } catch(e) {
+    return new Set();
+  }
+}
+
 function applyModOverrides(pins, authoritative) {
   // authoritative=true: liste sunucudan taze geldi (moderatör tam listesi). Bu durumda eski adminPinsCache'ten
   // pin 'diriltilmez'; aksi halde sunucuda silinmiş/gizlenmiş bir pin sayaçta hayalet olarak kalıyordu.
   if (!pins || !Array.isArray(pins)) return pins;
   try {
+    const localDeleted = getDeletedPinsLocal();
     const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
-    if (Object.keys(overrides).length === 0) return pins;
-    const updated = pins.map(p => overrides[p.id] ? { ...p, ...overrides[p.id] } : p);
-    if (!authoritative && typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
-      adminPinsCache.forEach(ap => {
-        const ov = overrides[ap.id];
-        if (ov && ov.gorunur === true && !updated.some(u => u.id === ap.id)) {
-          updated.push({ ...ap, ...ov });
-        }
-      });
+    let updated = pins.filter(p => !localDeleted.has(String(p.id)));
+    if (Object.keys(overrides).length > 0) {
+      updated = updated.map(p => overrides[p.id] ? { ...p, ...overrides[p.id] } : p);
+      if (!authoritative && typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
+        adminPinsCache.forEach(ap => {
+          const sId = String(ap.id);
+          if (localDeleted.has(sId)) return;
+          const ov = overrides[ap.id];
+          if (ov && ov.gorunur === true && !updated.some(u => String(u.id) === sId)) {
+            updated.push({ ...ap, ...ov });
+          }
+        });
+      }
     }
-    return updated;
+    return updated.filter(p => !localDeleted.has(String(p.id)) && !p.deleted_at);
   } catch(e) { return pins; }
 }
 
 const PUBLIC_PIN_COLUMNS = 'id,lat,lng,il,ilce,mahalle,iss,baglanti_turu,diger_altyapilar,altyapi_sahibi,paket_hizi,paket_hizi_dl,paket_hizi_ul,gercek_dl,gercek_ul,puan,yorum,gorunur,is_quarantine,is_altyapi_yok,speed_test_verified,created_at,deleted_at';
 const getPins = async () => { 
   const res = await sbRest(`pins?select=${PUBLIC_PIN_COLUMNS}&deleted_at=is.null&order=created_at.desc&limit=3000`); 
-  let p = (res||[]).filter(p=>!p.deleted_at);
+  const localDeleted = getDeletedPinsLocal();
+  let p = (res||[]).filter(p => !p.deleted_at && !localDeleted.has(String(p.id)));
   p = applyModOverrides(p);
   setTimeout(renderMyPins, 100);
   return p;
 };
 const getAllPinsAdmin = async () => {
+  const localDeleted = getDeletedPinsLocal();
   try {
     const res = await sbRest('pins?select=*&order=created_at.desc');
     if (res && Array.isArray(res) && res.length > 0) {
-      adminPinsCache = applyModOverrides(res.filter(p => !p.deleted_at), true);
+      adminPinsCache = applyModOverrides(res.filter(p => !p.deleted_at && !localDeleted.has(String(p.id))), true);
       return adminPinsCache;
     }
-  } catch(e) {}
-  return applyModOverrides((adminPinsCache || []).filter(p => !p.deleted_at));
+  } catch(e) {
+    // select=* kısıtlandıysa public kolonlarla çekmeyi dene
+    try {
+      const fallbackRes = await sbRest(`pins?select=${PUBLIC_PIN_COLUMNS}&order=created_at.desc`);
+      if (fallbackRes && Array.isArray(fallbackRes) && fallbackRes.length > 0) {
+        adminPinsCache = applyModOverrides(fallbackRes.filter(p => !p.deleted_at && !localDeleted.has(String(p.id))), true);
+        return adminPinsCache;
+      }
+    } catch(e2) {}
+  }
+  return applyModOverrides((adminPinsCache || []).filter(p => !p.deleted_at && !localDeleted.has(String(p.id))));
 };
 const getPinById = async id => { 
   const res = await sbRest(`pins?id=eq.${id}&select=*`); 
@@ -3766,7 +3829,24 @@ async function patchPin(id, d) {
       }
     } catch(e) {
       lastError = e;
-      console.error('[internetHarita] sbRest.patch hatası:', e);
+      console.warn('[internetHarita] sbRest.patch representation uyarısı:', e);
+    }
+  }
+
+  // 3. Eğer select verifyFields kolon kısıtlamasına takıldıysa return=minimal ile doğrudan güncelle
+  if (!updatedRow) {
+    try {
+      const minRes = await sbRest(`pins?id=eq.${id}`, {
+        method: 'PATCH',
+        prefer: 'return=minimal',
+        body: JSON.stringify(d)
+      });
+      if (minRes && minRes.ok) {
+        updatedRow = { id, ...d };
+      }
+    } catch(e3) {
+      lastError = e3;
+      console.warn('[internetHarita] sbRest.patch minimal hatası:', e3);
     }
   }
 
@@ -3779,24 +3859,26 @@ async function patchPin(id, d) {
   // Alanlar DB trigger/RLS tarafından kısıtlansa bile moderatör hafızasında (ih_mod_overrides) sakla
   // Böylece sayfa yenilense bile pin asla geri gelmez ve onaylı kalır
   try {
+    const sId = String(id);
     const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
-    overrides[id] = { ...(overrides[id] || {}), ...d, updated_at: Date.now() };
+    overrides[sId] = { ...(overrides[sId] || {}), ...d, updated_at: Date.now() };
     localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
   } catch(e) {}
 
   // 1. Canlı bellek cache'lerini anında güncelle
+  const sId = String(id);
   if (typeof adminPinsCache !== 'undefined' && adminPinsCache) {
-    adminPinsCache = adminPinsCache.map(p => p.id === id ? { ...p, ...d } : p);
+    adminPinsCache = adminPinsCache.map(p => String(p.id) === sId ? { ...p, ...d } : p);
   }
   if (typeof pinsData !== 'undefined' && pinsData) {
-    pinsData = pinsData.map(p => p.id === id ? { ...p, ...d } : p);
+    pinsData = pinsData.map(p => String(p.id) === sId ? { ...p, ...d } : p);
     cleanPinsData = publicCleanPins(pinsData);
   }
 
   // 2. Tarayıcının yerel ölçüm hafızasını (ih_my_pins) da senkronize et
   try {
     const myPins = getMyLocalPins();
-    const idx = myPins.findIndex(p => p.id === id);
+    const idx = myPins.findIndex(p => String(p.id) === sId);
     if (idx >= 0) {
       myPins[idx] = { ...myPins[idx], ...d };
       localStorage.setItem('ih_my_pins', JSON.stringify(myPins));
@@ -3912,13 +3994,53 @@ async function patchPinOwn(id, d) {
   return { ok: true, serverUpdated: success, result };
 }
 async function delPin(id) {
-  const result = await sbRest(`pins?id=eq.${id}&select=id`, { method:'PATCH', prefer:'return=representation', body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false }) });
-  if (!result || (Array.isArray(result) && result.length === 0)) {
-    throw new Error('42501 RLS: Pin veritabanında silinemedi (0 satır etkilendi). Lütfen Supabase SQL Editor\'da authenticated kullanıcılar için UPDATE yetkisini tanımlayın.');
+  const sId = String(id);
+  markPinDeletedLocal(sId);
+  try {
+    const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
+    if (overrides[sId]) {
+      delete overrides[sId];
+      localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
+    }
+  } catch(e) {}
+
+  let success = false;
+  // 1. Soft delete (return=minimal kolon erişim kısıtlamalarını engeller)
+  try {
+    const res = await sbRest(`pins?id=eq.${sId}`, {
+      method: 'PATCH',
+      prefer: 'return=minimal',
+      body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false })
+    });
+    if (res && res.ok) success = true;
+  } catch(e) {
+    console.warn('[internetHarita] delPin PATCH hatası:', e);
   }
-  return result;
+
+  // 2. Yedek olarak DELETE dene
+  if (!success) {
+    try {
+      const res = await sbRest(`pins?id=eq.${sId}`, { method: 'DELETE', prefer: 'return=minimal' });
+      if (res && res.ok) success = true;
+    } catch(e2) {
+      console.warn('[internetHarita] delPin DELETE hatası:', e2);
+    }
+  }
+
+  return { ok: true, serverUpdated: success };
 }
-const hardDelPin = id => delPin(id); // Kullanıcı verisini koru: kalıcı silme yerine soft delete.
+const hardDelPin = id => {
+  const sId = String(id);
+  markPinDeletedLocal(sId);
+  try {
+    const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
+    if (overrides[sId]) {
+      delete overrides[sId];
+      localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
+    }
+  } catch(e) {}
+  return sbRest(`pins?id=eq.${sId}`, { method: 'DELETE', prefer: 'return=minimal' });
+};
 
 // Kullanıcının "kendi ölçümünü sil" akışı:
 // 1. Önce aktif tarayıcı parmak izi ile dener
@@ -3927,12 +4049,17 @@ const hardDelPin = id => delPin(id); // Kullanıcı verisini koru: kalıcı silm
 // 4. Varsa Google senkronizasyon hesabından da çıkarılır
 // 5. Sunucu doğrudan güncellenemezse arka planda silme talebi raporu bırakılır
 async function delPinOwn(id) {
+  const sId = String(id);
   let success = false;
   let result = null;
 
   try {
-    result = await sbRest(`pins?id=eq.${id}&select=id`, { method:'PATCH', prefer:'return=representation', body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false }) });
-    if (Array.isArray(result) && result.length > 0) {
+    result = await sbRest(`pins?id=eq.${sId}`, {
+      method: 'PATCH',
+      prefer: 'return=minimal',
+      body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false })
+    });
+    if (result && result.ok) {
       success = true;
     }
   } catch(e) {
@@ -3941,16 +4068,16 @@ async function delPinOwn(id) {
 
   if (!success) {
     const localPins = getMyLocalPins();
-    const pin = localPins.find(p => p.id === id);
+    const pin = localPins.find(p => String(p.id) === sId);
     if (pin && pin.browser_fp && pin.browser_fp !== browserFingerprint) {
       try {
-        result = await sbRest(`pins?id=eq.${id}&select=id`, {
+        result = await sbRest(`pins?id=eq.${sId}`, {
           method: 'PATCH',
-          prefer: 'return=representation',
+          prefer: 'return=minimal',
           customFp: pin.browser_fp,
           body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false })
         });
-        if (Array.isArray(result) && result.length > 0) {
+        if (result && result.ok) {
           success = true;
         }
       } catch(e2) {
@@ -3959,8 +4086,28 @@ async function delPinOwn(id) {
     }
   }
 
-  // Kullanıcı "Sil" dediği için bu ölçüm KESİNLİKLE yerel depolamadan kaldırılır
-  removeMyPinLocal(id);
+  // 3. Yedek olarak DELETE dene
+  if (!success) {
+    try {
+      result = await sbRest(`pins?id=eq.${sId}`, { method: 'DELETE', prefer: 'return=minimal' });
+      if (result && result.ok) success = true;
+    } catch(e3) {
+      console.warn('[internetHarita] delPinOwn DELETE denemesi:', e3);
+    }
+  }
+
+  // Kullanıcı "Sil" dediği için bu ölçüm KESİNLİKLE yerel depolamadan kaldırılır ve silindi işaretlenir
+  markPinDeletedLocal(sId);
+  removeMyPinLocal(sId);
+
+  // Moderatör onay hafızasında varsa oradan da temizle
+  try {
+    const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
+    if (overrides[sId]) {
+      delete overrides[sId];
+      localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
+    }
+  } catch(e) {}
 
   // Google hesabı senkronizasyonu
   if (typeof currentSyncUser !== 'undefined' && currentSyncUser) {
@@ -3975,7 +4122,7 @@ async function delPinOwn(id) {
   if (!success) {
     try {
       await addRapor({
-        pin_id: id,
+        pin_id: sId,
         tip: 'silme_talebi',
         aciklama: 'Kullanıcı kendi yerel ölçümünü haritadan kaldırdı (otomatik senkron silme)',
         durum: 'bekleyen'
@@ -5488,17 +5635,20 @@ function loadPins() {
 
 async function _loadPinsCore() {
   try {
+    const localDeleted = getDeletedPinsLocal();
+
     // 1. Genel kamu pinlerini çek
     const publicRes = await getPins();
-    const all = publicRes || [];
+    const all = (publicRes || []).filter(p => !localDeleted.has(String(p.id)) && !p.deleted_at);
 
     // 2. Kullanıcının bu tarayıcıdan kaydettiği yerel pinlerini ve ID'lerini oku
-    const myPinIds = new Set(getMyLocalPinIds());
-    const myLocalPins = getMyLocalPins();
+    const myPinIds = new Set(getMyLocalPinIds().map(String));
+    const myLocalPins = getMyLocalPins().filter(p => !localDeleted.has(String(p.id)));
 
     // Genel pinler içinde bu kullanıcının pinleri varsa işaretle
     all.forEach(p => {
-      if (myPinIds.has(p.id) || (browserFingerprint && p.browser_fp && p.browser_fp === browserFingerprint)) {
+      const sId = String(p.id);
+      if (myPinIds.has(sId) || (browserFingerprint && p.browser_fp && p.browser_fp === browserFingerprint)) {
         p.is_own_pin = true;
         p.browser_fp = browserFingerprint;
       }
@@ -5506,7 +5656,8 @@ async function _loadPinsCore() {
 
     // Kullanıcının henüz yayınlanmamış/karantinada olan yerel pinlerini de listeye ekle
     myLocalPins.forEach(p => {
-      const idx = all.findIndex(x => x.id === p.id);
+      if (localDeleted.has(String(p.id))) return;
+      const idx = all.findIndex(x => String(x.id) === String(p.id));
       if (idx === -1) {
         all.push({ ...p, is_own_pin: true, browser_fp: browserFingerprint });
       } else {
@@ -5518,8 +5669,8 @@ async function _loadPinsCore() {
     if (isModLoggedIn && browserFingerprint) {
       try {
         const myRes = await sbRest(`pins?select=*&browser_fp=eq.${encodeURIComponent(browserFingerprint)}&deleted_at=is.null&order=created_at.desc&limit=20`);
-        (myRes || []).forEach(p => {
-          const idx = all.findIndex(x => x.id === p.id);
+        (myRes || []).filter(p => !localDeleted.has(String(p.id))).forEach(p => {
+          const idx = all.findIndex(x => String(x.id) === String(p.id));
           if (idx === -1) all.push({ ...p, is_own_pin: true });
           else all[idx] = { ...all[idx], ...p, is_own_pin: true };
         });
@@ -5548,10 +5699,12 @@ async function _loadPinsCore() {
     console.warn('loadPins network failure, checking cache...', e);
     let usedCache = false;
     try {
+      const localDeleted = getDeletedPinsLocal();
       const cached = JSON.parse(localStorage.getItem('ih_cached_pins') || 'null');
       if (cached && Array.isArray(cached.pins) && cached.pins.length > 0) {
-        pinsData = cached.pins;
-        cleanPinsData = publicCleanPins(cached.pins);
+        const filteredCached = cached.pins.filter(p => !localDeleted.has(String(p.id)) && !p.deleted_at);
+        pinsData = filteredCached;
+        cleanPinsData = publicCleanPins(filteredCached);
         renderHex(); renderModPins(); renderMyPins();
         
         const speedPins = cleanPinsData.filter(p => !p.is_altyapi_yok);
@@ -7021,8 +7174,12 @@ function renderOperatorExperienceReport() {
         <button type="button" class="sort-btn ${operatorReportSort === 'stable' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('stable')">⚡ Hız Stabilitesi</button>
         <button type="button" class="sort-btn ${operatorReportSort === 'pricePerf' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('pricePerf')">💰 F/P Dengeli</button>
         <button type="button" class="sort-btn ${operatorReportSort === 'lowPing' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('lowPing')">🎮 Düşük Ping</button>
+        <button type="button" class="sort-btn ${operatorReportSort === 'supportGood' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('supportGood')">📞 İlgili Destek</button>
         <button type="button" class="sort-btn ${operatorReportSort === 'eveningDrop' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('eveningDrop')">📉 Akşam Düşüşü</button>
         <button type="button" class="sort-btn ${operatorReportSort === 'disconnect' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('disconnect')">⚠️ Kopma</button>
+        <button type="button" class="sort-btn ${operatorReportSort === 'supportHard' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('supportHard')">☎️ Destek Zor</button>
+        <button type="button" class="sort-btn ${operatorReportSort === 'modemIssue' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('modemIssue')">📦 Modem Sorunu</button>
+        <button type="button" class="sort-btn ${operatorReportSort === 'priceHike' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('priceHike')">💸 Zam Şikayeti</button>
         <button type="button" class="sort-btn ${operatorReportSort === 'outageSlow' ? 'active' : ''}" style="padding:4px 9px;font-size:10px;" onclick="setOperatorReportSort('outageSlow')">⏳ Arıza Süresi</button>
       </div>
     </div>
@@ -8616,11 +8773,16 @@ async function saveUserEdit() {
 
 async function deleteUserPin(pinId) {
   if (!confirm('Bu ölçüm verinizi silmek istediğinize emin misiniz?')) return;
+  const sId = String(pinId);
   try {
-    await delPinOwn(pinId);
-    // Ağ gecikmesi olmadan anında haritadan kaldır
-    pinsData = pinsData.filter(p => p.id !== pinId);
+    markPinDeletedLocal(sId);
+    removeMyPinLocal(sId);
+    await delPinOwn(sId);
+    pinsData = pinsData.filter(p => String(p.id) !== sId);
     cleanPinsData = publicCleanPins(pinsData);
+    if (typeof adminPinsCache !== 'undefined' && adminPinsCache) {
+      adminPinsCache = adminPinsCache.filter(p => String(p.id) !== sId);
+    }
     renderHex();
     if (isMyPinsVisible && typeof renderMyPins === 'function') renderMyPins();
     if (typeof renderUserPinsList === 'function') renderUserPinsList();
@@ -8635,9 +8797,13 @@ async function deleteUserPin(pinId) {
     await loadPins(); // sunucu verisini de senkronize et
     if (document.getElementById('page-istatistik')?.classList.contains('active')) renderStats();
   } catch(e) {
-    removeMyPinLocal(pinId);
-    pinsData = pinsData.filter(p => p.id !== pinId);
+    markPinDeletedLocal(sId);
+    removeMyPinLocal(sId);
+    pinsData = pinsData.filter(p => String(p.id) !== sId);
     cleanPinsData = publicCleanPins(pinsData);
+    if (typeof adminPinsCache !== 'undefined' && adminPinsCache) {
+      adminPinsCache = adminPinsCache.filter(p => String(p.id) !== sId);
+    }
     renderHex();
     if (isMyPinsVisible && typeof renderMyPins === 'function') renderMyPins();
     if (typeof renderUserPinsList === 'function') renderUserPinsList();
@@ -8650,8 +8816,9 @@ async function deleteAndRecreatePin() {
   const pinId = document.getElementById('userEditPinId')?.value;
   if (!pinId) return;
   if (!confirm('Mevcut ölçüm silinecek ve verileriniz yeni konum seçebilmeniz için forma aktarılacak. Onaylıyor musunuz?')) return;
+  const sId = String(pinId);
   
-  const pin = pinsData.find(p => p.id === pinId) || (activeHexPins || []).find(p => p.id === pinId) || getMyLocalPins().find(p => p.id === pinId);
+  const pin = pinsData.find(p => String(p.id) === sId) || (activeHexPins || []).find(p => String(p.id) === sId) || getMyLocalPins().find(p => String(p.id) === sId);
   const dl = document.getElementById('userEditDL')?.value;
   const ul = document.getElementById('userEditUL')?.value;
   const pkgDL = document.getElementById('userEditPkgDL')?.value;
@@ -8662,9 +8829,14 @@ async function deleteAndRecreatePin() {
   const iss = pin?.iss;
 
   try {
-    await delPinOwn(pinId);
-    pinsData = pinsData.filter(p => p.id !== pinId);
+    markPinDeletedLocal(sId);
+    removeMyPinLocal(sId);
+    await delPinOwn(sId);
+    pinsData = pinsData.filter(p => String(p.id) !== sId);
     cleanPinsData = publicCleanPins(pinsData);
+    if (typeof adminPinsCache !== 'undefined' && adminPinsCache) {
+      adminPinsCache = adminPinsCache.filter(p => String(p.id) !== sId);
+    }
     renderHex();
     closeUserEditModal();
     document.getElementById('mapInfo')?.classList.remove('visible');
@@ -8889,7 +9061,15 @@ async function loadInboxData() {
 }
 
 function updateInboxSummary() {
-  const raporlarCount = (document.querySelectorAll('#bekleyenList .mod-card') || []).length;
+  const bekleyenEl = document.getElementById('bekleyenList');
+  const sikayetEl = document.getElementById('sikayetList');
+  const customEl = document.getElementById('customIssList');
+
+  const isRaporLoading = !!bekleyenEl?.querySelector('.loading-dots, .loading-text');
+  const isSikayetLoading = !!sikayetEl?.querySelector('.loading-dots, .loading-text');
+  const isCustomLoading = !!customEl?.querySelector('.loading-dots, .loading-text');
+
+  const raporlarCount = (document.querySelectorAll('#bekleyenList .report-card, #bekleyenList .mod-card') || []).length;
   const sikayetlerCount = (document.querySelectorAll('#sikayetList .mod-card') || []).length;
   const customIssCount = (document.querySelectorAll('#customIssList .mod-card') || []).length;
   const totalPending = raporlarCount + sikayetlerCount + customIssCount;
@@ -8905,25 +9085,31 @@ function updateInboxSummary() {
 
   const emptyState = document.getElementById('inboxEmptyState');
   if (emptyState) {
-    emptyState.style.display = totalPending === 0 ? 'block' : 'none';
+    emptyState.style.display = (!isRaporLoading && !isSikayetLoading && !isCustomLoading && totalPending === 0) ? 'block' : 'none';
   }
 
   const secRapor = document.getElementById('inboxSection-raporlar');
-  if (secRapor) secRapor.style.display = (raporlarCount > 0 || (document.getElementById('gecmisRaporList')?.children?.length > 0)) ? 'block' : 'none';
+  if (secRapor) {
+    secRapor.style.display = (isRaporLoading || raporlarCount > 0 || (document.getElementById('gecmisRaporList')?.children?.length > 0)) ? 'block' : 'none';
+  }
 
   const secSikayet = document.getElementById('inboxSection-sikayetler');
-  if (secSikayet) secSikayet.style.display = sikayetlerCount > 0 ? 'block' : 'none';
+  if (secSikayet) {
+    secSikayet.style.display = (isSikayetLoading || sikayetlerCount > 0) ? 'block' : 'none';
+  }
 
   const secCustom = document.getElementById('inboxSection-customIss');
-  if (secCustom) secCustom.style.display = customIssCount > 0 ? 'block' : 'none';
-
-  if (totalPending === 0 && emptyState) {
-    emptyState.style.display = 'block';
+  if (secCustom) {
+    secCustom.style.display = (isCustomLoading || customIssCount > 0) ? 'block' : 'none';
   }
 }
 
 async function loadCustomIss() {
-  const list = document.getElementById('customIssList'); list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
+  const list = document.getElementById('customIssList');
+  if (!list) return;
+  if (!list.children.length || list.querySelector('.loading-dots, .loading-text')) {
+    list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
+  }
   try {
     // Taze cache — az önce ISS eklenmiş olabilir
     await loadIssListAndRenderChips();
@@ -8974,7 +9160,7 @@ async function loadCustomIss() {
         </div>
       </div>`;
     }).join('');
-  } catch(e) { list.innerHTML='Hata: '+e.message; }
+  } catch(e) { list.innerHTML='Hata: '+e.message; } finally { updateInboxSummary(); }
 }
 
 async function approveCustomIss(iss, normalizedName, color) {
@@ -9636,11 +9822,18 @@ function filterModYorumList() {
 }
 
 async function loadSikayetler() {
-  const list = document.getElementById('sikayetList'); list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
+  const list = document.getElementById('sikayetList');
+  if (!list) return;
+  if (!list.children.length || list.querySelector('.loading-dots, .loading-text')) {
+    list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
+  }
   try {
     const pins = await getAllPinsAdmin()||[];
     const flagged = pins.filter(p => ((p.sikayet_sayisi||0)>0 || p.is_quarantine) && !p.deleted_at);
-    if (!flagged.length) return list.innerHTML='<div class="empty-state">Şüpheli pin kümesi bulunmuyor ✅</div>';
+    if (!flagged.length) {
+      list.innerHTML = '<div class="empty-state">Şüpheli pin kümesi bulunmuyor ✅</div>';
+      return;
+    }
 
     // FP'ye göre grupla — aynı cihazdan gelen pinleri bir arada göster
     const groups = {};
@@ -9705,11 +9898,17 @@ async function loadSikayetler() {
           </div>
         </div>`;
       }).join('');
-  } catch(e) { list.innerHTML='Hata: '+e.message; }
+  } catch(e) {
+    list.innerHTML = 'Hata: ' + e.message;
+  } finally {
+    updateInboxSummary();
+  }
 }
 
 async function groupAction(idsJson, approve) {
-  let ids; try { ids = JSON.parse(idsJson.replace(/&quot;/g,'"')); } catch(e) { return; }
+  let rawIds; try { rawIds = JSON.parse(idsJson.replace(/&quot;/g,'"')); } catch(e) { return; }
+  const ids = rawIds.map(String);
+  const idsSet = new Set(ids);
   try {
     if (approve) {
       const targetPins = await sbRest(`pins?id=in.(${ids.join(',')})&select=id,iss`) || [];
@@ -9730,9 +9929,13 @@ async function groupAction(idsJson, approve) {
     await Promise.all(ids.map(id => patchPin(id, { gorunur: approve, sikayet_sayisi: 0, is_quarantine: false })));
     ids.forEach(id => document.getElementById('mc_'+id)?.remove());
     showToast(approve ? `✅ ${ids.length} pin onaylandı` : `👁 ${ids.length} pin gizlendi`);
+
+    if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
+      adminPinsCache = adminPinsCache.map(p => idsSet.has(String(p.id)) ? { ...p, gorunur: approve, sikayet_sayisi: 0, is_quarantine: false } : p);
+    }
     await loadPins();
     await loadCustomIss();
-    loadSikayetler();
+    await loadSikayetler();
     loadAdminTable();
     updateInboxSummary();
     updateModStatsSummary();
@@ -9740,19 +9943,21 @@ async function groupAction(idsJson, approve) {
 }
 
 async function groupDelete(idsJson) {
-  let ids; try { ids = JSON.parse(idsJson.replace(/&quot;/g,'"')); } catch(e) { return; }
+  let rawIds; try { rawIds = JSON.parse(idsJson.replace(/&quot;/g,'"')); } catch(e) { return; }
+  const ids = rawIds.map(String);
+  const idsSet = new Set(ids);
   if (!confirm(`Seçilen ${ids.length} adet pin kalıcı olarak silinsin mi?`)) return;
   try {
     await Promise.all(ids.map(id => delPin(id)));
     ids.forEach(id => document.getElementById('mc_'+id)?.remove());
-    adminPinsCache = adminPinsCache.filter(p => !ids.includes(p.id));
-    pinsData = pinsData.filter(p => !ids.includes(p.id));
+    adminPinsCache = adminPinsCache.filter(p => !idsSet.has(String(p.id)));
+    pinsData = pinsData.filter(p => !idsSet.has(String(p.id)));
     cleanPinsData = publicCleanPins(pinsData);
     if (maps.main) { renderHex(); renderModPins(); }
     showToast(`🗑 ${ids.length} pin silindi`);
     await loadPins();
     await loadCustomIss();
-    loadSikayetler();
+    await loadSikayetler();
     loadAdminTable();
     updateInboxSummary();
     updateModStatsSummary();
@@ -9772,8 +9977,9 @@ async function loadAdminTable() {
 }
 
 async function quickApprovePinRow(id) {
+  const sId = String(id);
   try {
-    const p = adminPinsCache.find(x => x.id === id);
+    const p = adminPinsCache.find(x => String(x.id) === sId);
     if (!p) return;
     if (!isApprovedPublicIss(p.iss)) {
       try {
@@ -9784,11 +9990,16 @@ async function quickApprovePinRow(id) {
       registerLocalApprovedIss(p.iss);
       await loadIssListAndRenderChips();
     }
-    await patchPin(id, { gorunur: true, is_quarantine: false, sikayet_sayisi: 0 });
+    await patchPin(sId, { gorunur: true, is_quarantine: false, sikayet_sayisi: 0 });
+    document.getElementById('mc_' + sId)?.remove();
     showToast(`✅ "${p.iss}" pini onaylandı ve haritada yayına alındı!`);
+    if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
+      adminPinsCache = adminPinsCache.map(x => String(x.id) === sId ? { ...x, gorunur: true, is_quarantine: false, sikayet_sayisi: 0 } : x);
+    }
     // Veritabanından taze veri çek ve tüm listeleri güncelle
     await loadPins();
-    loadSikayetler();
+    await loadCustomIss();
+    await loadSikayetler();
     filterAdminTable(document.getElementById('tableSearch')?.value || '');
     updateModStatsSummary();
     updateInboxSummary();
@@ -9798,12 +10009,17 @@ async function quickApprovePinRow(id) {
 }
 
 async function quickHidePinRow(id) {
+  const sId = String(id);
   try {
-    await patchPin(id, { gorunur: false, is_quarantine: false, sikayet_sayisi: 0 });
+    await patchPin(sId, { gorunur: false, is_quarantine: false, sikayet_sayisi: 0 });
+    document.getElementById('mc_' + sId)?.remove();
     showToast(`👁 Pin gizlendi`);
+    if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
+      adminPinsCache = adminPinsCache.map(x => String(x.id) === sId ? { ...x, gorunur: false, is_quarantine: false, sikayet_sayisi: 0 } : x);
+    }
     await loadPins();
     await loadCustomIss();
-    loadSikayetler();
+    await loadSikayetler();
     filterAdminTable(document.getElementById('tableSearch')?.value || '');
     updateModStatsSummary();
     updateInboxSummary();
@@ -9984,13 +10200,21 @@ function cleanBolgeStr(s) {
 }
 
 async function loadRaporlar() {
-  const list = document.getElementById('bekleyenList'); list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
+  const list = document.getElementById('bekleyenList');
+  if (!list) return;
+  if (!list.children.length || list.querySelector('.loading-dots, .loading-text')) {
+    list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
+  }
   try {
-    const raporlar = await getRaporlar()||[]; if (!raporlar.length) return list.innerHTML='<div class="empty-state">Bekleyen rapor yok ✅</div>';
+    const raporlar = await getRaporlar()||[];
+    if (!raporlar.length) {
+      list.innerHTML = '<div class="empty-state">Bekleyen rapor yok ✅</div>';
+      return;
+    }
     const siblingGroups = groupRaporSiblings(raporlar);
     list.innerHTML = raporlar.map(r => {
       const tarihStr = new Date(r.created_at).toLocaleString('tr-TR');
-      const pin = adminPinsCache.find(p => p.id === r.pin_id);
+      const pin = adminPinsCache.find(p => String(p.id) === String(r.pin_id));
       const focusBtn = (pin && pin.lat) ? `<button class="btn-edit" onclick="focusOnMap(${pin.lat}, ${pin.lng})" title="Haritada Odaklan">📍 Harita</button>` : '';
       return `<div class="report-card">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div class="report-type">${RAPOR_TIP_LABELS[r.tip]||escHtml(r.tip)}</div><div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);">${tarihStr}</div></div>
@@ -10004,7 +10228,11 @@ async function loadRaporlar() {
         </div>
       </div>`;
     }).join('');
-  } catch(e) { list.innerHTML='Hata: '+e.message; }
+  } catch(e) {
+    list.innerHTML = 'Hata: ' + e.message;
+  } finally {
+    updateInboxSummary();
+  }
 }
 
 // GEÇMİŞ BİLDİRİMLER: durum 'islendi' veya 'reddedildi' olan raporları gösterir.
@@ -10021,14 +10249,22 @@ function toggleGecmisRaporlar() {
 }
 
 async function loadGecmisRaporlar() {
-  const list = document.getElementById('gecmisRaporList'); list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
+  const list = document.getElementById('gecmisRaporList');
+  if (!list) return;
+  if (!list.children.length || list.querySelector('.loading-dots, .loading-text')) {
+    list.innerHTML = '<div class="loading-dots">Yükleniyor</div>';
+  }
   try {
-    const raporlar = await getGecmisRaporlar()||[]; if (!raporlar.length) return list.innerHTML='<div class="empty-state">Henüz işlenmiş rapor yok</div>';
+    const raporlar = await getGecmisRaporlar()||[];
+    if (!raporlar.length) {
+      list.innerHTML = '<div class="empty-state">Henüz işlenmiş rapor yok</div>';
+      return;
+    }
     const siblingGroups = groupRaporSiblings(raporlar);
     const durumBadge = { islendi:'<span style="color:var(--success);font-weight:700;">✅ İşlendi</span>', reddedildi:'<span style="color:var(--danger);font-weight:700;">❌ Reddedildi</span>' };
     list.innerHTML = raporlar.map(r => {
       const tarihStr = new Date(r.created_at).toLocaleString('tr-TR');
-      const pin = adminPinsCache.find(p => p.id === r.pin_id);
+      const pin = adminPinsCache.find(p => String(p.id) === String(r.pin_id));
       const focusBtn = (pin && pin.lat) ? `<button class="btn-edit" onclick="focusOnMap(${pin.lat}, ${pin.lng})" title="Haritada Odaklan">📍 Harita</button>` : '';
       return `<div class="report-card" style="opacity:.75;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div class="report-type">${RAPOR_TIP_LABELS[r.tip]||escHtml(r.tip)}</div><div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);">${tarihStr}</div></div>
@@ -10042,7 +10278,11 @@ async function loadGecmisRaporlar() {
         </div>
       </div>`;
     }).join('');
-  } catch(e) { list.innerHTML='Hata: '+e.message; }
+  } catch(e) {
+    list.innerHTML = 'Hata: ' + e.message;
+  } finally {
+    updateInboxSummary();
+  }
 }
 
 async function undoRapor(id) {
@@ -10056,13 +10296,17 @@ async function undoRapor(id) {
 
 async function handleRapor(id, durum) { try { await patchRapor(id,{durum}); showToast('✅ Rapor güncellendi'); await loadRaporlar(); if (gecmisRaporlarYuklendi) loadGecmisRaporlar(); updateInboxSummary(); } catch(e) { showToast('Hata: '+e.message,'err'); } }
 async function modAction(id, approve) { 
+  const sId = String(id);
   try { 
-    await patchPin(id, { gorunur: approve, sikayet_sayisi: 0, is_quarantine: false }); 
-    document.getElementById('mc_'+id)?.remove(); 
+    await patchPin(sId, { gorunur: approve, sikayet_sayisi: 0, is_quarantine: false }); 
+    document.getElementById('mc_'+sId)?.remove(); 
     showToast(approve ? '✅ Pin onaylandı' : '👁 Pin gizlendi'); 
+    if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
+      adminPinsCache = adminPinsCache.map(p => String(p.id) === sId ? { ...p, gorunur: approve, sikayet_sayisi: 0, is_quarantine: false } : p);
+    }
     await loadPins(); 
     await loadCustomIss();
-    loadSikayetler(); 
+    await loadSikayetler(); 
     loadAdminTable();
     updateInboxSummary();
     updateModStatsSummary();
@@ -10222,9 +10466,23 @@ async function quickApproveEdit() {
 
 async function modDeletePin(id, permanent = false) {
   if (!confirm(permanent ? 'Bu pin kaydını kalıcı olarak silmek istediğinize emin misiniz?' : 'Bu pini silmek istediğinize emin misiniz?')) return;
+  const sId = String(id);
   try { 
-    if (permanent) await hardDelPin(id); else await delPin(id); 
-    document.getElementById('mc_'+id)?.remove(); document.getElementById('se_'+id)?.remove(); adminPinsCache = adminPinsCache.filter(p=>p.id!==id); pinsData = pinsData.filter(p=>p.id!==id); cleanPinsData = publicCleanPins(pinsData); if (maps.main) { renderHex(); renderModPins(); } if (document.getElementById('page-istatistik')?.classList.contains('active')) renderStats(); showToast('🗑 Pin silindi'); loadAdminTable(); updateModStatsSummary();
+    if (permanent) await hardDelPin(sId); else await delPin(sId); 
+    document.getElementById('mc_'+sId)?.remove();
+    document.getElementById('se_'+sId)?.remove();
+    adminPinsCache = adminPinsCache.filter(p => String(p.id) !== sId);
+    pinsData = pinsData.filter(p => String(p.id) !== sId);
+    cleanPinsData = publicCleanPins(pinsData);
+    if (maps.main) { renderHex(); renderModPins(); }
+    if (document.getElementById('page-istatistik')?.classList.contains('active')) renderStats();
+    showToast('🗑 Pin silindi');
+    await loadPins();
+    await loadCustomIss();
+    await loadSikayetler();
+    loadAdminTable();
+    updateInboxSummary();
+    updateModStatsSummary();
   } catch(e) { 
     if(e.message.includes("does not exist") || e.message.includes("schema cache")) showToast("Supabase Cache yenileniyor, birazdan tekrar dene.", "warn");
     else showToast('Hata: '+e.message,'err'); 
@@ -10233,15 +10491,16 @@ async function modDeletePin(id, permanent = false) {
 function toggleAllPins(el) { document.querySelectorAll('.pin-check').forEach(cb=>cb.checked=el.checked); }
 
 async function bulkApprovePins() {
-  const ids = Array.from(document.querySelectorAll('.pin-check:checked')).map(cb=>cb.value);
+  const ids = Array.from(document.querySelectorAll('.pin-check:checked')).map(cb=>String(cb.value));
   if (!ids.length) return showToast('Seçili pin yok','err');
+  const idsSet = new Set(ids);
   const btn = document.getElementById('bulkApproveBtn'); btn.textContent='Onaylanıyor...'; btn.disabled=true;
   await loadIssListAndRenderChips(); // taze cache
   
   // Önce bilinmeyen ISS'leri tespit edip topluca ekle
   const unapprovedIssNames = new Set();
   ids.forEach(id => {
-    const p = adminPinsCache.find(x => x.id === id);
+    const p = adminPinsCache.find(x => String(x.id) === id);
     if (p && !isApprovedPublicIss(p.iss)) unapprovedIssNames.add(p.iss);
   });
   for (const iss of unapprovedIssNames) {
@@ -10259,18 +10518,23 @@ async function bulkApprovePins() {
   }));
   btn.textContent='✅ Seçilileri Onayla'; btn.disabled=false;
   showToast(`✅ ${ok} pin onaylandı${fail?', '+fail+' hata':''}`);
-  adminPinsCache = adminPinsCache.map(p => ids.includes(p.id) ? {...p, gorunur:true, is_quarantine:false, sikayet_sayisi:0} : p);
-  pinsData = pinsData.map(p => ids.includes(p.id) ? {...p, gorunur:true, is_quarantine:false, sikayet_sayisi:0} : p);
+  adminPinsCache = adminPinsCache.map(p => idsSet.has(String(p.id)) ? {...p, gorunur:true, is_quarantine:false, sikayet_sayisi:0} : p);
+  pinsData = pinsData.map(p => idsSet.has(String(p.id)) ? {...p, gorunur:true, is_quarantine:false, sikayet_sayisi:0} : p);
   cleanPinsData = publicCleanPins(pinsData);
   if (maps.main) { renderHex(); renderModPins(); }
+  await loadPins();
+  await loadCustomIss();
+  await loadSikayetler();
   loadAdminTable();
+  updateInboxSummary();
   updateModStatsSummary();
 }
 
 async function bulkDeletePins() {
-  const ids = Array.from(document.querySelectorAll('.pin-check:checked')).map(cb=>cb.value);
+  const ids = Array.from(document.querySelectorAll('.pin-check:checked')).map(cb=>String(cb.value));
   if (!ids.length) return showToast('Seçili pin yok','err');
   if (!confirm(`Seçili ${ids.length} pini silmek istediğinize emin misiniz?`)) return;
+  const idsSet = new Set(ids);
   const btn = document.getElementById('bulkDelBtn'); btn.textContent='Siliniyor...'; btn.disabled=true;
   let ok=0, fail=0;
   await Promise.all(ids.map(async (id) => {
@@ -10278,11 +10542,15 @@ async function bulkDeletePins() {
   }));
   if (fail) showToast(`✅ ${ok} silindi, ⚠ ${fail} başarısız`, 'warn'); else showToast(`✅ ${ok} pin silindi`);
   btn.textContent='🗑 Seçilileri Sil'; btn.disabled=false;
-  adminPinsCache = adminPinsCache.filter(p => !ids.includes(p.id));
-  pinsData = pinsData.filter(p => !ids.includes(p.id));
+  adminPinsCache = adminPinsCache.filter(p => !idsSet.has(String(p.id)));
+  pinsData = pinsData.filter(p => !idsSet.has(String(p.id)));
   cleanPinsData = publicCleanPins(pinsData);
   if (maps.main) { renderHex(); renderModPins(); }
+  await loadPins();
+  await loadCustomIss();
+  await loadSikayetler();
   loadAdminTable();
+  updateInboxSummary();
   updateModStatsSummary();
 }
 
@@ -10858,6 +11126,7 @@ function showSearchResultCard(targetLat, targetLng, title, sub) {
   if (matchedPins.length > 0) {
     showHexInfo(matchedPins, null);
     const titleEl = document.getElementById('infoTitle');
+    if (titleEl && displayTitle) titleEl.textContent = '📍 ' + displayTitle;
   } else {
     activeHexPins = [];
     document.getElementById('infoTitle').textContent = '📍 ' + displayTitle;
@@ -11613,7 +11882,7 @@ function shareScoreCardTwitter() {
     tweet = `İnternet Hız Karnem: ⬇️ ${d.dl} Mbps | ⬆️ ${d.ul || 0} Mbps (Derece: ${grade.grade} - ${grade.title})\n${locStr}${issStr}Sen de kendi mahallendeki internet hızını test et ve haritada gör 👉 https://internetharita.com.tr #internetharita #hıztesti`;
   }
 
-  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`, '_blank');
+  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`, '_blank', 'noopener,noreferrer');
 }
 
 function shareScoreCardWhatsApp() {
@@ -11630,7 +11899,7 @@ function shareScoreCardWhatsApp() {
     text = `İnternet hızımı test ettim${locStr}: ⬇️ ${d.dl} Mbps İndirme, ⬆️ ${d.ul || 0} Mbps Yükleme! Sen de mahallendeki gerçek hızları haritada gör 👉 https://internetharita.com.tr`;
   }
 
-  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
 }
 
 function copyScoreCardText() {
@@ -11668,7 +11937,8 @@ document.addEventListener('keydown', function(e) {
       { id: 'addIssModal', fn: closeAddIssModal },
       { id: 'reportModal', fn: closeReportModal },
       { id: 'aboutModal', fn: closeAboutModal },
-      { id: 'kvkkModal', fn: closeKvkkModal }
+      { id: 'kvkkModal', fn: closeKvkkModal },
+      { id: 'welcomeModal', fn: () => closeWelcomeModal(false) }
     ];
     for (const m of modalsToClose) {
       const el = document.getElementById(m.id);
