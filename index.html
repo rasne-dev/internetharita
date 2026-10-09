@@ -722,14 +722,31 @@ html.light .scroll-to-guide-btn:hover {
   box-sizing: border-box;
 }
 .landing-top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 32px;
-  padding-bottom: 16px;
+  margin-bottom: 28px;
+  padding: 12px 0;
   border-bottom: 1px solid var(--border);
+  background: rgba(7, 11, 15, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+html.light .landing-top-bar {
+  background: rgba(240, 244, 248, 0.96);
+}
+@keyframes subtleBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(3px); }
+}
+.scroll-to-guide-btn .stg-arrow {
+  display: inline-block;
+  animation: subtleBounce 2s ease-in-out infinite;
 }
 .landing-breadcrumb {
   display: flex;
@@ -763,6 +780,35 @@ html.light .scroll-to-guide-btn:hover {
   background: var(--surface3);
   border-color: var(--accent);
   transform: translateY(-1px);
+}
+.landing-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  font-family: var(--font-body);
+  transition: all 0.2s ease;
+}
+.landing-more-btn:hover {
+  background: var(--surface3);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+html.light .landing-more-btn {
+  background: #ffffff;
+  border-color: #d0d7de;
+}
+html.light .landing-more-btn:hover {
+  background: #f8fafc;
+  border-color: var(--accent);
 }
 .landing-section {
   margin-bottom: 56px;
@@ -924,7 +970,7 @@ html.light .landing-faq-content {
 /* Master Footer */
 .landing-footer {
   margin-top: 60px;
-  padding: 44px 0 32px;
+  padding: 44px 0 max(32px, env(safe-area-inset-bottom, 32px));
   border-top: 1px solid var(--border);
 }
 .footer-grid {
@@ -2903,46 +2949,16 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
           <span class="landing-badge-tech tech-adsl">Bakır Hat • En fazla 16–24 Mbps</span>
         </div>
       </div>
-    </section>
 
-    <!-- BÖLÜM 3: GÜVENİLİRLİK VE DOĞRULAMA -->
-    <section class="landing-section">
-      <div class="landing-section-header">
-        <span class="landing-tag">Güvenilirlik</span>
-        <h2 class="landing-title">Veri Doğrulama ve Güvenilirlik İlkeleri</h2>
-        <p class="landing-lead">
-          internetHarita üzerindeki tüm hız ölçümleri ve bölge puanları güvenilirlik denetiminden geçer:
-        </p>
-      </div>
-
-      <div class="landing-grid-3">
-        <div class="landing-card">
-          <div class="landing-card-icon">⚡</div>
-          <h3 class="landing-card-title">Entegre Hız Testi</h3>
-          <p class="landing-card-text">
-            Platformumuz, doğrudan bağımsız sunucular üzerinden indirme ve yükleme hızınızı ölçer. Servis sağlayıcıların yapay hızlandırmaları filtrelenerek günlük kullanımda aldığınız gerçek hız belirlenir.
-          </p>
-        </div>
-
-        <div class="landing-card">
-          <div class="landing-card-icon">🔍</div>
-          <h3 class="landing-card-title">Otomatik Güvenlik ve Hata Denetimi</h3>
-          <p class="landing-card-text">
-            Olağan dışı veya şüpheli değerler (örneğin eski bir hatta gerçek dışı yüksek hız girilmesi) otomatik olarak incelemeye alınır ve doğrulanana kadar harita ortalamasına yansıtılmaz.
-          </p>
-        </div>
-
-        <div class="landing-card">
-          <div class="landing-card-icon">🌐</div>
-          <h3 class="landing-card-title">Topluluk Deneyimi ve Yorumlar</h3>
-          <p class="landing-card-text">
-            Kullanıcılar ekledikleri ölçümlere kendi altyapı deneyimlerini ve yorumlarını ekleyebilir, mahallenizdeki internet sağlayıcıları hakkında komşularınızın gerçek deneyimlerini inceleyebilirsiniz.
-          </p>
-        </div>
+      <div style="margin-top:24px;text-align:center;">
+        <a href="/rehber.html" class="landing-more-btn">
+          <span>📖 Daha Fazlası İçin Kapsamlı Altyapı Rehberi</span>
+          <span>&rarr;</span>
+        </a>
       </div>
     </section>
 
-    <!-- BÖLÜM 4: SIKÇA SORULAN SORULAR (FAQ - JSON-LD BİREBİR EŞLEŞEN) -->
+    <!-- BÖLÜM 3: SIKÇA SORULAN SORULAR (FAQ) -->
     <section class="landing-section" id="faq">
       <div class="landing-section-header">
         <span class="landing-tag">SSS</span>
@@ -2964,7 +2980,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
           </div>
         </details>
 
-        <details class="landing-faq-item" open>
+        <details class="landing-faq-item">
           <summary class="landing-faq-summary">
             <span>Mahallemde fiber internet var mı nasıl öğrenirim?</span>
           </summary>
@@ -2975,7 +2991,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
           </div>
         </details>
 
-        <details class="landing-faq-item" open>
+        <details class="landing-faq-item">
           <summary class="landing-faq-summary">
             <span>İnternet altyapı haritası verileri ne kadar güvenilir?</span>
           </summary>
@@ -2986,7 +3002,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
           </div>
         </details>
 
-        <details class="landing-faq-item" open>
+        <details class="landing-faq-item">
           <summary class="landing-faq-summary">
             <span>En hızlı internet sağlayıcısı hangisi ve bölgesel hızlar nasıl görülür?</span>
           </summary>
@@ -3018,6 +3034,13 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
             </p>
           </div>
         </details>
+      </div>
+
+      <div style="margin-top:20px;text-align:center;">
+        <a href="/rehber.html" class="landing-more-btn" style="font-size:12.5px;">
+          <span>❓ Daha Fazla Soru ve Yanıt için Rehber Sayfası</span>
+          <span>&rarr;</span>
+        </a>
       </div>
     </section>
 
