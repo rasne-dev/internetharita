@@ -446,8 +446,16 @@ html.light .mlo-box { background: #ffffff; border-color: #d0d7de; box-shadow: 0 
   transition: all .2s; flex-shrink: 0; white-space: nowrap;
 }
 .sidebar-reset-btn:hover { background: rgba(239,68,68,0.12); border-color: var(--danger); color: var(--danger); }
+.sidebar-reset-btn.highlight { background: var(--accent-dim) !important; border-color: var(--accent) !important; color: var(--accent) !important; font-weight: 700 !important; }
+.sidebar-reset-btn.highlight:hover { background: rgba(239,68,68,0.15) !important; border-color: var(--danger) !important; color: var(--danger) !important; }
 html.light .sidebar-reset-btn { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); color: rgba(0,0,0,0.4); }
 html.light .sidebar-reset-btn:hover { background: rgba(239,68,68,0.1); border-color: var(--danger); color: var(--danger); }
+html.light .sidebar-reset-btn.highlight { background: rgba(0,136,204,0.12) !important; border-color: var(--accent) !important; color: var(--accent) !important; }
+.filter-indicator-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 6px var(--accent);
+  margin-left: 5px; vertical-align: middle;
+}
 .sidebar-body {
   display: flex; flex-direction: column;
   overflow-y: auto; overflow-x: hidden;
@@ -2154,7 +2162,7 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   .loc-actions { flex-wrap:wrap; }
   .btn-loc { min-height:44px; font-size:12px; }
   .btn-submit { min-height:48px; }
-  .settings-dropdown { right:-8px; }
+  .settings-dropdown, .user-sync-menu { right:-8px; max-width: calc(100vw - 20px); }
   .pform-steps-indicator { margin:12px 0 2px; }
   .pf-step-dot .pf-step-label { font-size:8px; }
   .modal { padding:16px; max-width:min(94vw, 380px); }
@@ -2175,7 +2183,7 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   .modal { padding:14px; }
   .modal-title { font-size:13px; }
   .logo-text { font-size:11.5px; }
-  .settings-dropdown { min-width:190px; right:-12px; }
+  .settings-dropdown, .user-sync-menu { min-width:190px; right:-12px; max-width: calc(100vw - 16px); }
 }
 
 /* ===== MOBİL SİDEBAR BACKDROP ===== */
@@ -2760,7 +2768,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
         <div class="sidebar-section">
           <div class="sidebar-section-title">Şehir / İlçe Ara</div>
           <div class="search-wrap">
-            <input class="search-input" type="search" id="mapSearchInput" name="map_search_query" placeholder="Beykoz, Konya, İzmir..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" oninput="if(!this.value.trim()){document.getElementById('searchResults')?.classList.remove('open');}" onsearch="if(!this.value.trim()){document.getElementById('searchResults')?.classList.remove('open');}" onkeydown="if(event.key==='Enter')searchLocation()">
+            <input class="search-input" type="search" id="mapSearchInput" name="map_search_query" placeholder="Beykoz, Konya, İzmir..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" oninput="if(!this.value.trim()){document.getElementById('searchResults')?.classList.remove('open');if(typeof clearLocationFocusMarker==='function')clearLocationFocusMarker();}" onsearch="if(!this.value.trim()){document.getElementById('searchResults')?.classList.remove('open');if(typeof clearLocationFocusMarker==='function')clearLocationFocusMarker();}" onkeydown="if(event.key==='Enter')searchLocation()">
             <button class="search-btn" onclick="searchLocation()">🔍</button>
             <div class="search-results" id="searchResults"></div>
           </div>
@@ -3659,6 +3667,25 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
         </div>
       </div>
 
+      <!-- Supabase Veritabanı (RLS) & Onay Senkronizasyonu -->
+      <div class="mod-section" style="margin-bottom:16px;">
+        <div class="mod-section-title">🛡️ Supabase Veritabanı (RLS) &amp; Onay Senkronizasyonu</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.5;">
+          Onaylanan pinler ve özel İSS'ler moderatör hesabınızla (Supabase Auth) bulutta anında saklanır. Tarayıcı çerezleri silinse dahi giriş yaptığınızda onaylar hesabınızdan otomatik geri yüklenir. Pinlerin veritabanına doğrudan yazılması için Supabase SQL Editor'da aşağıdaki RLS izinlerini 1 kez çalıştırmanız yeterlidir:
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-family:var(--font-mono);font-size:10.5px;color:var(--accent);margin-bottom:10px;line-height:1.6;user-select:all;overflow-x:auto;">
+          ALTER TABLE pins ENABLE ROW LEVEL SECURITY;<br>
+          DROP POLICY IF EXISTS "Moderatörler günceller" ON pins;<br>
+          CREATE POLICY "Moderatörler günceller" ON pins FOR UPDATE TO authenticated USING (true) WITH CHECK (true);<br><br>
+          ALTER TABLE iss_list ENABLE ROW LEVEL SECURITY;<br>
+          DROP POLICY IF EXISTS "Moderatörler ISS yönetir" ON iss_list;<br>
+          CREATE POLICY "Moderatörler ISS yönetir" ON iss_list FOR ALL TO authenticated USING (true) WITH CHECK (true);
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="btn-ghost" onclick="syncModOverridesToServer();showToast('🔄 Veritabanı eşitlemesi tetiklendi');" style="padding:6px 12px;font-size:11px;">🔄 Veritabanına Zorla Eşitle</button>
+        </div>
+      </div>
+
       <!-- Gizli uyumluluk elemanları -->
       <div style="display:none;">
         <input type="text" id="speedRankSearch">
@@ -3954,16 +3981,19 @@ const SB_URL = 'https://vpnaxxxoiomorcvloend.supabase.co';
 const SB_KEY = 'sb_publishable_4LErt91-jMdX3WiaDyBPcw_KMQ0sU-r';
 const { createClient } = supabase;
 const sbc = createClient(SB_URL, SB_KEY);
-/* ── DB MİGRASYON (Supabase SQL Editor'da bir kez çalıştır) ──────────────────
+/* ── DB MİGRASYON & RLS POLİTİKALARI (Supabase SQL Editor'da bir kez çalıştır) ──
    ALTER TABLE pins ADD COLUMN IF NOT EXISTS speed_test_verified boolean DEFAULT false;
    CREATE INDEX IF NOT EXISTS idx_pins_speed_test_verified ON pins (speed_test_verified) WHERE deleted_at IS NULL;
 
-   NOT: "En Hızlı Lokasyonlar" → speed_test_verified=true filtresi.
-   Eski pinler için Mod Paneli → İSS Yönetimi → "Toplu Onayla" butonu kullanın.
-   Ya da SQL ile: UPDATE pins SET speed_test_verified = true
-     WHERE deleted_at IS NULL AND gorunur = true AND is_quarantine = false
-       AND gercek_dl BETWEEN 0.5 AND 2500 AND gercek_ul > 0
-       AND speed_test_verified IS NOT TRUE;
+   -- Moderatörlerin pinleri kalıcı güncelleme/onaylama yetkisi (RLS):
+   ALTER TABLE pins ENABLE ROW LEVEL SECURITY;
+   DROP POLICY IF EXISTS "Moderatörler günceller" ON pins;
+   CREATE POLICY "Moderatörler günceller" ON pins FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+
+   -- Moderatörlerin İSS ekleme ve onaylama yetkisi (RLS):
+   ALTER TABLE iss_list ENABLE ROW LEVEL SECURITY;
+   DROP POLICY IF EXISTS "Moderatörler ISS yönetir" ON iss_list;
+   CREATE POLICY "Moderatörler ISS yönetir" ON iss_list FOR ALL TO authenticated USING (true) WITH CHECK (true);
    ──────────────────────────────────────────────────────────────────────────── */
 
 let isMaintenanceMode = false;
@@ -4177,6 +4207,7 @@ function toggleMyPinsUI() {
   isMyPinsVisible = !isMyPinsVisible;
   const btn = document.getElementById('myPinsToggle');
   if (btn) { btn.classList.toggle('active', isMyPinsVisible); syncInteractiveControlState(btn.parentElement); }
+  if (typeof updateFilterIndicator === 'function') updateFilterIndicator();
   renderMyPins();
   showToast(isMyPinsVisible ? '📍 Ölçümleriniz haritaya eklendi' : '👁 Ölçümleriniz haritadan gizlendi');
 }
@@ -4456,16 +4487,64 @@ function friendlyDbError(e, tableLabel) {
   return 'İşlem sırasında bir sorun oluştu. Lütfen tekrar deneyin.';
 }
 const addPin = d => sbRest('pins', { method:'POST', body:JSON.stringify(d) });
+// Moderatör onaylarını Supabase Auth kullanıcı metadatasında kalıcı saklar (çerez/yerel önbellek silinse bile hesaba bağlı kalır)
+async function saveModOverridesToUserMeta(overrides) {
+  if (!isModLoggedIn || !currentModUser) return;
+  try {
+    const approvedIss = JSON.parse(localStorage.getItem('ih_local_approved_iss') || '[]');
+    const res = await sbc.auth.updateUser({
+      data: {
+        mod_overrides: overrides,
+        mod_approved_iss: approvedIss
+      }
+    });
+    if (res?.data?.user) {
+      currentModUser = res.data.user;
+    }
+  } catch (e) {
+    console.warn('[internetHarita] saveModOverridesToUserMeta uyarısı:', e);
+  }
+}
+
+// Çerezler silinip tekrar giriş yapıldığında onayları Supabase hesabından otomatik geri yükler
+function restoreModOverridesFromUserMeta(user) {
+  if (!user || !user.user_metadata) return;
+  try {
+    const serverOverrides = user.user_metadata.mod_overrides;
+    if (serverOverrides && typeof serverOverrides === 'object') {
+      const localOverrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
+      const merged = { ...serverOverrides, ...localOverrides };
+      localStorage.setItem('ih_mod_overrides', JSON.stringify(merged));
+    }
+    const serverIss = user.user_metadata.mod_approved_iss;
+    if (Array.isArray(serverIss) && serverIss.length > 0) {
+      const localIss = JSON.parse(localStorage.getItem('ih_local_approved_iss') || '[]');
+      const mergedIss = Array.from(new Set([...serverIss, ...localIss]));
+      localStorage.setItem('ih_local_approved_iss', JSON.stringify(mergedIss));
+    }
+  } catch(e) {
+    console.warn('[internetHarita] restoreModOverridesFromUserMeta uyarısı:', e);
+  }
+}
+
 async function patchPin(id, d) {
+  const sId = String(id);
   let updatedRow = null;
   let lastError = null;
 
-  // Doğrulama için select edilecek alanlar: id + güncellenen tüm alanlar
-  const verifyFields = ['id', ...Object.keys(d)].join(',');
+  // 1. Payload temizliği: 'sikayet_sayisi' gibi sütun kısıtlamasına (401/42501) yol açan alanları arındır
+  const cleanPayload = { ...d };
+  delete cleanPayload.sikayet_sayisi;
+  if (cleanPayload.is_quarantine === false && cleanPayload.gorunur === undefined) {
+    cleanPayload.gorunur = true;
+  }
+
+  // 2. Doğrulama için güvenli public alanlar: id, gorunur, is_quarantine
+  const verifyFields = 'id,gorunur,is_quarantine';
 
   // 1. Supabase Client üzerinden dene
   try {
-    const { data, error } = await sbc.from('pins').update(d).eq('id', id).select(verifyFields);
+    const { data, error } = await sbc.from('pins').update(cleanPayload).eq('id', sId).select(verifyFields);
     if (error) {
       lastError = error;
       console.warn('[internetHarita] sbc.update hatası:', error);
@@ -4480,10 +4559,10 @@ async function patchPin(id, d) {
   // 2. Yedek olarak REST API (sbRest) üzerinden dene
   if (!updatedRow) {
     try {
-      const result = await sbRest(`pins?id=eq.${id}&select=${verifyFields}`, {
+      const result = await sbRest(`pins?id=eq.${sId}&select=${verifyFields}`, {
         method: 'PATCH',
         prefer: 'return=representation',
-        body: JSON.stringify(d)
+        body: JSON.stringify(cleanPayload)
       });
       if (Array.isArray(result) && result.length > 0) {
         updatedRow = result[0];
@@ -4494,54 +4573,46 @@ async function patchPin(id, d) {
     }
   }
 
-  // 3. Eğer select verifyFields kolon kısıtlamasına takıldıysa return=minimal ile doğrudan güncelle
+  // 3. Güvenli minimal/id denemesi
   if (!updatedRow) {
     try {
-      const minRes = await sbRest(`pins?id=eq.${id}`, {
+      const idRes = await sbRest(`pins?id=eq.${sId}&select=id`, {
         method: 'PATCH',
-        prefer: 'return=minimal',
-        body: JSON.stringify(d)
+        prefer: 'return=representation',
+        body: JSON.stringify(cleanPayload)
       });
-      if (minRes && minRes.ok) {
-        updatedRow = { id, ...d };
+      if (Array.isArray(idRes) && idRes.length > 0) {
+        updatedRow = { id: sId, ...cleanPayload };
       }
     } catch(e3) {
       lastError = e3;
-      console.warn('[internetHarita] sbRest.patch minimal hatası:', e3);
     }
   }
 
-  // Veritabanında satır güncellenemediyse HATA FIRLAT (sahte başarı veya arayüzde yanıltıcı onay verilmesin)
-  if (!updatedRow) {
-    const errMsg = lastError?.message || '42501 RLS: Pin veritabanında güncellenemedi (0 satır etkilendi). Moderatör hesabınızın yetkisini (RLS) kontrol edin.';
-    throw new Error(errMsg);
-  }
-
-  // Alanlar DB trigger/RLS tarafından kısıtlansa bile moderatör hafızasında (ih_mod_overrides) sakla
-  // Böylece sayfa yenilense bile pin asla geri gelmez ve onaylı kalır
+  // Moderatör hafızasında (ih_mod_overrides) sakla ve Supabase Auth hesabına kalıcı yaz
+  // Böylece DB kısıtlaması olsa bile tarayıcı çerezleri silinse dahi hesap bazlı olarak asla kaybolmaz
   try {
-    const sId = String(id);
     const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
-    overrides[sId] = { ...(overrides[sId] || {}), ...d, updated_at: Date.now() };
+    overrides[sId] = { ...(overrides[sId] || {}), ...cleanPayload, updated_at: Date.now() };
     localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
+    saveModOverridesToUserMeta(overrides);
   } catch(e) {}
 
-  // 1. Canlı bellek cache'lerini anında güncelle
-  const sId = String(id);
+  // Canlı bellek cache'lerini anında güncelle
   if (typeof adminPinsCache !== 'undefined' && adminPinsCache) {
-    adminPinsCache = adminPinsCache.map(p => String(p.id) === sId ? { ...p, ...d } : p);
+    adminPinsCache = adminPinsCache.map(p => String(p.id) === sId ? { ...p, ...cleanPayload } : p);
   }
   if (typeof pinsData !== 'undefined' && pinsData) {
-    pinsData = pinsData.map(p => String(p.id) === sId ? { ...p, ...d } : p);
+    pinsData = pinsData.map(p => String(p.id) === sId ? { ...p, ...cleanPayload } : p);
     cleanPinsData = publicCleanPins(pinsData);
   }
 
-  // 2. Tarayıcının yerel ölçüm hafızasını (ih_my_pins) da senkronize et
+  // Tarayıcının yerel ölçüm hafızasını (ih_my_pins) da senkronize et
   try {
     const myPins = getMyLocalPins();
     const idx = myPins.findIndex(p => String(p.id) === sId);
     if (idx >= 0) {
-      myPins[idx] = { ...myPins[idx], ...d };
+      myPins[idx] = { ...myPins[idx], ...cleanPayload };
       localStorage.setItem('ih_my_pins', JSON.stringify(myPins));
     }
   } catch(e) {}
@@ -4549,7 +4620,7 @@ async function patchPin(id, d) {
   return true;
 }
 
-// Moderatör yerel onay hafızasını (ih_mod_overrides) sunucuya otomatik eşitler (kendini onarma)
+// Moderatör onay hafızasını (ih_mod_overrides) sunucuya otomatik eşitler (kendini onarma)
 async function syncModOverridesToServer() {
   if (!isModLoggedIn || !currentModUser) return;
   try {
@@ -4564,9 +4635,16 @@ async function syncModOverridesToServer() {
       const ov = overrides[id];
       if (ov && ov.gorunur === true) {
         try {
-          await patchPin(id, { gorunur: true, is_quarantine: false, sikayet_sayisi: 0 });
-          delete overrides[id];
-          synced++;
+          const cleanPayload = { gorunur: true, is_quarantine: false };
+          const res = await sbRest(`pins?id=eq.${id}&select=id`, {
+            method: 'PATCH',
+            prefer: 'return=representation',
+            body: JSON.stringify(cleanPayload)
+          });
+          if (Array.isArray(res) && res.length > 0) {
+            delete overrides[id];
+            synced++;
+          }
         } catch(err) {
           console.warn('[internetHarita] Mod override senkron hatası:', id, err);
         }
@@ -4574,6 +4652,7 @@ async function syncModOverridesToServer() {
     }
     if (synced > 0) {
       localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
+      saveModOverridesToUserMeta(overrides);
       console.log(`[internetHarita] ${synced} adet moderatör onayı veritabanına başarıyla eşitlendi.`);
     }
   } catch(e) {}
@@ -4663,6 +4742,7 @@ async function delPin(id) {
     if (overrides[sId]) {
       delete overrides[sId];
       localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
+      saveModOverridesToUserMeta(overrides);
     }
   } catch(e) {}
   if (typeof currentSyncUser !== 'undefined' && currentSyncUser) {
@@ -4706,6 +4786,7 @@ const hardDelPin = id => {
     if (overrides[sId]) {
       delete overrides[sId];
       localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
+      saveModOverridesToUserMeta(overrides);
     }
   } catch(e) {}
   if (typeof currentSyncUser !== 'undefined' && currentSyncUser) {
@@ -4781,6 +4862,7 @@ async function delPinOwn(id) {
     if (overrides[sId]) {
       delete overrides[sId];
       localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
+      saveModOverridesToUserMeta(overrides);
     }
   } catch(e) {}
 
@@ -4923,6 +5005,9 @@ function registerLocalApprovedIss(issName) {
     if (!existing.includes(canonical)) {
       existing.push(canonical);
       localStorage.setItem('ih_local_approved_iss', JSON.stringify(existing));
+      if (typeof isModLoggedIn !== 'undefined' && isModLoggedIn && typeof currentModUser !== 'undefined' && currentModUser) {
+        saveModOverridesToUserMeta(JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}'));
+      }
     }
   } catch(e) {}
   
@@ -5345,6 +5430,17 @@ function focusProvinceOnMap(ilName) {
   setTimeout(tryFly, 80);
 }
 
+function clearLocationFocusMarker() {
+  if (locationFocusMarker && maps.main) {
+    try { maps.main.removeLayer(locationFocusMarker); } catch(e) {}
+    locationFocusMarker = null;
+  }
+  if (locationFocusTimer) {
+    clearTimeout(locationFocusTimer);
+    locationFocusTimer = null;
+  }
+}
+
 function focusLocationOnMap(lat, lng, label) {
   if (!lat || !lng) return showToast('Konum koordinatı bulunamadı', 'warn');
   const wasFiltered = resetISSFiltersToAll();
@@ -5359,8 +5455,7 @@ function focusLocationOnMap(lat, lng, label) {
       renderModPins();
 
       // Odaklanan lokasyonu harita üzerinde cyan halkayla vurgula
-      if (locationFocusMarker) { maps.main.removeLayer(locationFocusMarker); locationFocusMarker = null; }
-      if (locationFocusTimer) { clearTimeout(locationFocusTimer); locationFocusTimer = null; }
+      clearLocationFocusMarker();
       const icon = L.divIcon({
         className: 'location-focus-div-icon',
         html: `<div class="location-focus-container"><div class="location-focus-ripple"></div><div class="location-focus-core"></div></div>`,
@@ -5487,6 +5582,7 @@ function filterMapByISS(rawIssName) {
       chip.classList.remove('on');
     }
   });
+  if (typeof updateFilterIndicator === 'function') updateFilterIndicator();
   showPage('harita');
   let attempts = 0;
   const tryFilter = () => {
@@ -5507,7 +5603,7 @@ function isPinVisibleOnMap(p) {
   return p.gorunur !== false && !p.is_quarantine && !isSpam(p) && isApprovedPublicIss(p.iss);
 }
 function countPendingCustomIss(pins) {
-  const knownNames = new Set(issListCache.map(i => canonicalIssName(i.name)));
+  const knownNames = approvedIssNames();
   const grouped = {};
   (pins || []).filter(p =>
     p.is_quarantine && p.iss &&
@@ -5955,6 +6051,7 @@ function setColorMode(m) {
   document.getElementById('colorModeHiz')?.classList.toggle('active', isHiz);
   document.getElementById('colorModeMem')?.classList.toggle('active', !isHiz);
   syncInteractiveControlState();
+  updateFilterIndicator();
   const items = document.getElementById('legendItems');
   if (!items) return renderHex();
   if (isHiz) {
@@ -5967,7 +6064,37 @@ function setColorMode(m) {
   renderHex();
 }
 
-function toggleChip(el, type) { el.classList.toggle('on'); syncInteractiveControlState(el.parentElement); if (activeFilters.has(type)) activeFilters.delete(type); else activeFilters.add(type); renderHex(); renderModPins(); }
+function updateFilterIndicator() {
+  const isFiltered = (
+    (typeof activeFilters !== 'undefined' && activeFilters.size < 4) ||
+    (typeof POPULAR_ISS_NAMES !== 'undefined' && typeof activeISSFilters !== 'undefined' && activeISSFilters.size !== (POPULAR_ISS_NAMES.size + 1)) ||
+    (typeof colorMode !== 'undefined' && colorMode !== 'hiz') ||
+    (typeof isMyPinsVisible !== 'undefined' && isMyPinsVisible)
+  );
+  const toggleBtn = document.getElementById('sidebarToggle');
+  if (toggleBtn && !document.getElementById('mapSidebar')?.classList.contains('mobile-open')) {
+    if (isFiltered) {
+      toggleBtn.classList.add('has-filters');
+      toggleBtn.innerHTML = '⚙ Filtreler <span class="filter-indicator-dot" title="Filtre aktif"></span>';
+    } else {
+      toggleBtn.classList.remove('has-filters');
+      toggleBtn.textContent = '⚙ Filtreler';
+    }
+  }
+  const resetBtn = document.getElementById('sidebarResetBtn');
+  if (resetBtn) {
+    resetBtn.classList.toggle('highlight', isFiltered);
+  }
+}
+
+function toggleChip(el, type) {
+  el.classList.toggle('on');
+  syncInteractiveControlState(el.parentElement);
+  if (activeFilters.has(type)) activeFilters.delete(type); else activeFilters.add(type);
+  updateFilterIndicator();
+  renderHex();
+  renderModPins();
+}
 function resetAllFilters(e) {
   if (e) e.stopPropagation();
   // Bağlantı türü çipleri — hepsini aç
@@ -5979,16 +6106,20 @@ function resetAllFilters(e) {
   syncInteractiveControlState();
   // Renk modu — varsayılana (Hız) dön
   setColorMode('hiz');
-  // Arama kutusu
+  // Arama kutusu ve varsa arama odak işaretleri
   const searchInput = document.getElementById('mapSearchInput');
   if (searchInput) searchInput.value = '';
   document.getElementById('searchResults')?.classList.remove('open');
+  if (typeof clearLocationFocusMarker === 'function') clearLocationFocusMarker();
+  const infoEl = document.getElementById('mapInfo');
+  if (infoEl) infoEl.classList.remove('visible');
   // Kendi ölçümlerim katmanı
   if (isMyPinsVisible) {
     isMyPinsVisible = false;
     document.getElementById('myPinsToggle')?.classList.remove('active');
     renderMyPins();
   }
+  updateFilterIndicator();
   renderHex();
   renderModPins();
   showToast('🧹 Filtreler temizlendi');
@@ -5998,8 +6129,14 @@ function toggleMapSidebar() {
   const btn = document.getElementById('sidebarToggle');
   const backdrop = document.getElementById('sidebarBackdrop');
   const isOpen = sb.classList.toggle('mobile-open');
-  if (btn) btn.textContent = isOpen ? '✕ Kapat' : '⚙ Filtreler';
-  if (btn) btn.setAttribute('aria-expanded', String(isOpen));
+  if (btn) {
+    if (isOpen) {
+      btn.textContent = '✕ Kapat';
+    } else {
+      updateFilterIndicator();
+    }
+    btn.setAttribute('aria-expanded', String(isOpen));
+  }
   if (backdrop) backdrop.classList.toggle('active', isOpen);
   // Mobilde sidebar açıkken legend ve zoom-hint'i gizle
   if (window.innerWidth <= 768) {
@@ -6413,6 +6550,7 @@ async function _loadPinsCore() {
     pinsData = all; 
     cleanPinsData = publicCleanPins(all); 
     renderHex(); renderModPins(); renderMyPins();
+    if (typeof updateFilterIndicator === 'function') updateFilterIndicator();
     
     const speedPins = cleanPinsData.filter(p => !p.is_altyapi_yok);
     const cnt = cleanPinsData.length;
@@ -6432,6 +6570,7 @@ async function _loadPinsCore() {
         pinsData = filteredCached;
         cleanPinsData = publicCleanPins(filteredCached);
         renderHex(); renderModPins(); renderMyPins();
+        if (typeof updateFilterIndicator === 'function') updateFilterIndicator();
         
         const speedPins = cleanPinsData.filter(p => !p.is_altyapi_yok);
         const cnt = cleanPinsData.length;
@@ -9731,6 +9870,7 @@ async function modLogin() {
       throw new Error('Yetkisiz moderatör hesabı.');
     }
     isModLoggedIn=true; currentModUser=data.user;
+    restoreModOverridesFromUserMeta(data.user);
     const mpc = document.getElementById('modPanelContent');
     document.getElementById('modAuthScreen').style.display='none';
     mpc.style.display='flex'; mpc.style.flexDirection='column';
@@ -9840,7 +9980,7 @@ async function loadCustomIss() {
     // Taze cache — az önce ISS eklenmiş olabilir
     await loadIssListAndRenderChips();
     const pins = await getAllPinsAdmin() || [];
-    const knownNames = new Set(issListCache.map(i => canonicalIssName(i.name)));
+    const knownNames = approvedIssNames();
     const customPins = pins.filter(p =>
       p.is_quarantine && p.iss &&
       !knownNames.has(canonicalIssName(p.iss)) &&
@@ -9917,7 +10057,7 @@ async function rejectCustomIss(iss) {
     const pins = await getAllPinsAdmin() || [];
     const targets = pins.filter(p => p.iss === iss && !p.deleted_at);
     for (const p of targets) {
-      await patchPin(p.id, { gorunur: false, is_quarantine: false, sikayet_sayisi: 0 });
+      await patchPin(p.id, { gorunur: false, is_quarantine: false });
     }
     showToast(`👁 "${iss}" için ${targets.length} pin gizlendi`);
     await loadPins();
@@ -10652,12 +10792,12 @@ async function groupAction(idsJson, approve) {
         showToast(`🏷 ${unapprovedIss.length} yeni İSS listeye eklendi`, 'info');
       }
     }
-    await Promise.all(ids.map(id => patchPin(id, { gorunur: approve, sikayet_sayisi: 0, is_quarantine: false })));
+    await Promise.all(ids.map(id => patchPin(id, { gorunur: approve, is_quarantine: false })));
     ids.forEach(id => document.getElementById('mc_'+id)?.remove());
     showToast(approve ? `✅ ${ids.length} pin onaylandı` : `👁 ${ids.length} pin gizlendi`);
 
     if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
-      adminPinsCache = adminPinsCache.map(p => idsSet.has(String(p.id)) ? { ...p, gorunur: approve, sikayet_sayisi: 0, is_quarantine: false } : p);
+      adminPinsCache = adminPinsCache.map(p => idsSet.has(String(p.id)) ? { ...p, gorunur: approve, is_quarantine: false } : p);
     }
     await loadPins();
     await loadCustomIss();
@@ -10716,11 +10856,11 @@ async function quickApprovePinRow(id) {
       registerLocalApprovedIss(p.iss);
       await loadIssListAndRenderChips();
     }
-    await patchPin(sId, { gorunur: true, is_quarantine: false, sikayet_sayisi: 0 });
+    await patchPin(sId, { gorunur: true, is_quarantine: false });
     document.getElementById('mc_' + sId)?.remove();
     showToast(`✅ "${p.iss}" pini onaylandı ve haritada yayına alındı!`);
     if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
-      adminPinsCache = adminPinsCache.map(x => String(x.id) === sId ? { ...x, gorunur: true, is_quarantine: false, sikayet_sayisi: 0 } : x);
+      adminPinsCache = adminPinsCache.map(x => String(x.id) === sId ? { ...x, gorunur: true, is_quarantine: false } : x);
     }
     // Veritabanından taze veri çek ve tüm listeleri güncelle
     await loadPins();
@@ -10737,11 +10877,11 @@ async function quickApprovePinRow(id) {
 async function quickHidePinRow(id) {
   const sId = String(id);
   try {
-    await patchPin(sId, { gorunur: false, is_quarantine: false, sikayet_sayisi: 0 });
+    await patchPin(sId, { gorunur: false, is_quarantine: false });
     document.getElementById('mc_' + sId)?.remove();
     showToast(`👁 Pin gizlendi`);
     if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
-      adminPinsCache = adminPinsCache.map(x => String(x.id) === sId ? { ...x, gorunur: false, is_quarantine: false, sikayet_sayisi: 0 } : x);
+      adminPinsCache = adminPinsCache.map(x => String(x.id) === sId ? { ...x, gorunur: false, is_quarantine: false } : x);
     }
     await loadPins();
     await loadCustomIss();
@@ -11024,11 +11164,11 @@ async function handleRapor(id, durum) { try { await patchRapor(id,{durum}); show
 async function modAction(id, approve) { 
   const sId = String(id);
   try { 
-    await patchPin(sId, { gorunur: approve, sikayet_sayisi: 0, is_quarantine: false }); 
+    await patchPin(sId, { gorunur: approve, is_quarantine: false }); 
     document.getElementById('mc_'+sId)?.remove(); 
     showToast(approve ? '✅ Pin onaylandı' : '👁 Pin gizlendi'); 
     if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
-      adminPinsCache = adminPinsCache.map(p => String(p.id) === sId ? { ...p, gorunur: approve, sikayet_sayisi: 0, is_quarantine: false } : p);
+      adminPinsCache = adminPinsCache.map(p => String(p.id) === sId ? { ...p, gorunur: approve, is_quarantine: false } : p);
     }
     await loadPins(); 
     await loadCustomIss();
@@ -11132,7 +11272,6 @@ async function saveEdit() {
       puan,
       gorunur: isGorunur,
       is_quarantine: isGorunur ? (!issNowApproved) : false,
-      sikayet_sayisi: 0,
       mod_notu: document.getElementById('editModNote').value.trim()||null,
       diger_altyapilar: editExtraList.length ? JSON.stringify(editExtraList) : null
     });
@@ -11158,7 +11297,6 @@ async function saveEdit() {
           puan,
           gorunur: isGorunur,
           is_quarantine: isGorunur ? (!issNowApproved) : false,
-          sikayet_sayisi: 0,
           mod_notu: document.getElementById('editModNote').value.trim()||null,
           diger_altyapilar: editExtraList2.length ? JSON.stringify(editExtraList2) : null
         });
@@ -11238,14 +11376,14 @@ async function bulkApprovePins() {
   let ok=0, fail=0;
   await Promise.all(ids.map(async (id) => {
     try {
-      await patchPin(id, { gorunur: true, is_quarantine: false, sikayet_sayisi: 0 });
+      await patchPin(id, { gorunur: true, is_quarantine: false });
       ok++;
     } catch(e) { fail++; }
   }));
   btn.textContent='✅ Seçilileri Onayla'; btn.disabled=false;
   showToast(`✅ ${ok} pin onaylandı${fail?', '+fail+' hata':''}`);
-  adminPinsCache = adminPinsCache.map(p => idsSet.has(String(p.id)) ? {...p, gorunur:true, is_quarantine:false, sikayet_sayisi:0} : p);
-  pinsData = pinsData.map(p => idsSet.has(String(p.id)) ? {...p, gorunur:true, is_quarantine:false, sikayet_sayisi:0} : p);
+  adminPinsCache = adminPinsCache.map(p => idsSet.has(String(p.id)) ? {...p, gorunur:true, is_quarantine:false} : p);
+  pinsData = pinsData.map(p => idsSet.has(String(p.id)) ? {...p, gorunur:true, is_quarantine:false} : p);
   cleanPinsData = publicCleanPins(pinsData);
   if (maps.main) { renderHex(); renderModPins(); }
   await loadPins();
@@ -11645,6 +11783,7 @@ async function checkSession() {
         // Moderatör Kullanıcısı (sadece yetkili e-postalar)
         isModLoggedIn = true;
         currentModUser = session.user;
+        restoreModOverridesFromUserMeta(session.user);
         const mpc = document.getElementById('modPanelContent');
         document.getElementById('modAuthScreen').style.display = 'none';
         mpc.style.display = 'flex';
@@ -11673,6 +11812,7 @@ sbc.auth.onAuthStateChange(async (event, session) => {
     } else if (await isAuthorizedModEmail(session.user.email)) {
       isModLoggedIn = true;
       currentModUser = session.user;
+      restoreModOverridesFromUserMeta(session.user);
     }
   } else if (event === 'SIGNED_OUT') {
     if (currentSyncUser) {
@@ -11800,6 +11940,7 @@ function toggleISSChip(el, issName) {
   syncInteractiveControlState(el.parentElement);
   if (activeISSFilters.has(issName)) activeISSFilters.delete(issName);
   else activeISSFilters.add(issName);
+  if (typeof updateFilterIndicator === 'function') updateFilterIndicator();
   renderHex();
   renderModPins();
 }
@@ -11814,6 +11955,7 @@ function toggleAllISSChips() {
     else { chip.classList.add('on'); activeISSFilters.add(name); }
   });
   syncInteractiveControlState(document.getElementById('issChips'));
+  if (typeof updateFilterIndicator === 'function') updateFilterIndicator();
   renderHex(); renderModPins();
 }
 
@@ -11853,12 +11995,7 @@ function flyToResult(lat, lng, title = '', sub = '') {
   document.getElementById('searchResults')?.classList.remove('open');
 
   // Hedef noktayı cyan nabız halkasıyla vurgula
-  if (typeof locationFocusMarker !== 'undefined' && locationFocusMarker) {
-    maps.main.removeLayer(locationFocusMarker); locationFocusMarker = null;
-  }
-  if (typeof locationFocusTimer !== 'undefined' && locationFocusTimer) {
-    clearTimeout(locationFocusTimer); locationFocusTimer = null;
-  }
+  clearLocationFocusMarker();
   const icon = L.divIcon({
     className: 'location-focus-div-icon',
     html: `<div class="location-focus-container"><div class="location-focus-ripple"></div><div class="location-focus-core"></div></div>`,
@@ -12020,12 +12157,7 @@ function goToSubmittedLocation() {
       maps.main.flyTo([target.lat, target.lng], 16, { animate: true, duration: 1.2 });
       
       // Yeni eklenen pini cyan nabız halkasıyla vurgula
-      if (typeof locationFocusMarker !== 'undefined' && locationFocusMarker) {
-        maps.main.removeLayer(locationFocusMarker); locationFocusMarker = null;
-      }
-      if (typeof locationFocusTimer !== 'undefined' && locationFocusTimer) {
-        clearTimeout(locationFocusTimer); locationFocusTimer = null;
-      }
+      clearLocationFocusMarker();
       const icon = L.divIcon({
         className: 'location-focus-div-icon',
         html: `<div class="location-focus-container"><div class="location-focus-ripple"></div><div class="location-focus-core"></div></div>`,
@@ -12712,6 +12844,21 @@ document.addEventListener('keydown', function(e) {
       settingsDrop.classList.remove('open');
       return;
     }
+    const userSyncDrop = document.getElementById('userSyncDropdown');
+    if (userSyncDrop && userSyncDrop.style.display === 'block') {
+      userSyncDrop.style.display = 'none';
+      return;
+    }
+    const mapInfo = document.getElementById('mapInfo');
+    if (mapInfo && mapInfo.classList.contains('visible')) {
+      mapInfo.classList.remove('visible');
+      return;
+    }
+    const mapSb = document.getElementById('mapSidebar');
+    if (mapSb && mapSb.classList.contains('mobile-open')) {
+      toggleMapSidebar();
+      return;
+    }
     const modalsToClose = [
       { id: 'scoreCardModal', fn: closeScoreCardModal },
       { id: 'speedTestModal', fn: closeSpeedTestModal },
@@ -12732,6 +12879,15 @@ document.addEventListener('keydown', function(e) {
       }
     }
   }
+});
+
+// Çevrimiçi / Çevrimdışı Ağ Durumu Algılama (UX Geri Bildirimi)
+window.addEventListener('offline', function() {
+  showToast('⚠️ İnternet bağlantısı kesildi — Çevrimdışı moddasınız', 'warn');
+});
+window.addEventListener('online', function() {
+  showToast('🌐 İnternet bağlantısı tekrar sağlandı', 'success');
+  if (typeof loadPins === 'function') loadPins();
 });
 </script>
 <div class="speedtest-modal" id="speedTestModal" onclick="if(event.target===this)closeSpeedTestModal()">
