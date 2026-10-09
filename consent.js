@@ -104,12 +104,6 @@
       var cs = window.getComputedStyle ? getComputedStyle(bait) : null;
       if (!bait.offsetParent || bait.offsetHeight === 0 || (cs && (cs.display === 'none' || cs.visibility === 'hidden'))) blocked = true;
       bait.remove();
-      // 2) AdSense betiği yüklenemediyse (ağ seviyesinde engel)
-      var a = window.adsbygoogle;
-      if (!a || a.loaded !== true) {
-        var s = document.querySelector('script[src*="adsbygoogle.js"]');
-        if (s) blocked = true;
-      }
       cb(blocked);
     }, 2500);
   }
@@ -145,19 +139,8 @@
   }
 
   function maybeSupportNote() {
-    if (snRecentlyClosed()) return;
-    var run = function () {
-      detectBlocker(function (blocked) {
-        if (!blocked) return;
-        // Çerez bildirimi açıksa onunla üst üste binmesin; kapanınca göster
-        var tries = 0;
-        (function wait() {
-          if (document.getElementById('ihConsent') && tries++ < 120) return setTimeout(wait, 1000);
-          showSupportNote();
-        })();
-      });
-    };
-    if (document.readyState === 'complete') run(); else window.addEventListener('load', run);
+    // AdSense inceleme ve onay süresince ziyaretçilere ve botlara müdahaleci bildirim gösterme
+    return;
   }
 
   function init() {
