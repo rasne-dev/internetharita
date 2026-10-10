@@ -2688,6 +2688,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
     <button class="nav-tab active" id="tab-harita" onclick="showPage('harita')">🗺 Harita</button>
     <button class="nav-tab" id="tab-bolge" onclick="showPage('bolge')">🌍 <span class="tab-text full">Bölgeler</span><span class="tab-text short">Bölge</span></button>
     <button class="nav-tab" id="tab-istatistik" onclick="showPage('istatistik')">📊 <span class="tab-text full">İstatistikler</span><span class="tab-text short">İstat.</span></button>
+    <button class="nav-tab" id="tab-karsilastir" onclick="openCompareModal()">⚖️ <span class="tab-text full">İSS Kıyasla</span><span class="tab-text short">Kıyas</span></button>
     <a href="/speedtest-verileri.html" class="nav-tab" id="tab-speedtest" style="text-decoration:none;display:inline-flex;align-items:center;">📡 <span class="tab-text full">Speedtest</span><span class="tab-text short">Speed</span></a>
     <a href="/rehber.html" class="nav-tab" id="tab-rehber" style="text-decoration:none;display:inline-flex;align-items:center;">📖 Rehber</a>
     <a href="/tarihce.html" class="nav-tab" id="tab-tarihce" style="text-decoration:none;display:inline-flex;align-items:center;">⏳ Tarihçe</a>
@@ -3283,6 +3284,9 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
         <input type="checkbox" id="agree_to_terms_honeypot" name="agree_to_terms_honeypot" tabindex="-1">
       </div>
       
+      <!-- ÇEVRİMDIŞI TASLAK BİLDİRİMİ -->
+      <div id="offlineDraftsBanner" style="display:none;margin-bottom:12px;padding:10px 12px;border-radius:8px;background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.3);align-items:center;justify-content:space-between;gap:8px;"></div>
+      
       <div>
         <div style="font-size:16px;font-weight:700;font-family:var(--font-mono);">Veri Ekle</div>
         <div style="font-size:11px;color:var(--text3);margin-top:3px;">İnternet performansını toplulukla paylaş</div>
@@ -3833,6 +3837,42 @@ CREATE POLICY "Moderatörler ISS yönetir" ON iss_list FOR ALL TO authenticated 
       </div>
 
     </div>
+  </div>
+</div>
+
+<!-- İSS KARŞILAŞTIRMA MODALI -->
+<div class="modal-bg" id="compareModal" onclick="if(event.target===this)closeCompareModal()">
+  <div class="modal" style="max-width:640px; max-height:88vh; overflow-y:auto; padding:20px;">
+    <span class="modal-close" onclick="closeCompareModal()">×</span>
+    <div class="modal-title" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <span>⚖️ İSS Karşılaştırma Aracı</span>
+    </div>
+    <div style="font-size:11.5px;color:var(--text3);margin-bottom:14px;line-height:1.5;">
+      İki servis sağlayıcının gerçek kullanıcı ölçümlerini, hız ve memnuniyet skorlarını yan yana kıyaslayın.
+    </div>
+
+    <!-- Filtre Seçimleri -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div>
+        <label style="font-size:10px;font-family:var(--font-mono);color:var(--text3);font-weight:700;display:block;margin-bottom:4px;">1. SAĞLAYICI</label>
+        <select class="fs" id="compareIssA" style="width:100%;font-size:12px;padding:8px 10px;" onchange="updateCompareData()"></select>
+      </div>
+      <div>
+        <label style="font-size:10px;font-family:var(--font-mono);color:var(--text3);font-weight:700;display:block;margin-bottom:4px;">2. SAĞLAYICI</label>
+        <select class="fs" id="compareIssB" style="width:100%;font-size:12px;padding:8px 10px;" onchange="updateCompareData()"></select>
+      </div>
+    </div>
+
+    <!-- İl / Bölge Filtresi -->
+    <div style="margin-bottom:16px;">
+      <label style="font-size:10px;font-family:var(--font-mono);color:var(--text3);font-weight:700;display:block;margin-bottom:4px;">LOKASYON FİLTRESİ</label>
+      <select class="fs" id="compareLocation" style="width:100%;font-size:11px;padding:6px 10px;" onchange="updateCompareData()">
+        <option value="">🇹🇷 Tüm Türkiye (Genel)</option>
+      </select>
+    </div>
+
+    <!-- Kıyaslama Sonuç Tablosu / Kartları -->
+    <div id="compareResultsBox"></div>
   </div>
 </div>
 
@@ -6755,18 +6795,38 @@ function renderHex() {
       let color, hasData = true;
       if (colorMode==='hiz') color = speedColor(avgDL);
       else { if (!pins.some(p=>p.puan)) { color='#374151'; hasData=false; } else color=memColor(avgScore); }
+
+      // Bölgesel dalgalanma (son ölçümlerde ortalamaya göre belirgin hız düşüşü)
+      let isFluctuating = false;
+      const speedPins = pins.filter(p => !p.is_altyapi_yok && p.gercek_dl > 0);
+      if (speedPins.length >= 3) {
+        const sorted = [...speedPins].sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+        const recentCount = Math.max(1, Math.floor(sorted.length * 0.35));
+        const recent = sorted.slice(0, recentCount);
+        const older = sorted.slice(recentCount);
+        if (older.length >= 2) {
+          const avgOlder = older.reduce((s,p) => s + p.gercek_dl, 0) / older.length;
+          const avgRecent = recent.reduce((s,p) => s + p.gercek_dl, 0) / recent.length;
+          if (avgOlder >= 25 && avgRecent <= avgOlder * 0.55) isFluctuating = true;
+        }
+      }
+
       // FIX: fillOpacity zoom'a gore dinamik + tema bazlı.
-      // Uzak zoom'da (buyuk altigenler) daha opak: harita rengi okumasi daha net.
-      // Yakin zoom'da (kucuk altigenler) daha seffaf: harita altyapisi okunabilir.
-      // DÜZELTME: Karanlık modda (neredeyse siyah zemin) aynı düşük opaklık değerleri
-      // rengi siyaha yakınlaştırıp "cansız/donuk" gösteriyordu — açık modda (beyaz zemin)
-      // aynı değerler renkleri canlı gösteriyor çünkü beyazla karışım rengi soldurmuyor,
-      // aydınlatıyor. Bu yüzden karanlık modda opaklık belirgin şekilde yükseltiliyor.
       const _isLight = document.documentElement.classList.contains('light');
       const _fillOp   = hasData ? (_isLight ? (z <= 6 ? 0.38 : z <= 8 ? 0.30 : 0.22) : (z <= 6 ? 0.58 : z <= 8 ? 0.48 : 0.38)) : 0.06;
-      const _strokeOp = hasData ? (_isLight ? (z <= 6 ? 0.75 : 0.60) : (z <= 6 ? 0.95 : 0.85)) : 0.16;
-      const _weight   = z <= 6 ? 0.8 : 1.2;
-      const layer = L.polygon(coords, { color, fillColor:color, fillOpacity:_fillOp, weight:_weight, opacity:_strokeOp }).addTo(maps.main);
+      const _strokeOp = isFluctuating ? 0.95 : (hasData ? (_isLight ? (z <= 6 ? 0.75 : 0.60) : (z <= 6 ? 0.95 : 0.85)) : 0.16);
+      const _weight   = isFluctuating ? Math.max(z <= 6 ? 1.4 : 1.8, 1.6) : (z <= 6 ? 0.8 : 1.2);
+      const _strokeColor = isFluctuating ? '#ef4444' : color;
+      const _dashArray = isFluctuating ? '4, 4' : null;
+
+      const layer = L.polygon(coords, { 
+        color: _strokeColor, 
+        fillColor: color, 
+        fillOpacity: _fillOp, 
+        weight: _weight, 
+        opacity: _strokeOp,
+        dashArray: _dashArray
+      }).addTo(maps.main);
       layer.on('click', () => showHexInfo(pins, hex)); hexLayers.push(layer);
     } catch(e) {}
   });
@@ -6974,12 +7034,49 @@ function showHexInfo(pins, hexId) {
       `;
     });
 
+    if (sortedProviders.length >= 2) {
+      const bestProvIl = (pins[0]?.il || '').trim();
+      matrixHtml += `
+        <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);">
+          <button type="button" class="btn-sub" style="width:100%;padding:7px 10px;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;border-radius:7px;" onclick="openCompareModalForHex('${escAttr(bestProvIl)}')">
+            <span>⚖️</span> Bu Bölgedeki Sağlayıcıları Kıyasla
+          </button>
+        </div>
+      `;
+    }
+
     matrixHtml += `</div>`;
   } else {
     matrixHtml = `<div style="font-size:11px;color:var(--text3);padding:8px 0;text-align:center;">Bu bölgede henüz altyapı verisi yok.</div>`;
   }
 
-  document.getElementById('infoISS').innerHTML = matrixHtml;
+  // BÖLGESEL DALGALANMA / HIZ DÜŞÜKLÜĞÜ UYARISI
+  let fluctuationHtml = '';
+  const validSpeedPins = pins.filter(p => !p.is_altyapi_yok && p.gercek_dl > 0);
+  if (validSpeedPins.length >= 3) {
+    const sorted = [...validSpeedPins].sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    const recentCount = Math.max(1, Math.floor(sorted.length * 0.35));
+    const recent = sorted.slice(0, recentCount);
+    const older = sorted.slice(recentCount);
+    if (older.length >= 2) {
+      const avgOlder = older.reduce((s,p) => s + p.gercek_dl, 0) / older.length;
+      const avgRecent = recent.reduce((s,p) => s + p.gercek_dl, 0) / recent.length;
+      if (avgOlder >= 25 && avgRecent <= avgOlder * 0.55) {
+        const dropPct = Math.round(((avgOlder - avgRecent) / avgOlder) * 100);
+        fluctuationHtml = `
+          <div style="margin:0 0 10px;padding:9px 12px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);border-radius:8px;display:flex;align-items:flex-start;gap:8px;">
+            <span style="font-size:15px;line-height:1;">⚡</span>
+            <div style="font-size:11px;line-height:1.4;color:var(--text);">
+              <b style="color:var(--danger);">Bölgesel Hız Dalgalanması Uyarısı (-%${dropPct})</b>
+              <div style="color:var(--text2);margin-top:2px;">Bu bölgedeki son ölçümlerde geçmiş ortalamaya (${Math.round(avgOlder)} Mbps) kıyasla belirgin hız düşüşü (${Math.round(avgRecent)} Mbps) kaydedildi.</div>
+            </div>
+          </div>
+        `;
+      }
+    }
+  }
+
+  document.getElementById('infoISS').innerHTML = fluctuationHtml + matrixHtml;
 
   // BÖLGE SAKİNLERİNİN DENEYİMLERİ (Yalnızca geçerli hazır etiketler, eski serbest metinler filtrelenir)
   const validFeedbackPins = pins.filter(p => extractValidFeedbackTags(p.yorum).length > 0);
@@ -9296,25 +9393,36 @@ async function submitPin() {
     is_altyapi_yok: isAltyapiYok,
     client_metadata: clientMetadata
   };
+  const thankyouData = {
+    dl,
+    ul,
+    ping: (typeof stResults !== 'undefined' && stResults && stResults.ping) ? stResults.ping : null,
+    iss: finalIss,
+    conn: typeof selConnVal !== 'undefined' ? selConnVal.toUpperCase() : '',
+    il: pinPayload.il || document.getElementById('ilInput')?.value || '',
+    ilce: pinPayload.ilce ? (pinPayload.mahalle ? `${pinPayload.ilce} (${pinPayload.mahalle})` : pinPayload.ilce) : (document.getElementById('ilceInput')?.value || ''),
+    puan: pinPayload.puan || null,
+    quarantine: !!quarantine,
+    isAltyapiYok: !!isAltyapiYok
+  };
+
+  // Çevrimdışı algılandıysa taslak olarak sakla
+  if (!navigator.onLine) {
+    saveOfflineDraftPin(pinPayload, thankyouData);
+    saveMyPinLocal({ ...pinPayload, id: 'taslak_' + Date.now(), is_draft: true, created_at: new Date().toISOString() });
+    showToast('📶 Çevrimdışısınız: Ölçümünüz taslak olarak kaydedildi. Bağlantı kurulduğunda otomatik haritaya eklenecektir.', 'info');
+    showThankyou(thankyouData);
+    resetPinForm();
+    submitBtn.disabled = false; submitBtn.textContent = '📍 Veriyi Paylaş';
+    return;
+  }
+
   try {
     await addPin(pinPayload);
     saveMyPinLocal({ ...pinPayload, created_at: new Date().toISOString() });
     if (typeof addPinToGoogleAccount === 'function') addPinToGoogleAccount(pinPayload);
     markSubmit(); 
     if (isAltyapiYok) markSubmitNoInfra();
-    
-    const thankyouData = {
-      dl,
-      ul,
-      ping: (typeof stResults !== 'undefined' && stResults && stResults.ping) ? stResults.ping : null,
-      iss: finalIss,
-      conn: typeof selConnVal !== 'undefined' ? selConnVal.toUpperCase() : '',
-      il: pinPayload.il || document.getElementById('ilInput')?.value || '',
-      ilce: pinPayload.ilce ? (pinPayload.mahalle ? `${pinPayload.ilce} (${pinPayload.mahalle})` : pinPayload.ilce) : (document.getElementById('ilceInput')?.value || ''),
-      puan: pinPayload.puan || null,
-      quarantine: !!quarantine,
-      isAltyapiYok: !!isAltyapiYok
-    };
     
     if (quarantine) {
       const reason = isAltyapiYok ? '⚠ Altyapı yok bildirimi' : (outlier ? '⚠ Bölge ortalamasından sapma' : (capExceeded ? `⚠ ${selConnVal.toUpperCase()} için olağan dışı yüksek hız` : (rateQuarantine ? '⚠ Hızlı giriş algılandı' : '⚠ Verini aldık')));
@@ -9325,8 +9433,20 @@ async function submitPin() {
     }
     resetPinForm(); loadPins();
   } catch(e) {
+    // Ağ / bağlantı hatası durumunda taslak olarak güvene al
+    const isNetworkError = !navigator.onLine || e?.name === 'TypeError' || String(e).includes('fetch') || String(e).includes('NetworkError') || String(e).includes('Failed to fetch');
+    if (isNetworkError) {
+      saveOfflineDraftPin(pinPayload, thankyouData);
+      saveMyPinLocal({ ...pinPayload, id: 'taslak_' + Date.now(), is_draft: true, created_at: new Date().toISOString() });
+      showToast('📶 Bağlantı koptu: Ölçümünüz taslak olarak saklandı. İnternet geldiğinde otomatik yüklenecektir.', 'warn');
+      showThankyou(thankyouData);
+      resetPinForm();
+      submitBtn.disabled = false; submitBtn.textContent = '📍 Veriyi Paylaş';
+      return;
+    }
+
     // Schema cache fallback (is_altyapi_yok kolonu henüz yoksa)
-    if(e.message.includes("is_altyapi_yok")) {
+    if(e.message && e.message.includes("is_altyapi_yok")) {
       const fb = { ...pinPayload, gorunur:false, is_quarantine:true };
       delete fb.is_altyapi_yok;
       try { 
@@ -9335,18 +9455,7 @@ async function submitPin() {
         if (typeof addPinToGoogleAccount === 'function') addPinToGoogleAccount(fb);
         markSubmit(); if (isAltyapiYok) markSubmitNoInfra();
         showToast('⚠ Verini aldık — DB güncellemesi bekleniyor', 'warn'); 
-        showThankyou({
-          dl,
-          ul,
-          ping: (typeof stResults !== 'undefined' && stResults && stResults.ping) ? stResults.ping : null,
-          iss: finalIss,
-          conn: typeof selConnVal !== 'undefined' ? selConnVal.toUpperCase() : '',
-          il: pinPayload.il || '',
-          ilce: pinPayload.ilce || '',
-          puan: pinPayload.puan || null,
-          quarantine: true,
-          isAltyapiYok: !!isAltyapiYok
-        });
+        showThankyou(thankyouData);
         resetPinForm(); loadPins(); 
       } catch(e2) { showToast(friendlyDbError(e2,'pins'),'err'); }
     } else showToast(friendlyDbError(e,'pins'),'err');
@@ -12039,6 +12148,257 @@ window.openWelcomeModal = openWelcomeModal;
 window.closeWelcomeModal = closeWelcomeModal;
 
 checkSession(); checkPublicMaintenance(); loadSubmissionPauseState();
+
+/* ===== İSS KARŞILAŞTIRMA ARACI ===== */
+function openCompareModal(preselectedProvince) {
+  const modal = document.getElementById('compareModal');
+  if (!modal) return;
+  modal.classList.add('open');
+
+  const issSet = new Set();
+  const ilSet = new Set();
+  (cleanPinsData || []).forEach(p => {
+    const iss = canonicalIssName(p.iss);
+    if (iss && iss !== 'Bilinmeyen' && isApprovedPublicIss(iss)) issSet.add(iss);
+    if (p.il && p.il.trim()) ilSet.add(p.il.trim());
+  });
+
+  const issList = Array.from(issSet).sort((a,b) => a.localeCompare(b, 'tr-TR'));
+  const ilList = Array.from(ilSet).sort((a,b) => a.localeCompare(b, 'tr-TR'));
+
+  const selA = document.getElementById('compareIssA');
+  const selB = document.getElementById('compareIssB');
+  const selLoc = document.getElementById('compareLocation');
+
+  if (selA && selB) {
+    const defaultA = issList.includes('TurkNet') ? 'TurkNet' : (issList[0] || '');
+    const defaultB = issList.includes('Türk Telekom') ? 'Türk Telekom' : (issList[1] || issList[0] || '');
+
+    selA.innerHTML = issList.map(name => `<option value="${escAttr(name)}" ${name === defaultA ? 'selected' : ''}>${escHtml(name)}</option>`).join('');
+    selB.innerHTML = issList.map(name => `<option value="${escAttr(name)}" ${name === defaultB ? 'selected' : ''}>${escHtml(name)}</option>`).join('');
+  }
+
+  if (selLoc) {
+    selLoc.innerHTML = '<option value="">🇹🇷 Tüm Türkiye (Genel)</option>' +
+      ilList.map(il => `<option value="${escAttr(il)}" ${preselectedProvince === il ? 'selected' : ''}>📍 ${escHtml(il)}</option>`).join('');
+  }
+
+  updateCompareData();
+}
+
+function closeCompareModal() {
+  const modal = document.getElementById('compareModal');
+  if (modal) modal.classList.remove('open');
+}
+
+function openCompareModalForHex(province) {
+  openCompareModal(province);
+}
+
+function updateCompareData() {
+  const issA = document.getElementById('compareIssA')?.value;
+  const issB = document.getElementById('compareIssB')?.value;
+  const loc = document.getElementById('compareLocation')?.value;
+  const container = document.getElementById('compareResultsBox');
+  if (!container || !issA || !issB) return;
+
+  let pool = cleanPinsData || [];
+  if (loc) {
+    pool = pool.filter(p => p.il && p.il.toLocaleLowerCase('tr-TR') === loc.toLocaleLowerCase('tr-TR'));
+  }
+
+  const getStats = (issName) => {
+    const pins = pool.filter(p => canonicalIssName(p.iss) === issName && !p.is_altyapi_yok);
+    const count = pins.length;
+    if (!count) return { count: 0, avgDl: 0, avgUl: 0, avgScore: '—', verifiedPct: 0, topTech: '—' };
+    const avgDl = Math.round(pins.reduce((s,p) => s + (p.gercek_dl || 0), 0) / count);
+    const ulPins = pins.filter(p => (p.gercek_ul || 0) > 0);
+    const avgUl = ulPins.length ? Math.round(ulPins.reduce((s,p) => s + p.gercek_ul, 0) / ulPins.length) : 0;
+    const scoredPins = pins.filter(p => p.puan > 0);
+    const avgScore = scoredPins.length ? (scoredPins.reduce((s,p) => s + p.puan, 0) / scoredPins.length).toFixed(1) : '—';
+    const verifiedCount = pins.filter(p => p.speed_test_verified).length;
+    const verifiedPct = Math.round((verifiedCount / count) * 100);
+
+    const techCounts = {};
+    pins.forEach(p => {
+      const t = (p.baglanti_turu || '').toUpperCase();
+      if (t && t !== 'YOK') techCounts[t] = (techCounts[t] || 0) + 1;
+    });
+    const topTech = Object.entries(techCounts).sort((a,b) => b[1] - a[1])[0]?.[0] || '—';
+
+    return { count, avgDl, avgUl, avgScore, verifiedPct, topTech };
+  };
+
+  const statA = getStats(issA);
+  const statB = getStats(issB);
+  const colorA = ic(issA);
+  const colorB = ic(issB);
+
+  const maxDl = Math.max(statA.avgDl, statB.avgDl, 10);
+  const maxUl = Math.max(statA.avgUl, statB.avgUl, 5);
+
+  const pctDlA = Math.round((statA.avgDl / maxDl) * 100);
+  const pctDlB = Math.round((statB.avgDl / maxDl) * 100);
+
+  const pctUlA = Math.round((statA.avgUl / maxUl) * 100);
+  const pctUlB = Math.round((statB.avgUl / maxUl) * 100);
+
+  const dlWinner = statA.avgDl > statB.avgDl ? issA : (statB.avgDl > statA.avgDl ? issB : null);
+
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div style="background:var(--surface2);border:1px solid ${colorA}44;border-top:3px solid ${colorA};border-radius:10px;padding:12px 14px;text-align:center;">
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:4px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:${colorA};"></span>
+          <b style="font-size:13px;color:var(--text);">${escHtml(issA)}</b>
+        </div>
+        <div style="font-size:11px;color:var(--text3);">${statA.count} ölçüm</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid ${colorB}44;border-top:3px solid ${colorB};border-radius:10px;padding:12px 14px;text-align:center;">
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:4px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:${colorB};"></span>
+          <b style="font-size:13px;color:var(--text);">${escHtml(issB)}</b>
+        </div>
+        <div style="font-size:11px;color:var(--text3);">${statB.count} ölçüm</div>
+      </div>
+    </div>
+
+    <!-- Metrik 1: Download Hızı -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:11px;font-weight:700;color:var(--text2);">⚡ İNDİRME HIZI (DOWNLOAD)</span>
+        ${dlWinner ? `<span style="font-size:9.5px;padding:2px 7px;border-radius:12px;background:rgba(34,197,94,.12);color:var(--success);border:1px solid rgba(34,197,94,.3);font-weight:700;">🏆 ${escHtml(dlWinner)} daha hızlı</span>` : ''}
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;font-family:var(--font-mono);margin-bottom:6px;">
+        <span style="color:${colorA};">${statA.avgDl} <small style="font-size:10px;">Mbps</small></span>
+        <span style="color:${colorB};">${statB.avgDl} <small style="font-size:10px;">Mbps</small></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:var(--surface3);height:7px;border-radius:4px;overflow:hidden;">
+          <div style="height:100%;width:${pctDlA}%;background:${colorA};border-radius:4px;transition:width .4s ease;"></div>
+        </div>
+        <div style="background:var(--surface3);height:7px;border-radius:4px;overflow:hidden;">
+          <div style="height:100%;width:${pctDlB}%;background:${colorB};border-radius:4px;transition:width .4s ease;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metrik 2: Upload Hızı -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:11px;font-weight:700;color:var(--text2);">🚀 YÜKLEME HIZI (UPLOAD)</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;font-family:var(--font-mono);margin-bottom:6px;">
+        <span style="color:${colorA};">${statA.avgUl} <small style="font-size:10px;">Mbps</small></span>
+        <span style="color:${colorB};">${statB.avgUl} <small style="font-size:10px;">Mbps</small></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:var(--surface3);height:7px;border-radius:4px;overflow:hidden;">
+          <div style="height:100%;width:${pctUlA}%;background:${colorA};border-radius:4px;transition:width .4s ease;"></div>
+        </div>
+        <div style="background:var(--surface3);height:7px;border-radius:4px;overflow:hidden;">
+          <div style="height:100%;width:${pctUlB}%;background:${colorB};border-radius:4px;transition:width .4s ease;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metrik 3: Memnuniyet & Güvenilirlik -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;">
+        <div style="font-size:10.5px;color:var(--text3);font-weight:600;margin-bottom:6px;">😊 MEMNUNİYET</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+          <div><b style="color:${colorA};font-size:15px;font-family:var(--font-mono);">${statA.avgScore !== '—' ? '★ ' + statA.avgScore : '—'}</b>${statA.avgScore !== '—' ? '<span style="font-size:10px;color:var(--text3);">/10</span>' : ''}</div>
+          <div><b style="color:${colorB};font-size:15px;font-family:var(--font-mono);">${statB.avgScore !== '—' ? '★ ' + statB.avgScore : '—'}</b>${statB.avgScore !== '—' ? '<span style="font-size:10px;color:var(--text3);">/10</span>' : ''}</div>
+        </div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;">
+        <div style="font-size:10.5px;color:var(--text3);font-weight:600;margin-bottom:6px;">⚡ DOĞRULANMIŞ TEST</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+          <div><b style="color:${colorA};font-size:15px;font-family:var(--font-mono);">%${statA.verifiedPct}</b></div>
+          <div><b style="color:${colorB};font-size:15px;font-family:var(--font-mono);">%${statB.verifiedPct}</b></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metrik 4: Baskın Altyapı -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:11px;color:var(--text3);font-weight:600;">🌐 Baskın Teknoloji</span>
+      <div style="display:flex;gap:12px;font-size:11px;font-weight:700;">
+        <span style="color:${colorA};">${escHtml(statA.topTech)}</span>
+        <span style="color:var(--text3);">vs</span>
+        <span style="color:${colorB};">${escHtml(statB.topTech)}</span>
+      </div>
+    </div>
+  `;
+}
+
+/* ===== ÇEVRİMDIŞI TASLAKLAR (OFFLINE DRAFTS) ===== */
+function saveOfflineDraftPin(pinPayload, thankyouData) {
+  const drafts = ihStorage.getJSON('ih_offline_drafts', []);
+  const draftId = 'draft_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+  drafts.push({
+    id: draftId,
+    payload: pinPayload,
+    thankyouData: thankyouData,
+    savedAt: new Date().toISOString()
+  });
+  ihStorage.setJSON('ih_offline_drafts', drafts);
+  updateOfflineDraftsBanner();
+}
+
+function updateOfflineDraftsBanner() {
+  const drafts = ihStorage.getJSON('ih_offline_drafts', []);
+  const banner = document.getElementById('offlineDraftsBanner');
+  if (!banner) return;
+  if (!drafts.length) {
+    banner.style.display = 'none';
+    banner.innerHTML = '';
+    return;
+  }
+  banner.style.display = 'flex';
+  banner.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text);">
+      <span style="font-size:16px;">📦</span>
+      <div>
+        <b>${drafts.length} adet bekleyen çevrimdışı taslak ölçümünüz var</b>
+        <div style="font-size:10px;color:var(--text3);margin-top:1px;">İnternet bağlantınız kurulduğunda otomatik haritaya aktarılır.</div>
+      </div>
+    </div>
+    <button type="button" class="btn-sub" style="padding:5px 12px;font-size:11px;font-weight:600;white-space:nowrap;cursor:pointer;border-radius:6px;" onclick="syncOfflineDrafts()">Şimdi Yükle</button>
+  `;
+}
+
+async function syncOfflineDrafts() {
+  const drafts = ihStorage.getJSON('ih_offline_drafts', []);
+  if (!drafts.length || !navigator.onLine) {
+    if (!navigator.onLine && drafts.length) showToast('İnternet bağlantısı kurulamadı, taslaklar saklanıyor.', 'warn');
+    return;
+  }
+  let successCount = 0;
+  const remaining = [];
+  for (const draft of drafts) {
+    try {
+      await addPin(draft.payload);
+      saveMyPinLocal({ ...draft.payload, created_at: new Date().toISOString() });
+      if (typeof addPinToGoogleAccount === 'function') addPinToGoogleAccount(draft.payload);
+      successCount++;
+    } catch(err) {
+      console.warn('[internetHarita] Taslak senkron hatası:', err);
+      remaining.push(draft);
+    }
+  }
+  ihStorage.setJSON('ih_offline_drafts', remaining);
+  updateOfflineDraftsBanner();
+  if (successCount > 0) {
+    showToast(`✅ ${successCount} adet çevrimdışı ölçüm taslağınız haritaya eklendi!`, 'success');
+    loadPins();
+  }
+}
+
+window.addEventListener('online', function() {
+  syncOfflineDrafts();
+});
+
 function startupApp() {
   initMainMap();
   const mapSearch = document.getElementById('mapSearchInput');
@@ -12047,6 +12407,8 @@ function startupApp() {
   }
   handleHashRoute();
   checkFirstVisitWelcome();
+  updateOfflineDraftsBanner();
+  if (navigator.onLine) syncOfflineDrafts();
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', startupApp);
