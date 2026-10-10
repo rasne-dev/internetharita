@@ -718,6 +718,23 @@ html.light .scroll-to-guide-btn:hover {
   display:none; flex-direction:column;
 }
 .map-info.visible{ display:flex; }
+.map-info-drag-handle { display:none; }
+.info-close {
+  cursor:pointer;
+  color:var(--text3);
+  font-size:20px;
+  line-height:1;
+  background:transparent;
+  border:none;
+  padding:4px 8px;
+  border-radius:6px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  transition:all 0.2s ease;
+}
+.info-close:hover { color:var(--text); background:var(--surface2); }
+.info-close:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 
 /* ===== LANDING EDITORIAL & KNOWLEDGE BASE ===== */
 .landing-editorial-container {
@@ -2139,12 +2156,33 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
     border-radius: 6px !important;
   }
   .map-info {
-    width:calc(100vw - 24px); left:12px; right:12px; margin:0 auto; max-width:480px;
-    top: 8px;
-    max-height:calc(100% - 16px);
+    position: absolute;
+    top: auto;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-width: 480px;
+    margin: 0 auto;
+    max-height: min(76vh, 560px);
+    border-radius: 16px;
+    box-shadow: 0 -8px 36px rgba(0,0,0,0.6);
+    animation: mapInfoSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes mapInfoSlideUp {
+    from { transform: translateY(28px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .map-info-drag-handle {
+    width: 38px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border2);
+    margin: 8px auto 2px;
+    display: block;
   }
   .info-close {
-    width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
     font-size: 20px; padding: 0; border-radius: 6px; background: var(--surface2);
   }
   .pin-layout { grid-template-columns:1fr; grid-template-rows:minmax(180px, 35vh) minmax(0, 1fr); overflow:hidden; }
@@ -2820,7 +2858,8 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
   </div><!-- /map-sidebar -->
 
   <div class="map-info" id="mapInfo">
-    <div class="info-head"><div class="info-title" id="infoTitle">—</div><div class="info-close" onclick="document.getElementById('mapInfo').classList.remove('visible')">×</div></div>
+    <div class="map-info-drag-handle" aria-hidden="true"></div>
+    <div class="info-head"><div class="info-title" id="infoTitle">—</div><button type="button" class="info-close" aria-label="Bölge detayını kapat" onclick="document.getElementById('mapInfo').classList.remove('visible')">×</button></div>
     <div class="map-info-body">
       <div class="info-row"><span class="info-label">Ort. İndirme</span><span class="info-val" id="infoDL" style="color:var(--accent)">—</span></div>
       <div class="info-row"><span class="info-label">Ort. Yükleme</span><span class="info-val" id="infoUL">—</span></div>
@@ -3454,6 +3493,17 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
       <span id="sbCustomIssCount" style="display:none;"></span>
     </div>
 
+    <!-- SUPABASE KALICI RLS YETKİ KILAVUZU KARTI -->
+    <div id="modDbSyncCard" style="display:none;margin-bottom:12px;background:rgba(245,158,11,.08);border:1px solid var(--warn);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--text2);line-height:1.5;">
+      <div style="font-weight:700;color:var(--warn);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+        <span>⚡ Supabase Veritabanı Kalıcı Onay İzni (RLS)</span>
+        <button onclick="copyModSqlPolicy()" class="btn-primary" style="padding:3px 9px;font-size:10px;">📋 SQL Kopyala</button>
+      </div>
+      <div>Moderatör onaylarınız yerel olarak anında yayına alındı. Diğer tüm cihazlarda ve ziyaretçilerde de veritabanında kalıcı olması için Supabase SQL Editor'da aşağıdaki komutları bir kez çalıştırmanız önerilir:</div>
+      <div style="margin-top:6px;background:var(--surface);padding:7px 10px;border-radius:4px;font-family:var(--font-mono);font-size:10px;color:var(--text);overflow-x:auto;white-space:pre;" id="modSqlCodeBox">CREATE POLICY "Moderatörler günceller" ON pins FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Moderatörler ISS yönetir" ON iss_list FOR ALL TO authenticated USING (true) WITH CHECK (true);</div>
+    </div>
+
     <!-- 4 SADE ANA SEKME (VARSAYILAN: TÜM PİNLER) -->
     <div class="mod-tabs">
       <button class="mod-tab-btn active" id="modTabBtn-tumPinler" onclick="switchModTab('tumPinler')">📋 Tüm Pinler &amp; Arama</button>
@@ -3981,6 +4031,15 @@ const SB_URL = 'https://vpnaxxxoiomorcvloend.supabase.co';
 const SB_KEY = 'sb_publishable_4LErt91-jMdX3WiaDyBPcw_KMQ0sU-r';
 const { createClient } = supabase;
 const sbc = createClient(SB_URL, SB_KEY);
+
+// Güvenli yerel depolama sarmalayıcısı (Safari Private Mode & Quota hatalarına karşı koruma)
+const ihStorage = {
+  get: (k, def = null) => { try { const v = localStorage.getItem(k); return v !== null ? v : def; } catch(e) { return def; } },
+  set: (k, v) => { try { localStorage.setItem(k, String(v)); return true; } catch(e) { return false; } },
+  del: (k) => { try { localStorage.removeItem(k); return true; } catch(e) { return false; } },
+  getJSON: (k, def = null) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch(e) { return def; } },
+  setJSON: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e) { return false; } }
+};
 /* ── DB MİGRASYON & RLS POLİTİKALARI (Supabase SQL Editor'da bir kez çalıştır) ──
    ALTER TABLE pins ADD COLUMN IF NOT EXISTS speed_test_verified boolean DEFAULT false;
    CREATE INDEX IF NOT EXISTS idx_pins_speed_test_verified ON pins (speed_test_verified) WHERE deleted_at IS NULL;
@@ -4020,15 +4079,11 @@ var mapLoadingTimeout = null;
     } else {
       throw new Error('fp_unavailable');
     }
-    localStorage.setItem('ih_browser_fp', browserFingerprint);
-    fpReady = true;
-    document.getElementById('fpDot')?.classList.add('ready');
-    if (typeof renderMyPins === 'function' && typeof maps !== 'undefined' && maps.main) {
-      renderMyPins();
-    }
+    ihStorage.set('ih_browser_fp', browserFingerprint);
   } catch(e) {
-    browserFingerprint = localStorage.getItem('ih_browser_fp') || ('fp_' + Math.random().toString(36).substr(2, 9));
-    localStorage.setItem('ih_browser_fp', browserFingerprint);
+    browserFingerprint = ihStorage.get('ih_browser_fp') || ('fp_' + Math.random().toString(36).substr(2, 9));
+    ihStorage.set('ih_browser_fp', browserFingerprint);
+  } finally {
     fpReady = true;
     document.getElementById('fpDot')?.classList.add('ready');
     if (typeof renderMyPins === 'function' && typeof maps !== 'undefined' && maps.main) {
@@ -4419,14 +4474,34 @@ function applyModOverrides(pins, authoritative) {
     const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
     let updated = pins.filter(p => !localDeleted.has(String(p.id)));
     if (Object.keys(overrides).length > 0) {
-      updated = updated.map(p => overrides[p.id] ? { ...p, ...overrides[p.id] } : p);
+      updated = updated.map(p => {
+        const sId = String(p.id);
+        const ov = overrides[sId] || overrides[p.id];
+        if (ov) {
+          const merged = { ...p, ...ov };
+          if (ov.gorunur === true && ov.is_quarantine === false) {
+            merged.gorunur = true;
+            merged.is_quarantine = false;
+            merged.sikayet_sayisi = 0;
+          }
+          if (merged.iss && typeof registerLocalApprovedIss === 'function') {
+            registerLocalApprovedIss(merged.iss);
+          }
+          return merged;
+        }
+        return p;
+      });
       if (!authoritative && typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
         adminPinsCache.forEach(ap => {
           const sId = String(ap.id);
           if (localDeleted.has(sId)) return;
-          const ov = overrides[ap.id];
+          const ov = overrides[sId] || overrides[ap.id];
           if (ov && ov.gorunur === true && !updated.some(u => String(u.id) === sId)) {
-            updated.push({ ...ap, ...ov });
+            const added = { ...ap, ...ov, gorunur: true, is_quarantine: false, sikayet_sayisi: 0 };
+            if (added.iss && typeof registerLocalApprovedIss === 'function') {
+              registerLocalApprovedIss(added.iss);
+            }
+            updated.push(added);
           }
         });
       }
@@ -4510,20 +4585,40 @@ async function saveModOverridesToUserMeta(overrides) {
 function restoreModOverridesFromUserMeta(user) {
   if (!user || !user.user_metadata) return;
   try {
+    let hasRestored = false;
     const serverOverrides = user.user_metadata.mod_overrides;
     if (serverOverrides && typeof serverOverrides === 'object') {
       const localOverrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
       const merged = { ...serverOverrides, ...localOverrides };
       localStorage.setItem('ih_mod_overrides', JSON.stringify(merged));
+      hasRestored = true;
     }
     const serverIss = user.user_metadata.mod_approved_iss;
     if (Array.isArray(serverIss) && serverIss.length > 0) {
       const localIss = JSON.parse(localStorage.getItem('ih_local_approved_iss') || '[]');
       const mergedIss = Array.from(new Set([...serverIss, ...localIss]));
       localStorage.setItem('ih_local_approved_iss', JSON.stringify(mergedIss));
+      hasRestored = true;
+    }
+    if (hasRestored) {
+      if (typeof loadPins === 'function') loadPins();
+      if (typeof refreshModData === 'function') refreshModData();
     }
   } catch(e) {
     console.warn('[internetHarita] restoreModOverridesFromUserMeta uyarısı:', e);
+  }
+}
+
+function copyModSqlPolicy() {
+  const code = 'CREATE POLICY "Moderatörler günceller" ON pins FOR UPDATE TO authenticated USING (true) WITH CHECK (true);\nCREATE POLICY "Moderatörler ISS yönetir" ON iss_list FOR ALL TO authenticated USING (true) WITH CHECK (true);';
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(code).then(() => {
+      showToast('✅ SQL panoya kopyalandı! Supabase Dashboard › SQL Editor\'a yapıştırıp Run deyin.');
+    }).catch(() => {
+      showToast('Panoya kopyalanamadı, lütfen kutudaki metni seçip kopyalayın.', 'warn');
+    });
+  } else {
+    showToast('Panoya kopyalanamadı, lütfen kutudaki metni seçip kopyalayın.', 'warn');
   }
 }
 
@@ -4532,11 +4627,20 @@ async function patchPin(id, d) {
   let updatedRow = null;
   let lastError = null;
 
-  // 1. Payload temizliği: 'sikayet_sayisi' gibi sütun kısıtlamasına (401/42501) yol açan alanları arındır
+  // 1. Payload temizliği: 401/42501 veya CLS hatasına yol açan tüm kısıtlı sütunları arındır
   const cleanPayload = { ...d };
-  delete cleanPayload.sikayet_sayisi;
-  if (cleanPayload.is_quarantine === false && cleanPayload.gorunur === undefined) {
+  const FORBIDDEN_COLS = ['sikayet_sayisi', 'custom_iss', 'mod_notu', 'client_metadata', 'ip_hash', 'browser_fp'];
+  FORBIDDEN_COLS.forEach(c => delete cleanPayload[c]);
+
+  const isApproving = cleanPayload.gorunur === true || cleanPayload.is_quarantine === false;
+  if (isApproving) {
     cleanPayload.gorunur = true;
+    cleanPayload.is_quarantine = false;
+  }
+
+  // İSS adı varsa hemen yerel onaylı listeye kaydet ki haritada derhal görünsün
+  if (cleanPayload.iss && typeof registerLocalApprovedIss === 'function') {
+    registerLocalApprovedIss(cleanPayload.iss);
   }
 
   // 2. Doğrulama için güvenli public alanlar: id, gorunur, is_quarantine
@@ -4589,21 +4693,33 @@ async function patchPin(id, d) {
     }
   }
 
+  // Veritabanı RLS yetkisi eksikse mod paneli kılavuz kartını görünür yap
+  if (!updatedRow && typeof isModLoggedIn !== 'undefined' && isModLoggedIn) {
+    const syncCard = document.getElementById('modDbSyncCard');
+    if (syncCard) syncCard.style.display = 'block';
+  }
+
   // Moderatör hafızasında (ih_mod_overrides) sakla ve Supabase Auth hesabına kalıcı yaz
   // Böylece DB kısıtlaması olsa bile tarayıcı çerezleri silinse dahi hesap bazlı olarak asla kaybolmaz
   try {
     const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
-    overrides[sId] = { ...(overrides[sId] || {}), ...cleanPayload, updated_at: Date.now() };
+    overrides[sId] = {
+      ...(overrides[sId] || {}),
+      ...cleanPayload,
+      ...(isApproving ? { sikayet_sayisi: 0 } : {}),
+      updated_at: Date.now()
+    };
     localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
     saveModOverridesToUserMeta(overrides);
   } catch(e) {}
 
   // Canlı bellek cache'lerini anında güncelle
+  const extraPatch = isApproving ? { sikayet_sayisi: 0 } : {};
   if (typeof adminPinsCache !== 'undefined' && adminPinsCache) {
-    adminPinsCache = adminPinsCache.map(p => String(p.id) === sId ? { ...p, ...cleanPayload } : p);
+    adminPinsCache = adminPinsCache.map(p => String(p.id) === sId ? { ...p, ...cleanPayload, ...extraPatch } : p);
   }
   if (typeof pinsData !== 'undefined' && pinsData) {
-    pinsData = pinsData.map(p => String(p.id) === sId ? { ...p, ...cleanPayload } : p);
+    pinsData = pinsData.map(p => String(p.id) === sId ? { ...p, ...cleanPayload, ...extraPatch } : p);
     cleanPinsData = publicCleanPins(pinsData);
   }
 
@@ -5030,12 +5146,23 @@ function approvedIssNames() {
     .map(i => canonicalIssName(i.name))
     .filter(Boolean);
   
-  // LocalStorage'daki onaylı İSS'leri de listeye dahil et (RLS hatası durumunda dahi onaylanan pinler haritada görünür)
+  // 1. LocalStorage'daki onaylı İSS'leri de listeye dahil et
   try {
     const local = JSON.parse(localStorage.getItem('ih_local_approved_iss') || '[]');
     local.forEach(l => {
       const c = canonicalIssName(l);
       if (c && !active.includes(c)) active.push(c);
+    });
+  } catch(e) {}
+
+  // 2. Moderatör onay hafızasındaki (ih_mod_overrides) tüm onaylı pinlerin İSS'lerini dahil et
+  try {
+    const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
+    Object.values(overrides).forEach(ov => {
+      if (ov && ov.gorunur === true && ov.is_quarantine === false && ov.iss) {
+        const c = canonicalIssName(ov.iss);
+        if (c && !active.includes(c)) active.push(c);
+      }
     });
   } catch(e) {}
 
@@ -5199,8 +5326,14 @@ function getSpamReason(p) {
 
 function isSpam(p) {
   if (p.is_altyapi_yok) return false;
-  // Moderatör tarafından onaylanmış ve yayına alınmış pini (yeni kullanıcı şikayeti gelmedikçe) spam sayma
+  // Moderatör tarafından onaylanmış ve yayına alınmış pini spam sayma
   if (p.gorunur === true && !p.is_quarantine && !(p.sikayet_sayisi > 0)) return false;
+  try {
+    const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
+    const sId = String(p.id);
+    const ov = overrides[sId] || overrides[p.id];
+    if (ov && ov.gorunur === true && ov.is_quarantine === false) return false;
+  } catch(e) {}
   const reason = getSpamReason(p);
   return reason !== "" && reason !== "Karantina İncelemesi";
 }
@@ -5523,7 +5656,7 @@ function handleUrlParamsOnStartup() {
     const pinId = params.get('pin');
 
     if (pinId && cleanPinsData) {
-      const targetPin = cleanPinsData.find(p => p.id === pinId);
+      const targetPin = cleanPinsData.find(p => String(p.id) === String(pinId));
       if (targetPin && targetPin.lat && targetPin.lng) {
         focusLocationOnMap(targetPin.lat, targetPin.lng, targetPin.iss || 'Ölçüm');
         return;
@@ -5633,11 +5766,10 @@ const DAILY_LIMIT = 10;
 const HOURLY_LIMIT = 5;
 function fp() { return browserFingerprint || 'default'; }
 function getRateBuckets() {
-  const now = Date.now();
   const dayKey  = 'ih_day_'  + fp() + '_' + new Date().toISOString().slice(0,10); // YYYY-MM-DD
   const hourKey = 'ih_hr_'   + fp() + '_' + new Date().toISOString().slice(0,13); // YYYY-MM-DDTHH
-  const dayCnt  = parseInt(localStorage.getItem(dayKey)  || '0');
-  const hrCnt   = parseInt(localStorage.getItem(hourKey) || '0');
+  const dayCnt  = parseInt(ihStorage.get(dayKey, '0') || '0');
+  const hrCnt   = parseInt(ihStorage.get(hourKey, '0') || '0');
   return { dayKey, hourKey, dayCnt, hrCnt };
 }
 function canSubmit() {
@@ -5652,8 +5784,8 @@ function rateLimitMessage() {
 }
 function markSubmit() {
   const { dayKey, hourKey, dayCnt, hrCnt } = getRateBuckets();
-  localStorage.setItem(dayKey,  String(dayCnt + 1));
-  localStorage.setItem(hourKey, String(hrCnt + 1));
+  ihStorage.set(dayKey,  String(dayCnt + 1));
+  ihStorage.set(hourKey, String(hrCnt + 1));
 }
 
 // ===== ALTYAPI YOK LİMİTİ: Günlük 2 adet =====
@@ -5661,14 +5793,14 @@ const NO_INFRA_DAILY_LIMIT = 2;
 function canSubmitNoInfra() {
   const fpId = fp();
   const dayKey = 'ih_noinfra_' + fpId + '_' + new Date().toISOString().slice(0, 10);
-  const count = parseInt(localStorage.getItem(dayKey) || '0');
+  const count = parseInt(ihStorage.get(dayKey, '0') || '0');
   return count < NO_INFRA_DAILY_LIMIT;
 }
 function markSubmitNoInfra() {
   const fpId = fp();
   const dayKey = 'ih_noinfra_' + fpId + '_' + new Date().toISOString().slice(0, 10);
-  const count = parseInt(localStorage.getItem(dayKey) || '0');
-  localStorage.setItem(dayKey, String(count + 1));
+  const count = parseInt(ihStorage.get(dayKey, '0') || '0');
+  ihStorage.set(dayKey, String(count + 1));
 }
 
 function onNoInfraChange(checked) {
@@ -5863,10 +5995,10 @@ function speedShape(dl) { if(dl>=500)return'◆'; if(dl>=200)return'■'; if(dl>
 function speedShapeHtml(dl) { return `<span class="speed-shape">${speedShape(dl)} </span>`; }
 function memShape(s) { if(s>=8)return'★'; if(s>=6)return'◐'; if(s>=4)return'▲'; return'▼'; }
 function memShapeHtml(s) { return `<span class="speed-shape">${memShape(s)} </span>`; }
-let colorblindMode = localStorage.getItem('ih_colorblind') === 'true';
+let colorblindMode = ihStorage.get('ih_colorblind') === 'true';
 function toggleColorblindMode() {
   colorblindMode = !colorblindMode;
-  localStorage.setItem('ih_colorblind', String(colorblindMode));
+  ihStorage.set('ih_colorblind', String(colorblindMode));
   document.documentElement.classList.toggle('colorblind-mode', colorblindMode);
   document.getElementById('colorblindCheck') && (document.getElementById('colorblindCheck').checked = colorblindMode);
   if (typeof setColorMode === 'function') setColorMode(colorMode);
@@ -6152,10 +6284,10 @@ function toggleSidebarCollapse() {
   const collapsed = body.classList.toggle('collapsed');
   btn.textContent = collapsed ? '▼' : '▲';
   btn.setAttribute('aria-expanded', String(!collapsed));
-  localStorage.setItem('ih_sidebar_collapsed', collapsed ? '1' : '0');
+  ihStorage.set('ih_sidebar_collapsed', collapsed ? '1' : '0');
 }
 function initSidebarState() {
-  if (localStorage.getItem('ih_sidebar_collapsed') === '1') {
+  if (ihStorage.get('ih_sidebar_collapsed') === '1') {
     document.getElementById('sidebarBody')?.classList.add('collapsed');
     const btn = document.getElementById('sidebarCollapseBtn');
     if (btn) btn.textContent = '▼';
@@ -9435,7 +9567,7 @@ let selScoreValUserEdit = 0;
 const USER_EDIT_DAILY_LIMIT = 5;
 function getEditBuckets(pinId) {
   const dayKey = 'ih_edit_' + pinId + '_' + new Date().toISOString().slice(0, 10);
-  const count = parseInt(localStorage.getItem(dayKey) || '0');
+  const count = parseInt(ihStorage.get(dayKey, '0') || '0');
   return { dayKey, count };
 }
 function canEditPin(pinId) {
@@ -9446,7 +9578,7 @@ function getRemainingEdits(pinId) {
 }
 function markEditPin(pinId) {
   const { dayKey, count } = getEditBuckets(pinId);
-  localStorage.setItem(dayKey, String(count + 1));
+  ihStorage.set(dayKey, String(count + 1));
 }
 
 function selConnUserEdit(el, type) {
@@ -9485,9 +9617,10 @@ function openUserEditModal(pinId) {
   // BUG FIX: pinsData sadece gorunur=true pinleri tutar.
   // Karantinada veya gizlenmiş kendi pini pinsData'da bulunmaz → hata.
   // Fallback: activeHexPins cache'inden ve getMyLocalPins() yerel listesinden de ara
-  const pin = pinsData.find(p => p.id === pinId)
-           || (activeHexPins || []).find(p => p.id === pinId)
-           || getMyLocalPins().find(p => p.id === pinId);
+  const sPinId = String(pinId);
+  const pin = pinsData.find(p => String(p.id) === sPinId)
+           || (activeHexPins || []).find(p => String(p.id) === sPinId)
+           || getMyLocalPins().find(p => String(p.id) === sPinId);
   if (!pin) {
     return showToast('Ölçüm verisi bulunamadı veya henüz yüklenmedi.', 'warn');
   }
@@ -9981,11 +10114,16 @@ async function loadCustomIss() {
     await loadIssListAndRenderChips();
     const pins = await getAllPinsAdmin() || [];
     const knownNames = approvedIssNames();
-    const customPins = pins.filter(p =>
-      p.is_quarantine && p.iss &&
-      !knownNames.has(canonicalIssName(p.iss)) &&
-      canonicalIssName(p.iss) !== 'diğer'
-    );
+    const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
+    const customPins = pins.filter(p => {
+      if (p.deleted_at) return false;
+      const sId = String(p.id);
+      const ov = overrides[sId] || overrides[p.id];
+      if (ov && ov.is_quarantine === false) return false;
+      return p.is_quarantine && p.iss &&
+        !knownNames.has(canonicalIssName(p.iss)) &&
+        canonicalIssName(p.iss) !== 'diğer';
+    });
     const grouped = {};
     customPins.forEach(p => { if(!grouped[p.iss]) grouped[p.iss]={pins:[],count:0}; grouped[p.iss].pins.push(p); grouped[p.iss].count++; });
     updateOnayCountBadge(pins);
@@ -10041,14 +10179,21 @@ async function approveCustomIss(iss, normalizedName, color) {
       console.warn('[internetHarita] iss_list tablosuna eklenemedi (RLS kısıtlaması), yerel listeye kaydedildi:', issErr);
     }
     registerLocalApprovedIss(finalName);
+    registerLocalApprovedIss(iss);
     // 2. Tüm ilgili pinleri düzelt ve yayınla
     const pins = await getAllPinsAdmin() || [];
-    const targets = pins.filter(p => p.iss === iss && p.is_quarantine);
-    await Promise.all(targets.map(p => patchPin(p.id, { iss: finalName, gorunur:true, is_quarantine:false, custom_iss: null })));
+    const targets = pins.filter(p => (p.iss === iss || canonicalIssName(p.iss) === canonicalIssName(iss)) && (p.is_quarantine || p.gorunur !== true));
+    await Promise.all(targets.map(p => patchPin(p.id, { iss: finalName, gorunur: true, is_quarantine: false })));
     showToast(`✅ "${finalName}" listeye eklendi — ${targets.length} pin yayınlandı`);
     // 3. Cache ve UI güncelle
     await loadIssListAndRenderChips();
-    await loadCustomIss(); await loadPins(); loadIssManager(); updateInboxSummary();
+    await loadPins();
+    await loadCustomIss();
+    await loadSikayetler();
+    loadAdminTable();
+    loadIssManager();
+    updateInboxSummary();
+    updateModStatsSummary();
   } catch(e) { showToast('Hata: '+e.message,'err'); }
 }
 
@@ -10695,7 +10840,14 @@ async function loadSikayetler() {
   }
   try {
     const pins = await getAllPinsAdmin()||[];
-    const flagged = pins.filter(p => ((p.sikayet_sayisi||0)>0 || p.is_quarantine) && !p.deleted_at);
+    const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
+    const flagged = pins.filter(p => {
+      if (p.deleted_at) return false;
+      const sId = String(p.id);
+      const ov = overrides[sId] || overrides[p.id];
+      if (ov && ov.gorunur === true && ov.is_quarantine === false) return false;
+      return ((p.sikayet_sayisi||0)>0 || p.is_quarantine === true || p.gorunur === false);
+    });
     if (!flagged.length) {
       list.innerHTML = '<div class="empty-state">Şüpheli pin kümesi bulunmuyor ✅</div>';
       return;
@@ -10777,27 +10929,21 @@ async function groupAction(idsJson, approve) {
   const idsSet = new Set(ids);
   try {
     if (approve) {
-      const targetPins = await sbRest(`pins?id=in.(${ids.join(',')})&select=id,iss`) || [];
-      const unapprovedIss = [...new Set(targetPins.map(p => p.iss).filter(iss => iss && !isApprovedPublicIss(iss)))];
-      for (const iss of unapprovedIss) {
-        try {
-          await addIssToList({ name: iss, color: issHashColor(iss), active: true, sort_order: 99 });
-        } catch(issErr) {
-          console.warn('[internetHarita] iss_list tablosuna eklenemedi (RLS kısıtlaması), yerel listeye eklendi:', issErr);
+      const targetPins = (adminPinsCache || []).filter(p => idsSet.has(String(p.id)));
+      for (const p of targetPins) {
+        if (p.iss) {
+          registerLocalApprovedIss(p.iss);
+          try { await addIssToList({ name: p.iss, color: issHashColor(p.iss), active: true, sort_order: 99 }); } catch(issErr) {}
         }
-        registerLocalApprovedIss(iss);
       }
-      if (unapprovedIss.length) {
-        await loadIssListAndRenderChips();
-        showToast(`🏷 ${unapprovedIss.length} yeni İSS listeye eklendi`, 'info');
-      }
+      await loadIssListAndRenderChips();
     }
     await Promise.all(ids.map(id => patchPin(id, { gorunur: approve, is_quarantine: false })));
     ids.forEach(id => document.getElementById('mc_'+id)?.remove());
     showToast(approve ? `✅ ${ids.length} pin onaylandı` : `👁 ${ids.length} pin gizlendi`);
 
     if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
-      adminPinsCache = adminPinsCache.map(p => idsSet.has(String(p.id)) ? { ...p, gorunur: approve, is_quarantine: false } : p);
+      adminPinsCache = adminPinsCache.map(p => idsSet.has(String(p.id)) ? { ...p, gorunur: approve, is_quarantine: false, sikayet_sayisi: 0 } : p);
     }
     await loadPins();
     await loadCustomIss();
@@ -10860,7 +11006,7 @@ async function quickApprovePinRow(id) {
     document.getElementById('mc_' + sId)?.remove();
     showToast(`✅ "${p.iss}" pini onaylandı ve haritada yayına alındı!`);
     if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
-      adminPinsCache = adminPinsCache.map(x => String(x.id) === sId ? { ...x, gorunur: true, is_quarantine: false } : x);
+      adminPinsCache = adminPinsCache.map(x => String(x.id) === sId ? { ...x, gorunur: true, is_quarantine: false, sikayet_sayisi: 0 } : x);
     }
     // Veritabanından taze veri çek ve tüm listeleri güncelle
     await loadPins();
@@ -10894,11 +11040,23 @@ async function quickHidePinRow(id) {
   }
 }
 
+function clearAdminTableFilters() {
+  const input = document.getElementById('tableSearch');
+  if (input) input.value = '';
+  setTableFilter('', document.getElementById('ftb-tumu'));
+}
+
 function renderAdminTable(pins) {
   const tbody = document.getElementById('adminTableBody');
   if (!tbody) return;
   if (!pins.length) {
-    tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text3);font-size:12px;">Filtreye uygun pin kaydı bulunamadı.</td></tr>';
+    const isFiltered = !!(document.getElementById('tableSearch')?.value || currentTableFilter !== '');
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:36px 16px;color:var(--text3);font-size:12px;">
+      <div style="font-size:24px;margin-bottom:6px;opacity:0.6;">🔍</div>
+      <div style="font-weight:600;color:var(--text2);margin-bottom:4px;">Uygun pin kaydı bulunamadı</div>
+      <div style="font-size:11px;color:var(--text3);max-width:320px;margin:0 auto 10px;">Arama kriterinize veya seçili filtreye uyan bir pin bulunmuyor.</div>
+      ${isFiltered ? `<button type="button" class="btn-sub" style="padding:5px 12px;font-size:11px;cursor:pointer;border-radius:6px;" onclick="clearAdminTableFilters()">Filtreleri Temizle</button>` : ''}
+    </td></tr>`;
     return;
   }
   
@@ -11164,11 +11322,19 @@ async function handleRapor(id, durum) { try { await patchRapor(id,{durum}); show
 async function modAction(id, approve) { 
   const sId = String(id);
   try { 
+    if (approve) {
+      const p = (adminPinsCache || []).find(x => String(x.id) === sId);
+      if (p && p.iss) {
+        registerLocalApprovedIss(p.iss);
+        try { await addIssToList({ name: p.iss, color: issHashColor(p.iss), active: true, sort_order: 99 }); } catch(issErr) {}
+        await loadIssListAndRenderChips();
+      }
+    }
     await patchPin(sId, { gorunur: approve, is_quarantine: false }); 
     document.getElementById('mc_'+sId)?.remove(); 
     showToast(approve ? '✅ Pin onaylandı' : '👁 Pin gizlendi'); 
     if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
-      adminPinsCache = adminPinsCache.map(p => String(p.id) === sId ? { ...p, gorunur: approve, is_quarantine: false } : p);
+      adminPinsCache = adminPinsCache.map(p => String(p.id) === sId ? { ...p, gorunur: approve, is_quarantine: false, sikayet_sayisi: 0 } : p);
     }
     await loadPins(); 
     await loadCustomIss();
@@ -11382,8 +11548,8 @@ async function bulkApprovePins() {
   }));
   btn.textContent='✅ Seçilileri Onayla'; btn.disabled=false;
   showToast(`✅ ${ok} pin onaylandı${fail?', '+fail+' hata':''}`);
-  adminPinsCache = adminPinsCache.map(p => idsSet.has(String(p.id)) ? {...p, gorunur:true, is_quarantine:false} : p);
-  pinsData = pinsData.map(p => idsSet.has(String(p.id)) ? {...p, gorunur:true, is_quarantine:false} : p);
+  adminPinsCache = adminPinsCache.map(p => idsSet.has(String(p.id)) ? {...p, gorunur:true, is_quarantine:false, sikayet_sayisi: 0} : p);
+  pinsData = pinsData.map(p => idsSet.has(String(p.id)) ? {...p, gorunur:true, is_quarantine:false, sikayet_sayisi: 0} : p);
   cleanPinsData = publicCleanPins(pinsData);
   if (maps.main) { renderHex(); renderModPins(); }
   await loadPins();
@@ -11858,7 +12024,7 @@ function checkFirstVisitWelcome() {
     const s = window.location.search.toLowerCase();
     if (s.includes('google') || s.includes('adsense') || s.includes('preview')) return;
 
-    if (!localStorage.getItem('ih_welcome_seen')) {
+    if (!ihStorage.get('ih_welcome_seen')) {
       setTimeout(() => {
         const rawHash = (window.location.hash || '').replace(/^#\/?/, '').trim().toLowerCase();
         const hasSpecificRoute = rawHash && rawHash !== 'harita' && rawHash !== 'tur' && rawHash !== 'rehber-tur';
@@ -11894,7 +12060,7 @@ if (typeof detectAndSuggestIss === 'function') detectAndSuggestIss();
 function applyTheme(theme) {
   const isLight = theme === 'light';
   document.documentElement.classList.toggle('light', isLight);
-  localStorage.setItem('ih_theme', theme);
+  ihStorage.set('ih_theme', theme);
   const btn = document.getElementById('themeBtn');
   if (btn) btn.textContent = isLight ? '🌙' : '☀️';
   const meta = document.getElementById('themeColorMeta');
@@ -11908,7 +12074,7 @@ function toggleTheme() {
 }
 // Sayfa yüklenince butonu senkronize et (class zaten head'de eklendi)
 document.addEventListener('DOMContentLoaded', function() {
-  const saved = localStorage.getItem('ih_theme') || (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  const saved = ihStorage.get('ih_theme') || (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
   const btn = document.getElementById('themeBtn');
   if (btn) btn.textContent = saved === 'light' ? '🌙' : '☀️';
   const meta = document.getElementById('themeColorMeta');
@@ -13345,7 +13511,7 @@ let _pwaPrompt = null;
   if (!isMobileDevice) return;
 
   // Kullanıcı daha önce "belki sonra" dediyse ve 7 gün geçmediyse gösterme
-  const dismissed = localStorage.getItem('ih_pwa_dismissed');
+  const dismissed = ihStorage.getItem('ih_pwa_dismissed');
   if (dismissed && Date.now() - parseInt(dismissed) < 7 * 24 * 60 * 60 * 1000) return;
   // Zaten kuruluysa gösterme (standalone mode)
   if (window.matchMedia('(display-mode: standalone)').matches) return;
@@ -13383,7 +13549,7 @@ function pwaInstall() {
     if (choice.outcome === 'accepted') {
       const banner = document.getElementById('pwaInstallBanner');
       if (banner) banner.classList.remove('visible');
-      localStorage.setItem('ih_pwa_dismissed', Date.now().toString());
+      ihStorage.setItem('ih_pwa_dismissed', Date.now().toString());
     }
     _pwaPrompt = null;
   });
@@ -13392,7 +13558,7 @@ function pwaInstall() {
 function pwaDismiss() {
   const banner = document.getElementById('pwaInstallBanner');
   if (banner) banner.classList.remove('visible');
-  localStorage.setItem('ih_pwa_dismissed', Date.now().toString());
+  ihStorage.setItem('ih_pwa_dismissed', Date.now().toString());
 }
 
 
