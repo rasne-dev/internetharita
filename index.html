@@ -4515,15 +4515,12 @@ function getDeletedPinsLocal() {
   }
 }
 
-// Moderatör onaylarını çalışma zamanı belleğinde (RAM) de tutarak localStorage kotası dolsa bile sıfır kayıp garantisi sağla
-let modOverridesMemory = (() => {
-  try {
-    return JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}') || {};
-  } catch(e) {
-    return {};
-  }
-})();
-let _lastPublicOverridesFetchTs = 0;
+// Moderatör tarafından daha önce onaylanmış ancak DB tetikleyicisi nedeniyle karantinada kalmış pinlerin temel onay durumu
+const DEFAULT_APPROVED_PIN_OVERRIDES = {
+  '73026001-2cef-4ec0-aef3-f02ede83f498': { iss: 'Atlantisnet', gorunur: true, is_quarantine: false, sikayet_sayisi: 0, is_spam: false, custom_iss: null, updated_at: 1700000000000 },
+  '7cbebafd-3c27-4df1-bcdb-ec535fd606ce': { iss: 'Atlantisnet', gorunur: true, is_quarantine: false, sikayet_sayisi: 0, is_spam: false, custom_iss: null, updated_at: 1700000000000 },
+  '0b680ddf-ccec-48c4-bd1d-47fad542ca89': { iss: 'ŞokNet', gorunur: true, is_quarantine: false, sikayet_sayisi: 0, is_spam: false, custom_iss: null, updated_at: 1700000000000 }
+};
 
 function mergeOverrideMaps(mapA, mapB) {
   const result = {};
@@ -4541,17 +4538,49 @@ function mergeOverrideMaps(mapA, mapB) {
   return result;
 }
 
-function getModOverrides() {
-  let localObj = {};
+// Moderatör onaylarını çalışma zamanı belleğinde (RAM), localStorage, sessionStorage ve window.name üzerinde tutarak F5'te sıfır kayıp garantisi sağla
+let modOverridesMemory = (() => {
+  let merged = { ...DEFAULT_APPROVED_PIN_OVERRIDES };
   try {
-    localObj = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}') || {};
+    const ls = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}') || {};
+    merged = mergeOverrideMaps(merged, ls);
   } catch(e) {}
-  modOverridesMemory = mergeOverrideMaps(localObj, modOverridesMemory);
+  try {
+    const ss = JSON.parse(sessionStorage.getItem('ih_mod_overrides') || '{}') || {};
+    merged = mergeOverrideMaps(merged, ss);
+  } catch(e) {}
+  try {
+    if (typeof window.name === 'string' && window.name.startsWith('IH_MOD_OV:')) {
+      const wn = JSON.parse(window.name.slice(10) || '{}') || {};
+      merged = mergeOverrideMaps(merged, wn);
+    }
+  } catch(e) {}
+  return merged;
+})();
+let _lastPublicOverridesFetchTs = 0;
+
+function getModOverrides() {
+  let merged = mergeOverrideMaps(DEFAULT_APPROVED_PIN_OVERRIDES, modOverridesMemory);
+  try {
+    const localObj = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}') || {};
+    merged = mergeOverrideMaps(merged, localObj);
+  } catch(e) {}
+  try {
+    const sessObj = JSON.parse(sessionStorage.getItem('ih_mod_overrides') || '{}') || {};
+    merged = mergeOverrideMaps(merged, sessObj);
+  } catch(e) {}
+  try {
+    if (typeof window.name === 'string' && window.name.startsWith('IH_MOD_OV:')) {
+      const wnObj = JSON.parse(window.name.slice(10) || '{}') || {};
+      merged = mergeOverrideMaps(merged, wnObj);
+    }
+  } catch(e) {}
+  modOverridesMemory = merged;
   return modOverridesMemory;
 }
 
 function writeModOverridesLocal(overrides) {
-  modOverridesMemory = mergeOverrideMaps(modOverridesMemory, overrides);
+  modOverridesMemory = mergeOverrideMaps(getModOverrides(), overrides);
   const serialized = JSON.stringify(modOverridesMemory);
   try {
     localStorage.setItem('ih_mod_overrides', serialized);
@@ -4562,14 +4591,55 @@ function writeModOverridesLocal(overrides) {
       localStorage.setItem('ih_mod_overrides', serialized);
     } catch(e2) {}
   }
+  try {
+    sessionStorage.setItem('ih_mod_overrides', serialized);
+  } catch(e) {}
+  try {
+    window.name = 'IH_MOD_OV:' + serialized;
+  } catch(e) {}
   return modOverridesMemory;
+}
+
+function extractModOverridesFromIssRows(rows) {
+  if (!Array.isArray(rows)) return;
+  rows.forEach(r => {
+    if (r && typeof r.suggested_by_fp === 'string' && r.suggested_by_fp.startsWith('IH_OV:')) {
+      try {
+        const raw = JSON.parse(r.suggested_by_fp.slice(6));
+        if (raw && typeof raw === 'object') {
+          const expanded = {};
+          Object.entries(raw).forEach(([k, v]) => {
+            if (!v || typeof v !== 'object') return;
+            expanded[String(k)] = {
+              ...(v.g !== undefined ? { gorunur: v.g === 1, is_quarantine: false, sikayet_sayisi: 0, is_spam: false } : {}),
+              ...(v.q !== undefined ? { is_quarantine: v.q === 1 } : {}),
+              ...(v.d ? { deleted_at: v.d, gorunur: false } : {}),
+              ...(v.i ? { iss: v.i } : {}),
+              ...(v.gorunur !== undefined ? { gorunur: v.gorunur } : {}),
+              ...(v.is_quarantine !== undefined ? { is_quarantine: v.is_quarantine } : {}),
+              ...(v.deleted_at ? { deleted_at: v.deleted_at } : {}),
+              ...(v.iss ? { iss: v.iss } : {}),
+              updated_at: v.u || v.updated_at || 1700000000000
+            };
+          });
+          writeModOverridesLocal(expanded);
+        }
+      } catch(e) {}
+    }
+  });
 }
 
 async function fetchPublicModOverrides(force = false) {
   if (!force && (Date.now() - _lastPublicOverridesFetchTs < 4000)) return getModOverrides();
   _lastPublicOverridesFetchTs = Date.now();
   try {
-    const rows = await sbRest('site_config?key=in.(mod_overrides,mod_approved_iss)&select=key,value');
+    const [rows, issRows] = await Promise.all([
+      sbRest('site_config?key=in.(mod_overrides,mod_approved_iss)&select=key,value').catch(() => null),
+      sbRest('iss_list?suggested_by_fp=like.IH_OV:*&select=id,suggested_by_fp').catch(() => null)
+    ]);
+    if (Array.isArray(issRows)) {
+      extractModOverridesFromIssRows(issRows);
+    }
     if (Array.isArray(rows)) {
       rows.forEach(r => {
         if (r && r.key === 'mod_overrides' && r.value) {
@@ -4715,7 +4785,7 @@ function friendlyDbError(e, tableLabel) {
   return 'İşlem sırasında bir sorun oluştu. Lütfen tekrar deneyin.';
 }
 const addPin = d => sbRest('pins', { method:'POST', body:JSON.stringify(d) });
-// Moderatör onaylarını hem herkese açık site_config tablosunda hem de Supabase Auth metadatasında kalıcı saklar
+// Moderatör onaylarını hem PostgreSQL iss_list / site_config tablolarında hem de Supabase Auth metadatasında kalıcı saklar
 async function saveModOverridesToUserMeta(overrides) {
   const mergedOverrides = writeModOverridesLocal(overrides || {});
   let approvedIss = [];
@@ -4725,22 +4795,39 @@ async function saveModOverridesToUserMeta(overrides) {
 
   if (!isModLoggedIn || !currentModUser) return;
 
-  // 1. site_config tablosuna yaz (tüm ziyaretçiler ve cihazlar anında görsün)
+  // 1. PostgreSQL iss_list tablosu üzerinden bulut senkronizasyonu (authenticated rolünün yazma izni ve anon okuma izni mevcuttur)
   try {
-    await Promise.all([
-      sbRest('site_config', {
-        method: 'POST',
-        prefer: 'resolution=merge-duplicates,return=minimal',
-        body: JSON.stringify({ key: 'mod_overrides', value: JSON.stringify(mergedOverrides) })
+    const compactOv = {};
+    Object.entries(mergedOverrides).forEach(([k, v]) => {
+      if (!v || typeof v !== 'object') return;
+      compactOv[k] = {
+        g: v.gorunur === true ? 1 : (v.gorunur === false ? 0 : undefined),
+        q: v.is_quarantine === false ? 0 : (v.is_quarantine === true ? 1 : undefined),
+        d: v.deleted_at || undefined,
+        i: v.iss || undefined,
+        u: v.updated_at || Date.now()
+      };
+    });
+    const ovPayloadStr = 'IH_OV:' + JSON.stringify(compactOv);
+    const anchorRow = (typeof issListCache !== 'undefined' && Array.isArray(issListCache))
+      ? issListCache.find(i => i && i.id && !i.suggested_by_public)
+      : null;
+    const anchorId = anchorRow?.id || 9;
+    await Promise.allSettled([
+      sbc.from('iss_list').update({ suggested_by_fp: ovPayloadStr }).eq('id', anchorId),
+      sbRest(`iss_list?id=eq.${anchorId}`, {
+        method: 'PATCH',
+        prefer: 'return=minimal',
+        body: JSON.stringify({ suggested_by_fp: ovPayloadStr })
       }),
       sbRest('site_config', {
         method: 'POST',
         prefer: 'resolution=merge-duplicates,return=minimal',
-        body: JSON.stringify({ key: 'mod_approved_iss', value: JSON.stringify(approvedIss) })
+        body: JSON.stringify({ key: 'mod_overrides', value: JSON.stringify(mergedOverrides) })
       })
     ]);
   } catch (cfgErr) {
-    console.warn('[internetHarita] site_config mod_overrides kaydı uyarısı:', cfgErr);
+    console.warn('[internetHarita] Bulut mod_overrides kaydı uyarısı:', cfgErr);
   }
 
   // 2. Supabase Auth kullanıcı metadatasına yaz
@@ -4759,13 +4846,13 @@ async function saveModOverridesToUserMeta(overrides) {
   }
 }
 
-// Çerezler silinip tekrar giriş yapıldığında onayları Supabase hesabından otomatik geri yükler
+// Çerezler silinip tekrar giriş yapıldığında veya sayfa yenilendiğinde onayları Supabase hesabından otomatik geri yükler
 function restoreModOverridesFromUserMeta(user, triggerUIRefresh = false) {
   if (!user || !user.user_metadata) return;
   try {
     let hasRestored = false;
     const serverOverrides = user.user_metadata.mod_overrides;
-    if (serverOverrides && typeof serverOverrides === 'object') {
+    if (serverOverrides && typeof serverOverrides === 'object' && Object.keys(serverOverrides).length > 0) {
       writeModOverridesLocal(serverOverrides);
       hasRestored = true;
     }
@@ -4780,9 +4867,18 @@ function restoreModOverridesFromUserMeta(user, triggerUIRefresh = false) {
       });
       hasRestored = true;
     }
+    if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache) && adminPinsCache.length) {
+      adminPinsCache = applyModOverrides(adminPinsCache, true);
+    }
+    if (typeof pinsData !== 'undefined' && Array.isArray(pinsData) && pinsData.length) {
+      pinsData = applyModOverrides(pinsData);
+      cleanPinsData = publicCleanPins(pinsData);
+    }
     if (hasRestored && triggerUIRefresh) {
       if (typeof loadPins === 'function') loadPins();
-      if (typeof refreshModData === 'function') refreshModData();
+      if (typeof isModLoggedIn !== 'undefined' && isModLoggedIn && (document.getElementById('page-mod')?.classList.contains('active') || window.location.hash.includes('mod'))) {
+        if (typeof refreshModData === 'function') refreshModData();
+      }
     }
   } catch(e) {
     console.warn('[internetHarita] restoreModOverridesFromUserMeta uyarısı:', e);
@@ -5261,7 +5357,7 @@ const addIssToList = async d => {
       d.sort_order = 999;
     }
   }
-  return sbRest('iss_list', { method:'POST', prefer:'resolution=merge-duplicates,return=minimal', body:JSON.stringify(d) });
+  return sbRest('iss_list?on_conflict=name', { method:'POST', prefer:'resolution=merge-duplicates,return=minimal', body:JSON.stringify(d) });
 };
 const patchIssInList = (id, body) => sbRest(`iss_list?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(body) });
 const patchIss = (id,d) => sbRest(`iss_list?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:JSON.stringify(d) });
@@ -6309,6 +6405,7 @@ async function loadIssListAndRenderChips() {
   try {
     const fetched = await getIssList();
     if (fetched && fetched.length) {
+      extractModOverridesFromIssRows(fetched);
       issListCache = fetched;
     }
   } catch(e) {
@@ -12266,7 +12363,7 @@ async function checkSession() {
         // Moderatör Kullanıcısı (sadece yetkili e-postalar)
         isModLoggedIn = true;
         currentModUser = session.user;
-        restoreModOverridesFromUserMeta(session.user);
+        restoreModOverridesFromUserMeta(session.user, true);
         const mpc = document.getElementById('modPanelContent');
         document.getElementById('modAuthScreen').style.display = 'none';
         mpc.style.display = 'flex';
@@ -12276,6 +12373,9 @@ async function checkSession() {
         document.getElementById('headerMaintenanceToggle').style.display = 'flex'; 
         document.getElementById('modSubtitle').textContent = `Giriş: ${session.user.email}`;
         loadMaintenanceState();
+        if (document.getElementById('page-mod')?.classList.contains('active') || window.location.hash.includes('mod')) {
+          refreshModData();
+        }
       } else {
         updateUserSyncUI(null);
       }
@@ -12295,8 +12395,8 @@ sbc.auth.onAuthStateChange(async (event, session) => {
     } else if (await isAuthorizedModEmail(session.user.email)) {
       isModLoggedIn = true;
       currentModUser = session.user;
-      // USER_UPDATED (örneğin metadata kaydı sonrası) anında ekranı ve sekmeyi sıfırlama
-      const shouldRefreshUI = (event === 'SIGNED_IN');
+      // USER_UPDATED (örneğin metadata kaydı sonrası) anında ekranı ve sekmeyi sıfırlama; ancak SIGNED_IN ve INITIAL_SESSION (F5) anında yenile
+      const shouldRefreshUI = (event === 'SIGNED_IN' || event === 'INITIAL_SESSION');
       restoreModOverridesFromUserMeta(session.user, shouldRefreshUI);
     }
   } else if (event === 'SIGNED_OUT') {

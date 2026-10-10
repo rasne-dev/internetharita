@@ -1,4 +1,4 @@
-const CACHE = 'iharita-v69';
+const CACHE = 'iharita-v70';
 const ASSETS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
@@ -45,7 +45,7 @@ self.addEventListener('fetch', e => {
   // HTML sayfaları (navigate) için her zaman önce ağdan güncel sürümü çek, çevrimdışıysa önbelleğe düş
   if (e.request.mode === 'navigate') {
     e.respondWith(
-      fetch(e.request, { cache: 'no-cache' }).catch(() => caches.match(e.request))
+      fetch(new Request(e.request.url, { cache: 'reload' })).catch(() => caches.match(e.request))
     );
     return;
   }
