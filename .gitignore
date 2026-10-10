@@ -1,4 +1,4 @@
-﻿# Çevresel Değişkenler ve Hassas Dosyalar (Secrets)
+# Çevresel Değişkenler ve Hassas Dosyalar (Secrets)
 .env
 .env.*
 *.env
@@ -46,3 +46,9 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Yerel Ajan ve Otomasyon Dosyaları
+agents.md
+AGENTS.md
+release.bat
+

@@ -4506,8 +4506,6 @@ function getDeletedPinsLocal() {
 }
 
 function applyModOverrides(pins, authoritative) {
-  // authoritative=true: liste sunucudan taze geldi (moderatör tam listesi). Bu durumda eski adminPinsCache'ten
-  // pin 'diriltilmez'; aksi halde sunucuda silinmiş/gizlenmiş bir pin sayaçta hayalet olarak kalıyordu.
   if (!pins || !Array.isArray(pins)) return pins;
   try {
     const localDeleted = getDeletedPinsLocal();
@@ -4523,28 +4521,36 @@ function applyModOverrides(pins, authoritative) {
             merged.gorunur = true;
             merged.is_quarantine = false;
             merged.sikayet_sayisi = 0;
+            merged.is_spam = false;
           }
-          if (merged.iss && typeof registerLocalApprovedIss === 'function') {
-            registerLocalApprovedIss(merged.iss);
+          const effIss = merged.iss || p.iss;
+          if (effIss && typeof registerLocalApprovedIss === 'function') {
+            registerLocalApprovedIss(effIss);
           }
           return merged;
         }
         return p;
       });
-      if (!authoritative && typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
-        adminPinsCache.forEach(ap => {
-          const sId = String(ap.id);
-          if (localDeleted.has(sId)) return;
-          const ov = overrides[sId] || overrides[ap.id];
-          if (ov && ov.gorunur === true && !updated.some(u => String(u.id) === sId)) {
-            const added = { ...ap, ...ov, gorunur: true, is_quarantine: false, sikayet_sayisi: 0 };
-            if (added.iss && typeof registerLocalApprovedIss === 'function') {
-              registerLocalApprovedIss(added.iss);
+      // Veritabanından gelen listede eksik kalan (ancak onaylanmış) pinleri hafızadan ekle
+      Object.entries(overrides).forEach(([oId, ov]) => {
+        const sId = String(oId);
+        if (localDeleted.has(sId)) return;
+        if (ov && ov.gorunur === true && ov.is_quarantine === false) {
+          const exists = updated.some(u => String(u.id) === sId);
+          if (!exists) {
+            const cachedPin = (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache))
+              ? adminPinsCache.find(x => String(x.id) === sId)
+              : null;
+            if (cachedPin) {
+              const added = { ...cachedPin, ...ov, gorunur: true, is_quarantine: false, sikayet_sayisi: 0, is_spam: false };
+              if (added.iss && typeof registerLocalApprovedIss === 'function') {
+                registerLocalApprovedIss(added.iss);
+              }
+              updated.push(added);
             }
-            updated.push(added);
           }
-        });
-      }
+        }
+      });
     }
     return updated.filter(p => !localDeleted.has(String(p.id)) && !p.deleted_at);
   } catch(e) { return pins; }
@@ -4622,7 +4628,7 @@ async function saveModOverridesToUserMeta(overrides) {
 }
 
 // Çerezler silinip tekrar giriş yapıldığında onayları Supabase hesabından otomatik geri yükler
-function restoreModOverridesFromUserMeta(user) {
+function restoreModOverridesFromUserMeta(user, triggerUIRefresh = false) {
   if (!user || !user.user_metadata) return;
   try {
     let hasRestored = false;
@@ -4640,7 +4646,7 @@ function restoreModOverridesFromUserMeta(user) {
       localStorage.setItem('ih_local_approved_iss', JSON.stringify(mergedIss));
       hasRestored = true;
     }
-    if (hasRestored) {
+    if (hasRestored && triggerUIRefresh) {
       if (typeof loadPins === 'function') loadPins();
       if (typeof refreshModData === 'function') refreshModData();
     }
@@ -4667,6 +4673,13 @@ async function patchPin(id, d) {
   let updatedRow = null;
   let lastError = null;
 
+  // Mevcut pini önbelleklerden tespit et
+  const existingPin = (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache))
+    ? adminPinsCache.find(x => String(x.id) === sId)
+    : (typeof pinsData !== 'undefined' && Array.isArray(pinsData)
+      ? pinsData.find(x => String(x.id) === sId)
+      : null);
+
   // 1. Payload temizliği: 401/42501 veya CLS hatasına yol açan tüm kısıtlı sütunları arındır
   const cleanPayload = { ...d };
   const FORBIDDEN_COLS = ['sikayet_sayisi', 'custom_iss', 'mod_notu', 'client_metadata', 'ip_hash', 'browser_fp'];
@@ -4678,9 +4691,10 @@ async function patchPin(id, d) {
     cleanPayload.is_quarantine = false;
   }
 
-  // İSS adı varsa hemen yerel onaylı listeye kaydet ki haritada derhal görünsün
-  if (cleanPayload.iss && typeof registerLocalApprovedIss === 'function') {
-    registerLocalApprovedIss(cleanPayload.iss);
+  // İSS adını garantile: payload'da yoksa mevcut pinden al
+  const effectiveIss = cleanPayload.iss || (existingPin ? existingPin.iss : null);
+  if (effectiveIss && typeof registerLocalApprovedIss === 'function') {
+    registerLocalApprovedIss(effectiveIss);
   }
 
   // 2. Doğrulama için güvenli public alanlar: id, gorunur, is_quarantine
@@ -4745,8 +4759,10 @@ async function patchPin(id, d) {
     const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
     overrides[sId] = {
       ...(overrides[sId] || {}),
+      ...(existingPin ? { iss: existingPin.iss, baglanti_turu: existingPin.baglanti_turu } : {}),
       ...cleanPayload,
-      ...(isApproving ? { sikayet_sayisi: 0 } : {}),
+      ...(effectiveIss ? { iss: effectiveIss } : {}),
+      ...(isApproving ? { gorunur: true, is_quarantine: false, sikayet_sayisi: 0, is_spam: false } : {}),
       updated_at: Date.now()
     };
     localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
@@ -4754,12 +4770,12 @@ async function patchPin(id, d) {
   } catch(e) {}
 
   // Canlı bellek cache'lerini anında güncelle
-  const extraPatch = isApproving ? { sikayet_sayisi: 0 } : {};
+  const extraPatch = isApproving ? { gorunur: true, is_quarantine: false, sikayet_sayisi: 0, is_spam: false } : {};
   if (typeof adminPinsCache !== 'undefined' && adminPinsCache) {
-    adminPinsCache = adminPinsCache.map(p => String(p.id) === sId ? { ...p, ...cleanPayload, ...extraPatch } : p);
+    adminPinsCache = adminPinsCache.map(p => String(p.id) === sId ? { ...p, ...cleanPayload, ...extraPatch, ...(effectiveIss ? { iss: effectiveIss } : {}) } : p);
   }
   if (typeof pinsData !== 'undefined' && pinsData) {
-    pinsData = pinsData.map(p => String(p.id) === sId ? { ...p, ...cleanPayload, ...extraPatch } : p);
+    pinsData = pinsData.map(p => String(p.id) === sId ? { ...p, ...cleanPayload, ...extraPatch, ...(effectiveIss ? { iss: effectiveIss } : {}) } : p);
     cleanPinsData = publicCleanPins(pinsData);
   }
 
@@ -4768,7 +4784,7 @@ async function patchPin(id, d) {
     const myPins = getMyLocalPins();
     const idx = myPins.findIndex(p => String(p.id) === sId);
     if (idx >= 0) {
-      myPins[idx] = { ...myPins[idx], ...cleanPayload };
+      myPins[idx] = { ...myPins[idx], ...cleanPayload, ...(effectiveIss ? { iss: effectiveIss } : {}) };
       localStorage.setItem('ih_my_pins', JSON.stringify(myPins));
     }
   } catch(e) {}
@@ -5198,10 +5214,21 @@ function approvedIssNames() {
   // 2. Moderatör onay hafızasındaki (ih_mod_overrides) tüm onaylı pinlerin İSS'lerini dahil et
   try {
     const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
-    Object.values(overrides).forEach(ov => {
-      if (ov && ov.gorunur === true && ov.is_quarantine === false && ov.iss) {
-        const c = canonicalIssName(ov.iss);
-        if (c && !active.includes(c)) active.push(c);
+    Object.entries(overrides).forEach(([sId, ov]) => {
+      if (ov && ov.gorunur === true && ov.is_quarantine === false) {
+        let issName = ov.iss;
+        if (!issName) {
+          const cached = (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache))
+            ? adminPinsCache.find(x => String(x.id) === String(sId))
+            : (typeof pinsData !== 'undefined' && Array.isArray(pinsData)
+              ? pinsData.find(x => String(x.id) === String(sId))
+              : null);
+          if (cached) issName = cached.iss;
+        }
+        if (issName) {
+          const c = canonicalIssName(issName);
+          if (c && !active.includes(c)) active.push(c);
+        }
       }
     });
   } catch(e) {}
@@ -6796,37 +6823,12 @@ function renderHex() {
       if (colorMode==='hiz') color = speedColor(avgDL);
       else { if (!pins.some(p=>p.puan)) { color='#374151'; hasData=false; } else color=memColor(avgScore); }
 
-      // Bölgesel dalgalanma (son ölçümlerde ortalamaya göre belirgin hız düşüşü)
-      let isFluctuating = false;
-      const speedPins = pins.filter(p => !p.is_altyapi_yok && p.gercek_dl > 0);
-      if (speedPins.length >= 3) {
-        const sorted = [...speedPins].sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-        const recentCount = Math.max(1, Math.floor(sorted.length * 0.35));
-        const recent = sorted.slice(0, recentCount);
-        const older = sorted.slice(recentCount);
-        if (older.length >= 2) {
-          const avgOlder = older.reduce((s,p) => s + p.gercek_dl, 0) / older.length;
-          const avgRecent = recent.reduce((s,p) => s + p.gercek_dl, 0) / recent.length;
-          if (avgOlder >= 25 && avgRecent <= avgOlder * 0.55) isFluctuating = true;
-        }
-      }
-
       // FIX: fillOpacity zoom'a gore dinamik + tema bazlı.
       const _isLight = document.documentElement.classList.contains('light');
       const _fillOp   = hasData ? (_isLight ? (z <= 6 ? 0.38 : z <= 8 ? 0.30 : 0.22) : (z <= 6 ? 0.58 : z <= 8 ? 0.48 : 0.38)) : 0.06;
-      const _strokeOp = isFluctuating ? 0.95 : (hasData ? (_isLight ? (z <= 6 ? 0.75 : 0.60) : (z <= 6 ? 0.95 : 0.85)) : 0.16);
-      const _weight   = isFluctuating ? Math.max(z <= 6 ? 1.4 : 1.8, 1.6) : (z <= 6 ? 0.8 : 1.2);
-      const _strokeColor = isFluctuating ? '#ef4444' : color;
-      const _dashArray = isFluctuating ? '4, 4' : null;
-
-      const layer = L.polygon(coords, { 
-        color: _strokeColor, 
-        fillColor: color, 
-        fillOpacity: _fillOp, 
-        weight: _weight, 
-        opacity: _strokeOp,
-        dashArray: _dashArray
-      }).addTo(maps.main);
+      const _strokeOp = hasData ? (_isLight ? (z <= 6 ? 0.75 : 0.60) : (z <= 6 ? 0.95 : 0.85)) : 0.16;
+      const _weight   = z <= 6 ? 0.8 : 1.2;
+      const layer = L.polygon(coords, { color, fillColor:color, fillOpacity:_fillOp, weight:_weight, opacity:_strokeOp }).addTo(maps.main);
       layer.on('click', () => showHexInfo(pins, hex)); hexLayers.push(layer);
     } catch(e) {}
   });
@@ -7050,33 +7052,7 @@ function showHexInfo(pins, hexId) {
     matrixHtml = `<div style="font-size:11px;color:var(--text3);padding:8px 0;text-align:center;">Bu bölgede henüz altyapı verisi yok.</div>`;
   }
 
-  // BÖLGESEL DALGALANMA / HIZ DÜŞÜKLÜĞÜ UYARISI
-  let fluctuationHtml = '';
-  const validSpeedPins = pins.filter(p => !p.is_altyapi_yok && p.gercek_dl > 0);
-  if (validSpeedPins.length >= 3) {
-    const sorted = [...validSpeedPins].sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-    const recentCount = Math.max(1, Math.floor(sorted.length * 0.35));
-    const recent = sorted.slice(0, recentCount);
-    const older = sorted.slice(recentCount);
-    if (older.length >= 2) {
-      const avgOlder = older.reduce((s,p) => s + p.gercek_dl, 0) / older.length;
-      const avgRecent = recent.reduce((s,p) => s + p.gercek_dl, 0) / recent.length;
-      if (avgOlder >= 25 && avgRecent <= avgOlder * 0.55) {
-        const dropPct = Math.round(((avgOlder - avgRecent) / avgOlder) * 100);
-        fluctuationHtml = `
-          <div style="margin:0 0 10px;padding:9px 12px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);border-radius:8px;display:flex;align-items:flex-start;gap:8px;">
-            <span style="font-size:15px;line-height:1;">⚡</span>
-            <div style="font-size:11px;line-height:1.4;color:var(--text);">
-              <b style="color:var(--danger);">Bölgesel Hız Dalgalanması Uyarısı (-%${dropPct})</b>
-              <div style="color:var(--text2);margin-top:2px;">Bu bölgedeki son ölçümlerde geçmiş ortalamaya (${Math.round(avgOlder)} Mbps) kıyasla belirgin hız düşüşü (${Math.round(avgRecent)} Mbps) kaydedildi.</div>
-            </div>
-          </div>
-        `;
-      }
-    }
-  }
-
-  document.getElementById('infoISS').innerHTML = fluctuationHtml + matrixHtml;
+  document.getElementById('infoISS').innerHTML = matrixHtml;
 
   // BÖLGE SAKİNLERİNİN DENEYİMLERİ (Yalnızca geçerli hazır etiketler, eski serbest metinler filtrelenir)
   const validFeedbackPins = pins.filter(p => extractValidFeedbackTags(p.yorum).length > 0);
@@ -11047,12 +11023,20 @@ async function groupAction(idsJson, approve) {
       }
       await loadIssListAndRenderChips();
     }
-    await Promise.all(ids.map(id => patchPin(id, { gorunur: approve, is_quarantine: false })));
+    await Promise.all(ids.map(id => {
+      const p = (adminPinsCache || []).find(x => String(x.id) === String(id));
+      return patchPin(id, { ...(p && p.iss ? { iss: p.iss } : {}), gorunur: approve, is_quarantine: false });
+    }));
     ids.forEach(id => document.getElementById('mc_'+id)?.remove());
     showToast(approve ? `✅ ${ids.length} pin onaylandı` : `👁 ${ids.length} pin gizlendi`);
 
     if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
-      adminPinsCache = adminPinsCache.map(p => idsSet.has(String(p.id)) ? { ...p, gorunur: approve, is_quarantine: false, sikayet_sayisi: 0 } : p);
+      adminPinsCache = adminPinsCache.map(p => idsSet.has(String(p.id)) ? { ...p, gorunur: approve, is_quarantine: false, sikayet_sayisi: 0, is_spam: false } : p);
+    }
+    if (typeof pinsData !== 'undefined' && Array.isArray(pinsData)) {
+      pinsData = pinsData.map(p => idsSet.has(String(p.id)) ? { ...p, gorunur: approve, is_quarantine: false, sikayet_sayisi: 0, is_spam: false } : p);
+      cleanPinsData = publicCleanPins(pinsData);
+      if (maps.main) { renderHex(); renderModPins(); }
     }
     await loadPins();
     await loadCustomIss();
@@ -11102,20 +11086,23 @@ async function quickApprovePinRow(id) {
   try {
     const p = adminPinsCache.find(x => String(x.id) === sId);
     if (!p) return;
-    if (!isApprovedPublicIss(p.iss)) {
+    if (p.iss) {
+      registerLocalApprovedIss(p.iss);
       try {
         await addIssToList({ name: p.iss, color: issHashColor(p.iss), active: true, sort_order: 99 });
-      } catch(issErr) {
-        console.warn('[internetHarita] iss_list tablosuna eklenemedi (RLS kısıtlaması), yerel listeye kaydedildi:', issErr);
-      }
-      registerLocalApprovedIss(p.iss);
+      } catch(issErr) {}
       await loadIssListAndRenderChips();
     }
-    await patchPin(sId, { gorunur: true, is_quarantine: false });
+    await patchPin(sId, { iss: p.iss, gorunur: true, is_quarantine: false });
     document.getElementById('mc_' + sId)?.remove();
     showToast(`✅ "${p.iss}" pini onaylandı ve haritada yayına alındı!`);
     if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
-      adminPinsCache = adminPinsCache.map(x => String(x.id) === sId ? { ...x, gorunur: true, is_quarantine: false, sikayet_sayisi: 0 } : x);
+      adminPinsCache = adminPinsCache.map(x => String(x.id) === sId ? { ...x, gorunur: true, is_quarantine: false, sikayet_sayisi: 0, is_spam: false } : x);
+    }
+    if (typeof pinsData !== 'undefined' && Array.isArray(pinsData)) {
+      pinsData = pinsData.map(x => String(x.id) === sId ? { ...x, gorunur: true, is_quarantine: false, sikayet_sayisi: 0, is_spam: false } : x);
+      cleanPinsData = publicCleanPins(pinsData);
+      if (maps.main) { renderHex(); renderModPins(); }
     }
     // Veritabanından taze veri çek ve tüm listeleri güncelle
     await loadPins();
@@ -11431,19 +11418,22 @@ async function handleRapor(id, durum) { try { await patchRapor(id,{durum}); show
 async function modAction(id, approve) { 
   const sId = String(id);
   try { 
-    if (approve) {
-      const p = (adminPinsCache || []).find(x => String(x.id) === sId);
-      if (p && p.iss) {
-        registerLocalApprovedIss(p.iss);
-        try { await addIssToList({ name: p.iss, color: issHashColor(p.iss), active: true, sort_order: 99 }); } catch(issErr) {}
-        await loadIssListAndRenderChips();
-      }
+    const p = (adminPinsCache || []).find(x => String(x.id) === sId);
+    if (approve && p && p.iss) {
+      registerLocalApprovedIss(p.iss);
+      try { await addIssToList({ name: p.iss, color: issHashColor(p.iss), active: true, sort_order: 99 }); } catch(issErr) {}
+      await loadIssListAndRenderChips();
     }
-    await patchPin(sId, { gorunur: approve, is_quarantine: false }); 
+    await patchPin(sId, { ...(p && p.iss ? { iss: p.iss } : {}), gorunur: approve, is_quarantine: false }); 
     document.getElementById('mc_'+sId)?.remove(); 
     showToast(approve ? '✅ Pin onaylandı' : '👁 Pin gizlendi'); 
     if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
-      adminPinsCache = adminPinsCache.map(p => String(p.id) === sId ? { ...p, gorunur: approve, is_quarantine: false, sikayet_sayisi: 0 } : p);
+      adminPinsCache = adminPinsCache.map(p => String(p.id) === sId ? { ...p, gorunur: approve, is_quarantine: false, sikayet_sayisi: 0, is_spam: false } : p);
+    }
+    if (typeof pinsData !== 'undefined' && Array.isArray(pinsData)) {
+      pinsData = pinsData.map(p => String(p.id) === sId ? { ...p, gorunur: approve, is_quarantine: false, sikayet_sayisi: 0, is_spam: false } : p);
+      cleanPinsData = publicCleanPins(pinsData);
+      if (maps.main) { renderHex(); renderModPins(); }
     }
     await loadPins(); 
     await loadCustomIss();
@@ -11651,14 +11641,15 @@ async function bulkApprovePins() {
   let ok=0, fail=0;
   await Promise.all(ids.map(async (id) => {
     try {
-      await patchPin(id, { gorunur: true, is_quarantine: false });
+      const p = (adminPinsCache || []).find(x => String(x.id) === String(id));
+      await patchPin(id, { ...(p && p.iss ? { iss: p.iss } : {}), gorunur: true, is_quarantine: false });
       ok++;
     } catch(e) { fail++; }
   }));
   btn.textContent='✅ Seçilileri Onayla'; btn.disabled=false;
   showToast(`✅ ${ok} pin onaylandı${fail?', '+fail+' hata':''}`);
-  adminPinsCache = adminPinsCache.map(p => idsSet.has(String(p.id)) ? {...p, gorunur:true, is_quarantine:false, sikayet_sayisi: 0} : p);
-  pinsData = pinsData.map(p => idsSet.has(String(p.id)) ? {...p, gorunur:true, is_quarantine:false, sikayet_sayisi: 0} : p);
+  adminPinsCache = adminPinsCache.map(p => idsSet.has(String(p.id)) ? {...p, gorunur:true, is_quarantine:false, sikayet_sayisi: 0, is_spam: false} : p);
+  pinsData = pinsData.map(p => idsSet.has(String(p.id)) ? {...p, gorunur:true, is_quarantine:false, sikayet_sayisi: 0, is_spam: false} : p);
   cleanPinsData = publicCleanPins(pinsData);
   if (maps.main) { renderHex(); renderModPins(); }
   await loadPins();
@@ -12087,7 +12078,9 @@ sbc.auth.onAuthStateChange(async (event, session) => {
     } else if (await isAuthorizedModEmail(session.user.email)) {
       isModLoggedIn = true;
       currentModUser = session.user;
-      restoreModOverridesFromUserMeta(session.user);
+      // USER_UPDATED (örneğin metadata kaydı sonrası) anında ekranı ve sekmeyi sıfırlama
+      const shouldRefreshUI = (event === 'SIGNED_IN');
+      restoreModOverridesFromUserMeta(session.user, shouldRefreshUI);
     }
   } else if (event === 'SIGNED_OUT') {
     if (currentSyncUser) {
