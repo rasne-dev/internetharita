@@ -3500,12 +3500,18 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
     <!-- SUPABASE KALICI RLS YETKİ KILAVUZU KARTI -->
     <div id="modDbSyncCard" style="display:none;margin-bottom:12px;background:rgba(245,158,11,.08);border:1px solid var(--warn);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--text2);line-height:1.5;">
       <div style="font-weight:700;color:var(--warn);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
-        <span>⚡ Supabase Veritabanı Kalıcı Onay İzni (RLS)</span>
+        <span>⚡ Supabase Veritabanı Kalıcı Onay İzni (RLS &amp; GRANT)</span>
         <button onclick="copyModSqlPolicy()" class="btn-primary" style="padding:3px 9px;font-size:10px;">📋 SQL Kopyala</button>
       </div>
-      <div>Moderatör onaylarınız yerel olarak anında yayına alındı. Diğer tüm cihazlarda ve ziyaretçilerde de veritabanında kalıcı olması için Supabase SQL Editor'da aşağıdaki komutları bir kez çalıştırmanız önerilir:</div>
-      <div style="margin-top:6px;background:var(--surface);padding:7px 10px;border-radius:4px;font-family:var(--font-mono);font-size:10px;color:var(--text);overflow-x:auto;white-space:pre;" id="modSqlCodeBox">CREATE POLICY "Moderatörler günceller" ON pins FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Moderatörler ISS yönetir" ON iss_list FOR ALL TO authenticated USING (true) WITH CHECK (true);</div>
+      <div>Moderatör onaylarınız bulut ve yerel hafızada anında yayına alındı. Doğrudan <code>pins</code> tablosuna da yazılması için Supabase SQL Editor'da aşağıdaki komutları bir kez çalıştırmanız önerilir:</div>
+      <div style="margin-top:6px;background:var(--surface);padding:7px 10px;border-radius:4px;font-family:var(--font-mono);font-size:10px;color:var(--text);overflow-x:auto;white-space:pre;" id="modSqlCodeBox">GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.pins TO authenticated;
+GRANT ALL ON TABLE public.iss_list TO authenticated;
+GRANT ALL ON TABLE public.site_config TO authenticated;
+GRANT SELECT ON TABLE public.site_config TO anon, authenticated;
+DROP POLICY IF EXISTS "Moderatörler günceller" ON public.pins;
+CREATE POLICY "Moderatörler günceller" ON public.pins FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Moderatörler ISS yönetir" ON public.iss_list;
+CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authenticated USING (true) WITH CHECK (true);</div>
     </div>
 
     <!-- 4 SADE ANA SEKME (VARSAYILAN: TÜM PİNLER) -->
@@ -3728,12 +3734,16 @@ CREATE POLICY "Moderatörler ISS yönetir" ON iss_list FOR ALL TO authenticated 
           Onaylanan pinler ve özel İSS'ler moderatör hesabınızla (Supabase Auth) bulutta anında saklanır. Tarayıcı çerezleri silinse dahi giriş yaptığınızda onaylar hesabınızdan otomatik geri yüklenir. Pinlerin veritabanına doğrudan yazılması için Supabase SQL Editor'da aşağıdaki RLS izinlerini 1 kez çalıştırmanız yeterlidir:
         </div>
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-family:var(--font-mono);font-size:10.5px;color:var(--accent);margin-bottom:10px;line-height:1.6;user-select:all;overflow-x:auto;">
-          ALTER TABLE pins ENABLE ROW LEVEL SECURITY;<br>
-          DROP POLICY IF EXISTS "Moderatörler günceller" ON pins;<br>
-          CREATE POLICY "Moderatörler günceller" ON pins FOR UPDATE TO authenticated USING (true) WITH CHECK (true);<br><br>
-          ALTER TABLE iss_list ENABLE ROW LEVEL SECURITY;<br>
-          DROP POLICY IF EXISTS "Moderatörler ISS yönetir" ON iss_list;<br>
-          CREATE POLICY "Moderatörler ISS yönetir" ON iss_list FOR ALL TO authenticated USING (true) WITH CHECK (true);
+          GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.pins TO authenticated;<br>
+          GRANT ALL ON TABLE public.iss_list TO authenticated;<br>
+          GRANT ALL ON TABLE public.site_config TO authenticated;<br>
+          GRANT SELECT ON TABLE public.site_config TO anon, authenticated;<br>
+          ALTER TABLE public.pins ENABLE ROW LEVEL SECURITY;<br>
+          DROP POLICY IF EXISTS "Moderatörler günceller" ON public.pins;<br>
+          CREATE POLICY "Moderatörler günceller" ON public.pins FOR UPDATE TO authenticated USING (true) WITH CHECK (true);<br><br>
+          ALTER TABLE public.iss_list ENABLE ROW LEVEL SECURITY;<br>
+          DROP POLICY IF EXISTS "Moderatörler ISS yönetir" ON public.iss_list;<br>
+          CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authenticated USING (true) WITH CHECK (true);
         </div>
         <div style="display:flex;gap:10px;align-items:center;">
           <button class="btn-ghost" onclick="syncModOverridesToServer();showToast('🔄 Veritabanı eşitlemesi tetiklendi');" style="padding:6px 12px;font-size:11px;">🔄 Veritabanına Zorla Eşitle</button>
@@ -4505,27 +4515,119 @@ function getDeletedPinsLocal() {
   }
 }
 
+// Moderatör onaylarını çalışma zamanı belleğinde (RAM) de tutarak localStorage kotası dolsa bile sıfır kayıp garantisi sağla
+let modOverridesMemory = (() => {
+  try {
+    return JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}') || {};
+  } catch(e) {
+    return {};
+  }
+})();
+let _lastPublicOverridesFetchTs = 0;
+
+function mergeOverrideMaps(mapA, mapB) {
+  const result = {};
+  Object.entries(mapA || {}).forEach(([k, v]) => {
+    if (v && typeof v === 'object') result[String(k)] = { ...v };
+  });
+  Object.entries(mapB || {}).forEach(([k, valB]) => {
+    if (!valB || typeof valB !== 'object') return;
+    const sKey = String(k);
+    const valA = result[sKey];
+    if (!valA || (valB.updated_at || 0) >= (valA.updated_at || 0)) {
+      result[sKey] = { ...(valA || {}), ...valB };
+    }
+  });
+  return result;
+}
+
+function getModOverrides() {
+  let localObj = {};
+  try {
+    localObj = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}') || {};
+  } catch(e) {}
+  modOverridesMemory = mergeOverrideMaps(localObj, modOverridesMemory);
+  return modOverridesMemory;
+}
+
+function writeModOverridesLocal(overrides) {
+  modOverridesMemory = mergeOverrideMaps(modOverridesMemory, overrides);
+  const serialized = JSON.stringify(modOverridesMemory);
+  try {
+    localStorage.setItem('ih_mod_overrides', serialized);
+  } catch(e) {
+    // localStorage kotası ih_cached_pins yüzünden dolmuşsa önbelleği temizleyip tekrar yaz
+    try {
+      localStorage.removeItem('ih_cached_pins');
+      localStorage.setItem('ih_mod_overrides', serialized);
+    } catch(e2) {}
+  }
+  return modOverridesMemory;
+}
+
+async function fetchPublicModOverrides(force = false) {
+  if (!force && (Date.now() - _lastPublicOverridesFetchTs < 4000)) return getModOverrides();
+  _lastPublicOverridesFetchTs = Date.now();
+  try {
+    const rows = await sbRest('site_config?key=in.(mod_overrides,mod_approved_iss)&select=key,value');
+    if (Array.isArray(rows)) {
+      rows.forEach(r => {
+        if (r && r.key === 'mod_overrides' && r.value) {
+          try {
+            const parsed = typeof r.value === 'string' ? JSON.parse(r.value) : r.value;
+            if (parsed && typeof parsed === 'object') {
+              writeModOverridesLocal(parsed);
+            }
+          } catch(pe) {}
+        } else if (r && r.key === 'mod_approved_iss' && r.value) {
+          try {
+            const parsedIss = typeof r.value === 'string' ? JSON.parse(r.value) : r.value;
+            if (Array.isArray(parsedIss) && parsedIss.length > 0) {
+              const localIss = JSON.parse(localStorage.getItem('ih_local_approved_iss') || '[]');
+              const mergedIss = Array.from(new Set([...parsedIss, ...localIss]));
+              try { localStorage.setItem('ih_local_approved_iss', JSON.stringify(mergedIss)); } catch(se) {}
+              mergedIss.forEach(iss => {
+                if (typeof registerLocalApprovedIss === 'function') registerLocalApprovedIss(iss, false);
+              });
+            }
+          } catch(pe2) {}
+        }
+      });
+    }
+  } catch(e) {}
+  return getModOverrides();
+}
+
 function applyModOverrides(pins, authoritative) {
   if (!pins || !Array.isArray(pins)) return pins;
   try {
     const localDeleted = getDeletedPinsLocal();
-    const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
+    const overrides = getModOverrides();
     let updated = pins.filter(p => !localDeleted.has(String(p.id)));
     if (Object.keys(overrides).length > 0) {
       updated = updated.map(p => {
         const sId = String(p.id);
         const ov = overrides[sId] || overrides[p.id];
         if (ov) {
+          if (ov.deleted_at) {
+            return { ...p, deleted_at: ov.deleted_at, gorunur: false };
+          }
           const merged = { ...p, ...ov };
-          if (ov.gorunur === true && ov.is_quarantine === false) {
+          const isApprovedOv = ov.gorunur === true || (ov.is_quarantine === false && ov.gorunur !== false);
+          if (isApprovedOv) {
             merged.gorunur = true;
             merged.is_quarantine = false;
             merged.sikayet_sayisi = 0;
             merged.is_spam = false;
+            merged.custom_iss = null;
+          } else if (ov.gorunur === false) {
+            merged.gorunur = false;
+            merged.is_quarantine = false;
+            merged.sikayet_sayisi = 0;
           }
           const effIss = merged.iss || p.iss;
-          if (effIss && typeof registerLocalApprovedIss === 'function') {
-            registerLocalApprovedIss(effIss);
+          if (isApprovedOv && effIss && typeof registerLocalApprovedIss === 'function') {
+            registerLocalApprovedIss(effIss, false);
           }
           return merged;
         }
@@ -4534,17 +4636,18 @@ function applyModOverrides(pins, authoritative) {
       // Veritabanından gelen listede eksik kalan (ancak onaylanmış) pinleri hafızadan ekle
       Object.entries(overrides).forEach(([oId, ov]) => {
         const sId = String(oId);
-        if (localDeleted.has(sId)) return;
-        if (ov && ov.gorunur === true && ov.is_quarantine === false) {
+        if (localDeleted.has(sId) || (ov && ov.deleted_at)) return;
+        const isApprovedOv = ov && (ov.gorunur === true || (ov.is_quarantine === false && ov.gorunur !== false));
+        if (isApprovedOv) {
           const exists = updated.some(u => String(u.id) === sId);
           if (!exists) {
             const cachedPin = (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache))
               ? adminPinsCache.find(x => String(x.id) === sId)
               : null;
             if (cachedPin) {
-              const added = { ...cachedPin, ...ov, gorunur: true, is_quarantine: false, sikayet_sayisi: 0, is_spam: false };
+              const added = { ...cachedPin, ...ov, gorunur: true, is_quarantine: false, sikayet_sayisi: 0, is_spam: false, custom_iss: null };
               if (added.iss && typeof registerLocalApprovedIss === 'function') {
-                registerLocalApprovedIss(added.iss);
+                registerLocalApprovedIss(added.iss, false);
               }
               updated.push(added);
             }
@@ -4558,7 +4661,10 @@ function applyModOverrides(pins, authoritative) {
 
 const PUBLIC_PIN_COLUMNS = 'id,lat,lng,il,ilce,mahalle,iss,baglanti_turu,diger_altyapilar,altyapi_sahibi,paket_hizi,paket_hizi_dl,paket_hizi_ul,gercek_dl,gercek_ul,puan,yorum,gorunur,is_quarantine,is_altyapi_yok,speed_test_verified,created_at,deleted_at';
 const getPins = async () => { 
-  const res = await sbRest(`pins?select=${PUBLIC_PIN_COLUMNS}&deleted_at=is.null&order=created_at.desc&limit=3000`); 
+  const [res] = await Promise.all([
+    sbRest(`pins?select=${PUBLIC_PIN_COLUMNS}&deleted_at=is.null&order=created_at.desc&limit=3000`),
+    fetchPublicModOverrides()
+  ]);
   const localDeleted = getDeletedPinsLocal();
   let p = (res||[]).filter(p => !p.deleted_at && !localDeleted.has(String(p.id)));
   p = applyModOverrides(p);
@@ -4567,6 +4673,7 @@ const getPins = async () => {
 };
 const getAllPinsAdmin = async () => {
   const localDeleted = getDeletedPinsLocal();
+  await fetchPublicModOverrides();
   try {
     const res = await sbRest('pins?select=*&order=created_at.desc');
     if (res && Array.isArray(res) && res.length > 0) {
@@ -4608,14 +4715,39 @@ function friendlyDbError(e, tableLabel) {
   return 'İşlem sırasında bir sorun oluştu. Lütfen tekrar deneyin.';
 }
 const addPin = d => sbRest('pins', { method:'POST', body:JSON.stringify(d) });
-// Moderatör onaylarını Supabase Auth kullanıcı metadatasında kalıcı saklar (çerez/yerel önbellek silinse bile hesaba bağlı kalır)
+// Moderatör onaylarını hem herkese açık site_config tablosunda hem de Supabase Auth metadatasında kalıcı saklar
 async function saveModOverridesToUserMeta(overrides) {
-  if (!isModLoggedIn || !currentModUser) return;
+  const mergedOverrides = writeModOverridesLocal(overrides || {});
+  let approvedIss = [];
   try {
-    const approvedIss = JSON.parse(localStorage.getItem('ih_local_approved_iss') || '[]');
+    approvedIss = JSON.parse(localStorage.getItem('ih_local_approved_iss') || '[]');
+  } catch(e) {}
+
+  if (!isModLoggedIn || !currentModUser) return;
+
+  // 1. site_config tablosuna yaz (tüm ziyaretçiler ve cihazlar anında görsün)
+  try {
+    await Promise.all([
+      sbRest('site_config', {
+        method: 'POST',
+        prefer: 'resolution=merge-duplicates,return=minimal',
+        body: JSON.stringify({ key: 'mod_overrides', value: JSON.stringify(mergedOverrides) })
+      }),
+      sbRest('site_config', {
+        method: 'POST',
+        prefer: 'resolution=merge-duplicates,return=minimal',
+        body: JSON.stringify({ key: 'mod_approved_iss', value: JSON.stringify(approvedIss) })
+      })
+    ]);
+  } catch (cfgErr) {
+    console.warn('[internetHarita] site_config mod_overrides kaydı uyarısı:', cfgErr);
+  }
+
+  // 2. Supabase Auth kullanıcı metadatasına yaz
+  try {
     const res = await sbc.auth.updateUser({
       data: {
-        mod_overrides: overrides,
+        mod_overrides: mergedOverrides,
         mod_approved_iss: approvedIss
       }
     });
@@ -4634,16 +4766,18 @@ function restoreModOverridesFromUserMeta(user, triggerUIRefresh = false) {
     let hasRestored = false;
     const serverOverrides = user.user_metadata.mod_overrides;
     if (serverOverrides && typeof serverOverrides === 'object') {
-      const localOverrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
-      const merged = { ...serverOverrides, ...localOverrides };
-      localStorage.setItem('ih_mod_overrides', JSON.stringify(merged));
+      writeModOverridesLocal(serverOverrides);
       hasRestored = true;
     }
     const serverIss = user.user_metadata.mod_approved_iss;
     if (Array.isArray(serverIss) && serverIss.length > 0) {
-      const localIss = JSON.parse(localStorage.getItem('ih_local_approved_iss') || '[]');
+      let localIss = [];
+      try { localIss = JSON.parse(localStorage.getItem('ih_local_approved_iss') || '[]'); } catch(e) {}
       const mergedIss = Array.from(new Set([...serverIss, ...localIss]));
-      localStorage.setItem('ih_local_approved_iss', JSON.stringify(mergedIss));
+      try { localStorage.setItem('ih_local_approved_iss', JSON.stringify(mergedIss)); } catch(e) {}
+      mergedIss.forEach(iss => {
+        if (typeof registerLocalApprovedIss === 'function') registerLocalApprovedIss(iss, false);
+      });
       hasRestored = true;
     }
     if (hasRestored && triggerUIRefresh) {
@@ -4656,7 +4790,18 @@ function restoreModOverridesFromUserMeta(user, triggerUIRefresh = false) {
 }
 
 function copyModSqlPolicy() {
-  const code = 'CREATE POLICY "Moderatörler günceller" ON pins FOR UPDATE TO authenticated USING (true) WITH CHECK (true);\nCREATE POLICY "Moderatörler ISS yönetir" ON iss_list FOR ALL TO authenticated USING (true) WITH CHECK (true);';
+  const code = [
+    'GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.pins TO authenticated;',
+    'GRANT ALL ON TABLE public.iss_list TO authenticated;',
+    'GRANT ALL ON TABLE public.site_config TO authenticated;',
+    'GRANT SELECT ON TABLE public.site_config TO anon, authenticated;',
+    'ALTER TABLE public.pins ENABLE ROW LEVEL SECURITY;',
+    'DROP POLICY IF EXISTS "Moderatörler günceller" ON public.pins;',
+    'CREATE POLICY "Moderatörler günceller" ON public.pins FOR UPDATE TO authenticated USING (true) WITH CHECK (true);',
+    'ALTER TABLE public.iss_list ENABLE ROW LEVEL SECURITY;',
+    'DROP POLICY IF EXISTS "Moderatörler ISS yönetir" ON public.iss_list;',
+    'CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authenticated USING (true) WITH CHECK (true);'
+  ].join('\n');
   if (navigator.clipboard) {
     navigator.clipboard.writeText(code).then(() => {
       showToast('✅ SQL panoya kopyalandı! Supabase Dashboard › SQL Editor\'a yapıştırıp Run deyin.');
@@ -4666,6 +4811,17 @@ function copyModSqlPolicy() {
   } else {
     showToast('Panoya kopyalanamadı, lütfen kutudaki metni seçip kopyalayın.', 'warn');
   }
+}
+
+function isRowVerifiedAfterPatch(row, payload) {
+  if (!row || typeof row !== 'object') return false;
+  if (payload.gorunur !== undefined && row.gorunur !== undefined && Boolean(row.gorunur) !== Boolean(payload.gorunur)) {
+    return false;
+  }
+  if (payload.is_quarantine !== undefined && row.is_quarantine !== undefined && Boolean(row.is_quarantine) !== Boolean(payload.is_quarantine)) {
+    return false;
+  }
+  return true;
 }
 
 async function patchPin(id, d) {
@@ -4685,7 +4841,7 @@ async function patchPin(id, d) {
   const FORBIDDEN_COLS = ['sikayet_sayisi', 'custom_iss', 'mod_notu', 'client_metadata', 'ip_hash', 'browser_fp'];
   FORBIDDEN_COLS.forEach(c => delete cleanPayload[c]);
 
-  const isApproving = cleanPayload.gorunur === true || cleanPayload.is_quarantine === false;
+  const isApproving = cleanPayload.gorunur === true || (cleanPayload.is_quarantine === false && cleanPayload.gorunur !== false);
   if (isApproving) {
     cleanPayload.gorunur = true;
     cleanPayload.is_quarantine = false;
@@ -4693,88 +4849,32 @@ async function patchPin(id, d) {
 
   // İSS adını garantile: payload'da yoksa mevcut pinden al
   const effectiveIss = cleanPayload.iss || (existingPin ? existingPin.iss : null);
-  if (effectiveIss && typeof registerLocalApprovedIss === 'function') {
-    registerLocalApprovedIss(effectiveIss);
+  if (isApproving && effectiveIss && typeof registerLocalApprovedIss === 'function') {
+    registerLocalApprovedIss(effectiveIss, false);
   }
 
-  // 2. Doğrulama için güvenli public alanlar: id, gorunur, is_quarantine
-  const verifyFields = 'id,gorunur,is_quarantine';
+  // 2. SENKRON ÖN KAYIT: Ağ istekleri beklenmeden önce RAM ve localStorage'ı anında güncelle
+  const currentOverrides = getModOverrides();
+  const prevOv = currentOverrides[sId] || {};
+  const newOv = {
+    ...prevOv,
+    ...(existingPin ? { iss: existingPin.iss, baglanti_turu: existingPin.baglanti_turu, browser_fp: existingPin.browser_fp } : {}),
+    ...cleanPayload,
+    ...(effectiveIss ? { iss: effectiveIss } : {}),
+    ...(isApproving ? { gorunur: true, is_quarantine: false, sikayet_sayisi: 0, is_spam: false, custom_iss: null } : {}),
+    deleted_at: null,
+    updated_at: Date.now()
+  };
+  const updatedOverrides = writeModOverridesLocal({ [sId]: newOv });
 
-  // 1. Supabase Client üzerinden dene
-  try {
-    const { data, error } = await sbc.from('pins').update(cleanPayload).eq('id', sId).select(verifyFields);
-    if (error) {
-      lastError = error;
-      console.warn('[internetHarita] sbc.update hatası:', error);
-    } else if (data && data.length > 0) {
-      updatedRow = data[0];
-    }
-  } catch(e) {
-    lastError = e;
-    console.warn('[internetHarita] sbc.update istisnası:', e);
-  }
-
-  // 2. Yedek olarak REST API (sbRest) üzerinden dene
-  if (!updatedRow) {
-    try {
-      const result = await sbRest(`pins?id=eq.${sId}&select=${verifyFields}`, {
-        method: 'PATCH',
-        prefer: 'return=representation',
-        body: JSON.stringify(cleanPayload)
-      });
-      if (Array.isArray(result) && result.length > 0) {
-        updatedRow = result[0];
-      }
-    } catch(e) {
-      lastError = e;
-      console.warn('[internetHarita] sbRest.patch representation uyarısı:', e);
-    }
-  }
-
-  // 3. Güvenli minimal/id denemesi
-  if (!updatedRow) {
-    try {
-      const idRes = await sbRest(`pins?id=eq.${sId}&select=id`, {
-        method: 'PATCH',
-        prefer: 'return=representation',
-        body: JSON.stringify(cleanPayload)
-      });
-      if (Array.isArray(idRes) && idRes.length > 0) {
-        updatedRow = { id: sId, ...cleanPayload };
-      }
-    } catch(e3) {
-      lastError = e3;
-    }
-  }
-
-  // Veritabanı RLS yetkisi eksikse mod paneli kılavuz kartını görünür yap
-  if (!updatedRow && typeof isModLoggedIn !== 'undefined' && isModLoggedIn) {
-    const syncCard = document.getElementById('modDbSyncCard');
-    if (syncCard) syncCard.style.display = 'block';
-  }
-
-  // Moderatör hafızasında (ih_mod_overrides) sakla ve Supabase Auth hesabına kalıcı yaz
-  // Böylece DB kısıtlaması olsa bile tarayıcı çerezleri silinse dahi hesap bazlı olarak asla kaybolmaz
-  try {
-    const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
-    overrides[sId] = {
-      ...(overrides[sId] || {}),
-      ...(existingPin ? { iss: existingPin.iss, baglanti_turu: existingPin.baglanti_turu } : {}),
-      ...cleanPayload,
-      ...(effectiveIss ? { iss: effectiveIss } : {}),
-      ...(isApproving ? { gorunur: true, is_quarantine: false, sikayet_sayisi: 0, is_spam: false } : {}),
-      updated_at: Date.now()
-    };
-    localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
-    saveModOverridesToUserMeta(overrides);
-  } catch(e) {}
-
-  // Canlı bellek cache'lerini anında güncelle
-  const extraPatch = isApproving ? { gorunur: true, is_quarantine: false, sikayet_sayisi: 0, is_spam: false } : {};
-  if (typeof adminPinsCache !== 'undefined' && adminPinsCache) {
+  // Canlı bellek cache'lerini anında (0ms) güncelle
+  const extraPatch = isApproving
+    ? { gorunur: true, is_quarantine: false, sikayet_sayisi: 0, is_spam: false, custom_iss: null }
+    : (cleanPayload.gorunur === false ? { gorunur: false, is_quarantine: false, sikayet_sayisi: 0 } : {});
+  if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
     adminPinsCache = adminPinsCache.map(p => String(p.id) === sId ? { ...p, ...cleanPayload, ...extraPatch, ...(effectiveIss ? { iss: effectiveIss } : {}) } : p);
   }
-  if (typeof pinsData !== 'undefined' && pinsData) {
+  if (typeof pinsData !== 'undefined' && Array.isArray(pinsData)) {
     pinsData = pinsData.map(p => String(p.id) === sId ? { ...p, ...cleanPayload, ...extraPatch, ...(effectiveIss ? { iss: effectiveIss } : {}) } : p);
     cleanPinsData = publicCleanPins(pinsData);
   }
@@ -4784,48 +4884,103 @@ async function patchPin(id, d) {
     const myPins = getMyLocalPins();
     const idx = myPins.findIndex(p => String(p.id) === sId);
     if (idx >= 0) {
-      myPins[idx] = { ...myPins[idx], ...cleanPayload, ...(effectiveIss ? { iss: effectiveIss } : {}) };
+      myPins[idx] = { ...myPins[idx], ...cleanPayload, ...extraPatch, ...(effectiveIss ? { iss: effectiveIss } : {}) };
       localStorage.setItem('ih_my_pins', JSON.stringify(myPins));
     }
   } catch(e) {}
 
+  // Bulut (site_config + user_metadata) kaydını başlat
+  const cloudSyncPromise = saveModOverridesToUserMeta(updatedOverrides);
+
+  // 3. Doğrulama için güvenli public alanlar: id, gorunur, is_quarantine
+  const verifyFields = 'id,gorunur,is_quarantine';
+  const pinFp = existingPin?.browser_fp || prevOv?.browser_fp || null;
+
+  // Deneme 1: Supabase Client üzerinden dene
+  try {
+    const { data, error } = await sbc.from('pins').update(cleanPayload).eq('id', sId).select(verifyFields);
+    if (error) {
+      lastError = error;
+    } else if (data && data.length > 0 && isRowVerifiedAfterPatch(data[0], cleanPayload)) {
+      updatedRow = data[0];
+    }
+  } catch(e) {
+    lastError = e;
+  }
+
+  // Deneme 2: Pinin kendi browser_fp kimliğiyle REST API üzerinden dene (RLS X-Browser-FP politikası varsa doğrudan günceller)
+  if (!updatedRow && pinFp) {
+    try {
+      const fpRes = await sbRest(`pins?id=eq.${sId}&select=${verifyFields}`, {
+        method: 'PATCH',
+        prefer: 'return=representation',
+        customFp: pinFp,
+        body: JSON.stringify(cleanPayload)
+      });
+      if (Array.isArray(fpRes) && fpRes.length > 0 && isRowVerifiedAfterPatch(fpRes[0], cleanPayload)) {
+        updatedRow = fpRes[0];
+      }
+    } catch(eFp) {
+      lastError = eFp;
+    }
+  }
+
+  // Deneme 3: Standart REST API (sbRest) üzerinden dene
+  if (!updatedRow) {
+    try {
+      const result = await sbRest(`pins?id=eq.${sId}&select=${verifyFields}`, {
+        method: 'PATCH',
+        prefer: 'return=representation',
+        body: JSON.stringify(cleanPayload)
+      });
+      if (Array.isArray(result) && result.length > 0 && isRowVerifiedAfterPatch(result[0], cleanPayload)) {
+        updatedRow = result[0];
+      }
+    } catch(e) {
+      lastError = e;
+    }
+  }
+
+  await cloudSyncPromise;
   return true;
 }
 
-// Moderatör onay hafızasını (ih_mod_overrides) sunucuya otomatik eşitler (kendini onarma)
+// Moderatör onay hafızasını (ih_mod_overrides) sunucuya otomatik eşitler (yerel onayları ASLA silmez)
 async function syncModOverridesToServer() {
   if (!isModLoggedIn || !currentModUser) return;
   try {
-    const raw = localStorage.getItem('ih_mod_overrides');
-    if (!raw) return;
-    const overrides = JSON.parse(raw);
+    const overrides = getModOverrides();
     const ids = Object.keys(overrides);
     if (!ids.length) return;
-    
-    let synced = 0;
+
+    await saveModOverridesToUserMeta(overrides);
+
+    const verifyFields = 'id,gorunur,is_quarantine';
     for (const id of ids) {
       const ov = overrides[id];
-      if (ov && ov.gorunur === true) {
+      if (!ov || ov.deleted_at) continue;
+      if (ov.gorunur === true || ov.is_quarantine === false) {
+        const cleanPayload = {
+          ...(ov.iss ? { iss: ov.iss } : {}),
+          gorunur: ov.gorunur !== false,
+          is_quarantine: false
+        };
         try {
-          const cleanPayload = { gorunur: true, is_quarantine: false };
-          const res = await sbRest(`pins?id=eq.${id}&select=id`, {
+          const res = await sbRest(`pins?id=eq.${id}&select=${verifyFields}`, {
             method: 'PATCH',
             prefer: 'return=representation',
+            ...(ov.browser_fp ? { customFp: ov.browser_fp } : {}),
             body: JSON.stringify(cleanPayload)
           });
-          if (Array.isArray(res) && res.length > 0) {
-            delete overrides[id];
-            synced++;
+          if (!Array.isArray(res) || !res.length || !isRowVerifiedAfterPatch(res[0], cleanPayload)) {
+            await sbRest(`pins?id=eq.${id}&select=${verifyFields}`, {
+              method: 'PATCH',
+              prefer: 'return=representation',
+              body: JSON.stringify(cleanPayload)
+            });
           }
-        } catch(err) {
-          console.warn('[internetHarita] Mod override senkron hatası:', id, err);
-        }
+        } catch(err) {}
       }
-    }
-    if (synced > 0) {
-      localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
-      saveModOverridesToUserMeta(overrides);
-      console.log(`[internetHarita] ${synced} adet moderatör onayı veritabanına başarıyla eşitlendi.`);
     }
   } catch(e) {}
 }
@@ -4907,15 +5062,25 @@ async function patchPinOwn(id, d) {
 }
 async function delPin(id) {
   const sId = String(id);
+  const existingPin = (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache))
+    ? adminPinsCache.find(x => String(x.id) === sId)
+    : null;
+  const pinFp = existingPin?.browser_fp || null;
+  const delIso = new Date().toISOString();
+
   markPinDeletedLocal(sId);
   removeMyPinLocal(sId);
   try {
-    const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
-    if (overrides[sId]) {
-      delete overrides[sId];
-      localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
-      saveModOverridesToUserMeta(overrides);
-    }
+    const updatedOverrides = writeModOverridesLocal({
+      [sId]: {
+        ...(getModOverrides()[sId] || {}),
+        deleted_at: delIso,
+        gorunur: false,
+        is_quarantine: false,
+        updated_at: Date.now()
+      }
+    });
+    saveModOverridesToUserMeta(updatedOverrides);
   } catch(e) {}
   if (typeof currentSyncUser !== 'undefined' && currentSyncUser) {
     try {
@@ -4930,7 +5095,8 @@ async function delPin(id) {
     const res = await sbRest(`pins?id=eq.${sId}`, {
       method: 'PATCH',
       prefer: 'return=minimal',
-      body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false })
+      ...(pinFp ? { customFp: pinFp } : {}),
+      body: JSON.stringify({ deleted_at: delIso, gorunur: false })
     });
     if (res && res.ok) success = true;
   } catch(e) {
@@ -4940,7 +5106,11 @@ async function delPin(id) {
   // 2. Yedek olarak DELETE dene
   if (!success) {
     try {
-      const res = await sbRest(`pins?id=eq.${sId}`, { method: 'DELETE', prefer: 'return=minimal' });
+      const res = await sbRest(`pins?id=eq.${sId}`, {
+        method: 'DELETE',
+        prefer: 'return=minimal',
+        ...(pinFp ? { customFp: pinFp } : {})
+      });
       if (res && res.ok) success = true;
     } catch(e2) {
       console.warn('[internetHarita] delPin DELETE hatası:', e2);
@@ -4951,15 +5121,20 @@ async function delPin(id) {
 }
 const hardDelPin = id => {
   const sId = String(id);
+  const delIso = new Date().toISOString();
   markPinDeletedLocal(sId);
   removeMyPinLocal(sId);
   try {
-    const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
-    if (overrides[sId]) {
-      delete overrides[sId];
-      localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
-      saveModOverridesToUserMeta(overrides);
-    }
+    const updatedOverrides = writeModOverridesLocal({
+      [sId]: {
+        ...(getModOverrides()[sId] || {}),
+        deleted_at: delIso,
+        gorunur: false,
+        is_quarantine: false,
+        updated_at: Date.now()
+      }
+    });
+    saveModOverridesToUserMeta(updatedOverrides);
   } catch(e) {}
   if (typeof currentSyncUser !== 'undefined' && currentSyncUser) {
     try {
@@ -4978,6 +5153,7 @@ const hardDelPin = id => {
 // 5. Sunucu doğrudan güncellenemezse arka planda silme talebi raporu bırakılır
 async function delPinOwn(id) {
   const sId = String(id);
+  const delIso = new Date().toISOString();
   let success = false;
   let result = null;
 
@@ -4985,7 +5161,7 @@ async function delPinOwn(id) {
     result = await sbRest(`pins?id=eq.${sId}`, {
       method: 'PATCH',
       prefer: 'return=minimal',
-      body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false })
+      body: JSON.stringify({ deleted_at: delIso, gorunur: false })
     });
     if (result && result.ok) {
       success = true;
@@ -5003,7 +5179,7 @@ async function delPinOwn(id) {
           method: 'PATCH',
           prefer: 'return=minimal',
           customFp: pin.browser_fp,
-          body: JSON.stringify({ deleted_at: new Date().toISOString(), gorunur: false })
+          body: JSON.stringify({ deleted_at: delIso, gorunur: false })
         });
         if (result && result.ok) {
           success = true;
@@ -5028,13 +5204,20 @@ async function delPinOwn(id) {
   markPinDeletedLocal(sId);
   removeMyPinLocal(sId);
 
-  // Moderatör onay hafızasında varsa oradan da temizle
+  // Moderatör onay hafızasında varsa silindi olarak işaretle
   try {
-    const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
+    const overrides = getModOverrides();
     if (overrides[sId]) {
-      delete overrides[sId];
-      localStorage.setItem('ih_mod_overrides', JSON.stringify(overrides));
-      saveModOverridesToUserMeta(overrides);
+      const updatedOverrides = writeModOverridesLocal({
+        [sId]: {
+          ...overrides[sId],
+          deleted_at: delIso,
+          gorunur: false,
+          is_quarantine: false,
+          updated_at: Date.now()
+        }
+      });
+      saveModOverridesToUserMeta(updatedOverrides);
     }
   } catch(e) {}
 
@@ -5169,7 +5352,7 @@ function displayIssName(name) {
 }
 
 // Moderatör tarafından onaylanan veya yerelde tanınan İSS'leri hafızada/localStorage'da tut
-function registerLocalApprovedIss(issName) {
+function registerLocalApprovedIss(issName, syncCloud = true) {
   if (!issName) return;
   const canonical = canonicalIssName(issName);
   try {
@@ -5177,8 +5360,8 @@ function registerLocalApprovedIss(issName) {
     if (!existing.includes(canonical)) {
       existing.push(canonical);
       localStorage.setItem('ih_local_approved_iss', JSON.stringify(existing));
-      if (typeof isModLoggedIn !== 'undefined' && isModLoggedIn && typeof currentModUser !== 'undefined' && currentModUser) {
-        saveModOverridesToUserMeta(JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}'));
+      if (syncCloud && typeof isModLoggedIn !== 'undefined' && isModLoggedIn && typeof currentModUser !== 'undefined' && currentModUser) {
+        saveModOverridesToUserMeta(getModOverrides());
       }
     }
   } catch(e) {}
@@ -5211,11 +5394,11 @@ function approvedIssNames() {
     });
   } catch(e) {}
 
-  // 2. Moderatör onay hafızasındaki (ih_mod_overrides) tüm onaylı pinlerin İSS'lerini dahil et
+  // 2. Moderatör onay hafızasındaki (getModOverrides) tüm onaylı pinlerin İSS'lerini dahil et
   try {
-    const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
+    const overrides = getModOverrides();
     Object.entries(overrides).forEach(([sId, ov]) => {
-      if (ov && ov.gorunur === true && ov.is_quarantine === false) {
+      if (ov && (ov.gorunur === true || (ov.is_quarantine === false && ov.gorunur !== false))) {
         let issName = ov.iss;
         if (!issName) {
           const cached = (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache))
@@ -5396,10 +5579,10 @@ function isSpam(p) {
   // Moderatör tarafından onaylanmış ve yayına alınmış pini spam sayma
   if (p.gorunur === true && !p.is_quarantine && !(p.sikayet_sayisi > 0)) return false;
   try {
-    const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
+    const overrides = getModOverrides();
     const sId = String(p.id);
     const ov = overrides[sId] || overrides[p.id];
-    if (ov && ov.gorunur === true && ov.is_quarantine === false) return false;
+    if (ov && (ov.gorunur === true || (ov.is_quarantine === false && ov.gorunur !== false))) return false;
   } catch(e) {}
   const reason = getSpamReason(p);
   return reason !== "" && reason !== "Karantina İncelemesi";
@@ -5411,8 +5594,8 @@ function getQuarantineReasons(p, groupPins = null) {
   if (!p) return reasons;
   const pins = (groupPins && groupPins.length) ? groupPins : [p];
 
-  // 0. Manuel Gizlenme Durumu (Moderatör veya sistemce gizlenmiş)
-  if (p.gorunur === false) {
+  // 0. Manuel Gizlenme Durumu (Karantinada değil ama moderatörce yayından gizlenmiş)
+  if (p.gorunur === false && !p.is_quarantine) {
     reasons.unshift({
       type: 'manual_hidden',
       icon: '🙈',
@@ -5804,12 +5987,17 @@ function isPinVisibleOnMap(p) {
 }
 function countPendingCustomIss(pins) {
   const knownNames = approvedIssNames();
+  const overrides = getModOverrides();
   const grouped = {};
-  (pins || []).filter(p =>
-    p.is_quarantine && p.iss &&
-    !knownNames.has(canonicalIssName(p.iss)) &&
-    canonicalIssName(p.iss) !== 'diğer'
-  ).forEach(p => { grouped[p.iss] = true; });
+  (pins || []).filter(p => {
+    if (!p || p.deleted_at) return false;
+    const sId = String(p.id);
+    const ov = overrides[sId] || overrides[p.id];
+    if (ov && (ov.is_quarantine === false || ov.gorunur === true || ov.deleted_at)) return false;
+    return p.is_quarantine && p.iss &&
+      !knownNames.has(canonicalIssName(p.iss)) &&
+      canonicalIssName(p.iss) !== 'diğer';
+  }).forEach(p => { grouped[p.iss] = true; });
   return Object.keys(grouped).length;
 }
 function countPendingPublicIssSuggestions() {
@@ -6132,6 +6320,26 @@ async function loadIssListAndRenderChips() {
     const key = name.toLocaleLowerCase('tr-TR');
     if (!activeMap.has(key)) activeMap.set(key, { ...i, name });
   });
+
+  // Moderatör veya bulut tarafından onaylanmış yerel İSS'leri issListCache içine koruyarak dahil et
+  try {
+    const localApproved = JSON.parse(localStorage.getItem('ih_local_approved_iss') || '[]');
+    const overrides = getModOverrides();
+    Object.values(overrides).forEach(ov => {
+      if (ov && ov.iss && (ov.gorunur === true || (ov.is_quarantine === false && ov.gorunur !== false))) {
+        localApproved.push(ov.iss);
+      }
+    });
+    localApproved.forEach(rawName => {
+      const name = canonicalIssName(rawName);
+      if (!name) return;
+      const key = name.toLocaleLowerCase('tr-TR');
+      if (!activeMap.has(key)) {
+        activeMap.set(key, { name, color: issHashColor(name), active: true, sort_order: 99 });
+      }
+    });
+  } catch(e) {}
+
   const active = [...activeMap.values()];
   issListCache = active;
   renderISSChips(active);
@@ -6741,13 +6949,15 @@ async function _loadPinsCore() {
       }
     }
 
+    const finalPins = applyModOverrides(all);
+
     // Başarılı pinleri localStorage'a yedekle (çevrimdışı / zayıf ağ koruması)
     try {
-      localStorage.setItem('ih_cached_pins', JSON.stringify({ ts: Date.now(), pins: all }));
+      localStorage.setItem('ih_cached_pins', JSON.stringify({ ts: Date.now(), pins: finalPins }));
     } catch(err) {}
 
-    pinsData = all; 
-    cleanPinsData = publicCleanPins(all); 
+    pinsData = finalPins; 
+    cleanPinsData = publicCleanPins(finalPins); 
     renderHex(); renderModPins(); renderMyPins();
     if (typeof updateFilterIndicator === 'function') updateFilterIndicator();
     
@@ -10199,12 +10409,12 @@ async function loadCustomIss() {
     await loadIssListAndRenderChips();
     const pins = await getAllPinsAdmin() || [];
     const knownNames = approvedIssNames();
-    const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
+    const overrides = getModOverrides();
     const customPins = pins.filter(p => {
       if (p.deleted_at) return false;
       const sId = String(p.id);
       const ov = overrides[sId] || overrides[p.id];
-      if (ov && ov.is_quarantine === false) return false;
+      if (ov && (ov.is_quarantine === false || ov.gorunur === true || ov.deleted_at)) return false;
       return p.is_quarantine && p.iss &&
         !knownNames.has(canonicalIssName(p.iss)) &&
         canonicalIssName(p.iss) !== 'diğer';
@@ -10263,12 +10473,13 @@ async function approveCustomIss(iss, normalizedName, color) {
     } catch(issErr) {
       console.warn('[internetHarita] iss_list tablosuna eklenemedi (RLS kısıtlaması), yerel listeye kaydedildi:', issErr);
     }
-    registerLocalApprovedIss(finalName);
-    registerLocalApprovedIss(iss);
+    registerLocalApprovedIss(finalName, false);
+    registerLocalApprovedIss(iss, false);
     // 2. Tüm ilgili pinleri düzelt ve yayınla
     const pins = await getAllPinsAdmin() || [];
     const targets = pins.filter(p => (p.iss === iss || canonicalIssName(p.iss) === canonicalIssName(iss)) && (p.is_quarantine || p.gorunur !== true));
     await Promise.all(targets.map(p => patchPin(p.id, { iss: finalName, gorunur: true, is_quarantine: false })));
+    saveModOverridesToUserMeta(getModOverrides());
     showToast(`✅ "${finalName}" listeye eklendi — ${targets.length} pin yayınlandı`);
     // 3. Cache ve UI güncelle
     await loadIssListAndRenderChips();
@@ -10646,13 +10857,13 @@ async function renameIssInList(id, oldName) {
   } catch(e) { showToast('Hata: '+e.message, 'err'); }
 }
 function updateModStatsSummary(pins, raporlar) {
-  const allPins = pins || adminPinsCache || [];
+  const allPins = applyModOverrides(pins || adminPinsCache || []);
   const total = allPins.length;
   const visible = allPins.filter(p => p.gorunur === true && !p.is_quarantine && !isSpam(p) && isApprovedPublicIss(p.iss)).length;
   const quarantine = allPins.filter(p => !isSpam(p) && p.is_quarantine).length;
   const spam = allPins.filter(p => isSpam(p)).length;
   const unknownIss = allPins.filter(p => !isApprovedPublicIss(p.iss)).length;
-  const hidden = allPins.filter(p => p.gorunur === false).length;
+  const hidden = allPins.filter(p => p.gorunur === false && !p.is_quarantine).length;
 
   // Stat banner pills
   const sbTot = document.getElementById('sbTotalPins'); if (sbTot) sbTot.textContent = total;
@@ -10925,13 +11136,13 @@ async function loadSikayetler() {
   }
   try {
     const pins = await getAllPinsAdmin()||[];
-    const overrides = JSON.parse(localStorage.getItem('ih_mod_overrides') || '{}');
+    const overrides = getModOverrides();
     const flagged = pins.filter(p => {
       if (p.deleted_at) return false;
       const sId = String(p.id);
       const ov = overrides[sId] || overrides[p.id];
-      if (ov && ov.gorunur === true && ov.is_quarantine === false) return false;
-      return ((p.sikayet_sayisi||0)>0 || p.is_quarantine === true || p.gorunur === false);
+      if (ov && (ov.gorunur === true || ov.is_quarantine === false || ov.deleted_at)) return false;
+      return ((p.sikayet_sayisi||0)>0 || p.is_quarantine === true);
     });
     if (!flagged.length) {
       list.innerHTML = '<div class="empty-state">Şüpheli pin kümesi bulunmuyor ✅</div>';
@@ -11013,21 +11224,24 @@ async function groupAction(idsJson, approve) {
   const ids = rawIds.map(String);
   const idsSet = new Set(ids);
   try {
+    // 0. Kartları anında DOM'dan kaldır (iyimser UI tepkisi)
+    ids.forEach(id => document.getElementById('mc_'+id)?.remove());
+    updateInboxSummary();
+
     if (approve) {
       const targetPins = (adminPinsCache || []).filter(p => idsSet.has(String(p.id)));
       for (const p of targetPins) {
         if (p.iss) {
-          registerLocalApprovedIss(p.iss);
+          registerLocalApprovedIss(p.iss, false);
           try { await addIssToList({ name: p.iss, color: issHashColor(p.iss), active: true, sort_order: 99 }); } catch(issErr) {}
         }
       }
-      await loadIssListAndRenderChips();
     }
     await Promise.all(ids.map(id => {
-      const p = (adminPinsCache || []).find(x => String(x.id) === String(id));
+      const p = (adminPinsCache || []).find(x => String(x.id) === String(id)) || (pinsData || []).find(x => String(x.id) === String(id));
       return patchPin(id, { ...(p && p.iss ? { iss: p.iss } : {}), gorunur: approve, is_quarantine: false });
     }));
-    ids.forEach(id => document.getElementById('mc_'+id)?.remove());
+    await loadIssListAndRenderChips();
     showToast(approve ? `✅ ${ids.length} pin onaylandı` : `👁 ${ids.length} pin gizlendi`);
 
     if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
@@ -11084,18 +11298,18 @@ async function loadAdminTable() {
 async function quickApprovePinRow(id) {
   const sId = String(id);
   try {
-    const p = adminPinsCache.find(x => String(x.id) === sId);
+    const p = (adminPinsCache || []).find(x => String(x.id) === sId) || (pinsData || []).find(x => String(x.id) === sId);
     if (!p) return;
+    document.getElementById('mc_' + sId)?.remove();
     if (p.iss) {
-      registerLocalApprovedIss(p.iss);
+      registerLocalApprovedIss(p.iss, false);
       try {
         await addIssToList({ name: p.iss, color: issHashColor(p.iss), active: true, sort_order: 99 });
       } catch(issErr) {}
-      await loadIssListAndRenderChips();
     }
-    await patchPin(sId, { iss: p.iss, gorunur: true, is_quarantine: false });
-    document.getElementById('mc_' + sId)?.remove();
-    showToast(`✅ "${p.iss}" pini onaylandı ve haritada yayına alındı!`);
+    await patchPin(sId, { ...(p.iss ? { iss: p.iss } : {}), gorunur: true, is_quarantine: false });
+    await loadIssListAndRenderChips();
+    showToast(`✅ "${p.iss || 'Pin'}" onaylandı ve haritada yayına alındı!`);
     if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
       adminPinsCache = adminPinsCache.map(x => String(x.id) === sId ? { ...x, gorunur: true, is_quarantine: false, sikayet_sayisi: 0, is_spam: false } : x);
     }
@@ -11119,8 +11333,8 @@ async function quickApprovePinRow(id) {
 async function quickHidePinRow(id) {
   const sId = String(id);
   try {
-    await patchPin(sId, { gorunur: false, is_quarantine: false });
     document.getElementById('mc_' + sId)?.remove();
+    await patchPin(sId, { gorunur: false, is_quarantine: false });
     showToast(`👁 Pin gizlendi`);
     if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
       adminPinsCache = adminPinsCache.map(x => String(x.id) === sId ? { ...x, gorunur: false, is_quarantine: false } : x);
@@ -11230,7 +11444,7 @@ function setTableFilter(val, btn) {
 }
 
 function filterAdminTable(search) {
-  let filtered = adminPinsCache || [];
+  let filtered = applyModOverrides(adminPinsCache || []);
   if (search) {
     const s = search.toLocaleLowerCase('tr-TR');
     filtered = filtered.filter(p =>
@@ -11251,7 +11465,7 @@ function filterAdminTable(search) {
   } else if (currentTableFilter === 'bilinmeyen') {
     filtered = filtered.filter(p => !isApprovedPublicIss(p.iss));
   } else if (currentTableFilter === 'gizli') {
-    filtered = filtered.filter(p => p.gorunur === false);
+    filtered = filtered.filter(p => p.gorunur === false && !p.is_quarantine);
   }
   renderAdminTable(filtered);
 }
@@ -11418,14 +11632,14 @@ async function handleRapor(id, durum) { try { await patchRapor(id,{durum}); show
 async function modAction(id, approve) { 
   const sId = String(id);
   try { 
-    const p = (adminPinsCache || []).find(x => String(x.id) === sId);
+    document.getElementById('mc_'+sId)?.remove(); 
+    const p = (adminPinsCache || []).find(x => String(x.id) === sId) || (pinsData || []).find(x => String(x.id) === sId);
     if (approve && p && p.iss) {
-      registerLocalApprovedIss(p.iss);
+      registerLocalApprovedIss(p.iss, false);
       try { await addIssToList({ name: p.iss, color: issHashColor(p.iss), active: true, sort_order: 99 }); } catch(issErr) {}
-      await loadIssListAndRenderChips();
     }
     await patchPin(sId, { ...(p && p.iss ? { iss: p.iss } : {}), gorunur: approve, is_quarantine: false }); 
-    document.getElementById('mc_'+sId)?.remove(); 
+    if (approve) await loadIssListAndRenderChips();
     showToast(approve ? '✅ Pin onaylandı' : '👁 Pin gizlendi'); 
     if (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache)) {
       adminPinsCache = adminPinsCache.map(p => String(p.id) === sId ? { ...p, gorunur: approve, is_quarantine: false, sikayet_sayisi: 0, is_spam: false } : p);
@@ -11448,7 +11662,10 @@ async function openEditModal(id) {
   try {
     // Cache'i yenile ki yeni eklenen ISS'ler dropdown'da görünsün
     await loadIssListAndRenderChips();
-    let p = adminPinsCache.find(x=>x.id===id); if (!p) { const res = await getPinById(id); p = res?.[0]; } if (!p) return showToast('Pin bulunamadı','err');
+    const sId = String(id);
+    let p = (adminPinsCache || []).find(x => String(x.id) === sId) || (pinsData || []).find(x => String(x.id) === sId);
+    if (!p) { const res = await getPinById(id); p = res?.[0]; }
+    if (!p) return showToast('Pin bulunamadı','err');
     document.getElementById('editPinId').value=id;
     const editTitle = document.querySelector('#editModal .modal-title');
     if (editTitle) editTitle.innerHTML = `✏️ Pin Düzenle <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent);font-weight:700;">#${id}</span>`;
@@ -11518,7 +11735,7 @@ async function saveEdit() {
       } catch(issErr) {
         console.warn('[internetHarita] iss_list tablosuna eklenemedi (RLS kısıtlaması), yerel listeye eklendi:', issErr);
       }
-      registerLocalApprovedIss(newIss);
+      registerLocalApprovedIss(newIss, false);
       await loadIssListAndRenderChips();
       issNowApproved = true;
       showToast(`🏷 "${newIss}" İSS listesine eklendi`,'info');
@@ -11634,7 +11851,7 @@ async function bulkApprovePins() {
   });
   for (const iss of unapprovedIssNames) {
     try { await addIssToList({ name: iss, color: issHashColor(iss), active: true, sort_order: 99 }); } catch(e) {}
-    registerLocalApprovedIss(iss);
+    registerLocalApprovedIss(iss, false);
   }
   if (unapprovedIssNames.size > 0) await loadIssListAndRenderChips();
 
