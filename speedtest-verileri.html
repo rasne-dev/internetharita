@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.googleadservices.com; connect-src 'self' data: blob: https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com; frame-src 'self' https://googleads.g.doubleclick.net https://*.googlesyndication.com https://*.google.com; base-uri 'none'; object-src 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com https://*.doubleclick.net https://*.adtrafficquality.google https://*.googletagservices.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.googleadservices.com https://*.adtrafficquality.google https://*.googletagservices.com https://*.gstatic.com; connect-src 'self' data: blob: https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com https://*.doubleclick.net https://*.adtrafficquality.google https://*.googletagservices.com https://*.gstatic.com; frame-src 'self' https://googleads.g.doubleclick.net https://*.doubleclick.net https://*.googlesyndication.com https://*.google.com https://*.adtrafficquality.google https://*.googletagservices.com; base-uri 'none'; object-src 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 
 <!-- Google AdSense Doğrulama ve Reklam Kodu -->
+<meta name="google-adsense-account" content="ca-pub-9484247825024770">
 <script>(adsbygoogle=window.adsbygoogle||[]).requestNonPersonalizedAds=1;</script><!-- varsayılan olarak kişiselleştirilmemiş reklam (consent.js tercihe göre günceller) -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9484247825024770" crossorigin="anonymous"></script>
 <script src="consent.js" defer></script>
@@ -520,9 +521,9 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
   </div>
 
   <!-- SEKMELER -->
-  <div class="view-tabs">
-    <button class="view-tab-btn active" id="tabWorldBtn" onclick="switchTab('world')">🌍 Dünya Ülkeleri Sıralaması</button>
-    <button class="view-tab-btn" id="tabTurkeyBtn" onclick="switchTab('turkey')">📋 Türkiye İl ve Bölge Dağılımı (81 İl)</button>
+  <div class="view-tabs" role="tablist" aria-label="Hız sıralaması görünümleri">
+    <button class="view-tab-btn active" id="tabWorldBtn" role="tab" aria-selected="true" onclick="switchTab('world')">🌍 Dünya Ülkeleri Sıralaması</button>
+    <button class="view-tab-btn" id="tabTurkeyBtn" role="tab" aria-selected="false" onclick="switchTab('turkey')">📋 Türkiye İl ve Bölge Dağılımı (81 İl)</button>
   </div>
 
   <!-- 1. GÖRÜNÜM: DÜNYA ÜLKELERİ -->
@@ -530,7 +531,7 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
     <div class="filter-bar">
       <div class="search-input-wrap">
         <span class="search-icon">🔍</span>
-        <input type="text" id="worldSearch" placeholder="Ülke ara (örn: Fransa, Almanya, Singapur)..." onkeyup="filterWorldTable()">
+        <input type="search" id="worldSearch" aria-label="Ülke ara" placeholder="Ülke ara (örn: Fransa, Almanya, Singapur)..." oninput="filterWorldTable()" onsearch="filterWorldTable()">
       </div>
       <div style="font-size:12px; color:var(--text3);">
         Toplam <strong id="countryCount" style="color:var(--text);">0</strong> ülke listeleniyor
@@ -541,11 +542,11 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
       <table id="worldTable">
         <thead>
           <tr>
-            <th style="width:65px;" class="sortable" id="th-w-rank" onclick="sortWorldTable('rank')">Sıra <span class="sort-icon">▲</span></th>
-            <th class="sortable" id="th-w-name" onclick="sortWorldTable('name')">Ülke <span class="sort-icon">↕</span></th>
-            <th class="sortable" id="th-w-dl" onclick="sortWorldTable('dl')">Ort. İndirme (Download) <span class="sort-icon">↕</span></th>
-            <th class="sortable" id="th-w-ul" onclick="sortWorldTable('ul')">Ort. Yükleme (Upload) <span class="sort-icon">↕</span></th>
-            <th class="sortable" id="th-w-ping" onclick="sortWorldTable('ping')">Gecikme (Ping) <span class="sort-icon">↕</span></th>
+            <th style="width:65px;" class="sortable sorted" id="th-w-rank" tabindex="0" role="button" aria-sort="ascending" onclick="sortWorldTable('rank')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortWorldTable('rank');}">Sıra <span class="sort-icon">▲</span></th>
+            <th class="sortable" id="th-w-name" tabindex="0" role="button" aria-sort="none" onclick="sortWorldTable('name')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortWorldTable('name');}">Ülke <span class="sort-icon">↕</span></th>
+            <th class="sortable" id="th-w-dl" tabindex="0" role="button" aria-sort="none" onclick="sortWorldTable('dl')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortWorldTable('dl');}">Ort. İndirme (Download) <span class="sort-icon">↕</span></th>
+            <th class="sortable" id="th-w-ul" tabindex="0" role="button" aria-sort="none" onclick="sortWorldTable('ul')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortWorldTable('ul');}">Ort. Yükleme (Upload) <span class="sort-icon">↕</span></th>
+            <th class="sortable" id="th-w-ping" tabindex="0" role="button" aria-sort="none" onclick="sortWorldTable('ping')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortWorldTable('ping');}">Gecikme (Ping) <span class="sort-icon">↕</span></th>
           </tr>
         </thead>
         <tbody id="worldTableBody"></tbody>
@@ -559,7 +560,7 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
       </div>
       <div class="compare-grid">
         <div>
-          <label style="font-size:12px; color:var(--text3); display:block; margin-bottom:6px;">Karşılaştırılacak Ülkeyi Seçin:</label>
+          <label for="compareSelect" style="font-size:12px; color:var(--text3); display:block; margin-bottom:6px;">Karşılaştırılacak Ülkeyi Seçin:</label>
           <select id="compareSelect" class="compare-select" onchange="runComparison()"></select>
         </div>
         <div class="compare-result" id="compareResult">
@@ -574,10 +575,10 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
     <div class="filter-bar">
       <div class="search-input-wrap">
         <span class="search-icon">🔍</span>
-        <input type="text" id="trSearch" placeholder="İl veya bölge ara (örn: İstanbul, İzmir, Ankara)..." onkeyup="filterTrTable()">
+        <input type="search" id="trSearch" aria-label="İl veya bölge ara" placeholder="İl veya bölge ara (örn: İstanbul, İzmir, Ankara)..." oninput="filterTrTable()" onsearch="filterTrTable()">
       </div>
       <div style="font-size:12px; color:var(--text3);">
-        81 il bazında hız karşılaştırması
+        Toplam <strong id="trCityCount" style="color:var(--text);">81</strong> il listeleniyor
       </div>
     </div>
 
@@ -585,12 +586,12 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
       <table id="trTable">
         <thead>
           <tr>
-            <th style="width:65px;" class="sortable" id="th-t-rank" onclick="sortTrTable('rank')">Sıra <span class="sort-icon">▲</span></th>
-            <th class="sortable" id="th-t-name" onclick="sortTrTable('name')">Bölge / İl <span class="sort-icon">↕</span></th>
-            <th class="sortable" id="th-t-dl" onclick="sortTrTable('dl')">Ort. İndirme (Download) <span class="sort-icon">↕</span></th>
-            <th class="sortable" id="th-t-ul" onclick="sortTrTable('ul')">Ort. Yükleme (Upload) <span class="sort-icon">↕</span></th>
-            <th class="sortable" id="th-t-ping" onclick="sortTrTable('ping')">Ortalama Ping <span class="sort-icon">↕</span></th>
-            <th class="sortable" id="th-t-status" onclick="sortTrTable('status')">Durum <span class="sort-icon">↕</span></th>
+            <th style="width:65px;" class="sortable sorted" id="th-t-rank" tabindex="0" role="button" aria-sort="ascending" onclick="sortTrTable('rank')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTrTable('rank');}">Sıra <span class="sort-icon">▲</span></th>
+            <th class="sortable" id="th-t-name" tabindex="0" role="button" aria-sort="none" onclick="sortTrTable('name')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTrTable('name');}">Bölge / İl <span class="sort-icon">↕</span></th>
+            <th class="sortable" id="th-t-dl" tabindex="0" role="button" aria-sort="none" onclick="sortTrTable('dl')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTrTable('dl');}">Ort. İndirme (Download) <span class="sort-icon">↕</span></th>
+            <th class="sortable" id="th-t-ul" tabindex="0" role="button" aria-sort="none" onclick="sortTrTable('ul')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTrTable('ul');}">Ort. Yükleme (Upload) <span class="sort-icon">↕</span></th>
+            <th class="sortable" id="th-t-ping" tabindex="0" role="button" aria-sort="none" onclick="sortTrTable('ping')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTrTable('ping');}">Ortalama Ping <span class="sort-icon">↕</span></th>
+            <th class="sortable" id="th-t-status" tabindex="0" role="button" aria-sort="none" onclick="sortTrTable('status')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTrTable('status');}">Durum <span class="sort-icon">↕</span></th>
           </tr>
         </thead>
         <tbody id="trTableBody"></tbody>
@@ -894,9 +895,11 @@ function updateSortIcons(type, sortState) {
     const icon = th.querySelector('.sort-icon');
     if (c === sortState.col) {
       th.classList.add('sorted');
+      th.setAttribute('aria-sort', sortState.asc ? 'ascending' : 'descending');
       if (icon) icon.textContent = sortState.asc ? '▲' : '▼';
     } else {
       th.classList.remove('sorted');
+      th.setAttribute('aria-sort', 'none');
       if (icon) icon.textContent = '↕';
     }
   });
@@ -942,6 +945,8 @@ function renderWorldTable(data) {
 
 function renderTrTable(data) {
   const tbody = document.getElementById('trTableBody');
+  const countEl = document.getElementById('trCityCount');
+  if (countEl) countEl.textContent = data ? data.length : 0;
   if (!data || !data.length) {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3);font-size:13px;">🔍 Aradığınız kriterlere uygun il bulunamadı.</td></tr>';
     return;
@@ -1020,11 +1025,15 @@ function switchTab(tab) {
     trView.style.display = 'none';
     tabW.classList.add('active');
     tabT.classList.remove('active');
+    tabW.setAttribute('aria-selected', 'true');
+    tabT.setAttribute('aria-selected', 'false');
   } else {
     worldView.style.display = 'none';
     trView.style.display = 'block';
     tabW.classList.remove('active');
     tabT.classList.add('active');
+    tabW.setAttribute('aria-selected', 'false');
+    tabT.setAttribute('aria-selected', 'true');
   }
 }
 

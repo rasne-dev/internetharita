@@ -1,11 +1,15 @@
-const CACHE = 'iharita-v70';
+const CACHE = 'iharita-v71';
 const ASSETS = [
+  '/',
+  '/index.html',
+  '/logo.svg',
+  '/manifest.json',
+  '/speedtest.js',
+  '/consent.js',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js',
-  '/speedtest.js',
-  '/consent.js'
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js'
 ];
 
 self.addEventListener('install', e => {
@@ -28,6 +32,7 @@ self.addEventListener('fetch', e => {
   const url = e.request.url;
   // Dinamik API'lar, hız testi veri akışları ve reklamları doğrudan ağa bırak
   if (!url.startsWith('http') ||
+      url.endsWith('/ads.txt') ||
       url.includes('supabase.co') ||
       url.includes('nominatim') ||
       url.includes('cloudflare.com') ||
@@ -35,6 +40,9 @@ self.addEventListener('fetch', e => {
       url.includes('googlesyndication') ||
       url.includes('doubleclick') ||
       url.includes('googleadservices') ||
+      url.includes('adtrafficquality') ||
+      url.includes('googletagservices') ||
+      url.includes('adservice.google') ||
       url.includes('ipwhois.app') ||
       url.includes('ipinfo.io') ||
       url.includes('freeipapi.com') ||
@@ -42,17 +50,25 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // HTML sayfaları (navigate) için her zaman önce ağdan güncel sürümü çek, çevrimdışıysa önbelleğe düş
+  // HTML sayfaları (navigate) için her zaman önce ağdan güncel sürümü çek ve önbelleği güncelle, çevrimdışıysa önbelleğe düş
   if (e.request.mode === 'navigate') {
     e.respondWith(
-      fetch(new Request(e.request.url, { cache: 'reload' })).catch(() => caches.match(e.request))
+      fetch(new Request(e.request.url, { cache: 'reload' })).then(res => {
+        if (res && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return res;
+      }).catch(() => caches.match(e.request).then(hit => hit || caches.match('/index.html')))
     );
     return;
   }
 
   e.respondWith(
     caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
-      if (res && res.status === 200 && ['unpkg.com', 'cdn.jsdelivr', 'basemaps.cartocdn', 'fonts.googleapis', 'fonts.gstatic'].some(d => res.url.includes(d))) {
+      const isSameOrigin = res && res.url && res.url.startsWith(self.location.origin);
+      const isTrustedCdn = res && res.url && ['unpkg.com', 'cdn.jsdelivr', 'basemaps.cartocdn', 'fonts.googleapis', 'fonts.gstatic'].some(d => res.url.includes(d));
+      if (res && res.status === 200 && (isSameOrigin || isTrustedCdn)) {
         const clone = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, clone));
       }
