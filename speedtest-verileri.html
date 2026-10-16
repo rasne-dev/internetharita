@@ -3,12 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com https://*.doubleclick.net https://*.adtrafficquality.google https://*.googletagservices.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.googleadservices.com https://*.adtrafficquality.google https://*.googletagservices.com https://*.gstatic.com; connect-src 'self' data: blob: https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com https://*.doubleclick.net https://*.adtrafficquality.google https://*.googletagservices.com https://*.gstatic.com; frame-src 'self' https://googleads.g.doubleclick.net https://*.doubleclick.net https://*.googlesyndication.com https://*.google.com https://*.adtrafficquality.google https://*.googletagservices.com; base-uri 'none'; object-src 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; frame-src 'none'; base-uri 'none'; object-src 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 
-<!-- Arama Motoru ve Çerez Tercihi (CC BY-NC-SA 4.0 gereği reklamsız sayfa) -->
+<!-- CC BY-NC-SA 4.0 gereği ticari olmayan, tamamen reklamsız sayfa -->
 <meta name="robots" content="noindex, follow">
-<script src="consent.js" defer></script>
 
 <title>Speedtest Açık Verileri — Dünya ve Türkiye İnternet Hız Sıralaması | İnternetHarita</title>
 <meta name="description" content="Speedtest by Ookla açık verileriyle Türkiye ve dünya ülkeleri internet hız sıralaması. 81 ilimizin ortalama hız ve ping dağılımı.">
@@ -477,25 +476,26 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
 
 <main class="container">
 
-  <div style="background:var(--surface2,#141c24);border:1px solid var(--border,#1e2d3d);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:12px;line-height:1.6;color:var(--text2,#8fa3b8);">
-    <b>Atıf ve lisans:</b> Bu sayfadaki sıralamalar Ookla'nın kamuya açık "Open Data" verisinden derlenmiştir (CC BY-NC-SA 4.0). Veri ticari olmayan amaçla, kaynak belirtilerek sunulur; sayfada reklam gösterilmez. Speedtest ve Ookla, Ookla, LLC'nin ticari markalarıdır; İnternetHarita ile bir bağı yoktur.
-  </div>
-
-  <!-- KÜNYE / AÇIK VERİ KAYNAK KUTUSU -->
-  <div class="source-box">
-    <div class="source-info">
-      <div class="source-icon">📡</div>
-      <div>
-        <div class="source-title">Veri Kaynağı: Speedtest by Ookla™ Açık Verileri</div>
-        <div class="source-sub">
-          Dünya çapında yapılan yüz milyonlarca tüketici hız testinin bağımsız analizi. Kamu erişimine açık ve tarafsızdır.
+  <!-- KÜNYE / AÇIK VERİ KAYNAK VE LİSANS ATIF KUTUSU -->
+  <div class="source-box" style="flex-direction:column;align-items:stretch;gap:14px;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+      <div class="source-info">
+        <div class="source-icon">📡</div>
+        <div>
+          <div class="source-title">Veri Kaynağı: Speedtest® by Ookla® Global Fixed and Mobile Network Performance Open Data</div>
+          <div class="source-sub" style="max-width:720px;margin-top:4px;line-height:1.55;">
+            Bu sayfadaki ülke ve il bazlı internet hız sıralamaları, Ookla'nın kamuya açık olarak paylaştığı <a href="https://www.ookla.com/ookla-for-good/open-data" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:underline;font-weight:600;">Ookla For Good™ Open Data</a> (<a href="https://github.com/teamookla/ookla-open-data" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:underline;">GitHub Veri Kümesi</a>) kaynağından derlenmiştir.
+          </div>
         </div>
       </div>
+      <div class="source-badges">
+        <span class="source-badge" style="border-color:rgba(34,197,94,0.4);color:var(--success);background:rgba(34,197,94,0.08);">🚫 Reklamsız &amp; Ticari Olmayan Sayfa</span>
+        <span class="source-badge">🗓️ Veri Dönemi: 2024 Q4 (Ookla Açık Veri Yayını)</span>
+        <span class="source-badge">📜 Lisans: CC BY-NC-SA 4.0</span>
+      </div>
     </div>
-    <div class="source-badges">
-      <span class="source-badge">🗓️ Veri Dönemi: 2024 Q4 (Son Ookla Açık Veri Yayını)</span>
-      <span class="source-badge">📍 Kapsam: 180+ Ülke & 81 İl</span>
-      <span class="source-badge">⚡ Test Hacmi: 1.500.000+ Ölçüm</span>
+    <div style="border-top:1px solid var(--border);padding-top:10px;font-size:11.5px;line-height:1.6;color:var(--text2);">
+      <strong>Resmi Kaynak Atfı ve Lisans Beyanı:</strong> Veriler <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:underline;font-weight:600;">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)</a> lisansı kapsamında, <strong>yalnızca ticari olmayan bilgilendirme ve kamu yararı amacıyla</strong> kaynak gösterilerek sunulmaktadır. Lisans koşullarına tam uyum gereği <strong>bu sayfada hiçbir reklam kodu, sponsorlu içerik veya ticari bileşen yer almaz</strong>. Speedtest® ve Ookla®, Ookla, LLC'nin tescilli ticari markalarıdır; İnternetHarita bağımsız bir topluluk projesidir ve Ookla, LLC ile resmi bir bağı yoktur.
     </div>
   </div>
 
@@ -607,6 +607,9 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
 <footer style="border-top:1px solid var(--border); padding:32px 20px; text-align:center; font-size:12px; color:var(--text3); margin-top:60px;">
   <div style="max-width:1000px; margin:0 auto; display:flex; flex-direction:column; gap:12px; align-items:center;">
     <div>&copy; 2026 <strong>İnternetHarita</strong> — Bağımsız Türkiye İnternet Altyapı Haritası ve Hız Atlası.</div>
+    <div style="max-width:780px; line-height:1.55; font-size:11.5px; color:var(--text2);">
+      Veri Kaynağı: <a href="https://www.ookla.com/ookla-for-good/open-data" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:underline;">Speedtest® by Ookla® Global Fixed and Mobile Network Performance Open Data</a> (<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:underline;">CC BY-NC-SA 4.0</a>). Ticari olmayan bilgilendirme amacıyla sunulur; bu sayfada reklam gösterilmez.
+    </div>
     <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center;">
       <a href="/" style="color:var(--text2); text-decoration:none;">Canlı Harita</a>
       <a href="/speedtest-verileri.html" style="color:var(--accent); text-decoration:none; font-weight:600;">Speedtest Verileri</a>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://openfpcdn.io https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com https://*.doubleclick.net https://*.adtrafficquality.google https://*.googletagservices.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://*.openstreetmap.org https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.googleadservices.com https://*.adtrafficquality.google https://*.googletagservices.com https://*.gstatic.com; connect-src 'self' https://vpnaxxxoiomorcvloend.supabase.co https://speed.cloudflare.com https://*.cloudflare.com https://nominatim.openstreetmap.org https://turkiyeapi.dev https://api.turkiyeapi.dev https://openfpcdn.io https://ipwhois.app https://ipinfo.io https://*.freeipapi.com https://free.freeipapi.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googleadservices.com https://*.doubleclick.net https://*.adtrafficquality.google https://*.googletagservices.com https://*.gstatic.com; frame-src 'self' https://googleads.g.doubleclick.net https://*.doubleclick.net https://*.googlesyndication.com https://*.google.com https://*.adtrafficquality.google https://*.googletagservices.com; worker-src 'self' blob:; manifest-src 'self' data:; base-uri 'none'; object-src 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://openfpcdn.io https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.google.com.tr https://*.googleadservices.com https://*.doubleclick.net https://*.2mdn.net https://*.adtrafficquality.google https://*.googletagservices.com https://*.googletagmanager.com https://*.google-analytics.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data: blob:; connect-src 'self' https: data: blob:; frame-src 'self' https: data: blob:; worker-src 'self' blob:; manifest-src 'self' data:; base-uri 'none'; object-src 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- Google AdSense Doğrulama ve Reklam Kodu -->
 <meta name="google-adsense-account" content="ca-pub-9484247825024770">
@@ -173,7 +173,7 @@
   --nav-h: 56px;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font-body);-webkit-font-smoothing:antialiased;}
+html,body{min-height:100%;overflow-x:hidden;overflow-y:auto;background:var(--bg);color:var(--text);font-family:var(--font-body);-webkit-font-smoothing:antialiased;scroll-behavior:smooth;}
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
@@ -345,53 +345,55 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
 .page{position:fixed;inset:0;top:var(--nav-h);display:none;} .page.active{display:flex;}
 
 /* ===== MAP PAGE ===== */
-#page-harita{flex-direction:column;overflow-y:auto;overflow-x:hidden;height:calc(100vh - var(--nav-h));position:relative;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;} 
-.map-view-container{position:relative;width:100%;height:calc(100vh - var(--nav-h));min-height:480px;flex-shrink:0;overflow:hidden;}
+#page-harita{position:relative;inset:auto;top:auto;margin-top:var(--nav-h);flex-direction:column;overflow:visible;height:auto;min-height:calc(100vh - var(--nav-h));} 
+.map-view-container{position:relative;width:100%;height:calc(82vh - var(--nav-h));min-height:460px;max-height:760px;flex-shrink:0;overflow:hidden;border-bottom:1px solid var(--border);}
 #map{width:100%;height:100%;z-index:1;min-height:0;min-width:0;}
 .leaflet-container{background:#0d1318!important;}
 .leaflet-pane,.leaflet-map-pane{will-change:transform;}
 
-/* ===== MAP LOADING OVERLAY ===== */
+/* ===== MAP LOADING OVERLAY (Engelleyici olmayan kompakt durum rozeti) ===== */
 .map-loading-overlay {
-  position: absolute; inset: 0; z-index: 850;
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 850;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(7, 11, 15, 0.82);
-  backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
-  opacity: 1; transition: opacity 0.35s ease;
-  pointer-events: all;
+  background: transparent;
+  opacity: 1; transition: opacity 0.25s ease;
+  pointer-events: none;
 }
 .map-loading-overlay.hidden {
-  opacity: 0; pointer-events: none;
+  opacity: 0; pointer-events: none; display: none;
 }
 .mlo-box {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; padding: 22px 28px; max-width: 380px; width: 90%;
-  text-align: center; box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+  background: rgba(13, 19, 24, 0.92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border2);
+  border-radius: 999px; padding: 8px 16px; max-width: 92vw;
+  display: flex; align-items: center; gap: 10px;
+  text-align: left; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
 }
 .mlo-spinner {
-  width: 36px; height: 36px; margin: 0 auto 14px;
-  border: 3px solid rgba(0, 212, 255, 0.2); border-top-color: var(--accent);
-  border-radius: 50%; animation: mloSpin 0.9s linear infinite;
+  width: 16px; height: 16px; flex-shrink: 0; margin: 0;
+  border: 2px solid rgba(0, 212, 255, 0.25); border-top-color: var(--accent);
+  border-radius: 50%; animation: mloSpin 0.8s linear infinite;
 }
 @keyframes mloSpin { to { transform: rotate(360deg); } }
 .mlo-title {
-  font-size: 14px; font-weight: 700; color: var(--text);
-  margin-bottom: 6px; font-family: var(--font-body);
+  font-size: 11.5px; font-weight: 700; color: var(--text);
+  margin: 0; font-family: var(--font-body); white-space: nowrap;
 }
 .mlo-desc {
-  font-size: 11px; color: var(--text2); line-height: 1.5; margin-bottom: 14px;
+  display: none; font-size: 10.5px; color: var(--text2); line-height: 1.4; margin: 0;
 }
 .mlo-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 18px; background: var(--surface2); border: 1px solid var(--border2);
-  color: var(--accent); border-radius: 7px; font-size: 11px; font-weight: 600;
-  cursor: pointer; transition: all 0.2s; font-family: var(--font-body);
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--accent); border-radius: 999px; font-size: 10.5px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; font-family: var(--font-body); white-space: nowrap;
 }
 .mlo-btn:hover {
   background: var(--accent-dim); border-color: var(--accent);
 }
-html.light .map-loading-overlay { background: rgba(238, 242, 246, 0.82); }
-html.light .mlo-box { background: #ffffff; border-color: #d0d7de; box-shadow: 0 12px 36px rgba(0,0,0,0.15); }
+html.light .map-loading-overlay { background: transparent; }
+html.light .mlo-box { background: rgba(255, 255, 255, 0.95); border-color: #d0d7de; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
 
 /* ===== SIDEBAR YENİ TASARIM ===== */
 .map-sidebar {
@@ -749,7 +751,7 @@ html.light .scroll-to-guide-btn:hover {
 }
 .landing-top-bar {
   position: sticky;
-  top: 0;
+  top: var(--nav-h);
   z-index: 100;
   display: flex;
   align-items: center;
@@ -2528,7 +2530,8 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
 
 /* ===== UX / ERİŞİLEBİLİRLİK İYİLEŞTİRMELERİ (yalnızca ekleme, mevcut kurallar korunur) ===== */
 /* Mobil tarayıcılarda 100vh adres çubuğunu hesaba katmaz → harita altı/lejant kesiliyordu. dvh destekleyenlerde düzelir. */
-#page-harita, .map-view-container { height: calc(100dvh - var(--nav-h)); }
+#page-harita { min-height: calc(100dvh - var(--nav-h)); height: auto; }
+.map-view-container { height: calc(82dvh - var(--nav-h)); }
 .mod-auth { min-height: calc(100dvh - 56px - 40px); }
 /* iOS Safari, 16px'ten küçük alanlara odaklanınca sayfayı otomatik yakınlaştırıyordu */
 @media (max-width: 768px) {
@@ -2549,15 +2552,18 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
 .modal-close, .speedtest-close { cursor: pointer; }
 .modal-close:hover, .speedtest-close:hover { color: var(--text); }
 </style>
-<!-- Clickjacking koruması: HTTP frame-ancestors başlığı GitHub Pages'te ayarlanamadığı için JS yedeği -->
+<!-- Clickjacking koruması: Google AdSense inceleme ve Auto Ads önizleme iframe'lerinde sayfayı gizleme -->
 <script>
   (function(){
     try {
       if (window.top !== window.self) {
-        document.documentElement.style.visibility = 'hidden';
-        window.top.location.href = window.self.location.href;
+        var ref = (document.referrer || '').toLowerCase();
+        var isGooglePreview = /google\.|googlesyndication\.|doubleclick\.|adtrafficquality\.|adsense/i.test(ref);
+        if (!isGooglePreview) {
+          window.top.location.href = window.self.location.href;
+        }
       }
-    } catch(e) { document.documentElement.style.visibility = 'hidden'; }
+    } catch(e) {}
   })();
 </script>
 <!-- Tema erken init — flash önleme -->
@@ -2714,14 +2720,14 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
 <div id="page-harita" class="page active">
   <div class="map-view-container" id="mapViewContainer">
     <div id="map" tabindex="-1" aria-label="Türkiye internet altyapı haritası"></div>
-  <div id="mapLoadingOverlay" class="map-loading-overlay">
+  <div id="mapLoadingOverlay" class="map-loading-overlay hidden" aria-live="polite">
     <div class="mlo-box">
       <div class="mlo-spinner" id="mloSpinner"></div>
-      <div class="mlo-title" id="mloTitle">Harita Yükleniyor...</div>
-      <div class="mlo-desc" id="mloDesc">Altyapı verileri ve harita katmanları hazırlanıyor</div>
-      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px;">
+      <div class="mlo-title" id="mloTitle">Canlı ölçümler senkronize ediliyor</div>
+      <div class="mlo-desc" id="mloDesc">Bölgesel altyapı katmanları güncelleniyor</div>
+      <div style="display:flex;gap:6px;align-items:center;">
         <button class="mlo-btn" id="mloRetryBtn" onclick="retryLoadMap()" style="display:none;">↺ Yeniden Dene</button>
-        <button class="mlo-btn" id="mloDismissBtn" onclick="hideMapLoading()" style="display:none;background:var(--surface2);color:var(--text2);border:1px solid var(--border);">✕ Haritayı Aç</button>
+        <button class="mlo-btn" id="mloDismissBtn" onclick="hideMapLoading()" style="display:none;background:var(--surface2);color:var(--text2);border:1px solid var(--border);">✕ Kapat</button>
       </div>
     </div>
   </div>
@@ -3043,6 +3049,74 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
       </div>
     </section>
 
+    <!-- BÖLÜM 2C: TEKNİK KARŞILAŞTIRMA TABLOSU VE ÖLÇÜM METODOLOJİSİ -->
+    <section class="landing-section" id="metodoloji">
+      <div class="landing-section-header">
+        <span class="landing-tag">Teknik Karşılaştırma &amp; Metodoloji</span>
+        <h2 class="landing-title">Türkiye'de Sabit İnternet Teknolojileri: Hız, Gecikme ve Kapasite</h2>
+        <p class="landing-lead">
+          İnternet aboneliği seçerken yalnızca vadedilen paket hızına değil, binanıza ulaşan fiziksel altyapı mimarisine bakmak gerekir. Aşağıdaki tablo, Türkiye'de yaygın kullanılan 5 sabit erişim teknolojisinin saha ölçümlerindeki gerçek performans sınırlarını özetler:
+        </p>
+      </div>
+
+      <div style="overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:20px;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:620px;text-align:left;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);background:var(--surface2);font-family:var(--font-mono);font-size:11px;color:var(--text2);text-transform:uppercase;">
+              <th style="padding:12px 16px;">Altyapı Türü</th>
+              <th style="padding:12px 16px;">Fiziksel İletim</th>
+              <th style="padding:12px 16px;">Tipik İndirme</th>
+              <th style="padding:12px 16px;">Tipik Yükleme</th>
+              <th style="padding:12px 16px;">Ort. Ping</th>
+              <th style="padding:12px 16px;">Mesafe Etkisi</th>
+            </tr>
+          </thead>
+          <tbody style="color:var(--text2);line-height:1.5;">
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:12px 16px;font-weight:700;color:#c084fc;">FTTH (Eve Kadar Fiber)</td>
+              <td style="padding:12px 16px;">Daire içine kadar cam fiber optik (GPON)</td>
+              <td style="padding:12px 16px;font-family:var(--font-mono);color:var(--text);">100 – 1000 Mbps</td>
+              <td style="padding:12px 16px;font-family:var(--font-mono);color:var(--text);">20 – 1000 Mbps</td>
+              <td style="padding:12px 16px;font-family:var(--font-mono);color:var(--success);">2 – 8 ms</td>
+              <td style="padding:12px 16px;">Etkilenmez</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:12px 16px;font-weight:700;color:#a855f7;">FTTB (Binaya Kadar Fiber)</td>
+              <td style="padding:12px 16px;">Binaya fiber, daireye CAT5e/CAT6 Ethernet</td>
+              <td style="padding:12px 16px;font-family:var(--font-mono);color:var(--text);">100 – 1000 Mbps</td>
+              <td style="padding:12px 16px;font-family:var(--font-mono);color:var(--text);">20 – 100 Mbps</td>
+              <td style="padding:12px 16px;font-family:var(--font-mono);color:var(--success);">3 – 10 ms</td>
+              <td style="padding:12px 16px;">Çok düşük (bina içi)</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:12px 16px;font-weight:700;color:#22d3ee;">VDSL2 (FTTC)</td>
+              <td style="padding:12px 16px;">Saha dolabına fiber, binaya bakır telefon kablosu</td>
+              <td style="padding:12px 16px;font-family:var(--font-mono);color:var(--text);">24 – 100 Mbps</td>
+              <td style="padding:12px 16px;font-family:var(--font-mono);color:var(--text);">6 – 20 Mbps</td>
+              <td style="padding:12px 16px;font-family:var(--font-mono);color:var(--warn);">8 – 22 ms</td>
+              <td style="padding:12px 16px;">300m sonrası hız düşer</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:12px 16px;font-weight:700;color:#60a5fa;">Kablonet (DOCSIS 3.0)</td>
+              <td style="padding:12px 16px;">Sokağa fiber, daireye koaksiyel anten kablosu</td>
+              <td style="padding:12px 16px;font-family:var(--font-mono);color:var(--text);">25 – 200 Mbps</td>
+              <td style="padding:12px 16px;font-family:var(--font-mono);color:var(--text);">5 – 20 Mbps</td>
+              <td style="padding:12px 16px;font-family:var(--font-mono);color:var(--warn);">10 – 25 ms</td>
+              <td style="padding:12px 16px;">Düşük (bölgesel yoğunluk etkili)</td>
+            </tr>
+            <tr>
+              <td style="padding:12px 16px;font-weight:700;color:#f87171;">ADSL / ADSL2+</td>
+              <td style="padding:12px 16px;">Santralden eve tamamen bakır telefon hattı</td>
+              <td style="padding:12px 16px;font-family:var(--font-mono);color:var(--text);">4 – 16 Mbps</td>
+              <td style="padding:12px 16px;font-family:var(--font-mono);color:var(--text);">0.8 – 2 Mbps</td>
+              <td style="padding:12px 16px;font-family:var(--font-mono);color:var(--danger);">20 – 60 ms</td>
+              <td style="padding:12px 16px;">Yüksek (santral mesafesine bağlı)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- BÖLÜM 3: SIKÇA SORULAN SORULAR (FAQ) -->
     <section class="landing-section" id="faq">
       <div class="landing-section-header">
@@ -3210,7 +3284,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
     <button class="sort-btn" id="sortMem" onclick="sortRegions('mem')">😊 Memnuniyet</button>
     <button class="sort-btn" id="sortCount" onclick="sortRegions('count')">📊 Ölçüm Sayısı</button>
   </div>
-  <div class="regions-grid" id="regionsGrid"><div class="loading-text loading-dots">Yükleniyor</div></div>
+  <div class="regions-grid" id="regionsGrid"><div class="loading-text">Türkiye'nin 7 coğrafi bölgesi için fiber kapsama, ortalama indirme/yükleme hızı ve memnuniyet analizleri harita verileriyle birlikte hesaplanır.</div></div>
 
   <!-- 3. İNTERAKTİF BÖLGE DETAYI & 7 BÖLGE KARŞILAŞTIRMA MATRİSİ -->
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%, 300px),1fr));gap:16px;margin-top:14px;">
@@ -3260,7 +3334,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
   <div class="stats-top" id="sumGrid"></div>
   <div class="stats-grid">
     <div style="display:flex;flex-direction:column;gap:14px;">
-      <div class="stat-card"><div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;"><span>ISS Memnuniyet Sıralaması</span><span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);font-weight:normal;">min. 5 ölçüm</span></div><div id="issRankList" style="max-height:330px;overflow-y:auto;padding-right:12px;scrollbar-gutter:stable;"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
+      <div class="stat-card"><div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;"><span>ISS Memnuniyet Sıralaması</span><span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);font-weight:normal;">min. 5 ölçüm</span></div><div id="issRankList" style="max-height:330px;overflow-y:auto;padding-right:12px;scrollbar-gutter:stable;"><div class="loading-text">En az 5 doğrulanan ölçüme sahip sağlayıcıların Bayes ağırlıklı kullanıcı memnuniyet sıralaması.</div></div></div>
       <div class="stat-card">
         <div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
           <span id="activeIlTitle">En Hızlı İller</span>
@@ -3269,7 +3343,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
             <button class="sort-btn" id="ilSortCountBtn" style="padding:2px 7px;font-size:9px;text-transform:none;" onclick="setIlSortMode('count')">📊 Test</button>
           </div>
         </div>
-        <div id="activeIlList"><div class="loading-text loading-dots">Yükleniyor</div></div>
+        <div id="activeIlList"><div class="loading-text">İllere göre ortalama indirme hızı ve doğrulanmış ölçüm sayısı sıralaması.</div></div>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;">
@@ -3281,20 +3355,20 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
           </div>
           <select class="fs" id="speedRankIlFilter" style="width:auto;max-width:130px;padding:3px 6px;font-size:9px;text-transform:none;letter-spacing:0;font-weight:600;" onchange="renderSpeedRankList(this.value)"><option value="">Tüm İller</option></select>
         </div>
-        <div id="speedRankList"><div class="loading-text loading-dots">Yükleniyor</div></div>
+        <div id="speedRankList"><div class="loading-text">Mahalle ve ilçe bazında en yüksek ortalama indirme hızına sahip lokasyonlar.</div></div>
         <div style="font-size:9px;color:var(--text3);margin-top:8px;font-family:var(--font-mono);line-height:1.4;border-top:1px dashed var(--border);padding-top:6px;">ℹ️ Mahalle bazlı sıralamadır; sıralamaya girmek için ilgili mahallede en az 2 onaylı ölçüm gereklidir.</div>
       </div>
-      <div class="stat-card"><div class="stat-title">Hız Bandı Dağılımı</div><div id="speedBandChart"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
+      <div class="stat-card"><div class="stat-title">Hız Bandı Dağılımı</div><div id="speedBandChart"><div class="loading-text">Türkiye geneli ölçümlerin Mbps hız aralıklarına göre yüzdesel dağılımı.</div></div></div>
     </div>
     <div class="stat-card" style="grid-column:1/-1">
       <div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
         <span>🏆 Operatör Deneyim & Kronik Sorun Karnesi</span>
         <span style="font-size:9px;color:var(--text3);font-family:var(--font-mono);font-weight:normal;">Topluluk Deneyim Etiketleri Analizi</span>
       </div>
-      <div id="operatorExperienceReport"><div class="loading-text loading-dots">Yükleniyor</div></div>
+      <div id="operatorExperienceReport"><div class="loading-text">Kullanıcıların bildirdiği düşük ping, stabil bağlantı, akşam yavaşlaması ve kopma etiketlerinin sağlayıcı bazlı analizi.</div></div>
     </div>
-    <div class="stat-card" style="grid-column:1/-1"><div class="stat-title">Bağlantı Türü Dağılımı</div><div id="connChart"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
-    <div class="stat-card" style="grid-column:1/-1"><div id="issSpeedTrend" class="trend-section"><div class="loading-text loading-dots">Yükleniyor</div></div></div>
+    <div class="stat-card" style="grid-column:1/-1"><div class="stat-title">Bağlantı Türü Dağılımı</div><div id="connChart"><div class="loading-text">Fiber, VDSL, Kablonet (DOCSIS) ve ADSL bağlantı türlerinin toplam ölçümler içindeki payı.</div></div></div>
+    <div class="stat-card" style="grid-column:1/-1"><div id="issSpeedTrend" class="trend-section"><div class="loading-text">İnternet servis sağlayıcılarının Türkiye geneli ortalama indirme hızı karşılaştırması.</div></div></div>
   </div>
 
   <footer style="margin-top:32px; padding:24px 12px; border-top:1px solid var(--border); text-align:center; font-size:12px; color:var(--text3);">
@@ -6744,12 +6818,14 @@ function showPage(id, updateUrl = true) {
 
   // Lejant ve zoom-hint sadece harita sayfasında görünsün
   const onlyMap = id === 'harita';
+  document.body.style.overflow = onlyMap ? '' : 'hidden';
   const lb = document.getElementById('mapLegendBox'); if (lb) lb.style.display = onlyMap ? '' : 'none';
   const zh = document.getElementById('zoomHint'); if (zh) zh.style.display = onlyMap ? '' : 'none';
   const sb = document.getElementById('mapSidebar'); if (sb) sb.style.display = onlyMap ? '' : 'none';
   const st = document.getElementById('sidebarToggle'); if (st) st.style.display = onlyMap ? '' : 'none';
   const gb = document.getElementById('scrollToGuideBtn'); if (gb) gb.style.display = onlyMap ? '' : 'none';
   if (id === 'harita') {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     document.getElementById('page-harita')?.scrollTo({ top: 0, behavior: 'smooth' });
   }
   setTimeout(async () => { 
@@ -6762,17 +6838,17 @@ function showPage(id, updateUrl = true) {
 }
 
 function scrollToEditorial() {
-  const c = document.getElementById('page-harita');
   const target = document.getElementById('landingInfo');
-  if (c && target) {
-    c.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+  if (target) {
+    const navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 56;
+    const top = target.getBoundingClientRect().top + window.pageYOffset - navH;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    document.getElementById('page-harita')?.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
   }
 }
 function scrollToMapTop() {
-  const c = document.getElementById('page-harita');
-  if (c) {
-    c.scrollTo({ top: 0, behavior: 'smooth' });
-  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.getElementById('page-harita')?.scrollTo({ top: 0, behavior: 'smooth' });
 }
 window.scrollToEditorial = scrollToEditorial;
 window.scrollToMapTop = scrollToMapTop;
@@ -6819,20 +6895,15 @@ function showMapLoading() {
   const btn = document.getElementById('mloRetryBtn');
   const dismissBtn = document.getElementById('mloDismissBtn');
   if (spinner) spinner.style.display = 'block';
-  if (title) { title.textContent = 'Harita Yükleniyor...'; title.style.color = 'var(--text)'; }
-  if (desc) desc.textContent = 'Altyapı verileri ve harita katmanları hazırlanıyor';
+  if (title) { title.textContent = 'Canlı ölçümler senkronize ediliyor'; title.style.color = 'var(--text)'; }
+  if (desc) desc.textContent = 'Bölgesel altyapı katmanları güncelleniyor';
   if (btn) btn.style.display = 'none';
   if (dismissBtn) dismissBtn.style.display = 'none';
 
   if (mapLoadingTimeout) clearTimeout(mapLoadingTimeout);
   mapLoadingTimeout = setTimeout(() => {
-    if (!overlay.classList.contains('hidden')) {
-      if (title) { title.textContent = 'Bağlantı Bekleniyor'; title.style.color = 'var(--warn)'; }
-      if (desc) desc.innerHTML = 'Harita verileri yüklenirken gecikme yaşandı.<br>Lütfen bekleyin veya yeniden deneyin.';
-      if (btn) btn.style.display = 'inline-flex';
-      if (dismissBtn) dismissBtn.style.display = 'inline-flex';
-    }
-  }, 8000);
+    hideMapLoading();
+  }, 4000);
 }
 
 function hideMapLoading() {
@@ -6976,10 +7047,11 @@ async function initMainMap() {
 
   try {
     await loadPins();
-    hideMapLoading();
     handleUrlParamsOnStartup();
   } catch(e) {
     console.error('loadPins error in initMainMap:', e);
+  } finally {
+    hideMapLoading();
   }
 }
 
@@ -12489,31 +12561,9 @@ function closeWelcomeModal(markSeen) {
 }
 function checkFirstVisitWelcome() {
   try {
-    // 1. Asla bir iframe içinde (örn. AdSense reklam ayarları önizlemesi) otomatik modal açma
-    if (window.self !== window.top) return;
-
-    // 2. Arama motoru ve AdSense botlarını kontrol et
-    const ua = (navigator.userAgent || '').toLowerCase();
-    if (/bot|google|crawler|spider|robot|crawling|headless|lighthouse/i.test(ua)) return;
-
-    // 3. AdSense veya önizleme URL parametreleri varsa açma
-    const s = window.location.search.toLowerCase();
-    if (s.includes('google') || s.includes('adsense') || s.includes('preview')) return;
-
-    if (!ihStorage.get('ih_welcome_seen')) {
-      setTimeout(() => {
-        const rawHash = (window.location.hash || '').replace(/^#\/?/, '').trim().toLowerCase();
-        const hasSpecificRoute = rawHash && rawHash !== 'harita' && rawHash !== 'tur' && rawHash !== 'rehber-tur';
-        if (!hasSpecificRoute && window.self === window.top) {
-          // Çerez bandı açıksa önce onu bekle; iki pencere aynı anda haritayı örtmesin
-          let waited = 0;
-          const tryOpen = () => {
-            if (document.getElementById('ihConsent') && waited < 60000) { waited += 1000; return setTimeout(tryOpen, 1000); }
-            if (!ihStorage.get('ih_welcome_seen')) openWelcomeModal();
-          };
-          tryOpen();
-        }
-      }, 700);
+    const rawHash = (window.location.hash || '').replace(/^#\/?/, '').trim().toLowerCase();
+    if (rawHash === 'tur' || rawHash === 'rehber-tur' || rawHash === 'hosgeldin') {
+      openWelcomeModal();
     }
   } catch(e) {}
 }

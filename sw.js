@@ -1,4 +1,4 @@
-const CACHE = 'iharita-v72';
+const CACHE = 'iharita-v73';
 const ASSETS = [
   '/',
   '/index.html',
@@ -30,25 +30,14 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
 
   const url = e.request.url;
-  // Dinamik API'lar, hız testi veri akışları ve reklamları doğrudan ağa bırak
-  if (!url.startsWith('http') ||
-      url.endsWith('/ads.txt') ||
-      url.includes('supabase.co') ||
-      url.includes('nominatim') ||
-      url.includes('cloudflare.com') ||
-      url.includes('openfpcdn.io') ||
-      url.includes('googlesyndication') ||
-      url.includes('doubleclick') ||
-      url.includes('googleadservices') ||
-      url.includes('adtrafficquality') ||
-      url.includes('googletagservices') ||
-      url.includes('adservice.google') ||
-      url.includes('ipwhois.app') ||
-      url.includes('ipinfo.io') ||
-      url.includes('freeipapi.com') ||
-      url.includes('turkiyeapi.dev')) {
-    return;
-  }
+  if (!url.startsWith('http')) return;
+
+  const isSameOrigin = url.startsWith(self.location.origin);
+  const isStaticCdn = ['unpkg.com/leaflet', 'unpkg.com/h3-js', 'cdn.jsdelivr.net/npm/@supabase', 'fonts.googleapis.com', 'fonts.gstatic.com'].some(d => url.includes(d));
+
+  // Üçüncü taraf reklam (AdSense, DoubleClick, FundingChoices), veritabanı ve hız testi isteklerine hiç dokunma
+  if (!isSameOrigin && !isStaticCdn) return;
+  if (url.endsWith('/ads.txt') || url.endsWith('/robots.txt') || url.endsWith('/sitemap.xml')) return;
 
   // HTML sayfaları (navigate) için her zaman önce ağdan güncel sürümü çek ve önbelleği güncelle, çevrimdışıysa önbelleğe düş
   if (e.request.mode === 'navigate') {
@@ -59,20 +48,18 @@ self.addEventListener('fetch', e => {
           caches.open(CACHE).then(c => c.put(e.request, clone));
         }
         return res;
-      }).catch(() => caches.match(e.request).then(hit => hit || caches.match('/index.html')))
+      }).catch(() => caches.match(e.request).then(hit => hit || caches.match('/index.html') || Response.error()))
     );
     return;
   }
 
   e.respondWith(
     caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
-      const isSameOrigin = res && res.url && res.url.startsWith(self.location.origin);
-      const isTrustedCdn = res && res.url && ['unpkg.com', 'cdn.jsdelivr', 'basemaps.cartocdn', 'fonts.googleapis', 'fonts.gstatic'].some(d => res.url.includes(d));
-      if (res && res.status === 200 && (isSameOrigin || isTrustedCdn)) {
+      if (res && res.status === 200 && (isSameOrigin || isStaticCdn)) {
         const clone = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, clone));
       }
       return res;
-    }).catch(() => caches.match(e.request)))
+    }).catch(() => caches.match(e.request).then(r => r || Response.error())))
   );
 });
