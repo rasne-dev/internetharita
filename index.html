@@ -2596,7 +2596,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
           <text x="50" y="84" font-family="'Space Mono', monospace, sans-serif" font-size="34" font-weight="900" fill="#070b0f" text-anchor="middle" letter-spacing="3">İH</text>
         </svg>
       </div>
-      <h1 class="logo-text" style="margin:0;display:inline-block;" title="İnternet Altyapı Haritası &amp; Altyapı Sorgulama">internet<span>Harita</span></h1>
+      <div class="logo-text" style="margin:0;display:inline-block;" title="İnternet Altyapı Haritası &amp; Altyapı Sorgulama">internet<span>Harita</span></div>
     </div>
     <div class="nav-right">
       <label class="maintenance-toggle" id="headerMaintenanceToggle" style="display:none; padding: 4px 8px; height: 30px;">
@@ -3003,6 +3003,43 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
           <span>📖 Daha Fazlası İçin Kapsamlı Altyapı Rehberi</span>
           <span>&rarr;</span>
         </a>
+      </div>
+    </section>
+
+    <!-- BÖLÜM 2B: HARİTA NASIL OKUNUR (özgün editoryal içerik) -->
+    <section class="landing-section" id="nasil-okunur">
+      <div class="landing-section-header">
+        <span class="landing-tag">Nasıl Okunur</span>
+        <h2 class="landing-title">Mahalle Bazlı İnternet Haritasını Doğru Okumak</h2>
+        <p class="landing-lead">
+          Haritadaki her renkli altıgen, o bölgede kullanıcıların kendi bağlantılarından yaptığı ölçümlerin ortalamasıdır. Aşağıdaki notlar, bu verilerden doğru sonuç çıkarmanıza yardımcı olur.
+        </p>
+      </div>
+      <div class="landing-grid-2">
+        <div class="landing-card">
+          <h3 class="landing-card-title">Taşınmadan önce neye bakmalı?</h3>
+          <p class="landing-card-text">
+            Yeni bir eve taşınmayı düşünüyorsanız önce "Bağlantı Türü" filtresinden Fiber'i seçip aynı sokağa yakınlaşın. Altıgen yoksa o sokakta henüz ölçüm yapılmamış demektir; bu, altyapının olmadığı anlamına gelmez. Komşu mahallelerdeki Fiber ölçümleri altyapının yakında olduğuna dair ipucu verir, ancak bina girişine fiber çekilip çekilmediğini yalnızca sağlayıcınızın adres sorgusu kesinleştirir.
+          </p>
+        </div>
+        <div class="landing-card">
+          <h3 class="landing-card-title">Paket hızı ile gerçek hız neden farklıdır?</h3>
+          <p class="landing-card-text">
+            Faturadaki hız teorik üst sınırdır. Gerçek hızı Wi-Fi bandı (2,4 GHz yerine 5 GHz), modemin yaşı, cihazın ağ kartı ve akşam saatlerindeki yoğunluk belirler. Bu yüzden haritadaki ölçümlerin kablolu veya 5 GHz bağlantıyla yapılması istenir; tek bir düşük ölçüm altyapının zayıf olduğunu değil, ölçüm koşullarının kötü olduğunu gösterebilir.
+          </p>
+        </div>
+        <div class="landing-card">
+          <h3 class="landing-card-title">Memnuniyet puanı neyi anlatır?</h3>
+          <p class="landing-card-text">
+            Hız tek başına yetmez: sık kopma, akşam yavaşlaması veya zor ulaşılan müşteri desteği puanı düşürebilir. Bu yüzden her ölçüme 1–10 arası puan ve hazır deneyim etiketleri eklenir. İstatistikler sayfasında az sayıda oyla şişmiş puanların sıralamayı bozmaması için ağırlıklı bir hesaplama kullanılır.
+          </p>
+        </div>
+        <div class="landing-card">
+          <h3 class="landing-card-title">Veriler nasıl denetlenir?</h3>
+          <p class="landing-card-text">
+            Teknik olarak mümkün olmayan değerler (örneğin ADSL için çok yüksek hız), bölge ortalamasından aşırı sapanlar ve kısa sürede çok sayıda gelen girişler otomatik olarak incelemeye alınır ve moderatör onayından sonra yayınlanır. Konumlar yaklaşık 100 metre kaydırılarak gösterilir; kimse evinizin kesin adresini göremez.
+          </p>
+        </div>
       </div>
     </section>
 
@@ -12468,7 +12505,13 @@ function checkFirstVisitWelcome() {
         const rawHash = (window.location.hash || '').replace(/^#\/?/, '').trim().toLowerCase();
         const hasSpecificRoute = rawHash && rawHash !== 'harita' && rawHash !== 'tur' && rawHash !== 'rehber-tur';
         if (!hasSpecificRoute && window.self === window.top) {
-          openWelcomeModal();
+          // Çerez bandı açıksa önce onu bekle; iki pencere aynı anda haritayı örtmesin
+          let waited = 0;
+          const tryOpen = () => {
+            if (document.getElementById('ihConsent') && waited < 60000) { waited += 1000; return setTimeout(tryOpen, 1000); }
+            if (!ihStorage.get('ih_welcome_seen')) openWelcomeModal();
+          };
+          tryOpen();
         }
       }, 700);
     }
