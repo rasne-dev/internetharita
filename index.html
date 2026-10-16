@@ -346,7 +346,7 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
 
 /* ===== MAP PAGE ===== */
 #page-harita{position:relative;inset:auto;top:auto;margin-top:var(--nav-h);flex-direction:column;overflow:visible;height:auto;min-height:calc(100vh - var(--nav-h));} 
-.map-view-container{position:relative;width:100%;height:calc(82vh - var(--nav-h));min-height:460px;max-height:760px;flex-shrink:0;overflow:hidden;border-bottom:1px solid var(--border);}
+.map-view-container{position:relative;width:100%;height:calc(100vh - var(--nav-h));min-height:480px;flex-shrink:0;overflow:hidden;border-bottom:1px solid var(--border);}
 #map{width:100%;height:100%;z-index:1;min-height:0;min-width:0;}
 .leaflet-container{background:#0d1318!important;}
 .leaflet-pane,.leaflet-map-pane{will-change:transform;}
@@ -2531,7 +2531,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
 /* ===== UX / ERİŞİLEBİLİRLİK İYİLEŞTİRMELERİ (yalnızca ekleme, mevcut kurallar korunur) ===== */
 /* Mobil tarayıcılarda 100vh adres çubuğunu hesaba katmaz → harita altı/lejant kesiliyordu. dvh destekleyenlerde düzelir. */
 #page-harita { min-height: calc(100dvh - var(--nav-h)); height: auto; }
-.map-view-container { height: calc(82dvh - var(--nav-h)); }
+.map-view-container { height: calc(100dvh - var(--nav-h)); }
 .mod-auth { min-height: calc(100dvh - 56px - 40px); }
 /* iOS Safari, 16px'ten küçük alanlara odaklanınca sayfayı otomatik yakınlaştırıyordu */
 @media (max-width: 768px) {
@@ -2551,6 +2551,64 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
 .settings-item-hint, .kvkk-detail, .sr-label, .ty-stat-label, .rstat-label, .sum-label { font-size: max(10px, 1em); }
 .modal-close, .speedtest-close { cursor: pointer; }
 .modal-close:hover, .speedtest-close:hover { color: var(--text); }
+
+/* ===== 1. HIZ & PAKET UYGUNLUK HESAPLAYICI VE 3. FİBER DİLEKÇE OLUŞTURUCU ===== */
+.tool-panel-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 24px; box-shadow: 0 8px 28px rgba(0,0,0,0.16);
+}
+html.light .tool-panel-card { background: #ffffff; border-color: #d0d7de; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
+.calc-group-label {
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: block;
+}
+.calc-options-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.calc-opt-btn {
+  flex: 1 1 160px; padding: 10px 14px; border-radius: 9px;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text2);
+  font-size: 12.5px; font-weight: 600; font-family: var(--font-body);
+  cursor: pointer; transition: all 0.18s; text-align: left; display: flex; align-items: center; gap: 8px;
+}
+.calc-opt-btn:hover { border-color: var(--border2); color: var(--text); }
+.calc-opt-btn.active {
+  background: var(--accent-dim); border-color: var(--accent); color: var(--accent);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.12);
+}
+.calc-result-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px;
+  margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);
+}
+.calc-stat-box {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px;
+}
+.calc-stat-val { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--accent); }
+.calc-stat-lbl { font-size: 11px; color: var(--text2); margin-top: 4px; }
+.petition-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 16px;
+}
+.petition-preview {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 16px; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.65;
+  color: var(--text); white-space: pre-wrap; max-height: 310px; overflow-y: auto;
+}
+html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; }
+
+/* ===== 2. BÖLGE BAĞLANTI KALİTESİ ROZETLERİ (#mapInfo) ===== */
+.hex-suitability-row {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px;
+}
+.hex-suit-pill {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 7px;
+  padding: 6px 6px; text-align: center; display: flex; flex-direction: column; gap: 2px;
+}
+.hex-suit-title { font-size: 9px; color: var(--text3); font-family: var(--font-mono); font-weight: 700; }
+.hex-suit-val { font-size: 10px; font-weight: 700; }
+.hex-suit-pill.good { border-color: rgba(34, 197, 94, 0.35); background: rgba(34, 197, 94, 0.07); }
+.hex-suit-pill.good .hex-suit-val { color: var(--success); }
+.hex-suit-pill.mid { border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.07); }
+.hex-suit-pill.mid .hex-suit-val { color: var(--warn); }
+.hex-suit-pill.low { border-color: rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.07); }
+.hex-suit-pill.low .hex-suit-val { color: var(--danger); }
 </style>
 <!-- Clickjacking koruması: Google AdSense inceleme ve Auto Ads önizleme iframe'lerinde sayfayı gizleme -->
 <script>
@@ -3114,6 +3172,140 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
             </tr>
           </tbody>
         </table>
+      </div>
+    </section>
+
+    <!-- BÖLÜM 2.5: KULLANIM SENARYOSUNA GÖRE HIZ & PAKET UYGUNLUK HESAPLAYICI -->
+    <section class="landing-section" id="hiz-hesaplayici">
+      <div class="landing-section-header">
+        <span class="landing-tag">İNTERAKTİF ARAÇ</span>
+        <h2 class="landing-title">Hız &amp; Paket Uygunluk Hesaplayıcı</h2>
+        <p class="landing-lead">
+          Hanenizdeki kişi sayısını ve aynı anda yapılan internet aktivitelerini seçin; size gereken gerçek indirme (Download), yükleme (Upload) hızını ve ideal altyapı türünü anında hesaplayalım.
+        </p>
+      </div>
+
+      <div class="tool-panel-card">
+        <div class="calc-grid">
+          <div class="calc-controls">
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">1. Evde / Ofiste Kaç Kişi İnternet Kullanıyor?</div>
+              <div class="calc-household-row" role="group" aria-label="Kişi sayısı seçimi">
+                <button type="button" class="calc-hh-btn" data-hh="1" onclick="setCalcHousehold(1)">👤 1 Kişi</button>
+                <button type="button" class="calc-hh-btn active" data-hh="2" onclick="setCalcHousehold(2)">👥 2–3 Kişi</button>
+                <button type="button" class="calc-hh-btn" data-hh="4" onclick="setCalcHousehold(4)">👨‍👩‍👧‍👦 4–5 Kişi</button>
+                <button type="button" class="calc-hh-btn" data-hh="6" onclick="setCalcHousehold(6)">🏢 6+ Kişi</button>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">2. Aynı Anda Yapılan Aktiviteleri Seçin:</div>
+              <div class="calc-option-group" id="calcActivities">
+                <button type="button" class="calc-chip active" data-act="stream4k" onclick="toggleCalcActivity(this)">
+                  <span>📺</span> 4K UHD Film / Dizi (Netflix, YouTube)
+                </button>
+                <button type="button" class="calc-chip active" data-act="gaming" onclick="toggleCalcActivity(this)">
+                  <span>🎮</span> Online Rekabetçi Oyun (Valorant, CS2, FC)
+                </button>
+                <button type="button" class="calc-chip" data-act="remoteWork" onclick="toggleCalcActivity(this)">
+                  <span>💼</span> Evden Çalışma &amp; Görüntülü Toplantı (Zoom/Teams)
+                </button>
+                <button type="button" class="calc-chip" data-act="cloudBackup" onclick="toggleCalcActivity(this)">
+                  <span>☁️</span> Büyük Dosya / Oyun İndirme &amp; Bulut Yedekleme
+                </button>
+                <button type="button" class="calc-chip" data-act="liveStream" onclick="toggleCalcActivity(this)">
+                  <span>🎥</span> Canlı Yayın Açma (Twitch / YouTube 1080p60)
+                </button>
+                <button type="button" class="calc-chip" data-act="smartHome" onclick="toggleCalcActivity(this)">
+                  <span>🏠</span> Çoklu Akıllı Ev Cihazı &amp; Güvenlik Kamerası
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="calc-result-box" id="calcResultBox" aria-live="polite">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent);">Önerilen Minimum Bağlantı Profili</div>
+            <div class="calc-speed-big" id="calcRecDL">100 Mbps</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.55;" id="calcRecSummary">
+              2–3 kişilik hanede 4K yayın ve online oyunların birbirini yavaşlatmaması için en az <b>100 Mbps</b> indirme ve <b>15 Mbps</b> yükleme hızı önerilir.
+            </div>
+            <div class="calc-meta-badges">
+              <span class="calc-meta-pill" id="calcRecUL">↑ Min. 15 Mbps Upload</span>
+              <span class="calc-meta-pill" id="calcRecPing">⚡ Maks. 20 ms Ping</span>
+              <span class="calc-meta-pill" id="calcRecTech">🟢 Önerilen: Fiber (FTTH) / İyi VDSL</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BÖLÜM 2.8: FİBER ALTYAPI TALEP DİLEKÇESİ OLUŞTURUCU -->
+    <section class="landing-section" id="fiber-dilekce">
+      <div class="landing-section-header">
+        <span class="landing-tag">ÜCRETSİZ DİLEKÇE ARACI</span>
+        <h2 class="landing-title">Bina &amp; Apartman İçin Fiber Altyapı Talep Dilekçesi Oluşturucu</h2>
+        <p class="landing-lead">
+          Sokağınızda fiber internet var ancak binanızda hala VDSL/ADSL mi kullanılıyor? Bilgilerinizi doldurun; İl/İlçe Telekom Müdürlüklerine veya İSS bölge müdürlüklerine teslim edebileceğiniz resmi toplu talep dilekçenizi saniyeler içinde oluşturun. <em>(Girilen bilgiler yalnızca tarayıcınızda işlenir, hiçbir sunucuya kaydedilmez.)</em>
+        </p>
+      </div>
+
+      <div class="tool-panel-card">
+        <div class="petition-grid">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div>
+              <label for="petKurum" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">Muhatap Kurum / Müdürlük</label>
+              <select id="petKurum" class="petition-input" onchange="updateFiberPetition()">
+                <option value="Türk Telekomünikasyon A.Ş. İl / Bölge Müdürlüğü">Türk Telekom İl / Bölge Müdürlüğü</option>
+                <option value="Turkcell Superonline Bölge Müdürlüğü">Turkcell Superonline Bölge Müdürlüğü</option>
+                <option value="TurkNet İletişim Hizmetleri A.Ş. Altyapı Planlama Birimi">TurkNet GigaFiber Altyapı Planlama Birimi</option>
+                <option value="Türksat Kablonet İl Müdürlüğü">Türksat Kablonet İl Müdürlüğü</option>
+              </select>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label for="petIl" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">İl</label>
+                <input type="text" id="petIl" class="petition-input" placeholder="Örn: İstanbul" oninput="updateFiberPetition()">
+              </div>
+              <div>
+                <label for="petIlce" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">İlçe</label>
+                <input type="text" id="petIlce" class="petition-input" placeholder="Örn: Kadıköy" oninput="updateFiberPetition()">
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label for="petMahalle" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">Mahalle</label>
+                <input type="text" id="petMahalle" class="petition-input" placeholder="Örn: Caferağa Mah." oninput="updateFiberPetition()">
+              </div>
+              <div>
+                <label for="petSokak" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">Cadde / Sokak &amp; Bina No</label>
+                <input type="text" id="petSokak" class="petition-input" placeholder="Örn: Moda Cad. No: 12" oninput="updateFiberPetition()">
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label for="petBinaAdi" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">Apartman / Site Adı ve Daire Sayısı</label>
+                <input type="text" id="petBinaAdi" class="petition-input" placeholder="Örn: Çınar Apt. (16 Daire)" oninput="updateFiberPetition()">
+              </div>
+              <div>
+                <label for="petMevcut" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">Mevcut Altyapı Durumu</label>
+                <select id="petMevcut" class="petition-input" onchange="updateFiberPetition()">
+                  <option value="eski bakır VDSL/ADSL altyapısı (yüksek mesafe ve hız kaybı)">Bakır VDSL / ADSL (Yetersiz Hız)</option>
+                  <option value="port yetersizliği nedeniyle yeni abonelik açılamaması">Boş Port Yok / Altyapı Yetersiz</option>
+                  <option value="yeni bina olmasına rağmen henüz fiber sonlandırma kutusu (OFDK) takılmaması">Yeni Bina (Henüz Altyapı Bağlanmadı)</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;">
+              <button type="button" class="btn-add" style="padding:9px 16px;font-size:12px;" onclick="copyFiberPetition()">📋 Dilekçe Metnini Kopyala</button>
+              <button type="button" class="btn-sub" style="padding:9px 16px;font-size:12px;" onclick="printFiberPetition()">🖨️ Yazdır / PDF Kaydet</button>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px;">Önizleme (Otomatik Güncellenir)</div>
+            <div class="petition-preview" id="petitionPreviewText"></div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -7493,9 +7685,31 @@ function showHexInfo(pins, hexId) {
   // BÖLGE SAKİNLERİNİN DENEYİMLERİ (Yalnızca geçerli hazır etiketler, eski serbest metinler filtrelenir)
   const validFeedbackPins = pins.filter(p => extractValidFeedbackTags(p.yorum).length > 0);
   
-  // AKILLI BÖLGE ANALİZİ (ÖZET NOT) — En az 3 farklı adresten/kişiden hazır etiket gelirse ortalama alınır
+  // AKILLI BÖLGE ANALİZİ (KULLANIM UYGUNLUK ROZETLERİ + ÖZET NOT)
   const hexAnalysisEl = document.getElementById('infoHexAnalysis');
   if (hexAnalysisEl) {
+    const hasFiber = pins.some(p => (p.baglanti_turu || '').toLowerCase() === 'fiber');
+    const scoreNum = parseFloat(avgS) || 7;
+
+    // 1) Oyun Uygunluğu
+    const gameClass = (avgDL >= 50 && (hasFiber || scoreNum >= 7.2)) ? 'good' : (avgDL >= 24 && scoreNum >= 5.5) ? 'mid' : 'poor';
+    const gameLabel = gameClass === 'good' ? 'Çok Uygun' : gameClass === 'mid' ? 'Orta' : 'Zayıf';
+
+    // 2) 4K Yayın Uygunluğu
+    const streamClass = avgDL >= 50 ? 'good' : avgDL >= 25 ? 'mid' : 'poor';
+    const streamLabel = streamClass === 'good' ? 'Sorunsuz' : streamClass === 'mid' ? 'Tek Cihaz' : 'Yetersiz';
+
+    // 3) Evden Çalışma / Görüntülü Toplantı Uygunluğu
+    const workClass = (avgUL >= 15 && avgDL >= 35) ? 'good' : (avgUL >= 8 && avgDL >= 16) ? 'mid' : 'poor';
+    const workLabel = workClass === 'good' ? 'İdeal' : workClass === 'mid' ? 'Yeterli' : 'Sınırlı';
+
+    const suitabilityHtml = `
+      <div class="hex-suitability-row" aria-label="Bölge kullanım senaryosu uygunluğu">
+        <span class="hex-suit-pill ${gameClass}" title="Online oyun uygunluğu">🎮 Oyun: ${gameLabel}</span>
+        <span class="hex-suit-pill ${streamClass}" title="4K UHD yayın uygunluğu">📺 4K Yayın: ${streamLabel}</span>
+        <span class="hex-suit-pill ${workClass}" title="Evden çalışma ve görüntülü toplantı uygunluğu">💼 Evden Çalışma: ${workLabel}</span>
+      </div>`;
+
     const uniqueHexUsers = new Map();
     validFeedbackPins.forEach(p => {
       const uKey = (p.browser_fp || p.ip_hash || p.id) + '@' + (p.lat ? p.lat.toFixed(4) : '') + '_' + (p.lng ? p.lng.toFixed(4) : '');
@@ -7503,6 +7717,7 @@ function showHexInfo(pins, hexId) {
     });
     const distinctPins = Array.from(uniqueHexUsers.values());
 
+    let summaryBadgeHtml = '';
     if (distinctPins.length >= 3) {
       const total = distinctPins.length;
       const counts = {
@@ -7559,14 +7774,13 @@ function showHexInfo(pins, hexId) {
         const pct = Math.round((top.count / total) * 100);
         const badgeClass = top.warn ? 'warn' : 'pos';
 
-        // İkincil belirgin deneyim varsa ekle
         let secondaryText = '';
         if (allStats[1] && allStats[1].count > 0 && Math.round((allStats[1].count / total) * 100) >= 30) {
           const secondPct = Math.round((allStats[1].count / total) * 100);
           secondaryText = ` (Ayrıca %${secondPct} ${allStats[1].icon} ${allStats[1].name})`;
         }
 
-        hexAnalysisEl.innerHTML = `
+        summaryBadgeHtml = `
           <div class="hex-analysis-badge ${badgeClass}">
             <span class="hab-icon">${top.icon}</span>
             <div>
@@ -7574,15 +7788,11 @@ function showHexInfo(pins, hexId) {
               <div class="hab-desc">Bölgedeki kullanıcıların çoğunluğu (<b>%${pct}</b>) <b>${top.name}</b> bildirdi.${secondaryText}</div>
             </div>
           </div>`;
-        hexAnalysisEl.style.display = 'block';
-      } else {
-        hexAnalysisEl.innerHTML = '';
-        hexAnalysisEl.style.display = 'none';
       }
-    } else {
-      hexAnalysisEl.innerHTML = '';
-      hexAnalysisEl.style.display = 'none';
     }
+
+    hexAnalysisEl.innerHTML = suitabilityHtml + summaryBadgeHtml;
+    hexAnalysisEl.style.display = 'block';
   }
 
   const fbSec = document.getElementById('infoFeedbackSection');
@@ -14479,6 +14689,168 @@ function pwaDismiss() {
     };
   }
 })();
+
+/* ===== İNTERAKTİF HIZ HESAPLAYICI & FİBER TALEP DİLEKÇESİ ARACI ===== */
+var _calcHousehold = 2;
+
+function setCalcHousehold(num) {
+  _calcHousehold = num;
+  document.querySelectorAll('.calc-hh-btn').forEach(function (btn) {
+    btn.classList.toggle('active', parseInt(btn.getAttribute('data-hh'), 10) === num);
+  });
+  updateSpeedCalculator();
+}
+
+function toggleCalcActivity(btn) {
+  if (!btn) return;
+  btn.classList.toggle('active');
+  updateSpeedCalculator();
+}
+
+function updateSpeedCalculator() {
+  var activeActs = [];
+  document.querySelectorAll('#calcActivities .calc-chip.active').forEach(function (el) {
+    activeActs.push(el.getAttribute('data-act'));
+  });
+
+  var baseDL = _calcHousehold === 1 ? 25 : _calcHousehold === 2 ? 40 : _calcHousehold === 4 ? 75 : 120;
+  var baseUL = _calcHousehold === 1 ? 5 : _calcHousehold === 2 ? 8 : _calcHousehold === 4 ? 15 : 25;
+  var maxPing = 35;
+
+  if (activeActs.indexOf('stream4k') !== -1) {
+    baseDL += (_calcHousehold >= 4 ? 50 : 25);
+  }
+  if (activeActs.indexOf('gaming') !== -1) {
+    baseDL += 25;
+    baseUL += 5;
+    maxPing = Math.min(maxPing, 18);
+  }
+  if (activeActs.indexOf('remoteWork') !== -1) {
+    baseDL += 20;
+    baseUL += 10;
+    maxPing = Math.min(maxPing, 25);
+  }
+  if (activeActs.indexOf('cloudBackup') !== -1) {
+    baseDL += 60;
+    baseUL += 20;
+  }
+  if (activeActs.indexOf('liveStream') !== -1) {
+    baseDL += 35;
+    baseUL += 25;
+    maxPing = Math.min(maxPing, 15);
+  }
+  if (activeActs.indexOf('smartHome') !== -1) {
+    baseDL += 15;
+    baseUL += 10;
+  }
+
+  // Standart Türkiye internet paket kademelerine yuvarla (24, 35, 50, 100, 200, 500, 1000 Mbps)
+  var tiers = [24, 35, 50, 100, 200, 500, 1000];
+  var recDL = 100;
+  for (var i = 0; i < tiers.length; i++) {
+    if (tiers[i] >= baseDL) { recDL = tiers[i]; break; }
+  }
+  if (baseDL > 500) recDL = 1000;
+
+  var recUL = Math.max(5, Math.ceil(baseUL / 5) * 5);
+  var techLabel = recDL >= 200 || recUL >= 25 || maxPing <= 15
+    ? '🟢 Önerilen: Eve Kadar Fiber (FTTH)'
+    : recDL >= 100
+      ? '🟢 Önerilen: Fiber (FTTH) / İyi VDSL2'
+      : '🔵 Önerilen: VDSL2 / Fiber / Kablonet';
+
+  var hhLabel = _calcHousehold === 1 ? '1 kişilik kullanımda' : _calcHousehold === 2 ? '2–3 kişilik hanede' : _calcHousehold === 4 ? '4–5 kişilik hanede' : '6+ kişilik yoğun kullanımda';
+  var dlEl = document.getElementById('calcRecDL');
+  var sumEl = document.getElementById('calcRecSummary');
+  var ulEl = document.getElementById('calcRecUL');
+  var pingEl = document.getElementById('calcRecPing');
+  var techEl = document.getElementById('calcRecTech');
+
+  if (dlEl) dlEl.textContent = recDL + ' Mbps';
+  if (sumEl) {
+    sumEl.innerHTML = hhLabel + ' seçilen aktivitelerin aynı anda kesintisiz yürütülmesi ve paket darboğazı (bufferbloat) yaşanmaması için en az <b>' + recDL + ' Mbps</b> indirme ve <b>' + recUL + ' Mbps</b> yükleme hızı önerilir.';
+  }
+  if (ulEl) ulEl.textContent = '↑ Min. ' + recUL + ' Mbps Upload';
+  if (pingEl) pingEl.textContent = '⚡ Maks. ' + maxPing + ' ms Ping';
+  if (techEl) techEl.textContent = techLabel;
+}
+
+function updateFiberPetition() {
+  var preview = document.getElementById('petitionPreviewText');
+  if (!preview) return;
+  var kurum = (document.getElementById('petKurum')?.value || 'Türk Telekomünikasyon A.Ş. İl / Bölge Müdürlüğü').trim();
+  var il = (document.getElementById('petIl')?.value || '[İL ADI]').trim();
+  var ilce = (document.getElementById('petIlce')?.value || '[İLÇE ADI]').trim();
+  var mah = (document.getElementById('petMahalle')?.value || '[MAHALLE ADI]').trim();
+  var sokak = (document.getElementById('petSokak')?.value || '[CADDE / SOKAK VE BİNA NO]').trim();
+  var bina = (document.getElementById('petBinaAdi')?.value || '[APARTMAN / SİTE ADI]').trim();
+  var mevcut = (document.getElementById('petMevcut')?.value || 'eski bakır VDSL/ADSL altyapısı').trim();
+  var today = new Date().toLocaleDateString('tr-TR');
+
+  var text =
+    'T.C.\n' +
+    kurum.toUpperCase() + 'NE\n' +
+    '(' + il.toUpperCase() + ' / ' + ilce.toUpperCase() + ')\n\n' +
+    'KONU: ' + mah + ' ' + sokak + ' (' + bina + ') Adresi İçin Fiber İnternet (FTTH) Altyapı Dönüşüm ve Yatırım Talebi\n' +
+    'TARİH: ' + today + '\n\n' +
+    'Sayın Yetkili,\n\n' +
+    il + ' ili, ' + ilce + ' ilçesi, ' + mah + ', ' + sokak + ' adresinde bulunan ' + bina + ' sakinleri ve malikleri olarak; binamızda halihazırda yaşanan ' + mevcut + ' nedeniyle uzaktan çalışma, çevrimiçi eğitim ve günlük yüksek hızlı internet ihtiyaçlarımızı karşılamakta ciddi mağduriyet yaşamaktayız.\n\n' +
+    'Bölgemizdeki çevre sokaklarda yüksek hızlı fiber internet altyapısı bulunmasına karşın binamızda eve kadar fiber (FTTH / GPON) sonlandırma kutusu bulunmamaktadır. Binamızdaki daire sakinleri olarak yüksek hızlı fiber internet aboneliğine geçiş yapmaya hazır olduğumuzu ve bina içi kablo geçiş/montaj işlemlerine tam muvafakat verdiğimizi beyan ederiz.\n\n' +
+    'Adı geçen adresimizin fiber optik altyapı yatırım ve dönüşüm planına dahil edilerek binamıza fiber internet altyapısının tesis edilmesi hususunda gereğini arz ederiz.\n\n' +
+    'Saygılarımızla,\n' +
+    bina + ' Sakinleri / Yönetimi\n\n' +
+    'ADRES: ' + mah + ' ' + sokak + ' ' + bina + ' ' + ilce + ' / ' + il + '\n' +
+    'EKLER: Bina Sakinleri İmza Çizelgesi (Ad-Soyad, Daire No, İletişim, İmza)';
+
+  preview.textContent = text;
+}
+
+function copyFiberPetition() {
+  var preview = document.getElementById('petitionPreviewText');
+  if (!preview) return;
+  if (!preview.textContent) updateFiberPetition();
+  navigator.clipboard.writeText(preview.textContent).then(function () {
+    if (typeof showToast === 'function') showToast('📋 Dilekçe metni panoya kopyalandı!', 'ok');
+  }).catch(function () {
+    if (typeof showToast === 'function') showToast('Metin seçildi, Ctrl+C ile kopyalayabilirsiniz.', 'warn');
+  });
+}
+
+function printFiberPetition() {
+  var preview = document.getElementById('petitionPreviewText');
+  if (!preview) return;
+  if (!preview.textContent) updateFiberPetition();
+  var win = window.open('', '_blank', 'width=800,height=900');
+  if (!win) {
+    if (typeof showToast === 'function') showToast('Açılır pencere engellendi. Lütfen önce metni kopyalayın.', 'warn');
+    return;
+  }
+  var safeHtml = (preview.textContent || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  win.document.write(
+    '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Fiber Altyapı Talep Dilekçesi</title>' +
+    '<style>body{font-family:"Times New Roman",serif;padding:40px 50px;color:#000;line-height:1.65;font-size:12pt;}pre{white-space:pre-wrap;font-family:inherit;margin:0;}table{width:100%;border-collapse:collapse;margin-top:24px;font-size:10.5pt;}th,td{border:1px solid #333;padding:8px;text-align:left;}</style></head><body>' +
+    '<pre>' + safeHtml + '</pre>' +
+    '<table><thead><tr><th>Daire No</th><th>Ad Soyad</th><th>Telefon</th><th>İmza</th></tr></thead><tbody>' +
+    '<tr><td>1</td><td></td><td></td><td></td></tr>' +
+    '<tr><td>2</td><td></td><td></td><td></td></tr>' +
+    '<tr><td>3</td><td></td><td></td><td></td></tr>' +
+    '<tr><td>4</td><td></td><td></td><td></td></tr>' +
+    '<tr><td>5</td><td></td><td></td><td></td></tr>' +
+    '<tr><td>6</td><td></td><td></td><td></td></tr>' +
+    '<tr><td>7</td><td></td><td></td><td></td></tr>' +
+    '<tr><td>8</td><td></td><td></td><td></td></tr>' +
+    '</tbody></table>' +
+    '<script>window.onload=function(){window.print();};<\/script></body></html>'
+  );
+  win.document.close();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function () { updateSpeedCalculator(); updateFiberPetition(); });
+} else {
+  updateSpeedCalculator();
+  updateFiberPetition();
+}
 </script>
 </body>
 </html>
