@@ -2609,18 +2609,20 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
 .hex-suit-pill.low { border-color: rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.07); }
 .hex-suit-pill.low .hex-suit-val { color: var(--danger); }
 </style>
-<!-- Clickjacking koruması: Google AdSense inceleme ve Auto Ads önizleme iframe'lerinde sayfayı gizleme -->
+<!-- Clickjacking koruması: Yalnızca doğrulanmış Google AdSense/Preview ana bilgisayarlarına (salt-okunur) izin ver -->
 <script>
   (function(){
     try {
       if (window.top !== window.self) {
-        var ref = (document.referrer || '').toLowerCase();
-        var isGooglePreview = /google\.|googlesyndication\.|doubleclick\.|adtrafficquality\.|adsense/i.test(ref);
-        if (!isGooglePreview) {
+        var host = '';
+        try { host = new URL(document.referrer).hostname.toLowerCase(); } catch(_) {}
+        var isGoogleHost = /(^|\.)(google\.com|google\.com\.tr|googlesyndication\.com|doubleclick\.net|adtrafficquality\.google)$/.test(host);
+        if (!isGoogleHost) {
+          document.documentElement.style.visibility = 'hidden';
           window.top.location.href = window.self.location.href;
         }
       }
-    } catch(e) {}
+    } catch(e) { document.documentElement.style.visibility = 'hidden'; }
   })();
 </script>
 <!-- Tema erken init — flash önleme -->
@@ -9813,6 +9815,7 @@ function highlightRequired(elementOrId, scrollTo = true) {
 }
 
 async function submitPin() {
+  if (window.top !== window.self) return showToast('🔒 Güvenlik nedeniyle gömülü pencere (iframe) içinden veri eklenemez','err');
   if (isMaintenanceMode) return showToast('🔧 Bakım modu aktif — şu an veri eklenemiyor','warn');
   if (isSubmissionsPaused) return showToast('🚨 Otomatik güvenlik duraklatması aktif — moderatör incelemesi bekleniyor, lütfen birazdan tekrar deneyin','warn');
 
@@ -10727,6 +10730,9 @@ async function isAuthorizedModEmail(email) {
 
 async function modLogin() {
   try {
+    if (window.top !== window.self) {
+      throw new Error('Güvenlik nedeniyle gömülü pencere (iframe) içinden moderatör girişi yapılamaz.');
+    }
     const emailVal = (document.getElementById('modEmail').value || '').trim();
     if (!await isAuthorizedModEmail(emailVal)) {
       throw new Error('Bu e-posta adresi moderatör yetkisine sahip değil.');
