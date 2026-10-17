@@ -165,7 +165,7 @@
   --bg2: #0d1318;
   --border: #1e2d3d; --border2: #243444;
   --accent: #00d4ff; --accent-dim: rgba(0,212,255,0.12); --accent-glow: rgba(0,212,255,0.25);
-  --text: #e2eaf4; --text2: #8fa3b8; --text3: #4a6278;
+  --text: #e2eaf4; --text2: #8fa3b8; --text3: #7a92a8;
   --s1: #800080; --s2: #1E88E5; --s3: #43A047; --s4: #FB8C00; --s5: #E53935;
   --m1: #22c55e; --m2: #84cc16; --m3: #eab308; --m4: #ef4444;
   --danger: #ef4444; --success: #22c55e; --warn: #f59e0b;
@@ -350,8 +350,8 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
 #map{width:100%;height:100%;z-index:1;min-height:0;min-width:0;}
 .leaflet-container{background:#0d1318!important;}
 .leaflet-pane,.leaflet-map-pane{will-change:transform;}
-html:not(.light) #map.low-zoom-dark .leaflet-tile {
-  filter: saturate(0.25) brightness(0.52) contrast(1.12);
+html:not(.light) .leaflet-tile {
+  filter: url(#ih-carto-dark);
 }
 html.light .leaflet-tile {
   filter: none !important;
@@ -2715,6 +2715,9 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
               <stop offset="0%" stop-color="#00e5ff"/>
               <stop offset="100%" stop-color="#0066ff"/>
             </linearGradient>
+            <filter id="ih-carto-dark" color-interpolation-filters="sRGB">
+              <feColorMatrix type="matrix" values="2.2 -0.6 -0.6 0 0  -0.6 2.2 -0.6 0 0  -0.6 -0.6 2.2 0 0  0 0 0 1 0"/>
+            </filter>
           </defs>
           <rect width="92" height="92" x="4" y="4" rx="22" fill="url(#logoGradNav)"/>
           <path d="M 23 28 A 38 38 0 0 1 77 28" fill="none" stroke="#070b0f" stroke-width="7.5" stroke-linecap="round"/>
@@ -7211,20 +7214,31 @@ function getMapTileUrl() {
   }
   return 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 }
-function updateMapTiles() {
-  const url = getMapTileUrl();
-  [maps.main, maps.pin].forEach(m => {
-    if (!m) return;
-    m.eachLayer(l => { if (l._url && (l._url.includes('cartocdn') || l._url.includes('openstreetmap.org'))) m.removeLayer(l); });
-    const tl = L.tileLayer(url, { maxZoom:19, noWrap:true });
-    tl.on('tileerror', function() {
-      if (!this._osmFallback) {
-        this._osmFallback = true;
-        this.setUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-      }
-    });
-    tl.addTo(m);
+function applyMapBaseLayers(m) {
+  if (!m) return;
+  m.eachLayer(l => { if (l._url && (l._url.includes('cartocdn') || l._url.includes('openstreetmap.org'))) m.removeLayer(l); });
+  const isLight = document.documentElement.classList.contains('light');
+  const mainLayer = L.tileLayer(getMapTileUrl(), { maxZoom: 19, noWrap: true, zIndex: 1 });
+  mainLayer.on('tileerror', function() {
+    if (!this._osmFallback) {
+      this._osmFallback = true;
+      this.setUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+    }
   });
+  mainLayer.addTo(m);
+  // CARTO Ekim 2026 (martin-20261001-02) güncellemesinde zoom 5-6 seviyesinde Türkiye il sınırlarını kaldırdı.
+  // Eski görünümü birebir korumak için zoom 5-6'da z+1 (zoom 7) il sınırlarını (dark_nolabels) ve orijinal etiketleri (dark_only_labels) katmanlıyoruz.
+  if (CARTO_API_KEY && !isLight) {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png?key=' + CARTO_API_KEY, {
+      minZoom: 5, maxZoom: 6, tileSize: 128, zoomOffset: 1, noWrap: true, zIndex: 2
+    }).addTo(m);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png?key=' + CARTO_API_KEY, {
+      minZoom: 5, maxZoom: 6, noWrap: true, zIndex: 3
+    }).addTo(m);
+  }
+}
+function updateMapTiles() {
+  [maps.main, maps.pin].forEach(m => applyMapBaseLayers(m));
 }
 
 async function initMainMap() { 
@@ -7236,9 +7250,8 @@ async function initMainMap() {
   // Türkiye + çevre — kenarlar rahat görünsün, dünya tekrarlaması olmasın
   const TR_BOUNDS = L.latLngBounds([34.0, 22.0], [44.5, 48.0]);
   const isMobile = window.innerWidth <= 768;
-  const isWide = window.innerWidth >= 1100;
-  const initialCenter = isMobile ? [39.0, 35.5] : (isWide ? [39.1, 35.5] : [38.8, 36.5]);
-  const initialZoom = isMobile ? (window.innerWidth < 480 ? 5 : 6) : (isWide ? 7 : 6);
+  const initialCenter = isMobile ? [39.0, 35.5] : [38.8, 37.5];
+  const initialZoom = isMobile ? (window.innerWidth < 480 ? 5 : 6) : 6;
   const m = L.map('map', { 
     zoomControl: false, 
     maxBoundsViscosity: 0.7,
@@ -7247,18 +7260,7 @@ async function initMainMap() {
     minZoom: 5
   }).setView(initialCenter, initialZoom);
 
-  const tileLayer = L.tileLayer(getMapTileUrl(), { 
-    maxZoom: 19,
-    noWrap: true
-  });
-  // Yedek basemap: Carto tile erişilemezse otomatik OSM'ye geç
-  tileLayer.on('tileerror', function() {
-    if (!this._osmFallback) {
-      this._osmFallback = true;
-      this.setUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-    }
-  });
-  tileLayer.addTo(m);
+  applyMapBaseLayers(m);
   L.control.zoom({ position:'bottomright' }).addTo(m); 
 
   // Haritada "Konumuma Git" kontrolü
@@ -7284,7 +7286,6 @@ async function initMainMap() {
     );
   }
   maps.main = m; 
-  syncZoomVisuals();
   m.on('zoomend', onZoomEnd); 
   m.on('moveend', syncMapToUrl);
   if (window.ResizeObserver) {
@@ -7312,20 +7313,10 @@ async function initMainMap() {
   }
 }
 
-function syncZoomVisuals() {
-  if (!maps.main) return;
-  const z = maps.main.getZoom();
-  const mapEl = document.getElementById('map');
-  if (mapEl) mapEl.classList.toggle('low-zoom-dark', z <= 6);
-  const hints = { 5:'Türkiye geneli', 6:'Bölge bazlı', 7:'İl bazlı', 9:'İlçe bazlı', 11:'Mahalle bazlı', 13:'Sokak bazlı', 15:'Bina bazlı' };
-  const found = Object.entries(hints).reverse().find(([k]) => z >= parseInt(k));
-  const hintEl = document.getElementById('zoomHint');
-  if (found && hintEl) hintEl.textContent = found[1] + ' görünümü';
-}
-
 function onZoomEnd() {
   renderHex(); renderModPins(); renderMyPins();
-  syncZoomVisuals();
+  const z = maps.main.getZoom(); const hints = { 5:'Türkiye geneli', 6:'Bölge bazlı', 7:'İl bazlı', 9:'İlçe bazlı', 11:'Mahalle bazlı', 13:'Sokak bazlı', 15:'Bina bazlı' };
+  const found = Object.entries(hints).reverse().find(([k]) => z >= parseInt(k)); if (found) document.getElementById('zoomHint').textContent = found[1] + ' görünümü';
 }
 
 function locateUserOnMainMap() {
@@ -9184,7 +9175,7 @@ let pinLat=null, pinLng=null, pinMarker=null, selConnVal='', selScoreVal=0, extr
 function initPinMap() { 
   const isMobile = window.innerWidth <= 768;
   const m = L.map('pin-map', { zoomControl:false }).setView([39.0, 35.5], isMobile ? 5 : 6);
-  L.tileLayer(getMapTileUrl(), { maxZoom:19 }).addTo(m); 
+  applyMapBaseLayers(m);
   L.control.zoom({ position:'bottomright' }).addTo(m); 
   maps.pin = m; 
   m.on('click', e => setLocation(e.latlng.lat, e.latlng.lng)); 
