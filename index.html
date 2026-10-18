@@ -3159,13 +3159,6 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
           <span class="landing-badge-tech tech-adsl">Bakır Hat • En fazla 16–24 Mbps</span>
         </div>
       </div>
-
-      <div style="margin-top:24px;text-align:center;">
-        <a href="/rehber.html" class="landing-more-btn">
-          <span>📖 Daha Fazlası İçin Kapsamlı Altyapı Rehberi</span>
-          <span>&rarr;</span>
-        </a>
-      </div>
     </section>
 
     <!-- BÖLÜM 2B: HARİTA NASIL OKUNUR (özgün editoryal içerik) -->
@@ -3483,13 +3476,6 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
             </p>
           </div>
         </details>
-      </div>
-
-      <div style="margin-top:20px;text-align:center;">
-        <a href="/rehber.html" class="landing-more-btn" style="font-size:12.5px;">
-          <span>❓ Daha Fazla Soru ve Yanıt için Rehber Sayfası</span>
-          <span>&rarr;</span>
-        </a>
       </div>
     </section>
 
@@ -6056,7 +6042,8 @@ async function confirmAddIss() {
         pinSel.insertBefore(newOpt, pinSel.querySelector('option[value="Diğer"]'));
       }
       closeAddIssModal();
-      showToast(`⚠ "${name}" geçici olarak eklendi (DB bağlantısı yok: ${e.message})`, 'warn');
+      console.warn('[internetHarita] İSS eklenirken sunucu hatası:', e);
+      showToast(`⚠ "${name}" yerel olarak eklendi. Sunucu bağlantısı kurulduğunda eşitlenecek.`, 'warn');
     } else {
       showToast('Bu İSS zaten listede','warn');
     }
@@ -9968,7 +9955,7 @@ async function submitPin() {
   const hpChecked = document.getElementById('agree_to_terms_honeypot').checked;
   if (hpValue || hpChecked) {
     console.warn('Spam detected: Honeypot filled');
-    return showToast('İşlem tamamlanamadı (H)','err');
+    return showToast('Güvenlik doğrulaması tamamlanamadı. Lütfen sayfayı yenileyip tekrar deneyin.','err');
   }
   
   // SPAM PROTECTION: Time on page check (min 5 seconds)
@@ -10818,7 +10805,7 @@ async function submitReport() {
   const firstErr = results.find(r => r.status === 'rejected')?.reason;
   const msg = firstErr?.message || '';
   if (msg.includes('row-level security') || msg.includes('42501')) {
-    showToast('⚠ Bildirim gönderilemedi: Veritabanı izin hatası (RLS). Lütfen yöneticiye bildirin.', 'err');
+    showToast('⚠ Bildirim gönderilemedi. Lütfen daha sonra tekrar deneyin.', 'err');
     console.error('[internetHarita] raporlar RLS hatası — Supabase SQL Editor\'da "anon_insert_raporlar" politikasını ekleyin. Detay:', msg);
     resetBtn(); return;
   }
@@ -10827,7 +10814,7 @@ async function submitReport() {
     const retryResults = await Promise.allSettled(failed.map(t => addRapor(basicPayload(t))));
     const stillFailed = retryResults.some(r => r.status === 'rejected');
     if (!stillFailed) { showToast('✅ Bildirim alındı!'); closeReportModal(); resetBtn(); return; }
-    showToast('⚠ Bazı bildirimler gönderilemedi: '+(retryResults.find(r=>r.status==='rejected')?.reason?.message||''), 'err');
+    showToast('⚠ Bazı bildirimler gönderilemedi. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.', 'err');
     resetBtn(); return;
   }
   showToast(friendlyDbError(firstErr,'raporlar'),'err');
@@ -11016,7 +11003,7 @@ async function loadCustomIss() {
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;">🎨 Renk</div>
-            <input id="${colorId}" type="color" value="${autoColor.startsWith('hsl') ? '#6366f1' : autoColor}"
+            <input id="${colorId}" type="color" value="${autoColor.startsWith('hsl') ? '#6366f1' : autoColor}" aria-label="Sağlayıcı rengi seçin"
               style="width:32px;height:24px;border:1px solid var(--border);border-radius:4px;background:none;cursor:pointer;padding:1px;">
             <span style="font-size:9px;color:var(--text3);">Otomatik: <span style="color:${autoColor};font-weight:700;">${autoColor}</span></span>
           </div>
@@ -12356,7 +12343,7 @@ async function saveEdit() {
         loadSikayetler();
         refreshModData();
       } catch(e2) { showToast('Hata: '+e2.message,'err'); }
-    } else if(e.message.includes("does not exist")) showToast("Uyarı: Eksik sütunlar var. DB güncelleyin.", "err");
+    } else if(e.message.includes("does not exist")) showToast("Sunucu şeması güncelleniyor, lütfen birazdan tekrar deneyin.", "err");
     else showToast('Hata: '+e.message,'err');
   } finally {
     if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Kaydet'; }
@@ -12396,7 +12383,7 @@ async function modDeletePin(id, permanent = false) {
     updateInboxSummary();
     updateModStatsSummary();
   } catch(e) { 
-    if(e.message.includes("does not exist") || e.message.includes("schema cache")) showToast("Supabase Cache yenileniyor, birazdan tekrar dene.", "warn");
+    if(e.message.includes("does not exist") || e.message.includes("schema cache")) showToast("Sunucu şeması güncelleniyor, lütfen birazdan tekrar deneyin.", "warn");
     else showToast('Hata: '+e.message,'err'); 
   }
 }
@@ -12747,8 +12734,12 @@ async function syncPinsWithGoogleAccount(user) {
     const mergedIds = Array.from(mergedMap.keys());
 
     // 5. Yerel depolamaya temiz listeyi kaydet
-    localStorage.setItem('ih_my_pin_ids', JSON.stringify(mergedIds));
-    localStorage.setItem('ih_my_pins', JSON.stringify(mergedList));
+    try {
+      localStorage.setItem('ih_my_pin_ids', JSON.stringify(mergedIds));
+      localStorage.setItem('ih_my_pins', JSON.stringify(mergedList));
+    } catch (storageErr) {
+      console.warn('[internetHarita] Yerel pin önbelleği kaydedilemedi:', storageErr);
+    }
 
     // 6. Google user metadata'sına güncel listeyi yaz (silinenler temizlendiğinde Google hesabını da arındır)
     const remoteIdList = remotePins.map(p => String(typeof p === 'string' ? p : p?.id)).filter(Boolean).sort();
@@ -13007,6 +12998,17 @@ function updateCompareData() {
   const pctUlB = Math.round((statB.avgUl / maxUl) * 100);
 
   const dlWinner = statA.avgDl > statB.avgDl ? issA : (statB.avgDl > statA.avgDl ? issB : null);
+
+  if (statA.count === 0 && statB.count === 0) {
+    container.innerHTML = `
+      <div style="text-align:center;padding:24px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;">
+        <span style="font-size:24px;display:block;margin-bottom:8px;">📊</span>
+        <b style="color:var(--text);font-size:13px;">Seçilen bölgede henüz ölçüm bulunmuyor</b>
+        <p style="font-size:11.5px;color:var(--text3);margin-top:4px;line-height:1.5;">${escHtml(loc ? loc + ' bölgesinde' : 'Genel filtrede')} seçilen sağlayıcılar için henüz kayıtlı kullanıcı verisi eklenmemiş. Farklı bir il veya sağlayıcı seçebilirsiniz.</p>
+      </div>
+    `;
+    return;
+  }
 
   container.innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
