@@ -1442,47 +1442,82 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
     </div>
 
     <!-- Tüketici Hakem Heyeti İtiraz Şablonu -->
-    <div class="searchable" style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:22px; margin-bottom:32px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
-        <h3 style="font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px;">
-          <span>⚖️</span> Operatör Fazla Ücret Çıkarırsa: Tüketici Hakem Heyeti İtiraz Dilekçesi
-        </h3>
-        <button class="copy-btn" onclick="copyThhDilekce()">📋 İtiraz Metnini Kopyala</button>
+    <div class="searchable" style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:24px; margin-bottom:32px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+        <div>
+          <h3 style="font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px;">
+            <span>⚖️</span> Tüketici Hakem Heyeti (TÜBİS) Resmi İtiraz Dilekçesi Oluşturucu
+          </h3>
+          <p style="font-size:12.5px; color:var(--text2); margin-top:2px;">
+            Operatörün çıkardığı haksız cayma bedeline karşı e-Devlet TÜBİS sistemine veya Kaymakamlığa sunabileceğiniz resmi formatlı dilekçe.
+          </p>
+        </div>
       </div>
-      <p style="font-size:12.5px; color:var(--text2); margin-bottom:14px; line-height:1.6;">
-        Operatör yukarıdaki yasal üst sınırın üzerinde fatura keserse faturayı ödedikten sonra (veya ödemeden önce) e-Devlet üzerinden <strong>Tüketici Bilgi Sistemi (TÜBİS)</strong>'ne başvurarak aşağıdaki dilekçe ile itiraz edebilir ve paranızı yasal faiziyle geri alabilirsiniz.
-      </p>
 
-      <div class="dilekce-box" style="margin-top:0;">
-        <div id="thhDilekceText">                                                  TARİH: ... / ... / 2026
+      <div class="tool-panel-card" style="padding:18px; margin-bottom:0;">
+        <div class="petition-grid">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label for="thhHeyet" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">İlçe Hakem Heyeti</label>
+                <input type="text" id="thhHeyet" class="petition-input" placeholder="Örn: Kadıköy Kaymakamlığı" oninput="updateThhPetition()">
+              </div>
+              <div>
+                <label for="thhOperator" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">Şikayet Edilen Operatör</label>
+                <select id="thhOperator" class="petition-input" onchange="updateThhPetition()">
+                  <option value="TTNET A.Ş. (Türk Telekom)">TTNET A.Ş. (Türk Telekom)</option>
+                  <option value="Turkcell Superonline İletişim Hizmetleri A.Ş.">Turkcell Superonline İletişim Hizmetleri A.Ş.</option>
+                  <option value="Vodafone Net İletişim Hizmetleri A.Ş.">Vodafone Net İletişim Hizmetleri A.Ş.</option>
+                  <option value="Türksat Uydu Haberleşme Kablo TV A.Ş.">Türksat Kablonet A.Ş.</option>
+                  <option value="TurkNet İletişim Hizmetleri A.Ş.">TurkNet İletişim Hizmetleri A.Ş.</option>
+                  <option value="Millenicom Telekomünikasyon Hizmetleri A.Ş.">Millenicom Telekomünikasyon A.Ş.</option>
+                  <option value="Diğer İnternet Servis Sağlayıcı Firma">Diğer İnternet Servis Sağlayıcı</option>
+                </select>
+              </div>
+            </div>
 
-TÜKETİCİ HAKEM HEYETİ BAŞKANLIĞI'NA
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label for="thhAdSoyad" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">Tüketici Adı Soyadı</label>
+                <input type="text" id="thhAdSoyad" class="petition-input" placeholder="Örn: Ahmet Yılmaz" oninput="updateThhPetition()">
+              </div>
+              <div>
+                <label for="thhTc" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">T.C. Kimlik No</label>
+                <input type="text" id="thhTc" class="petition-input" placeholder="Örn: 12345678901" maxlength="11" oninput="updateThhPetition()">
+              </div>
+            </div>
 
-ŞİKAYET EDİLEN FİRMA:
-[İnternet Servis Sağlayıcısı Firma Unvanı] (Örn: TTNET A.Ş. / Superonline İletişim Hizmetleri A.Ş.)
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label for="thhAboneNo" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">Hizmet / Abone No</label>
+                <input type="text" id="thhAboneNo" class="petition-input" placeholder="Örn: 7029812345" oninput="updateThhPetition()">
+              </div>
+              <div>
+                <label for="thhTutar" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">Yansıtılan Cayma Tutarı (TL)</label>
+                <input type="text" id="thhTutar" class="petition-input" placeholder="Örn: 2.450" oninput="updateThhPetition()">
+              </div>
+            </div>
 
-ŞİKAYET KONUSU:
-Abonelik Feshi Kaynaklı Haksız ve Fahiş Cayma Bedeli / Cezai Şartın İptali ve İadesi Talebi
+            <div>
+              <label for="thhGerekce" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">Fesih ve İtiraz Gerekçesi</label>
+              <select id="thhGerekce" class="petition-input" onchange="updateThhPetition()">
+                <option value="1_yil">6502 SK. Md. 52/4: 1 yılı (12 ayı) doldurdum, yasa gereği cezasız fesih hakkım var</option>
+                <option value="lehe_tutar">Yönetmelik Md. 22: Fatura kalan aylardan daha yüksek çıkarıldı, tüketici lehine olan düşük tutar uygulanmadı</option>
+                <option value="hizmet_kusuru">Hizmet Kusuru: Sürekli internet kopması, hız düşüklüğü ve taahhüt edilen hızın verilmemesi</option>
+              </select>
+            </div>
 
-ABONE BİLGİLERİ:
-Adı Soyadı        : [Adınız Soyadınız]
-T.C. Kimlik No    : [TC Kimlik Numaranız]
-Telefon Numarası  : [Telefon Numaranız]
-Hizmet / Abone No : [İnternet Hizmet Numaranız]
+            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+              <button type="button" class="btn-add" onclick="copyThhDilekce()">📋 Resmi Dilekçeyi Kopyala</button>
+              <button type="button" class="btn-sub" onclick="printThhDilekce()">🖨️ Yazdır / PDF Olarak Kaydet</button>
+            </div>
+          </div>
 
-AÇIKLAMALAR:
-1. Şikayet edilen internet servis sağlayıcı firma ile akdetmiş olduğum aboneliğimi [Fesih Tarihi] tarihinde feshetmiş bulunmaktayım.
-2. Fesih işlemi akabinde tarafıma [Haksız Yansıtılan Tutar] TL tutarında fahiş bir taahhüt cayma bedeli fatura edilmiştir.
-3. Abonelik Sözleşmeleri Yönetmeliği'nin 22. maddesinin 1. fıkrası amir hükmü uyarınca; fesih durumunda tüketiciden talep edilebilecek tutar, tüketiciye sağlanan indirimlerin toplamı ile taahhüdün kalan süresinde ödenecek aylık ücretler toplamından HANGİSİ TÜKETİCİ LEHİNE İSE (HANGİSİ DÜŞÜK İSE) sadece o tutarla sınırlandırılmalıdır.
-4. Ayrıca 6502 sayılı Tüketicinin Korunması Hakkında Kanun'un 52. maddesinin 4. fıkrası gereğince süresi bir yıldan uzun olan belirli süreli abonelik sözleşmelerinde 1 yılı dolduran tüketicinin herhangi bir gerekçe göstermeksizin ve cezai şart ödemeksizin sözleşmeyi feshetme hakkı yasa ile güvence altına alınmıştır.
-5. İlgili firma yasal mevzuata aykırı olarak aleyhime olan yüksek tutarı yansıtmış ve haksız kazanç sağlamaya çalışmıştır.
-
-TALEP VE SONUÇ:
-Yukarıda arz ve izah edilen yasal gerekçeler doğrultusunda; şahsıma hukuka aykırı şekilde yansıtılan [Haksız Yansıtılan Tutar] TL tutarındaki cayma bedeli faturasının İPTALİNE (ödenmiş ise yasal faiziyle birlikte tarafıma İADESİNE) karar verilmesini saygılarımla arz ve talep ederim.
-
-ŞİKAYETÇİ:
-[Adınız Soyadınız]
-İmza: .........................</div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px;">Resmi Dilekçe Önizlemesi (Otomatik Güncellenir)</div>
+            <div class="petition-preview" id="thhPetitionPreview" style="font-family:'Courier New', monospace; font-size:11.5px; line-height:1.6; max-height:360px;"></div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -1865,8 +1900,66 @@ function printFiberPetition() {
   win.document.close();
 }
 
+function updateThhPetition() {
+  var preview = document.getElementById('thhPetitionPreview');
+  if (!preview) return;
+
+  var heyet = (document.getElementById('thhHeyet')?.value || '[İLÇE ADI] KAYMAKAMLIĞI').trim().toUpperCase();
+  var op = (document.getElementById('thhOperator')?.value || 'İnternet Servis Sağlayıcı İşletmeci').trim();
+  var adSoyad = (document.getElementById('thhAdSoyad')?.value || '[ADINIZ SOYADINIZ]').trim();
+  var tc = (document.getElementById('thhTc')?.value || '[TC KİMLİK NUMARANIZ]').trim();
+  var aboneNo = (document.getElementById('thhAboneNo')?.value || '[ABONE / HİZMET NUMARANIZ]').trim();
+  var tutar = (document.getElementById('thhTutar')?.value || '[YANSITILAN CAYMA BEDELİ]').trim();
+  var gerekce = document.getElementById('thhGerekce')?.value || '1_yil';
+  var today = new Date().toLocaleDateString('tr-TR');
+
+  var gerekceMetni = '';
+  if (gerekce === '1_yil') {
+    gerekceMetni =
+      '3. 6502 sayılı Tüketicinin Korunması Hakkında Kanun\'un 52. maddesinin 4. fıkrası; "Tüketici, süresi bir yıldan daha uzun olan belirli süreli abonelik sözleşmesini herhangi bir gerekçe göstermeksizin ve cezai şart ödemeksizin istediği zaman feshetme hakkına sahiptir" amir hükmünü içermektedir.\n' +
+      '4. Sözleşmem 1 yılı (12 ayı) aşmış bulunmakta olup işletmeci firmanın "indirim geri alımı" adı altında talep ettiği bedel, emsal Yargıtay ve Tüketici Mahkemesi içtihatları doğrultusunda açık bir cezai şarttır ve 1 yılı aşan sözleşmelerde tüketiciden tahsil edilmesi kanunen yasaktır.';
+  } else if (gerekce === 'lehe_tutar') {
+    gerekceMetni =
+      '3. Abonelik Sözleşmeleri Yönetmeliği\'nin 22. maddesinin 1. fıkrası uyarınca; taahhütlü aboneliklerin süresinden önce feshedilmesi durumunda tüketiciden talep edilebilecek azami bedel, sağlanan indirimlerin toplamı ile taahhüdün kalan süresinde ödenecek aylık ücretler toplamından HANGİSİ TÜKETİCİ LEHİNE İSE (HANGİSİ DAHA DÜŞÜKSE) sadece o tutarla sınırlandırılmak zorundadır.\n' +
+      '4. Şikayet edilen işletmeci kanunun amir hükmüne aykırı hareket ederek aleyhime olan fahiş tutarı yansıtmış, tüketici lehine olan düşük bedel kuralını kasten uygulamayarak haksız kazanç temin etmeye çalışmıştır.';
+  } else {
+    gerekceMetni =
+      '3. Aboneliğim süresince taahhüt edilen internet hızı ve kesintisiz bağlantı kalitesi işletmeci firma tarafından sağlanamamış, sürekli bağlantı kopmaları ve hız düşüklükleri yaşanmıştır. Arıza kayıtları oluşturulmasına rağmen ayıplı hizmet giderilmemiştir.\n' +
+      '4. 6502 sayılı Kanun\'un 13. ve 15. maddeleri gereğince taahhüt edilen nitelikleri taşımayan ayıplı hizmet nedeniyle sözleşmeyi haklı nedenle feshetme hakkım doğmuş olup, kusurlu hizmet veren işletmecinin tarafıma herhangi bir cayma bedeli veya cezai şart yansıtma hakkı bulunmamaktadır.';
+  }
+
+  var text =
+    '                                                        TARİH: ' + today + '\n\n' +
+    'T.C.\n' +
+    heyet + ' TÜKETİCİ HAKEM HEYETİ BAŞKANLIĞI\'NA\n\n' +
+    'ŞİKAYET EDEN (TÜKETİCİ) :\n' +
+    'Adı Soyadı       : ' + adSoyad + '\n' +
+    'T.C. Kimlik No   : ' + tc + '\n' +
+    'Hizmet / Abone No: ' + aboneNo + '\n\n' +
+    'ŞİKAYET EDİLEN (FİRMA)  :\n' +
+    'Unvanı           : ' + op + '\n\n' +
+    'ŞİKAYET KONUSU   : Abonelik feshi neticesinde tahakkuk ettirilen ' + tutar + ' TL tutarındaki haksız taahhüt cayma bedelinin / cezai şart faturasının İPTALİ (ödenmiş ise yasal faiziyle İADESİ) talebidir.\n\n' +
+    'AÇIKLAMALAR      :\n' +
+    '1. Şikayet edilen işletmeci firma ile akdetmiş olduğum ev/iş internet aboneliğimi ilgili mevzuat hükümleri uyarınca feshetmiş bulunmaktayım.\n' +
+    '2. Fesih işlemi sonrasında tarafıma hukuka ve hakkaniyete aykırı biçimde ' + tutar + ' TL tutarında fahiş bir taahhüt cayma bedeli fatura edilmiştir.\n' +
+    gerekceMetni + '\n' +
+    '5. İşletmeci müşteri hizmetleri nezdinde yapılan şifahi itirazlarım sonuçsuz kalmış, haksız fatura tahsil edilmek istenmiştir.\n\n' +
+    'HUKUKİ DELİLLER  : Abonelik sözleşmesi, fesih talebi/bildirimi, haksız fatura sureti, ödeme dekontu (ödenmişse) ve emsal Hakem Heyeti kararları.\n\n' +
+    'HUKUKİ SEBEPLER  : 6502 Sayılı Tüketicinin Korunması Hakkında Kanun (Md. 13, 15, 52/4), Abonelik Sözleşmeleri Yönetmeliği (Md. 22) ve ilgili mevzuat.\n\n' +
+    'NETİCE VE TALEP  : Yukarıda arz ve izah edilen yasal gerekçeler doğrultusunda;\n' +
+    'Şahsıma haksız ve hukuka aykırı olarak tahakkuk ettirilen ' + tutar + ' TL tutarındaki fatura bedelinin İPTALİNE (ödenmiş ise ödeme tarihinden itibaren işletilecek yasal faiziyle birlikte tarafıma İADESİNE) karar verilmesini saygılarımla arz ve talep ederim.\n\n' +
+    '                                                      ŞİKAYET EDEN (TÜKETİCİ)\n' +
+    '                                                      ' + adSoyad + '\n' +
+    '                                                      İmza: .........................';
+
+  preview.textContent = text;
+}
+
 function copyThhDilekce() {
-  var text = document.getElementById('thhDilekceText').innerText.trim();
+  var preview = document.getElementById('thhPetitionPreview');
+  if (!preview) return;
+  if (!preview.textContent) updateThhPetition();
+  var text = preview.textContent;
   var btn = window.event ? (window.event.currentTarget || window.event.target) : null;
   function markCopied() {
     if (!btn) return;
@@ -1881,25 +1974,31 @@ function copyThhDilekce() {
     }, 2000);
   }
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(markCopied).catch(function() {
-      fallbackCopy(text);
+    navigator.clipboard.writeText(text).then(markCopied).catch(function () {
+      fallbackCopyText(text);
     });
   } else {
-    fallbackCopy(text);
+    fallbackCopyText(text);
   }
-  function fallbackCopy(val) {
-    var ta = document.createElement('textarea');
-    ta.value = val;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    try {
-      document.execCommand('copy');
-      markCopied();
-    } catch(e) {}
-    document.body.removeChild(ta);
+}
+
+function printThhDilekce() {
+  var preview = document.getElementById('thhPetitionPreview');
+  if (!preview) return;
+  if (!preview.textContent) updateThhPetition();
+  var win = window.open('', '_blank', 'width=800,height=900');
+  if (!win) {
+    alert('Açılır pencere engellendi. Lütfen tarayıcınızın açılır pencerelerine izin verin.');
+    return;
   }
+  var safeHtml = (preview.textContent || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  win.document.write(
+    '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Tüketici Hakem Heyeti İtiraz Dilekçesi</title>' +
+    '<style>body{font-family:"Times New Roman",serif;padding:40px 50px;color:#000;line-height:1.6;font-size:11pt;}pre{white-space:pre-wrap;font-family:inherit;margin:0;}</style></head><body>' +
+    '<pre>' + safeHtml + '</pre>' +
+    '<script>window.onload=function(){window.print();};<\/script></body></html>'
+  );
+  win.document.close();
 }
 
 function analyzeVdslLine() {
@@ -2114,10 +2213,12 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', function () {
     updateSpeedCalculator();
     updateFiberPetition();
+    updateThhPetition();
   });
 } else {
   updateSpeedCalculator();
   updateFiberPetition();
+  updateThhPetition();
 }
 </script>
 
