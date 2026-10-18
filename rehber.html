@@ -12,14 +12,14 @@
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9484247825024770" crossorigin="anonymous"></script>
 <script src="consent.js" defer></script>
 
-<title>İnternet Altyapı Türleri Rehberi & SSS — Fiber, VDSL, ADSL Nedir? | İnternetHarita</title>
-<meta name="description" content="Fiber (FTTH/FTTB), VDSL, ADSL ve Kablonet altyapıları arasındaki farklar nelerdir? Mahalleye ve binaya fiber nasıl getirilir? Ping, SNR margin ve bufferbloat rehberi.">
-<meta name="keywords" content="fiber internet nedir, vdsl nedir, ftth fttb farkı, kablonet altyapı, internet altyapı sorgulama rehberi, binaya fiber nasıl getirilir, türk telekom fiber dilekçesi, snr margin nedir, internet ping düşürme">
+<title>İnternet Altyapı &amp; Teknik Rehber — SNR Margin, Fiber Dilekçesi ve Cayma Bedeli | İnternetHarita</title>
+<meta name="description" content="Fiber, VDSL altyapı farkları, VDSL hat değerleri ve SNR Margin analizi, binaya fiber getirme dilekçesi ve internet taahhüt cayma bedeli hesaplama rehberi.">
+<meta name="keywords" content="internet altyapı rehberi, vdsl hat değerleri, snr margin hesaplama, hat zayıflaması nedir, internet cayma bedeli hesaplama, taahhüt cayma hakkı tüketici, binaya fiber dilekçesi, fiber getirtme">
 <link rel="canonical" href="https://internetharita.com.tr/rehber.html">
 
 <!-- Open Graph / Sosyal Medya -->
-<meta property="og:title" content="İnternet Altyapı Türleri Rehberi & SSS — İnternetHarita">
-<meta property="og:description" content="Fiber, VDSL, Kablonet farkları, hız/ping dinamikleri ve binanıza fiber getirme adımları rehberi.">
+<meta property="og:title" content="İnternet Altyapı &amp; Teknik Rehber — İnternetHarita">
+<meta property="og:description" content="Fiber, VDSL altyapı farkları, SNR Margin ve hat değerleri analizi, fiber dilekçesi ve taahhüt cayma bedeli hesaplama rehberi.">
 <meta property="og:url" content="https://internetharita.com.tr/rehber.html">
 <meta property="og:type" content="article">
 <meta property="og:image" content="https://internetharita.com.tr/favicon-512x512.png">
@@ -28,8 +28,8 @@
 <meta property="og:locale" content="tr_TR">
 <meta property="og:site_name" content="İnternetHarita">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="İnternet Altyapı Türleri Rehberi & SSS — İnternetHarita">
-<meta name="twitter:description" content="Fiber, VDSL, Kablonet farkları, hız/ping dinamikleri ve binanıza fiber getirme adımları rehberi.">
+<meta name="twitter:title" content="İnternet Altyapı &amp; Teknik Rehber — İnternetHarita">
+<meta name="twitter:description" content="Fiber, VDSL altyapı farkları, SNR Margin ve hat değerleri analizi, fiber dilekçesi ve taahhüt cayma bedeli hesaplama rehberi.">
 <meta name="twitter:image" content="https://internetharita.com.tr/favicon-512x512.png">
 
 <!-- Yapısal Veri (JSON-LD FAQPage & Article) -->
@@ -40,8 +40,8 @@
     {
       "@type": "TechArticle",
       "@id": "https://internetharita.com.tr/rehber.html#article",
-      "headline": "Türkiye'de İnternet Altyapı Türleri ve Altyapı İyileştirme Rehberi",
-      "description": "Fiber (FTTH/FTTB), VDSL, ADSL ve Kablonet teknolojilerinin kapsamlı teknik karşılaştırması ve binaya fiber çekme rehberi.",
+      "headline": "Türkiye'de İnternet Altyapı Türleri, VDSL Hat Değerleri ve Tüketici Hakları Rehberi",
+      "description": "Fiber (FTTH/FTTB), VDSL, ADSL ve Kablonet teknolojilerinin kapsamlı karşılaştırması, SNR Margin analizi, binaya fiber çekme ve taahhüt cayma bedeli rehberi.",
       "url": "https://internetharita.com.tr/rehber.html",
       "inLanguage": "tr-TR",
       "publisher": {
@@ -76,10 +76,18 @@
         },
         {
           "@type": "Question",
-          "name": "SNR Margin (Sinyal Gürültü Oranı) nedir ve hıza etkisi nasıldır?",
+          "name": "SNR Margin (Sinyal Gürültü Oranı) nedir ve kaç dB olmalıdır?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "SNR Margin, bakır hatlı (VDSL/ADSL) bağlantılarda gelen internet sinyalinin hat üzerindeki parazit/gürültüye olan oranını ifade eder. 6 dB altı hatlarda sık sık kopma yaşanır. Sağlıklı ve kopmasız bir VDSL deneyimi için SNR değerinin en az 10-12 dB ve üzeri olması önerilir."
+            "text": "SNR Margin, bakır hatlı (VDSL/ADSL) bağlantılarda gelen internet sinyalinin hat üzerindeki parazit/gürültüye olan oranını ifade eder. 6 dB altı hatlarda sık sık kopma yaşanır. Sağlıklı ve kopmasız bir VDSL deneyimi için SNR değerinin en az 10-12 dB ve üzeri olması önerilir. 16 dB ve üzeri değerler mükemmel hat kalitesine işaret eder."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "İnternet taahhüt cayma bedeli nasıl hesaplanır ve yasal üst limit nedir?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Abonelik Sözleşmeleri Yönetmeliği Madde 22 gereğince; fesih durumunda operatör sadece tüketici lehine olan (düşük olan) tutarı talep edebilir. Yararlanılan indirimlerin toplamı ile kalan ayların fatura toplamı karşılaştırılır ve hangisi az ise yasal cayma bedeli odur. Ayrıca 6502 sayılı Tüketici Kanunu Madde 52/4 uyarınca 1 yıldan (12 aydan) uzun sözleşmelerde 12. aydan sonra herhangi bir cezai şart ödemeksizin fesih hakkı bulunmaktadır."
           }
         },
         {
@@ -431,6 +439,39 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 }
 .copy-btn:hover { background: var(--accent); color: #000; }
 
+/* FORM & INTERACTIVE TOOLS */
+.guide-input {
+  width: 100%; padding: 10px 12px;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 8px; color: var(--text); font-size: 13px; font-family: var(--font-body);
+  outline: none; transition: border-color .2s, box-shadow .2s;
+}
+.guide-input:focus {
+  border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow);
+}
+.guide-btn {
+  padding: 10px 22px; background: var(--accent); color: #000;
+  font-weight: 700; border-radius: 8px; border: none; font-size: 13px;
+  cursor: pointer; transition: all .2s; font-family: var(--font-body);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.guide-btn:hover {
+  transform: translateY(-1px); box-shadow: 0 4px 16px var(--accent-glow);
+}
+.guide-nav-pills {
+  display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+  margin-top: 20px; max-width: 820px; margin-left: auto; margin-right: auto;
+}
+.guide-pill {
+  padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text2);
+  text-decoration: none; transition: all .2s ease;
+}
+.guide-pill:hover {
+  background: var(--surface2); color: var(--accent); border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
 .cta-banner {
   background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(168,85,247,0.1));
   border: 1px solid var(--border2); border-radius: 16px;
@@ -529,13 +570,21 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 </nav>
 
 <header class="hero">
-  <div class="hero-tag">⚡ BİLGİ MERKEZİ &amp; REHBER</div>
-  <h1>Türkiye İnternet Altyapı Türleri ve Teknik Rehber</h1>
-  <p>Evinizde hangi altyapı var? Fiber ile VDSL arasındaki fark nedir? Mahallenize fiber nasıl getirebilirsiniz? Merak ettiğiniz tüm teknik detaylar bu rehberde.</p>
+  <div class="hero-tag">⚡ BİLGİ MERKEZİ &amp; TEKNİK REHBER</div>
+  <h1>Türkiye İnternet Altyapı, Hat Değerleri ve Tüketici Rehberi</h1>
+  <p>Fiber ve VDSL farkları, modem SNR margin / hat zayıflaması analizi, binaya fiber getirme adımları ve taahhüt cayma bedeli hesaplama aracı.</p>
   
   <div class="guide-search-wrap">
     <span class="guide-search-icon">🔍</span>
-    <input type="search" class="guide-search" id="guideSearch" aria-label="Rehberde veya SSS'de ara" placeholder="Rehberde veya SSS'de ara (örn: Fiber, Dilekçe, SNR, Ping)..." oninput="filterGuide()" onsearch="filterGuide()">
+    <input type="search" class="guide-search" id="guideSearch" aria-label="Rehberde veya SSS'de ara" placeholder="Rehberde ara (örn: Fiber, Dilekçe, SNR Margin, Cayma Bedeli, Kopma)..." oninput="filterGuide()" onsearch="filterGuide()">
+  </div>
+
+  <div class="guide-nav-pills">
+    <a href="#altyapi-turleri" class="guide-pill">🔌 Altyapı Türleri</a>
+    <a href="#vdsl-hat-degerleri" class="guide-pill">📊 VDSL &amp; SNR Rehberi</a>
+    <a href="#fiber-dilekce" class="guide-pill">📝 Fiber Başvurusu</a>
+    <a href="#cayma-bedeli" class="guide-pill">🧮 Cayma Bedeli Hesaplama</a>
+    <a href="#sss" class="guide-pill">❓ SSS</a>
   </div>
 </header>
 
@@ -866,11 +915,163 @@ tr:hover td { background: rgba(255,255,255,0.02); }
           </tr>
         </tbody>
       </table>
+  <!-- 2. BÖLÜM: VDSL HAT DEĞERLERİ & SNR MARGIN REHBERİ -->
+  <section id="vdsl-hat-degerleri" style="margin-top: 56px;">
+    <div class="section-title-wrap">
+      <h2 class="section-title"><span class="icon">📊</span> VDSL Hat Değerleri &amp; SNR Margin Rehberi</h2>
+    </div>
+    <p style="color:var(--text2); font-size:14px; margin-bottom:24px;">
+      VDSL ve ADSL bağlantılarda kopma, hız düşüklüğü ve yüksek ping sorunlarının %90'ı modem hat değerleri okunarak kolayca tespit edilebilir. Modeminizin arayüzünde (192.168.1.1 vb.) yer alan istatistikleri aşağıdaki rehberle karşılaştırarak hattınızın sağlığını anında teşhis edebilirsiniz.
+    </p>
+
+    <!-- 4 Temel Değer Kartları -->
+    <div class="grid-2">
+      <article class="tech-card searchable">
+        <div class="tech-card-header">
+          <span class="badge" style="background:rgba(0,212,255,0.15); color:var(--accent); border:1px solid rgba(0,212,255,0.3);">KOPMA &amp; KARARLILIK</span>
+          <span style="font-size:20px;">📶</span>
+        </div>
+        <h3>SNR Margin (Sinyal Gürültü Oranı)</h3>
+        <p>Bakır hattan gelen faydalı internet sinyalinin, kablodaki elektriksel parazit ve gürültüye olan gücüdür. Değer ne kadar <strong>YÜKSEKSE</strong> bağlantınız o kadar stabil ve kopmasız çalışır.</p>
+        <div class="tech-specs" style="grid-template-columns: 1fr; gap:6px;">
+          <div style="display:flex; justify-content:space-between; font-size:11.5px; border-bottom:1px solid var(--border); padding-bottom:4px;">
+            <span style="color:var(--danger); font-weight:600;">⚠️ 6 dB ve altı</span>
+            <span style="color:var(--text2);">Kritik / Sürekli kopma yaşanır</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:11.5px; border-bottom:1px solid var(--border); padding-bottom:4px;">
+            <span style="color:var(--warn); font-weight:600;">⚡ 7 - 10 dB</span>
+            <span style="color:var(--text2);">Sınırda / Yoğun saatlerde kopabilir</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:11.5px; border-bottom:1px solid var(--border); padding-bottom:4px;">
+            <span style="color:var(--success); font-weight:600;">✅ 11 - 15 dB</span>
+            <span style="color:var(--text2);">İdeal / Kesintisiz ve stabil</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:11.5px;">
+            <span style="color:var(--accent); font-weight:600;">🌟 16 dB ve üzeri</span>
+            <span style="color:var(--text2);">Kusursuz / Hız artışına uygun</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="tech-card searchable">
+        <div class="tech-card-header">
+          <span class="badge" style="background:rgba(168,85,247,0.15); color:#c084fc; border:1px solid rgba(168,85,247,0.3);">MESAFE &amp; DİRENÇ</span>
+          <span style="font-size:20px;">📏</span>
+        </div>
+        <h3>Hat Zayıflaması (Line Attenuation)</h3>
+        <p>Saha dolabı ile modeminiz arasındaki bakır kablonun uzunluğuna ve kalitesine bağlı direnç kaybıdır. Değer ne kadar <strong>DÜŞÜKSE</strong> saha dolabına o kadar yakınsınızdır.</p>
+        <div class="tech-specs" style="grid-template-columns: 1fr; gap:6px;">
+          <div style="display:flex; justify-content:space-between; font-size:11.5px; border-bottom:1px solid var(--border); padding-bottom:4px;">
+            <span style="color:var(--success); font-weight:600;">✅ 0 - 10 dB</span>
+            <span style="color:var(--text2);">&lt; 500m (100 Mbps tam kapasite)</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:11.5px; border-bottom:1px solid var(--border); padding-bottom:4px;">
+            <span style="color:var(--accent); font-weight:600;">⚡ 11 - 20 dB</span>
+            <span style="color:var(--text2);">500 - 1000m (50 - 75 Mbps)</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:11.5px; border-bottom:1px solid var(--border); padding-bottom:4px;">
+            <span style="color:var(--warn); font-weight:600;">⚠️ 21 - 30 dB</span>
+            <span style="color:var(--text2);">1000 - 1500m (24 - 35 Mbps)</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:11.5px;">
+            <span style="color:var(--danger); font-weight:600;">❌ 31 dB ve üzeri</span>
+            <span style="color:var(--text2);">&gt; 1500m (ADSL sınırına geriler)</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="tech-card searchable">
+        <div class="tech-card-header">
+          <span class="badge" style="background:rgba(239,68,68,0.15); color:var(--danger); border:1px solid rgba(239,68,68,0.3);">PAKET KAYBI &amp; LAG</span>
+          <span style="font-size:20px;">⚠️</span>
+        </div>
+        <h3>CRC ve FEC Hata Sayaçları</h3>
+        <p>Modem istatistiklerindeki hata sayaçları hattın fiziksel sağlık durumunu gösterir.</p>
+        <div style="font-size:12px; color:var(--text2); line-height:1.6; margin-top:8px;">
+          <p><strong style="color:var(--text);">FEC (Düzeltilen Hatalar):</strong> Modem tarafından kurtarılan mikro paket bozulmalarıdır; hızınızı veya oyununuzu etkilemez.</p>
+          <p style="margin-top:6px;"><strong style="color:var(--danger);">CRC (Düzeltilemeyen Hatalar):</strong> Paketin tamamen bozulduğunu ve tekrar istendiğini gösterir. Dakikada yüzlerce artıyorsa siteler donar, oyunlarda lag/loss fırlar ve hat kopar. Sebep genellikle oksitli ek, paslanmış reglet veya arızalı splitter'dır.</p>
+        </div>
+      </article>
+
+      <article class="tech-card searchable">
+        <div class="tech-card-header">
+          <span class="badge" style="background:rgba(34,197,94,0.15); color:var(--success); border:1px solid rgba(34,197,94,0.3);">HIZ LİMİTİ</span>
+          <span style="font-size:20px;">🚀</span>
+        </div>
+        <h3>Maksimum Kapasite (Attainable Rate) vs Tanımlı Hız</h3>
+        <p><strong>Maksimum Hız (Attainable Rate):</strong> Bakır kablonuzun fiziksel olarak taşıyabileceği teorik tavan hızdır.</p>
+        <p style="margin-top:6px; font-size:12px; color:var(--text2); line-height:1.6;"><strong>Mevcut Hız (Current Rate):</strong> Operatörün tarifenize göre modeme tanımladığı hızdır. Mevcut hız maksimum hıza çok yaklaştığında SNR Margin düşer ve hat kopmaya başlar. Kararlı bir hat için maksimum hız ile tanımlı hız arasında en az %15-20 güvenlik payı bırakılmalıdır.</p>
+      </article>
+    </div>
+
+    <!-- İnteraktif Hat Analiz Aracı -->
+    <div class="searchable" style="background:var(--surface); border:1px solid var(--border2); border-radius:12px; padding:24px; margin-bottom:36px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+        <div>
+          <h3 style="font-size:17px; font-weight:700;">🔬 İnteraktif Hat Durumu Değerlendirme Aracı</h3>
+          <p style="font-size:12.5px; color:var(--text2); margin-top:2px;">Modeminizin arayüzünde (192.168.1.1 vb.) yazan Downstream (İndirme) değerlerini girin, hattınızın durumunu anında öğrenin.</p>
+        </div>
+        <span class="badge" style="background:var(--accent-dim); color:var(--accent); border:1px solid rgba(0,212,255,0.3);">ANLIK ANALİZ</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:16px;">
+        <div>
+          <label for="inputSnr" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text2);">Downstream SNR Margin (dB):</label>
+          <input type="number" id="inputSnr" class="guide-input" placeholder="Örn: 12.4" step="0.1" min="0" max="45" value="12">
+        </div>
+        <div>
+          <label for="inputAtt" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text2);">Hat Zayıflaması (Attenuation dB):</label>
+          <input type="number" id="inputAtt" class="guide-input" placeholder="Örn: 8.5" step="0.1" min="0" max="60" value="8">
+        </div>
+        <div>
+          <label for="inputSpeed" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text2);">Tanımlı Hızınız (Mbps):</label>
+          <input type="number" id="inputSpeed" class="guide-input" placeholder="Örn: 75" min="1" max="100" value="75">
+        </div>
+      </div>
+
+      <button type="button" class="guide-btn" onclick="analyzeVdslLine()">Hattımı Analiz Et</button>
+
+      <div id="vdslAnalysisResult" style="display:none; margin-top:18px; padding:16px; border-radius:8px; background:var(--surface2); border:1px solid var(--border);"></div>
+    </div>
+
+    <!-- Kopma ve Hız Sorunlarını Çözme Rehberi -->
+    <h3 style="font-size:18px; font-weight:700; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+      <span>🛠️</span> VDSL Hattınızı İyileştirme ve Kopmaları Önleme Adımları
+    </h3>
+    <div class="steps-container">
+      <div class="step-item searchable">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h4>Splitter (Ayırıcı) Kutusunu Devreden Çıkarın</h4>
+          <p>Evinizde sabit ev telefonu (sabit hat) kullanmıyorsanız, duvardan veya ankastreden gelen telefon kablosunu doğrudan modemin arkasındaki DSL girişine bağlayın. Eski veya kalitesiz splitter kutuları sinyale 2-4 dB gürültü bindirir ve SNR'ı düşürür.</p>
+        </div>
+      </div>
+      <div class="step-item searchable">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h4>Bina İçi Kabloyu Tek Parça CAT6 ile Değiştirin</h4>
+          <p>Bina ana girişindeki telefon kutusundan (ankastre/reglet) dairenize gelen kabloda ekler, elektrik bantları veya ezilmeler varsa hattınız parazite açık hale gelir. Regletten modeminize kadar eksiz (tek parça) kaliteli bir CAT6 kablo çekmek SNR değerini genellikle 4 ila 8 dB artırarak kopmaları tamamen keser.</p>
+        </div>
+      </div>
+      <div class="step-item searchable">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h4>Ankastre Kutusu Reglet Bağlantılarını Yenileyin</h4>
+          <p>Apartman girişindeki telefon kutuları (reglet) zamanla paslanır ve gevşer. Kablo uçlarını açıp oksitlenen kısımları keserek yak konnektör (yak-1) veya yakarma aletiyle temiz reglet yuvasına çaktırmak sinyal zayıflamasını ciddi oranda düşürür.</p>
+        </div>
+      </div>
+      <div class="step-item searchable">
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <h4>Hız Profilini Sabitletin (Güvenlik Payı Açın)</h4>
+          <p>Hattınız maksimum 82 Mbps destekliyorken operatör 100 Mbps paket tanımlarsa SNR marjınız 6 dB'nin altına iner ve modem günde onlarca kez kopar. Müşteri hizmetlerini arayıp <em>"Hız profilimi 75 Mbps veya 50 Mbps'ye sabitleyin, hattımı SNR 10-12 dB aralığına oturtun"</em> talebinde bulunursanız kopmalar anında son bulur.</p>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- 2. BÖLÜM: BİNAYA FİBER GETİRME REHBERİ -->
-  <section id="fiber-dilekce" style="margin-top: 48px;">
+  <!-- 3. BÖLÜM: BİNAYA FİBER GETİRME REHBERİ -->
+  <section id="fiber-dilekce" style="margin-top: 56px;">
     <div class="section-title-wrap">
       <h2 class="section-title"><span class="icon">📝</span> Mahalleye &amp; Binaya Fiber Nasıl Getirilir?</h2>
     </div>
@@ -949,7 +1150,141 @@ EKLER:
     </div>
   </section>
 
-  <!-- 3. BÖLÜM: SIKÇA SORULAN SORULAR -->
+  <!-- 4. BÖLÜM: TAAHHÜT CAYMA BEDELİ HESAPLAMA & TÜKETİCİ HAKLARI -->
+  <section id="cayma-bedeli" style="margin-top: 56px;">
+    <div class="section-title-wrap">
+      <h2 class="section-title"><span class="icon">🧮</span> İnternet Taahhüt Cayma Bedeli Hesaplama &amp; Tüketici Hakları</h2>
+    </div>
+    <p style="color:var(--text2); font-size:14px; margin-bottom:24px;">
+      İnternet servis sağlayıcınızı değiştirmek veya aboneliğinizi süresinden önce iptal etmek istediğinizde operatörlerin çıkardığı faturalar çoğu zaman tüketici kanununa aykırıdır. Tüketici mevzuatına göre yasal olarak ödemeniz gereken gerçek azami cayma bedelini hesaplayın.
+    </p>
+
+    <!-- Yasal Bilgilendirme Kutuları -->
+    <div class="grid-2" style="margin-bottom:28px;">
+      <div class="tech-card searchable" style="border-left: 4px solid var(--accent);">
+        <div class="tech-card-header">
+          <span class="badge" style="background:var(--accent-dim); color:var(--accent); border:1px solid rgba(0,212,255,0.3);">YÖNETMELİK MD. 22</span>
+          <span style="font-size:20px;">⚖️</span>
+        </div>
+        <h3>Tüketici Lehine Olan Tutar Kuralı</h3>
+        <p style="font-size:12.5px; line-height:1.6; color:var(--text2);">
+          Abonelik Sözleşmeleri Yönetmeliği'nin 22. maddesi gereğince operatör sizden keyfi bir ceza veya her iki kalemi birden talep edemez. Kanunen iki ayrı formül hesaplanır:
+        </p>
+        <ul style="font-size:12px; color:var(--text2); margin:8px 0 0 16px; line-height:1.6;">
+          <li><strong>1. Formül:</strong> Hizmet aldığınız aylar boyunca faturanıza sağlanan indirimlerin toplamı (+ tahsil edilmemiş modem/kurulum).</li>
+          <li><strong>2. Formül:</strong> Taahhüdün kalan aylarında ödeyeceğiniz indirimli faturaların toplamı.</li>
+        </ul>
+        <div style="font-size:12px; color:var(--accent); font-weight:700; margin-top:10px; padding:6px 10px; background:var(--surface2); border-radius:6px;">
+          📌 Kanuni Kural: Bu iki hesaptan HANGİSİ DAHA DÜŞÜKSE (tüketici lehine ise) yalnızca o tutar talep edilebilir!
+        </div>
+      </div>
+
+      <div class="tech-card searchable" style="border-left: 4px solid var(--success);">
+        <div class="tech-card-header">
+          <span class="badge" style="background:rgba(34,197,94,0.15); color:var(--success); border:1px solid rgba(34,197,94,0.3);">6502 KANUN MD. 52/4</span>
+          <span style="font-size:20px;">🛡️</span>
+        </div>
+        <h3>1 Yılı (12 Ayı) Aşan Sözleşmelerde Cezasız Fesih</h3>
+        <p style="font-size:12.5px; line-height:1.6; color:var(--text2);">
+          6502 sayılı Tüketicinin Korunması Hakkında Kanun'un 52. maddesinin 4. fıkrası açık hükmü:
+        </p>
+        <blockquote style="background:var(--surface2); border-left:3px solid var(--success); padding:8px 12px; margin:8px 0; font-size:12px; color:var(--text); font-style:italic;">
+          "Tüketici, süresi bir yıldan daha uzun olan belirli süreli abonelik sözleşmesini herhangi bir gerekçe göstermeksizin ve cezai şart ödemeksizin istediği zaman feshetme hakkına sahiptir."
+        </blockquote>
+        <p style="font-size:12px; color:var(--text2); margin-top:6px; line-height:1.55;">
+          Yani 24 aylık bir taahhütte 12 ayı doldurduktan sonra fesih yaparsanız yasa gereği <strong>sıfır ceza</strong> ile ayrılabilirsiniz. Operatör cayma bedeli yansıtırsa Tüketici Hakem Heyeti tarafından iptal edilmektedir.
+        </p>
+      </div>
+    </div>
+
+    <!-- İnteraktif Cayma Hesaplama Formu -->
+    <div class="searchable" style="background:var(--surface); border:1px solid var(--border2); border-radius:12px; padding:24px; margin-bottom:36px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:8px;">
+        <div>
+          <h3 style="font-size:17px; font-weight:700;">🧮 Taahhüt Cayma Bedeli Hesaplayıcı</h3>
+          <p style="font-size:12.5px; color:var(--text2); margin-top:2px;">Fatura ve sözleşme bilgilerinizi girin, kanunen ödemeniz gereken gerçek azami tutarı görün.</p>
+        </div>
+        <span class="badge" style="background:rgba(34,197,94,0.15); color:var(--success); border:1px solid rgba(34,197,94,0.3);">YASAL ÜST LİMİT</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:16px;">
+        <div>
+          <label for="calcCommitmentLength" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text2);">Taahhüt Süresi:</label>
+          <select id="calcCommitmentLength" class="guide-input" onchange="onTaahhutChange()">
+            <option value="12">12 Ay (1 Yıl)</option>
+            <option value="24" selected>24 Ay (2 Yıl)</option>
+          </select>
+        </div>
+        <div>
+          <label for="calcUsedMonths" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text2);">Kullanılan Ay Sayısı:</label>
+          <input type="number" id="calcUsedMonths" class="guide-input" placeholder="Örn: 5" min="1" max="24" value="5">
+        </div>
+        <div>
+          <label for="calcPaidPrice" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text2);">Aylık Ödenen İndirimli Fatura (TL):</label>
+          <input type="number" id="calcPaidPrice" class="guide-input" placeholder="Örn: 450" min="0" value="450">
+        </div>
+        <div>
+          <label for="calcNormalPrice" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text2);">Taahhütsüz Liste Fiyatı (TL):</label>
+          <input type="number" id="calcNormalPrice" class="guide-input" placeholder="Örn: 850" min="0" value="850">
+        </div>
+        <div>
+          <label for="calcDeviceFee" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text2);">Ücretsiz Cihaz / Aktivasyon (Varsa TL):</label>
+          <input type="number" id="calcDeviceFee" class="guide-input" placeholder="Örn: 0" min="0" value="0">
+        </div>
+      </div>
+
+      <button type="button" class="guide-btn" onclick="calculateCaymaBedeli()">Hesapla</button>
+
+      <div id="caymaResultBox" style="display:none; margin-top:20px; padding:18px; border-radius:10px; background:var(--surface2); border:1px solid var(--border);"></div>
+    </div>
+
+    <!-- Tüketici Hakem Heyeti İtiraz Şablonu -->
+    <div class="searchable" style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:22px; margin-bottom:32px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+        <h3 style="font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px;">
+          <span>⚖️</span> Operatör Fazla Ücret Çıkarırsa: Tüketici Hakem Heyeti İtiraz Dilekçesi
+        </h3>
+        <button class="copy-btn" onclick="copyThhDilekce()">📋 İtiraz Metnini Kopyala</button>
+      </div>
+      <p style="font-size:12.5px; color:var(--text2); margin-bottom:14px; line-height:1.6;">
+        Operatör yukarıdaki yasal üst sınırın üzerinde fatura keserse faturayı ödedikten sonra (veya ödemeden önce) e-Devlet üzerinden <strong>Tüketici Bilgi Sistemi (TÜBİS)</strong>'ne başvurarak aşağıdaki dilekçe ile itiraz edebilir ve paranızı yasal faiziyle geri alabilirsiniz.
+      </p>
+
+      <div class="dilekce-box" style="margin-top:0;">
+        <div id="thhDilekceText">                                                  TARİH: ... / ... / 2026
+
+TÜKETİCİ HAKEM HEYETİ BAŞKANLIĞI'NA
+
+ŞİKAYET EDİLEN FİRMA:
+[İnternet Servis Sağlayıcısı Firma Unvanı] (Örn: TTNET A.Ş. / Superonline İletişim Hizmetleri A.Ş.)
+
+ŞİKAYET KONUSU:
+Abonelik Feshi Kaynaklı Haksız ve Fahiş Cayma Bedeli / Cezai Şartın İptali ve İadesi Talebi
+
+ABONE BİLGİLERİ:
+Adı Soyadı        : [Adınız Soyadınız]
+T.C. Kimlik No    : [TC Kimlik Numaranız]
+Telefon Numarası  : [Telefon Numaranız]
+Hizmet / Abone No : [İnternet Hizmet Numaranız]
+
+AÇIKLAMALAR:
+1. Şikayet edilen internet servis sağlayıcı firma ile akdetmiş olduğum aboneliğimi [Fesih Tarihi] tarihinde feshetmiş bulunmaktayım.
+2. Fesih işlemi akabinde tarafıma [Haksız Yansıtılan Tutar] TL tutarında fahiş bir taahhüt cayma bedeli fatura edilmiştir.
+3. Abonelik Sözleşmeleri Yönetmeliği'nin 22. maddesinin 1. fıkrası amir hükmü uyarınca; fesih durumunda tüketiciden talep edilebilecek tutar, tüketiciye sağlanan indirimlerin toplamı ile taahhüdün kalan süresinde ödenecek aylık ücretler toplamından HANGİSİ TÜKETİCİ LEHİNE İSE (HANGİSİ DÜŞÜK İSE) sadece o tutarla sınırlandırılmalıdır.
+4. Ayrıca 6502 sayılı Tüketicinin Korunması Hakkında Kanun'un 52. maddesinin 4. fıkrası gereğince süresi bir yıldan uzun olan belirli süreli abonelik sözleşmelerinde 1 yılı dolduran tüketicinin herhangi bir gerekçe göstermeksizin ve cezai şart ödemeksizin sözleşmeyi feshetme hakkı yasa ile güvence altına alınmıştır.
+5. İlgili firma yasal mevzuata aykırı olarak aleyhime olan yüksek tutarı yansıtmış ve haksız kazanç sağlamaya çalışmıştır.
+
+TALEP VE SONUÇ:
+Yukarıda arz ve izah edilen yasal gerekçeler doğrultusunda; şahsıma hukuka aykırı şekilde yansıtılan [Haksız Yansıtılan Tutar] TL tutarındaki cayma bedeli faturasının İPTALİNE (ödenmiş ise yasal faiziyle birlikte tarafıma İADESİNE) karar verilmesini saygılarımla arz ve talep ederim.
+
+ŞİKAYETÇİ:
+[Adınız Soyadınız]
+İmza: .........................</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. BÖLÜM: SIKÇA SORULAN SORULAR -->
   <section id="sss" style="margin-top: 56px;">
     <div class="section-title-wrap">
       <h2 class="section-title"><span class="icon">❓</span> Sıkça Sorulan Sorular (SSS)</h2>
@@ -1038,6 +1373,26 @@ EKLER:
             <li><strong>Taşınabilir 4.5G (Superbox / Magnet):</strong> İçine takılan <em>cep telefonu SIM kartı</em> ile çalışır. Prizin olduğu her yere (başka şehre, yazlığa) kolayca götürülebilir; ancak baz istasyonunun anlık yoğunluğuna duyarlıdır ve kotalıdır.</li>
             <li><strong>Uydu İnterneti (Starlink):</strong> Yeryüzünde hiçbir kuleye veya şebekeye bağlanmaz; motorlu çanağıyla doğrudan <em>uzaydaki uydularla</em> haberleşir. Hiçbir operatörün kapsamadığı ıssız dağlarda, yaylalarda veya teknelerde çalışır.</li>
           </ul>
+        </div>
+      </div>
+
+      <div class="faq-item searchable">
+        <div class="faq-header" onclick="toggleFaq(this)">
+          <span>VDSL bağlantımda SNR Margin aniden neden düşer ve kopmalar başlar?</span>
+          <span class="faq-arrow">▼</span>
+        </div>
+        <div class="faq-body">
+          SNR Margin düşüşünün en yaygın sebepleri: Bina girişindeki reglet (ankastre) bağlantılarının oksitlenmesi veya gevşemesi, eski telefon kablosundaki bantlı ek yerleri, bozuk/eski splitter filtreleri veya apartmana yeni bağlanan diğer VDSL hatlarının oluşturduğu çapraz parazittir (crosstalk). Ayrıca operatör hattın fiziksel kapasitesini aşan yüksek bir paket hızı tanımladığında da SNR tehlikeli şekilde 6 dB altına düşer.
+        </div>
+      </div>
+
+      <div class="faq-item searchable">
+        <div class="faq-header" onclick="toggleFaq(this)">
+          <span>Operatörün çıkardığı fahiş taahhüt cayma bedeline nasıl itiraz edebilirim?</span>
+          <span class="faq-arrow">▼</span>
+        </div>
+        <div class="faq-body">
+          Operatör faturayı kestikten sonra e-Devlet kapısına giriş yapıp <strong>Tüketici Bilgi Sistemi (TÜBİS)</strong> hizmetine gidin. İlçe Tüketici Hakem Heyeti'ne şikayet başvurusu oluşturarak faturanızı ve yukarıdaki <strong>Tüketici Hakem Heyeti İtiraz Şablonumuzu</strong> sisteme yükleyin. Hakem heyeti kararları bağlayıcı olup, mevzuata aykırı talep edilen bedellerin iptali veya ödenen tutarın yasal faiziyle iadesi yönünde emsal kararlar verilmektedir.
         </div>
       </div>
 
@@ -1160,6 +1515,179 @@ function copyDilekce() {
     } catch(e) {}
     document.body.removeChild(ta);
   }
+}
+
+function copyThhDilekce() {
+  var text = document.getElementById('thhDilekceText').innerText.trim();
+  var btn = window.event ? (window.event.currentTarget || window.event.target) : null;
+  function markCopied() {
+    if (!btn) return;
+    var old = btn.textContent;
+    btn.textContent = 'Kopyalandı! ✓';
+    btn.style.background = 'var(--success)';
+    btn.style.color = '#fff';
+    setTimeout(function(){
+      btn.textContent = old;
+      btn.style.background = '';
+      btn.style.color = '';
+    }, 2000);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(markCopied).catch(function() {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+  function fallbackCopy(val) {
+    var ta = document.createElement('textarea');
+    ta.value = val;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      markCopied();
+    } catch(e) {}
+    document.body.removeChild(ta);
+  }
+}
+
+function analyzeVdslLine() {
+  var snr = parseFloat(document.getElementById('inputSnr').value);
+  var att = parseFloat(document.getElementById('inputAtt').value);
+  var speed = parseFloat(document.getElementById('inputSpeed').value) || 0;
+  var resBox = document.getElementById('vdslAnalysisResult');
+  if (!resBox) return;
+
+  if (isNaN(snr) || isNaN(att)) {
+    resBox.style.display = 'block';
+    resBox.innerHTML = '<span style="color:var(--danger); font-weight:600;">⚠️ Lütfen geçerli bir SNR ve Hat Zayıflaması değeri girin.</span>';
+    return;
+  }
+
+  var estMeters = Math.round((att / 13.8) * 1000);
+  if (estMeters < 30) estMeters = 30;
+
+  var snrStatus = '', snrColor = '';
+  if (snr < 6) {
+    snrStatus = 'Kritik Riskli (Hattınız sık sık kopar, modem senkronizasyon kaybeder)';
+    snrColor = 'var(--danger)';
+  } else if (snr <= 10) {
+    snrStatus = 'Sınırda (Hassas hat, akşam yoğunluğunda veya yağışlı havalarda kopabilir)';
+    snrColor = 'var(--warn)';
+  } else if (snr <= 15) {
+    snrStatus = 'İyi & Stabil (Kopmasız, sağlıklı standart VDSL sinyali)';
+    snrColor = 'var(--success)';
+  } else {
+    snrStatus = 'Mükemmel (Çok yüksek sinyal payı, sıfır parazit)';
+    snrColor = 'var(--accent)';
+  }
+
+  var maxRecSpeed = 100;
+  if (att > 30) maxRecSpeed = 24;
+  else if (att > 20) maxRecSpeed = 35;
+  else if (att > 14) maxRecSpeed = 50;
+  else if (att > 9) maxRecSpeed = 75;
+  else maxRecSpeed = 100;
+
+  var speedNote = '';
+  if (speed > maxRecSpeed) {
+    speedNote = '<div style="margin-top:10px; padding:10px 12px; background:rgba(239,68,68,0.1); border-left:3px solid var(--danger); border-radius:6px; font-size:12px; color:var(--text); line-height:1.5;">' +
+      '<strong style="color:var(--danger);">⚠️ Aşırı Hız Uyarısı:</strong> Tanımlı hızınız (' + speed + ' Mbps), hattınızın zayıflamasına göre önerilen kararlı hız sınırının (' + maxRecSpeed + ' Mbps) üzerinde. Yaşadığınız kopmaların ana sebebi modeme aşırı hız zorlanması olabilir. Profilinizi ' + maxRecSpeed + " Mbps'ye sabitleterek kopmaları tamamen durdurabilirsiniz.</div>";
+  } else {
+    speedNote = '<div style="margin-top:10px; padding:10px 12px; background:rgba(34,197,94,0.1); border-left:3px solid var(--success); border-radius:6px; font-size:12px; color:var(--text); line-height:1.5;">' +
+      '<strong style="color:var(--success);">✅ Hız Uyumu:</strong> Tanımlı hızınız (' + speed + ' Mbps) hattınızın fiziksel kapasitesi ve saha dolabı mesafesiyle gayet uyumlu.</div>';
+  }
+
+  resBox.style.display = 'block';
+  resBox.innerHTML =
+    '<div style="font-size:14px; font-weight:700; margin-bottom:10px; color:var(--text);">' +
+      '🔬 Hat Değerlendirme Raporu' +
+    '</div>' +
+    '<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:12.5px;">' +
+      '<div style="background:var(--surface); padding:10px 12px; border-radius:6px; border:1px solid var(--border);">' +
+        '<div style="font-size:11px; color:var(--text3); font-weight:700;">SNR MARGIN DURUMU</div>' +
+        '<div style="font-weight:700; color:' + snrColor + '; margin-top:3px;">' + snr + ' dB — ' + snrStatus + '</div>' +
+      '</div>' +
+      '<div style="background:var(--surface); padding:10px 12px; border-radius:6px; border:1px solid var(--border);">' +
+        '<div style="font-size:11px; color:var(--text3); font-weight:700;">TAHMİNİ SAHA DOLABI MESAFESİ</div>' +
+        '<div style="font-weight:700; color:var(--accent); margin-top:3px;">~' + estMeters + ' Metre (Zayıflama: ' + att + ' dB)</div>' +
+      '</div>' +
+      '<div style="background:var(--surface); padding:10px 12px; border-radius:6px; border:1px solid var(--border);">' +
+        '<div style="font-size:11px; color:var(--text3); font-weight:700;">ÖNERİLEN STABİL HIZ SINIRI</div>' +
+        '<div style="font-weight:700; color:var(--text); margin-top:3px;">Maks. ' + maxRecSpeed + ' Mbps</div>' +
+      '</div>' +
+    '</div>' + speedNote;
+}
+
+function onTaahhutChange() {
+  var len = parseInt(document.getElementById('calcCommitmentLength').value, 10);
+  var usedInput = document.getElementById('calcUsedMonths');
+  if (usedInput) {
+    usedInput.max = len;
+    if (parseInt(usedInput.value, 10) > len) usedInput.value = len;
+  }
+}
+
+function calculateCaymaBedeli() {
+  var totalMonths = parseInt(document.getElementById('calcCommitmentLength').value, 10);
+  var usedMonths = parseInt(document.getElementById('calcUsedMonths').value, 10) || 0;
+  var paidPrice = parseFloat(document.getElementById('calcPaidPrice').value) || 0;
+  var normalPrice = parseFloat(document.getElementById('calcNormalPrice').value) || 0;
+  var deviceFee = parseFloat(document.getElementById('calcDeviceFee').value) || 0;
+  var resBox = document.getElementById('caymaResultBox');
+  if (!resBox) return;
+
+  if (usedMonths < 1 || usedMonths > totalMonths) {
+    resBox.style.display = 'block';
+    resBox.innerHTML = '<span style="color:var(--danger); font-weight:600;">⚠️ Lütfen kullanılan ay sayısını 1 ile ' + totalMonths + ' arasında girin.</span>';
+    return;
+  }
+
+  var remainingMonths = totalMonths - usedMonths;
+  var monthlyDiscount = Math.max(0, normalPrice - paidPrice);
+
+  var totalBenefit = (usedMonths * monthlyDiscount) + deviceFee;
+  var totalRemaining = remainingMonths * paidPrice;
+
+  var legalMaxFee = Math.min(totalBenefit, totalRemaining);
+  var advantageRule = (totalBenefit < totalRemaining) ? 'Yararlanılan İndirimler Toplamı' : 'Kalan Faturalar Toplamı';
+
+  var isOver12Months = (totalMonths > 12 && usedMonths >= 12);
+  var alert12MonthsHtml = '';
+  if (isOver12Months) {
+    alert12MonthsHtml =
+      '<div style="margin-top:14px; padding:12px 14px; background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.3); border-radius:8px; color:var(--text); font-size:12.5px; line-height:1.6;">' +
+        '<strong style="color:var(--success);">🛡️ 1 Yılı Aşan Taahhüt Hakkınız (6502 SK. Md. 52/4):</strong> ' +
+        'Taahhüdünüz 12 aydan uzun (24 ay) ve siz halihazırda <strong>' + usedMonths + '. ayınızı doldurmuş</strong> durumdasınız. Kanun gereğince 1 yıldan uzun sözleşmelerde 12. aydan sonra tüketici <u>herhangi bir cezai şart ve cayma bedeli ödemeksizin</u> sözleşmeyi feshetme hakkına sahiptir. Operatör fatura çıkarırsa Tüketici Hakem Heyeti üzerinden bu bedeli tamamen sildirebilirsiniz!' +
+      '</div>';
+  }
+
+  resBox.style.display = 'block';
+  resBox.innerHTML =
+    '<div style="font-size:15px; font-weight:800; color:var(--text); margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">' +
+      '<span>Yasal Hesaplama Özeti</span>' +
+      '<span class="badge" style="background:rgba(34,197,94,0.15); color:var(--success); font-size:12px; border:1px solid rgba(34,197,94,0.3); padding:4px 10px;">Yasal Üst Tavan: ' + legalMaxFee.toLocaleString('tr-TR') + ' TL</span>' +
+    '</div>' +
+    '<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; font-size:13px; margin-bottom:12px;">' +
+      '<div style="background:var(--surface); padding:12px; border-radius:8px; border:1px solid ' + (totalBenefit === legalMaxFee ? 'var(--accent)' : 'var(--border)') + ';">' +
+        '<div style="font-size:11px; color:var(--text3); font-weight:700;">1. SEÇENEK: YARARLANILAN İNDİRİMLER</div>' +
+        '<div style="font-size:18px; font-weight:800; color:' + (totalBenefit === legalMaxFee ? 'var(--accent)' : 'var(--text2)') + '; margin:4px 0;">' + totalBenefit.toLocaleString('tr-TR') + ' TL</div>' +
+        '<div style="font-size:11.5px; color:var(--text2);">' + usedMonths + ' ay × ' + monthlyDiscount + ' TL indirim' + (deviceFee > 0 ? ' + ' + deviceFee + ' TL cihaz/kurulum' : '') + '</div>' +
+        (totalBenefit === legalMaxFee ? '<div style="margin-top:6px; font-size:11px; color:var(--accent); font-weight:700;">✓ Tüketici Lehine (Uygulanacak)</div>' : '') +
+      '</div>' +
+      '<div style="background:var(--surface); padding:12px; border-radius:8px; border:1px solid ' + (totalRemaining === legalMaxFee ? 'var(--accent)' : 'var(--border)') + ';">' +
+        '<div style="font-size:11px; color:var(--text3); font-weight:700;">2. SEÇENEK: KALAN AYLARIN FATURALARI</div>' +
+        '<div style="font-size:18px; font-weight:800; color:' + (totalRemaining === legalMaxFee ? 'var(--accent)' : 'var(--text2)') + '; margin:4px 0;">' + totalRemaining.toLocaleString('tr-TR') + ' TL</div>' +
+        '<div style="font-size:11.5px; color:var(--text2);">' + remainingMonths + ' ay × ' + paidPrice + ' TL aylık fatura</div>' +
+        (totalRemaining === legalMaxFee ? '<div style="margin-top:6px; font-size:11px; color:var(--accent); font-weight:700;">✓ Tüketici Lehine (Uygulanacak)</div>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div style="font-size:12.5px; color:var(--text2); line-height:1.5; background:var(--surface); padding:12px; border-radius:8px; border:1px solid var(--border);">' +
+      '📌 <strong>Hukuki Sonuç:</strong> Abonelik Sözleşmeleri Yönetmeliği Md. 22 gereği operatörün sizden talep edebileceği yasal azami cayma bedeli <strong>' + legalMaxFee.toLocaleString('tr-TR') + ' TL</strong> tutarıdır (' + advantageRule + '). Operatör bu tutarın üzerinde fatura çıkarırsa aradaki fark haksız kazançtır ve Tüketici Hakem Heyeti tarafından iptal edilir.' +
+    '</div>' + alert12MonthsHtml;
 }
 
 function trNormalize(str) {
