@@ -815,6 +815,33 @@ html.light .landing-top-bar {
   border-color: var(--accent);
   transform: translateY(-1px);
 }
+.landing-quick-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.landing-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+.landing-pill-btn:hover {
+  background: var(--surface3);
+  color: var(--accent);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
 .landing-more-btn {
   display: inline-flex;
   align-items: center;
@@ -2731,7 +2758,7 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
     <div class="nav-right">
       <label class="maintenance-toggle" id="headerMaintenanceToggle" style="display:none; padding: 4px 8px; height: 30px;">
         <div class="toggle-switch" style="width:32px;height:18px;">
-          <input type="checkbox" id="headerMaintenanceCheck" onchange="toggleMaintenanceMode(this.checked)">
+          <input type="checkbox" id="headerMaintenanceCheck" aria-label="Bakım modunu aç/kapat" onchange="toggleMaintenanceMode(this.checked)">
           <span class="toggle-slider"></span>
         </div>
         <div class="header-mtoggle-text" style="font-size:10px;font-weight:700;color:var(--warn);margin-left:5px;white-space:nowrap;">BAKIM MODU</div>
@@ -2780,7 +2807,7 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
           <div class="settings-item">
             <span class="settings-item-label">👁️ Renk Körü Modu</span>
             <label class="toggle-switch accent">
-              <input type="checkbox" id="colorblindCheck" onchange="toggleColorblindMode()">
+              <input type="checkbox" id="colorblindCheck" aria-label="Renk körü modunu aç/kapat" onchange="toggleColorblindMode()">
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -2915,7 +2942,7 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
             <div id="syncCardLoggedOut">
               <div class="sync-card-desc">Ölçümlerinizi kaybetmemek ve tüm cihazlarınızdan yönetebilmek için Google ile senkronize edin.</div>
               <div style="font-size:9.5px;color:var(--text2);margin:6px 0 8px;line-height:1.4;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.18);padding:6px 8px;border-radius:6px;">
-                💡 <b>Güvenlik Notu:</b> Google giriş ekranında veritabanı altyapımız olan <code>vpnaxxxoiomorcvloend.supabase.co</code> adresi görünür. Bu platformumuzun resmi ve güvenli bulut sunucusudur; Google hesabınızı güvenle bağlayabilirsiniz.
+                💡 <b>Güvenlik Notu:</b> Google giriş ekranında resmi bulut kimlik doğrulama sunucumuz kullanılır; Google hesabınızı güvenle bağlayabilirsiniz.
               </div>
               <button class="btn-sync-connect" onclick="signInWithGoogle()">
                 <svg viewBox="0 0 24 24" width="13" height="13" style="margin-right:6px;"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
@@ -3036,6 +3063,11 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
         <a href="/">internetHarita</a>
         <span>/</span>
         <span>Altyapı Rehberi &amp; Sıkça Sorulan Sorular</span>
+      </div>
+      <div class="landing-quick-nav">
+        <a href="#hiz-hesaplayici" class="landing-pill-btn">⚡ Hız Hesaplayıcı</a>
+        <a href="#fiber-dilekce" class="landing-pill-btn">📝 Fiber Dilekçesi</a>
+        <a href="#faq" class="landing-pill-btn">❓ SSS</a>
       </div>
       <button type="button" class="back-to-map-btn" onclick="scrollToMapTop()">
         <span>🗺️ Haritaya Dön</span>
@@ -3320,7 +3352,7 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
           <div style="display:flex;flex-direction:column;gap:10px;">
             <div>
               <label for="petKurum" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">Muhatap Kurum / Müdürlük</label>
-              <select id="petKurum" class="petition-input" onchange="updateFiberPetition()">
+              <select id="petKurum" aria-label="Muhatap Kurum veya Sağlayıcı" class="petition-input" onchange="updateFiberPetition()">
                 <option value="Türk Telekomünikasyon A.Ş. İl / Bölge Müdürlüğü">Türk Telekom İl / Bölge Müdürlüğü</option>
                 <option value="Turkcell Superonline Bölge Müdürlüğü">Turkcell Superonline Bölge Müdürlüğü</option>
                 <option value="TurkNet İletişim Hizmetleri A.Ş. Altyapı Planlama Birimi">TurkNet GigaFiber Altyapı Planlama Birimi</option>
@@ -3330,31 +3362,31 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
               <div>
                 <label for="petIl" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">İl</label>
-                <input type="text" id="petIl" class="petition-input" placeholder="Örn: İstanbul" oninput="updateFiberPetition()">
+                <input type="text" id="petIl" aria-label="Dilekçe için İl" class="petition-input" placeholder="Örn: İstanbul" oninput="updateFiberPetition()">
               </div>
               <div>
                 <label for="petIlce" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">İlçe</label>
-                <input type="text" id="petIlce" class="petition-input" placeholder="Örn: Kadıköy" oninput="updateFiberPetition()">
+                <input type="text" id="petIlce" aria-label="Dilekçe için İlçe" class="petition-input" placeholder="Örn: Kadıköy" oninput="updateFiberPetition()">
               </div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
               <div>
                 <label for="petMahalle" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">Mahalle</label>
-                <input type="text" id="petMahalle" class="petition-input" placeholder="Örn: Caferağa Mah." oninput="updateFiberPetition()">
+                <input type="text" id="petMahalle" aria-label="Dilekçe için Mahalle" class="petition-input" placeholder="Örn: Caferağa Mah." oninput="updateFiberPetition()">
               </div>
               <div>
                 <label for="petSokak" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">Cadde / Sokak &amp; Bina No</label>
-                <input type="text" id="petSokak" class="petition-input" placeholder="Örn: Moda Cad. No: 12" oninput="updateFiberPetition()">
+                <input type="text" id="petSokak" aria-label="Dilekçe için Cadde, Sokak ve Bina Numarası" class="petition-input" placeholder="Örn: Moda Cad. No: 12" oninput="updateFiberPetition()">
               </div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
               <div>
                 <label for="petBinaAdi" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">Apartman / Site Adı ve Daire Sayısı</label>
-                <input type="text" id="petBinaAdi" class="petition-input" placeholder="Örn: Çınar Apt. (16 Daire)" oninput="updateFiberPetition()">
+                <input type="text" id="petBinaAdi" aria-label="Apartman veya Site Adı ve Daire Sayısı" class="petition-input" placeholder="Örn: Çınar Apt. (16 Daire)" oninput="updateFiberPetition()">
               </div>
               <div>
                 <label for="petMevcut" style="display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;">Mevcut Altyapı Durumu</label>
-                <select id="petMevcut" class="petition-input" onchange="updateFiberPetition()">
+                <select id="petMevcut" aria-label="Mevcut altyapı durumu" class="petition-input" onchange="updateFiberPetition()">
                   <option value="eski bakır VDSL/ADSL altyapısı (yüksek mesafe ve hız kaybı)">Bakır VDSL / ADSL (Yetersiz Hız)</option>
                   <option value="port yetersizliği nedeniyle yeni abonelik açılamaması">Boş Port Yok / Altyapı Yetersiz</option>
                   <option value="yeni bina olmasına rağmen henüz fiber sonlandırma kutusu (OFDK) takılmaması">Yeni Bina (Henüz Altyapı Bağlanmadı)</option>
@@ -3552,7 +3584,7 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
       <div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
         <span id="selectedRegionTitle">📍 Bölge İl Detayları</span>
         <div style="display:flex;gap:6px;align-items:center;">
-          <select id="regionSelectDropdown" class="fs" style="padding:3px 8px;font-size:11px;" onchange="selectRegion(this.value)"></select>
+          <select id="regionSelectDropdown" aria-label="Bölge seçimi" class="fs" style="padding:3px 8px;font-size:11px;" onchange="selectRegion(this.value)"></select>
           <button class="btn-ghost" style="padding:3px 8px;font-size:10px;" onclick="goToSelectedRegionMap()">🗺️ Haritada Gör</button>
         </div>
       </div>
@@ -3611,7 +3643,7 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
             <span>En Hızlı Lokasyonlar</span>
             <span style="font-size:9px;color:var(--text3);font-family:var(--font-mono);font-weight:normal;text-transform:none;">min. 2 ölçüm</span>
           </div>
-          <select class="fs" id="speedRankIlFilter" style="width:auto;max-width:130px;padding:3px 6px;font-size:9px;text-transform:none;letter-spacing:0;font-weight:600;" onchange="renderSpeedRankList(this.value)"><option value="">Tüm İller</option></select>
+          <select class="fs" id="speedRankIlFilter" aria-label="Hız sıralaması il filtresi" style="width:auto;max-width:130px;padding:3px 6px;font-size:9px;text-transform:none;letter-spacing:0;font-weight:600;" onchange="renderSpeedRankList(this.value)"><option value="">Tüm İller</option></select>
         </div>
         <div id="speedRankList"><div class="loading-text">Mahalle ve ilçe bazında en yüksek ortalama indirme hızına sahip lokasyonlar.</div></div>
         <div style="font-size:9px;color:var(--text3);margin-top:8px;font-family:var(--font-mono);line-height:1.4;border-top:1px dashed var(--border);padding-top:6px;">ℹ️ Mahalle bazlı sıralamadır; sıralamaya girmek için ilgili mahallede en az 2 onaylı ölçüm gereklidir.</div>
@@ -3649,8 +3681,8 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
     <div class="pform">
       <!-- SPAM PROTECTION: HONEYPOT (Bots will fill this, users won't see it) -->
       <div style="display:none !important;" aria-hidden="true">
-        <input type="text" id="subject_honeypot" name="subject_honeypot" tabindex="-1" value="">
-        <input type="checkbox" id="agree_to_terms_honeypot" name="agree_to_terms_honeypot" tabindex="-1">
+        <input type="text" id="subject_honeypot" name="subject_honeypot" tabindex="-1" value="" aria-hidden="true">
+        <input type="checkbox" id="agree_to_terms_honeypot" name="agree_to_terms_honeypot" tabindex="-1" aria-hidden="true">
       </div>
       
       <!-- ÇEVRİMDIŞI TASLAK BİLDİRİMİ -->
@@ -3678,7 +3710,7 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
       <div class="fg" style="margin-top:5px;">
         <div class="fl">Altyapı Durumu</div>
         <label style="display:flex; align-items:center; gap:8px; cursor:pointer; background:rgba(245,158,11,0.05); border:1px solid rgba(245,158,11,0.2); border-radius:8px; padding:10px 12px; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--warn)'" onmouseout="this.style.borderColor='rgba(245,158,11,0.2)'">
-          <input type="checkbox" id="noInfraCheck" onchange="onNoInfraChange(this.checked)" style="width:16px; height:16px; cursor:pointer;">
+          <input type="checkbox" id="noInfraCheck" aria-label="Bu konumda internet altyapısı yok" onchange="onNoInfraChange(this.checked)" style="width:16px; height:16px; cursor:pointer;">
           <span style="font-size:12px; font-weight:700; color:var(--warn); font-family:var(--font-mono);">BU KONUMDA ALTYAPI YOK</span>
         </label>
         <div style="font-size:9px; color:var(--text3); margin-top:4px; line-height:1.4;">Seçildiğinde hız testi zorunluluğu kalkar. Veri moderatör onayından sonra listelenir.</div>
@@ -3690,39 +3722,39 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <div class="fg">
             <div class="fl">İl</div>
-            <select class="fs" id="manualIl" onchange="onManualIlChange()">
+            <select class="fs" id="manualIl" aria-label="Manuel İl seçimi" onchange="onManualIlChange()">
               <option value="">İl seçin...</option>
             </select>
           </div>
           <div class="fg">
             <div class="fl">İlçe</div>
-            <select class="fs" id="manualIlce" onchange="onManualIlceChange()" disabled>
+            <select class="fs" id="manualIlce" aria-label="Manuel İlçe seçimi" onchange="onManualIlceChange()" disabled>
               <option value="">Önce il seçin</option>
             </select>
           </div>
         </div>
         <div class="fg">
           <div class="fl">Mahalle / Semt (opsiyonel)</div>
-          <select class="fs" id="manualMahalle" disabled>
+          <select class="fs" id="manualMahalle" aria-label="Manuel Mahalle seçimi" disabled>
             <option value="">Önce ilçe seçin</option>
           </select>
         </div>
         <button class="btn-ghost" style="font-size:11px;padding:8px;" onclick="applyManualAddress()">✅ Bu Adresi Kullan</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <div class="fg"><div class="fl">İl</div><input class="fi" type="text" id="ilInput" readonly placeholder="Otomatik"></div>
-        <div class="fg"><div class="fl">İlçe</div><input class="fi" type="text" id="ilceInput" readonly placeholder="Otomatik"></div>
+        <div class="fg"><div class="fl">İl</div><input class="fi" type="text" id="ilInput" aria-label="İl" readonly placeholder="Otomatik"></div>
+        <div class="fg"><div class="fl">İlçe</div><input class="fi" type="text" id="ilceInput" aria-label="İlçe" readonly placeholder="Otomatik"></div>
       </div>
-      <div class="fg"><div class="fl">Mahalle/Semt</div><input class="fi" type="text" id="mahalleInput" readonly placeholder="Otomatik"></div>
+      <div class="fg"><div class="fl">Mahalle/Semt</div><input class="fi" type="text" id="mahalleInput" aria-label="Mahalle veya Semt" readonly placeholder="Otomatik"></div>
       <div class="fg">
         <div class="fl">İSS</div>
-        <select class="fs" id="issSelect" onchange="onIssSelectUserChange(this.value)"><option value="">Seçin...</option><option value="Diğer">Diğer (İSS adını girin)</option></select>
+        <select class="fs" id="issSelect" aria-label="İnternet Servis Sağlayıcı seçimi" onchange="onIssSelectUserChange(this.value)"><option value="">Seçin...</option><option value="Diğer">Diğer (İSS adını girin)</option></select>
         <div id="autoIssBadge" style="display:none;font-size:10px;margin-top:6px;align-items:center;gap:6px;color:var(--text2);background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.22);padding:5px 9px;border-radius:6px;line-height:1.4;">
           <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;flex-shrink:0;"></span>
           <span>Bağlantınızdan algılandı: <b id="autoIssBadgeName" style="color:var(--accent);"></b> <span style="color:var(--text3);font-size:9.5px;">(Yanlış olduğunu düşünüyorsanız değiştirebilirsiniz)</span></span>
         </div>
         <div id="customIssWrap" style="display:none;margin-top:6px;">
-          <input class="fi" type="text" id="customIssInput" placeholder="Örn: Comnet, Poyraz WiFi, Atlantisnet..." maxlength="60">
+          <input class="fi" type="text" id="customIssInput" aria-label="Özel Servis Sağlayıcı adı" placeholder="Örn: Comnet, Poyraz WiFi, Atlantisnet..." maxlength="60">
           <div style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">💡 Listede olmayan internet firmanızın adını yazın. Firmanızı bilmiyorsanız faturanızdan veya modem arayüzünüzden kontrol edin.</div>
           <div style="font-size:9px;color:var(--warn);margin-top:2px;font-family:var(--font-mono);">⚠ Yeni İSS girişleri moderatör onayından sonra haritada görünür.</div>
         </div>
@@ -3739,8 +3771,8 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
       <div class="fg">
         <div class="fl">Paket Hızı <span style="color:var(--text3);font-weight:400;">(tarifenizdeki hız — opsiyonel)</span></div>
         <div class="speed-row">
-          <div class="fiu"><input type="number" placeholder="100" id="packageSpeedDL" min="0" step="1" oninput="checkSpeedAndConnSuggestion()"><span class="fiu-unit">↓ DL</span></div>
-          <div class="fiu"><input type="number" placeholder="20" id="packageSpeedUL" min="0" step="1"><span class="fiu-unit">↑ UL</span></div>
+          <div class="fiu"><input type="number" placeholder="100" id="packageSpeedDL" aria-label="Paket indirme hızı (Mbps)" min="0" step="1" oninput="checkSpeedAndConnSuggestion()"><span class="fiu-unit">↓ DL</span></div>
+          <div class="fiu"><input type="number" placeholder="20" id="packageSpeedUL" aria-label="Paket yükleme hızı (Mbps)" min="0" step="1"><span class="fiu-unit">↑ UL</span></div>
         </div>
       </div>
       <div class="fg">
@@ -3748,8 +3780,8 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
         <button class="btn-run-speedtest" onclick="openSpeedTestModal()">⚡ Hız Testi Yap — Otomatik Doldur</button>
         <div style="font-size:9px;color:var(--text3);text-align:center;margin-top:-2px;">📡 Kablolu veya 5 GHz Wi-Fi bağlantısı daha doğru sonuç verir</div>
         <div class="speed-row">
-          <div class="fiu"><input type="number" placeholder="—" id="dlSpeed" readonly min="0" step="1"><span class="fiu-unit">↓ DL</span></div>
-          <div class="fiu"><input type="number" placeholder="—" id="ulSpeed" readonly min="0" step="1"><span class="fiu-unit">↑ UL</span></div>
+          <div class="fiu"><input type="number" placeholder="—" id="dlSpeed" aria-label="Ölçülen indirme hızı (Mbps)" readonly min="0" step="1"><span class="fiu-unit">↓ DL</span></div>
+          <div class="fiu"><input type="number" placeholder="—" id="ulSpeed" aria-label="Ölçülen yükleme hızı (Mbps)" readonly min="0" step="1"><span class="fiu-unit">↑ UL</span></div>
         </div>
         <div class="verified-badge" id="speedVerifiedBadge"><div class="verified-tick">✓</div><span>Sayfa içi test ile ölçüldü — Doğrulanmış</span></div>
         <div style="font-size:9px;color:var(--text3);margin-top:3px;font-family:var(--font-body);">Hız testi yapılmadan form gönderilemez. Verinin güvenilirliği için zorunludur.</div>
@@ -3776,7 +3808,7 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
       </div>
       <div class="fg" style="margin-top:4px;">
         <div class="fl">Fiziksel Hat Sahibi <span style="color:var(--text3);font-weight:400;">(biliyorsanız — opsiyonel)</span></div>
-        <select class="fs" id="infraSelect">
+        <select class="fs" id="infraSelect" aria-label="Fiziksel altyapı sahibi">
           <option value="">Bilmiyorum / Emin Değilim</option>
           <option value="Türk Telekom (kiralık port)">Türk Telekom Hattı</option>
           <option value="TurkNet öz altyapı">TurkNet Kendi Altyapısı (GigaFiber)</option>
@@ -3791,7 +3823,7 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
       <!-- KVKK / Açık Rıza Alanı -->
       <div class="kvkk-box" style="background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:12px; margin-top:5px; margin-bottom:10px;">
         <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
-          <input type="checkbox" id="kvkkCheck" style="margin-top:2px; cursor:pointer;" onchange="document.getElementById('submitBtn').disabled = !this.checked;">
+          <input type="checkbox" id="kvkkCheck" aria-label="Aydınlatma ve Açık Rıza şartlarını kabul ediyorum" style="margin-top:2px; cursor:pointer;" onchange="document.getElementById('submitBtn').disabled = !this.checked;">
           <span style="font-size:10px; color:var(--text2); line-height:1.4;">
             <b style="color:var(--text);">Aydınlatma ve Açık Rıza:</b> 
             Harita oluşturmak amacıyla internet performans verilerimin (sağlayıcı, bağlantı türü, hız, puan, deneyim etiketleri ve yaklaşık konum) yayınlanmasını onaylıyorum. 
@@ -3814,8 +3846,8 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
       <div class="mod-auth-title">🔧 Moderatör Girişi</div>
       <div class="mod-auth-sub">Hop hemşerim nereye? Buraya sadece yetkili moderasyon ekibi girebilir ✋</div>
       <form id="modLoginForm" name="modLoginForm" onsubmit="event.preventDefault();modLogin();" autocomplete="on">
-        <div class="fg" style="margin-bottom:12px;"><input class="fi" type="email" id="modEmail" name="username" placeholder="E-posta" autocomplete="username" required></div>
-        <div class="fg" style="margin-bottom:18px;"><input class="fi" type="password" id="modPw" name="password" placeholder="Şifre" autocomplete="current-password" required></div>
+        <div class="fg" style="margin-bottom:12px;"><input class="fi" type="email" id="modEmail" name="username" aria-label="Moderatör E-posta adresi" placeholder="E-posta" autocomplete="username" required></div>
+        <div class="fg" style="margin-bottom:18px;"><input class="fi" type="password" id="modPw" name="password" aria-label="Moderatör Şifresi" placeholder="Şifre" autocomplete="current-password" required></div>
         <button type="submit" class="btn-primary" style="width:100%;padding:12px;font-size:14px;font-weight:600;">Giriş Yap</button>
       </form>
     </div>
@@ -3832,7 +3864,7 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
         <label class="maintenance-toggle" id="maintenanceToggle" style="margin:0;">
-          <div class="toggle-switch"><input type="checkbox" id="maintenanceCheck" onchange="toggleMaintenanceMode(this.checked)"><span class="toggle-slider"></span></div>
+          <div class="toggle-switch"><input type="checkbox" id="maintenanceCheck" aria-label="Bakım modunu aç/kapat" onchange="toggleMaintenanceMode(this.checked)"><span class="toggle-slider"></span></div>
           <div><div style="font-size:10px;font-weight:700;color:var(--warn);">🔧 Bakım Modu</div></div>
         </label>
         <button class="btn-ghost" id="clearSubmissionsPausedBtn" style="display:none;border-color:var(--danger);color:var(--danger);padding:5px 10px;font-size:10px;" onclick="clearSubmissionsPaused()" title="Otomatik burst korumasını kaldır">🚨 Otomatik Duraklatmayı Kaldır</button>
@@ -3964,7 +3996,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
         <button class="btn-approve" style="padding:7px 13px;" id="bulkApproveBtn" onclick="bulkApprovePins()">✅ Seçilileri Onayla</button>
         <button class="btn-del" style="padding:7px 13px;" id="bulkDelBtn" onclick="bulkDeletePins()">🗑 Seçilileri Sil</button>
-        <input type="text" class="fi" id="tableSearch" placeholder="İSS, İl, İlçe veya Mahalle ara..." style="flex:1;min-width:160px;max-width:300px;" oninput="filterAdminTable(this.value)">
+        <input type="text" class="fi" id="tableSearch" aria-label="Moderatör pin tablosunda filtreleme yapın" placeholder="İSS, İl, İlçe veya Mahalle ara..." style="flex:1;min-width:160px;max-width:300px;" oninput="filterAdminTable(this.value)">
         <div style="display:flex;gap:5px;flex-wrap:wrap;">
           <button class="filter-tab-btn active" id="ftb-tumu" onclick="setTableFilter('',this)">Tümü <span class="ftb-count" id="fc-tumu"></span></button>
           <button class="filter-tab-btn" id="ftb-gorunur" onclick="setTableFilter('gorunur',this)">✅ Yayında <span class="ftb-count" id="fc-gorunur"></span></button>
@@ -3978,7 +4010,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
         <table class="mod-table">
           <thead>
             <tr>
-              <th style="width:30px;"><input type="checkbox" onchange="toggleAllPins(this)"></th>
+              <th style="width:30px;"><input type="checkbox" aria-label="Tüm pinleri seç" onchange="toggleAllPins(this)"></th>
               <th>Tarih &amp; Saat</th>
               <th>İSS / Altyapı</th>
               <th>Hız (DL/UL)</th>
@@ -4020,8 +4052,8 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
         <div class="mod-section-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
           <span>💬 Son Yapılan Kullanıcı Yorumları &amp; Deneyimler</span>
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-            <input type="text" class="fi" id="modYorumSearch" placeholder="İSS, İl veya Mahalle ara..." style="padding:4px 10px;font-size:11px;width:170px;" oninput="filterModYorumList()">
-            <select class="fs" id="modYorumTagFilter" style="padding:4px 8px;font-size:11px;width:190px;" onchange="filterModYorumList()">
+            <input type="text" class="fi" id="modYorumSearch" aria-label="Kullanıcı yorumlarında arama yapın" placeholder="İSS, İl veya Mahalle ara..." style="padding:4px 10px;font-size:11px;width:170px;" oninput="filterModYorumList()">
+            <select class="fs" id="modYorumTagFilter" aria-label="Yorum etiket filtresi" style="padding:4px 8px;font-size:11px;width:190px;" onchange="filterModYorumList()">
               <option value="">Tüm Etiketler</option>
               <option value="⚡ Hız gün boyu stabil">⚡ Hız gün boyu stabil</option>
               <option value="🟢 Kesinti / kopma olmuyor">🟢 Kesinti / kopma olmuyor</option>
@@ -4072,11 +4104,11 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
             <div style="flex:2;min-width:140px;">
               <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-bottom:3px;">İSS ADI</div>
-              <input type="text" id="newIssName" class="fi" placeholder="örn. Turkcell Fiber" style="width:100%;box-sizing:border-box;">
+              <input type="text" id="newIssName" aria-label="Yeni İSS adı" class="fi" placeholder="örn. Turkcell Fiber" style="width:100%;box-sizing:border-box;">
             </div>
             <div>
               <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-bottom:3px;">MARKA RENGİ</div>
-              <input type="color" id="newIssColor" value="#6366f1" style="width:40px;height:34px;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer;padding:2px;">
+              <input type="color" id="newIssColor" aria-label="Yeni İSS marka rengi" value="#6366f1" style="width:40px;height:34px;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer;padding:2px;">
             </div>
             <button class="btn-approve" onclick="addNewIssToList()" style="white-space:nowrap;height:34px;">✅ Ekle</button>
           </div>
@@ -4096,32 +4128,20 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
         </div>
       </div>
 
-      <!-- Supabase Veritabanı (RLS) & Onay Senkronizasyonu -->
+      <!-- Veritabanı Onay Senkronizasyonu -->
       <div class="mod-section" style="margin-bottom:16px;">
-        <div class="mod-section-title">🛡️ Supabase Veritabanı (RLS) &amp; Onay Senkronizasyonu</div>
+        <div class="mod-section-title">🛡️ Veritabanı &amp; Onay Senkronizasyonu</div>
         <div style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.5;">
-          Onaylanan pinler ve özel İSS'ler moderatör hesabınızla (Supabase Auth) bulutta anında saklanır. Tarayıcı çerezleri silinse dahi giriş yaptığınızda onaylar hesabınızdan otomatik geri yüklenir. Pinlerin veritabanına doğrudan yazılması için Supabase SQL Editor'da aşağıdaki RLS izinlerini 1 kez çalıştırmanız yeterlidir:
-        </div>
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-family:var(--font-mono);font-size:10.5px;color:var(--accent);margin-bottom:10px;line-height:1.6;user-select:all;overflow-x:auto;">
-          GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.pins TO authenticated;<br>
-          GRANT ALL ON TABLE public.iss_list TO authenticated;<br>
-          GRANT ALL ON TABLE public.site_config TO authenticated;<br>
-          GRANT SELECT ON TABLE public.site_config TO anon, authenticated;<br>
-          ALTER TABLE public.pins ENABLE ROW LEVEL SECURITY;<br>
-          DROP POLICY IF EXISTS "Moderatörler günceller" ON public.pins;<br>
-          CREATE POLICY "Moderatörler günceller" ON public.pins FOR UPDATE TO authenticated USING (true) WITH CHECK (true);<br><br>
-          ALTER TABLE public.iss_list ENABLE ROW LEVEL SECURITY;<br>
-          DROP POLICY IF EXISTS "Moderatörler ISS yönetir" ON public.iss_list;<br>
-          CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authenticated USING (true) WITH CHECK (true);
+          Onaylanan pinler ve özel İSS'ler moderatör hesabınızla bulutta anında saklanır. Tarayıcı önbelleği temizlense dahi oturum açtığınızda onaylarınız hesabınızdan otomatik olarak geri yüklenir.
         </div>
         <div style="display:flex;gap:10px;align-items:center;">
-          <button class="btn-ghost" onclick="syncModOverridesToServer();showToast('🔄 Veritabanı eşitlemesi tetiklendi');" style="padding:6px 12px;font-size:11px;">🔄 Veritabanına Zorla Eşitle</button>
+          <button class="btn-ghost" onclick="syncModOverridesToServer();showToast('🔄 Veritabanı eşitlemesi tamamlandı');" style="padding:6px 12px;font-size:11px;">🔄 Veritabanına Eşitle</button>
         </div>
       </div>
 
       <!-- Gizli uyumluluk elemanları -->
       <div style="display:none;">
-        <input type="text" id="speedRankSearch">
+        <input type="text" id="speedRankSearch" aria-label="Hız sıralaması tablosunda ara">
         <table><tbody id="speedRankEditorBody"></tbody></table>
         <input type="hidden" id="statEditSearch">
         <table><tbody id="statEditBody"></tbody></table>
@@ -4234,18 +4254,18 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
       <div>
         <label style="font-size:10px;font-family:var(--font-mono);color:var(--text3);font-weight:700;display:block;margin-bottom:4px;">1. SAĞLAYICI</label>
-        <select class="fs" id="compareIssA" style="width:100%;font-size:12px;padding:8px 10px;" onchange="updateCompareData()"></select>
+        <select class="fs" id="compareIssA" aria-label="1. Servis Sağlayıcı" style="width:100%;font-size:12px;padding:8px 10px;" onchange="updateCompareData()"></select>
       </div>
       <div>
         <label style="font-size:10px;font-family:var(--font-mono);color:var(--text3);font-weight:700;display:block;margin-bottom:4px;">2. SAĞLAYICI</label>
-        <select class="fs" id="compareIssB" style="width:100%;font-size:12px;padding:8px 10px;" onchange="updateCompareData()"></select>
+        <select class="fs" id="compareIssB" aria-label="2. Servis Sağlayıcı" style="width:100%;font-size:12px;padding:8px 10px;" onchange="updateCompareData()"></select>
       </div>
     </div>
 
     <!-- İl / Bölge Filtresi -->
     <div style="margin-bottom:16px;">
       <label style="font-size:10px;font-family:var(--font-mono);color:var(--text3);font-weight:700;display:block;margin-bottom:4px;">LOKASYON FİLTRESİ</label>
-      <select class="fs" id="compareLocation" style="width:100%;font-size:11px;padding:6px 10px;" onchange="updateCompareData()">
+      <select class="fs" id="compareLocation" aria-label="Kıyaslama Lokasyon Filtresi" style="width:100%;font-size:11px;padding:6px 10px;" onchange="updateCompareData()">
         <option value="">🇹🇷 Tüm Türkiye (Genel)</option>
       </select>
     </div>
@@ -4297,7 +4317,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
     <input type="hidden" id="reportPinId"><input type="hidden" id="reportHexId"><input type="hidden" id="reportBolge">
     <div class="fg" style="margin-bottom:10px;">
       <div class="fl">Bildirim Türü</div>
-      <select class="fs" id="reportType" onchange="onReportTypeChange(this.value)"><option value="yanlis_hiz">Hız verisi yanlış</option><option value="yanlis_konum">Konum yanlış</option><option value="yanlis_iss">İSS bilgisi yanlış</option><option value="spam">Spam / sahte veri</option><option value="guncelleme">Altyapı değişti / Bilgi güncelleme (örn. Fiber geldi)</option><option value="diger">Diğer</option></select>
+      <select class="fs" id="reportType" aria-label="Bildirim Türü" onchange="onReportTypeChange(this.value)"><option value="yanlis_hiz">Hız verisi yanlış</option><option value="yanlis_konum">Konum yanlış</option><option value="yanlis_iss">İSS bilgisi yanlış</option><option value="spam">Spam / sahte veri</option><option value="guncelleme">Altyapı değişti / Bilgi güncelleme (örn. Fiber geldi)</option><option value="diger">Diğer</option></select>
     </div>
     <!-- Fiber / Altyapı Değişikliği Bilgilendirme ve Yönlendirme Kartı -->
     <div id="reportFiberGuide" style="display:none;background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.3);border-radius:7px;padding:10px 12px;margin-bottom:12px;font-size:11px;color:var(--text2);line-height:1.5;">
@@ -4323,15 +4343,15 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
           İSS
           <button onclick="showAddIssModal()" style="font-size:9px;padding:2px 8px;background:var(--accent-dim);border:1px solid rgba(0,212,255,.3);color:var(--accent);border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-weight:700;">+ Yeni İSS</button>
         </div>
-        <select class="fs" id="editIss" onchange="checkEditIssValidity()"></select>
+        <select class="fs" id="editIss" aria-label="İnternet Servis Sağlayıcı" onchange="checkEditIssValidity()"></select>
         <div id="editIssWarning" style="display:none;font-size:9px;color:var(--warn);font-family:var(--font-mono);margin-top:3px;">⚠ Bu İSS onaylı listede değil — kaydetmek pini haritada göstermez</div>
       </div>
-      <div class="fg"><div class="fl">Bağlantı Türü</div><select class="fs" id="editConn"><option value="fiber">Fiber</option><option value="vdsl">VDSL</option><option value="adsl">ADSL</option><option value="docsis">DOCSIS</option><option value="yok">Altyapı Yok</option></select></div>
-      <div class="fg"><div class="fl">DL Hızı (Mbps)</div><input class="fi" type="number" id="editDL" placeholder="100"></div>
-      <div class="fg"><div class="fl">UL Hızı (Mbps)</div><input class="fi" type="number" id="editUL" placeholder="50"></div>
-      <div class="fg"><div class="fl">Paket Hızı DL (Mbps)</div><input class="fi" type="number" id="editPkgDL" placeholder="opsiyonel"></div>
-      <div class="fg"><div class="fl">Paket Hızı UL (Mbps)</div><input class="fi" type="number" id="editPkgUL" placeholder="opsiyonel"></div>
-      <div class="fg"><div class="fl">Memnuniyet Puanı (1–10)</div><input class="fi" type="number" min="1" max="10" id="editPuan" placeholder="8"></div>
+      <div class="fg"><div class="fl">Bağlantı Türü</div><select class="fs" id="editConn" aria-label="Bağlantı Türü"><option value="fiber">Fiber</option><option value="vdsl">VDSL</option><option value="adsl">ADSL</option><option value="docsis">DOCSIS</option><option value="yok">Altyapı Yok</option></select></div>
+      <div class="fg"><div class="fl">DL Hızı (Mbps)</div><input class="fi" type="number" id="editDL" aria-label="İndirme Hızı (Mbps)" placeholder="100"></div>
+      <div class="fg"><div class="fl">UL Hızı (Mbps)</div><input class="fi" type="number" id="editUL" aria-label="Yükleme Hızı (Mbps)" placeholder="50"></div>
+      <div class="fg"><div class="fl">Paket Hızı DL (Mbps)</div><input class="fi" type="number" id="editPkgDL" aria-label="Paket İndirme Hızı (Mbps)" placeholder="opsiyonel"></div>
+      <div class="fg"><div class="fl">Paket Hızı UL (Mbps)</div><input class="fi" type="number" id="editPkgUL" aria-label="Paket Yükleme Hızı (Mbps)" placeholder="opsiyonel"></div>
+      <div class="fg"><div class="fl">Memnuniyet Puanı (1–10)</div><input class="fi" type="number" min="1" max="10" id="editPuan" aria-label="Memnuniyet Puanı (1-10)" placeholder="8"></div>
     </div>
     <div class="fg" style="margin-bottom:10px;">
       <div class="fl">🏘️ Adreste Başka Sağlayıcılar <span style="color:var(--text3);font-weight:400;">(bu pinin sahibi kullanmıyor, sadece mevcut)</span></div>
@@ -4340,7 +4360,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
     </div>
     <div class="fg" style="margin-bottom:10px;">
       <div class="fl">Görünürlük</div>
-      <select class="fs" id="editGorunur">
+      <select class="fs" id="editGorunur" aria-label="Pin Görünürlük Durumu">
         <option value="true">👁 Görünür — haritada yayınla</option>
         <option value="false">🙈 Gizli — haritadan kaldır</option>
       </select>
@@ -4375,8 +4395,8 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
     <div class="fg" style="margin-bottom:10px;">
       <div class="fl">Paket Hızı</div>
       <div class="speed-row">
-        <div class="fiu"><input type="number" placeholder="100" id="userEditPkgDL" min="0" step="1"><span class="fiu-unit">↓ DL</span></div>
-        <div class="fiu"><input type="number" placeholder="20" id="userEditPkgUL" min="0" step="1"><span class="fiu-unit">↑ UL</span></div>
+        <div class="fiu"><input type="number" placeholder="100" id="userEditPkgDL" aria-label="Paket İndirme Hızı (Mbps)" min="0" step="1"><span class="fiu-unit">↓ DL</span></div>
+        <div class="fiu"><input type="number" placeholder="20" id="userEditPkgUL" aria-label="Paket Yükleme Hızı (Mbps)" min="0" step="1"><span class="fiu-unit">↑ UL</span></div>
       </div>
     </div>
     
@@ -4384,8 +4404,8 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
       <div class="fl">Gerçek Hız (Ölçülen)</div>
       <button class="btn-run-speedtest" onclick="openSpeedTestForUserEdit()">⚡ Yeni Hız Testi Yap</button>
       <div class="speed-row" style="margin-top:6px;">
-        <div class="fiu"><input type="number" placeholder="—" id="userEditDL" readonly min="0"><span class="fiu-unit">↓ DL</span></div>
-        <div class="fiu"><input type="number" placeholder="—" id="userEditUL" readonly min="0"><span class="fiu-unit">↑ UL</span></div>
+        <div class="fiu"><input type="number" placeholder="—" id="userEditDL" aria-label="Ölçülen İndirme Hızı (Mbps)" readonly min="0"><span class="fiu-unit">↓ DL</span></div>
+        <div class="fiu"><input type="number" placeholder="—" id="userEditUL" aria-label="Ölçülen Yükleme Hızı (Mbps)" readonly min="0"><span class="fiu-unit">↑ UL</span></div>
       </div>
       <div class="verified-badge" id="userEditSpeedVerifiedBadge"><div class="verified-tick">✓</div><span>Sayfa içi test ile ölçüldü — Doğrulanmış</span></div>
     </div>
@@ -4433,7 +4453,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
     <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">Listeye yeni bir İSS ekleyin. Hem bu oturumda hem sonraki kullanımlarda görünür. Kalıcı eklemek için kodu güncelleyin.</div>
     <div class="fg" style="margin-bottom:16px;">
       <div class="fl">İSS Adı</div>
-      <input class="fi" type="text" id="addIssName" placeholder="Örn: Fibernet, Bimcell..." maxlength="60" onkeydown="if(event.key==='Enter')confirmAddIss()">
+      <input class="fi" type="text" id="addIssName" aria-label="Eklenecek yeni İSS adı" placeholder="Örn: Fibernet, Bimcell..." maxlength="60" onkeydown="if(event.key==='Enter')confirmAddIss()">
     </div>
     <div style="display:flex;gap:8px;">
       <button class="btn-primary" id="confirmAddIssBtn" style="flex:1;padding:10px;" onclick="confirmAddIss()">✅ Ekle</button>
@@ -4507,7 +4527,6 @@ var mapLoadingTimeout = null;
     ihStorage.set('ih_browser_fp', browserFingerprint);
   } finally {
     fpReady = true;
-    document.getElementById('fpDot')?.classList.add('ready');
     if (typeof renderMyPins === 'function' && typeof maps !== 'undefined' && maps.main) {
       renderMyPins();
     }
@@ -7135,7 +7154,25 @@ function handleHashRoute() {
     openWelcomeModal();
   } else if (rawHash === 'faq' || rawHash === 'sss' || rawHash === 'bilgi') {
     showPage('harita', false);
-    setTimeout(scrollToEditorial, 120);
+    setTimeout(() => {
+      const el = document.getElementById('faq');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      else scrollToEditorial();
+    }, 120);
+  } else if (rawHash === 'hiz-hesaplayici' || rawHash === 'hesaplayici' || rawHash === 'hesapla') {
+    showPage('harita', false);
+    setTimeout(() => {
+      const el = document.getElementById('hiz-hesaplayici');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      else scrollToEditorial();
+    }, 120);
+  } else if (rawHash === 'fiber-dilekce' || rawHash === 'dilekce' || rawHash === 'fiber-talep') {
+    showPage('harita', false);
+    setTimeout(() => {
+      const el = document.getElementById('fiber-dilekce');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      else scrollToEditorial();
+    }, 120);
   } else if (!rawHash || rawHash === 'harita') {
     showPage('harita', false);
   }
@@ -9789,7 +9826,7 @@ function createExtraAltyapiRow(containerId, prefillIss, prefillTurs) {
   row.id = rowId;
   row.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;padding:8px;background:var(--surface2);border-radius:6px;';
   row.innerHTML = `
-    <select class="fs" style="flex:1 1 100%;" data-role="iss">${issOptions}</select>
+    <select class="fs" aria-label="Ek Sağlayıcı" style="flex:1 1 100%;" data-role="iss">${issOptions}</select>
     <div class="cbtns" style="flex:1;min-width:0;" data-role="turgroup">
       <div class="cbtn fiber" data-tur="fiber" onclick="selExtraRowType(this)">Fiber</div>
       <div class="cbtn vdsl" data-tur="vdsl" onclick="selExtraRowType(this)">VDSL</div>
@@ -10143,7 +10180,7 @@ async function submitPin() {
         saveMyPinLocal({ ...fb, created_at: new Date().toISOString() });
         if (typeof addPinToGoogleAccount === 'function') addPinToGoogleAccount(fb);
         markSubmit(); if (isAltyapiYok) markSubmitNoInfra();
-        showToast('⚠ Verini aldık — DB güncellemesi bekleniyor', 'warn'); 
+        showToast('Ölçümünüz kaydedildi, kısa sürede haritada görüntülenecektir.', 'ok'); 
         showThankyou(thankyouData);
         resetPinForm(); loadPins(); 
       } catch(e2) { showToast(friendlyDbError(e2,'pins'),'err'); }
@@ -11082,9 +11119,10 @@ async function loadIssManager() {
           ${statusBadge}
           <input type="color" value="${c.startsWith('hsl') ? '#6366f1' : c}"
             style="width:28px;height:24px;border:1px solid var(--border);border-radius:4px;background:none;cursor:pointer;padding:1px;flex-shrink:0;"
+            aria-label="${escAttr(item.name)} marka rengi"
             onchange="updateIssColor(${item.id}, this.value, '${escAttr(item.name)}')">
           <label style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text3);cursor:pointer;flex-shrink:0;">
-            <input type="checkbox" ${item.active!==false?'checked':''} onchange="toggleIssActive(${item.id}, this.checked)"> Aktif
+            <input type="checkbox" aria-label="${escAttr(item.name)} aktif durumu" ${item.active!==false?'checked':''} onchange="toggleIssActive(${item.id}, this.checked)"> Aktif
           </label>
           <button class="btn-edit" style="padding:4px 8px;font-size:10px;" onclick="renameIssInList(${item.id},'${escAttr(item.name)}')" title="İsim Değiştir">✏️</button>
           <button class="btn-del" style="padding:4px 8px;font-size:10px;" onclick="removeIssFromList(${item.id},'${escAttr(item.name)}')" title="Sil">🗑</button>
@@ -11917,7 +11955,7 @@ function renderAdminTable(pins) {
       : `<button class="btn-hide" style="padding:4px 8px;font-size:10px;" onclick="quickHidePinRow('${p.id}')" title="Haritadan gizle">👁 Gizle</button>`;
 
     return `<tr style="background:${rowBg}">
-      <td><input type="checkbox" class="pin-check" value="${p.id}"></td>
+      <td><input type="checkbox" class="pin-check" aria-label="Pin #${p.id} seç" value="${p.id}"></td>
       <td style="color:var(--text3);white-space:nowrap;">${tarihStr}<br><span style="font-size:10px;color:var(--accent);font-family:var(--font-mono)">${saatStr} · #${p.id}</span></td>
       <td>
         <div style="display:flex;align-items:center;gap:6px;">
@@ -12434,11 +12472,11 @@ async function loadStatEditTable(search) {
     tbody.innerHTML = pins.map(p => `<tr id="se_${p.id}">
       <td style="font-size:11px;font-weight:700;">${escHtml(p.iss)}</td>
       <td><span style="color:${cc(p.baglanti_turu)};font-family:var(--font-mono);font-size:10px">${(p.baglanti_turu||'').toUpperCase()}</span></td>
-      <td><input class="fi" type="number" value="${p.gercek_dl||''}" id="se_dl_${p.id}" style="padding:4px 8px;font-size:11px;width:70px;"></td>
-      <td><input class="fi" type="number" value="${p.gercek_ul||''}" id="se_ul_${p.id}" style="padding:4px 8px;font-size:11px;width:70px;"></td>
-      <td><input class="fi" type="number" min="1" max="10" value="${p.puan||''}" id="se_puan_${p.id}" style="padding:4px 8px;font-size:11px;width:55px;"></td>
+      <td><input class="fi" type="number" value="${p.gercek_dl||''}" id="se_dl_${p.id}" aria-label="DL Hızı Mbps" style="padding:4px 8px;font-size:11px;width:70px;"></td>
+      <td><input class="fi" type="number" value="${p.gercek_ul||''}" id="se_ul_${p.id}" aria-label="UL Hızı Mbps" style="padding:4px 8px;font-size:11px;width:70px;"></td>
+      <td><input class="fi" type="number" min="1" max="10" value="${p.puan||''}" id="se_puan_${p.id}" aria-label="Memnuniyet Puanı" style="padding:4px 8px;font-size:11px;width:55px;"></td>
       <td>
-        <select class="fs" id="se_gor_${p.id}" style="padding:4px 6px;font-size:10px;width:80px;">
+        <select class="fs" id="se_gor_${p.id}" aria-label="Görünürlük Durumu" style="padding:4px 6px;font-size:10px;width:80px;">
           <option value="true" ${p.gorunur!==false?'selected':''}>👁 Görünür</option>
           <option value="false" ${p.gorunur===false?'selected':''}>🙈 Gizli</option>
         </select>
@@ -13195,14 +13233,24 @@ function toggleAllISSChips() {
 }
 
 // ===== HARİTA ARAMA (NOMİNATİM) =====
+let _mapSearchController = null;
 async function searchLocation() {
   const q = document.getElementById('mapSearchInput').value.trim();
   if (!q) return;
   const resultsEl = document.getElementById('searchResults');
   resultsEl.innerHTML = '<div class="search-result-item"><div class="search-result-name">🔍 Aranıyor...</div></div>';
   resultsEl.classList.add('open');
+
+  if (_mapSearchController) _mapSearchController.abort();
+  _mapSearchController = new AbortController();
+  const timer = setTimeout(() => _mapSearchController && _mapSearchController.abort(), 6000);
+
   try {
-    const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=tr&format=json&limit=5&accept-language=tr`, { headers: { 'Accept-Language': 'tr' } });
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=tr&format=json&limit=5&accept-language=tr`, {
+      headers: { 'Accept-Language': 'tr' },
+      signal: _mapSearchController.signal
+    });
+    clearTimeout(timer);
     const results = await r.json();
     if (!results.length) {
       resultsEl.innerHTML = '<div class="search-result-item"><div class="search-result-name" style="color:var(--text3)">Sonuç bulunamadı</div></div>';
@@ -13218,9 +13266,26 @@ async function searchLocation() {
       </div>`;
     }).join('');
   } catch(e) {
-    resultsEl.innerHTML = '<div class="search-result-item" style="color:var(--danger)">Bağlantı hatası</div>';
+    clearTimeout(timer);
+    if (e.name !== 'AbortError') {
+      resultsEl.innerHTML = '<div class="search-result-item" style="color:var(--danger)">Bağlantı hatası</div>';
+    }
+  } finally {
+    _mapSearchController = null;
   }
 }
+
+document.addEventListener('click', e => {
+  const sr = document.getElementById('searchResults');
+  if (sr && sr.classList.contains('open') && !e.target.closest('.search-wrap')) {
+    sr.classList.remove('open');
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.getElementById('searchResults')?.classList.remove('open');
+  }
+});
 
 function flyToResult(lat, lng, title = '', sub = '') {
   if (!maps.main) return;
@@ -14875,15 +14940,39 @@ function updateFiberPetition() {
   preview.textContent = text;
 }
 
+function fallbackCopyText(text) {
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    var ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (ok && typeof showToast === 'function') {
+      showToast('📋 Dilekçe metni panoya kopyalandı!', 'ok');
+      return;
+    }
+  } catch (e) {}
+  if (typeof showToast === 'function') showToast('Metin seçildi, Ctrl+C ile kopyalayabilirsiniz.', 'warn');
+}
+
 function copyFiberPetition() {
   var preview = document.getElementById('petitionPreviewText');
   if (!preview) return;
   if (!preview.textContent) updateFiberPetition();
-  navigator.clipboard.writeText(preview.textContent).then(function () {
-    if (typeof showToast === 'function') showToast('📋 Dilekçe metni panoya kopyalandı!', 'ok');
-  }).catch(function () {
-    if (typeof showToast === 'function') showToast('Metin seçildi, Ctrl+C ile kopyalayabilirsiniz.', 'warn');
-  });
+  var text = preview.textContent;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () {
+      if (typeof showToast === 'function') showToast('📋 Dilekçe metni panoya kopyalandı!', 'ok');
+    }).catch(function () {
+      fallbackCopyText(text);
+    });
+  } else {
+    fallbackCopyText(text);
+  }
 }
 
 function printFiberPetition() {

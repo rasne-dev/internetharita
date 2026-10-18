@@ -1,4 +1,4 @@
-const CACHE = 'iharita-v84';
+const CACHE = 'iharita-v85';
 const ASSETS = [
   '/',
   '/index.html',
@@ -9,7 +9,9 @@ const ASSETS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js'
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js',
+  'https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3.4.2/dist/fp.min.js',
+  '/data/speedtest_tr.json'
 ];
 
 self.addEventListener('install', e => {
@@ -33,7 +35,7 @@ self.addEventListener('fetch', e => {
   if (!url.startsWith('http')) return;
 
   const isSameOrigin = url.startsWith(self.location.origin);
-  const isStaticCdn = ['unpkg.com/leaflet', 'unpkg.com/h3-js', 'cdn.jsdelivr.net/npm/@supabase', 'fonts.googleapis.com', 'fonts.gstatic.com'].some(d => url.includes(d));
+  const isStaticCdn = ['unpkg.com/leaflet', 'unpkg.com/h3-js', 'cdn.jsdelivr.net/npm/@supabase', 'cdn.jsdelivr.net/npm/@fingerprintjs', 'fonts.googleapis.com', 'fonts.gstatic.com'].some(d => url.includes(d));
 
   // Üçüncü taraf reklam (AdSense, DoubleClick, FundingChoices), veritabanı ve hız testi isteklerine hiç dokunma
   if (!isSameOrigin && !isStaticCdn) return;
