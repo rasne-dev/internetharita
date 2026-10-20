@@ -1,4 +1,4 @@
-const CACHE = 'iharita-v91';
+const CACHE = 'iharita-v92';
 const ASSETS = [
   '/',
   '/index.html',
@@ -49,7 +49,7 @@ self.addEventListener('fetch', e => {
           caches.open(CACHE).then(c => c.put(e.request, clone));
         }
         return res;
-      }).catch(() => caches.match(e.request).then(hit => hit || caches.match('/index.html') || Response.error()))
+      }).catch(() => caches.match(e.request).then(hit => hit || caches.match('/index.html')).then(res => res || Response.error()))
     );
     return;
   }

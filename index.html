@@ -4331,7 +4331,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
       <div>Bölgenize yeni bir Fiber altyapısı gelmiş olması, diğer binalardaki veya komşularınızdaki VDSL/ADSL ölçümlerini hatalı kılmaz (binaların altyapıları veya kullanıcı paketleri farklı olabilir). Kendi binanızdaki yeni Fiber hızını paylaşmak için lütfen doğrudan haritaya kendi ölçümünüzü ekleyin:</div>
       <button type="button" class="btn-ghost" onclick="redirectToNewPinFromReport()" style="margin-top:8px;width:100%;font-size:11px;color:var(--accent);border-color:var(--accent);padding:7px 10px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;">📍 Kendi Hız Ölçümünü Haritaya Ekle (+ Veri Ekle)</button>
     </div>
-    <div class="fg" style="margin-bottom:16px;"><div class="fl">Açıklama (opsiyonel)</div><textarea class="fta" id="reportText" placeholder="Neyin yanlış olduğunu veya güncel altyapı durumunu açıklayın..."></textarea></div>
+    <div class="fg" style="margin-bottom:16px;"><div class="fl">Açıklama (opsiyonel)</div><textarea class="fta" id="reportText" aria-label="Şikayet veya düzeltme gerekçesi" placeholder="Neyin yanlış olduğunu veya güncel altyapı durumunu açıklayın..."></textarea></div>
     <button class="btn-primary" id="reportSubmitBtn" style="width:100%;padding:11px;" onclick="submitReport()">Bildirimi Gönder</button>
   </div>
 </div>
@@ -4371,7 +4371,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
         <option value="false">🙈 Gizli — haritadan kaldır</option>
       </select>
     </div>
-    <div class="fg" style="margin-bottom:16px;"><div class="fl">Moderatör Notu <span class="mod-note-badge">MOD</span></div><textarea class="fta" id="editModNote" placeholder="Bu pin ile ilgili bir not ekleyin..." style="min-height:70px;"></textarea></div>
+    <div class="fg" style="margin-bottom:16px;"><div class="fl">Moderatör Notu <span class="mod-note-badge">MOD</span></div><textarea class="fta" id="editModNote" aria-label="Moderatör inceleme notu" placeholder="Bu pin ile ilgili bir not ekleyin..." style="min-height:70px;"></textarea></div>
     <div style="display:flex;gap:8px;">
       <button class="btn-primary" id="editSaveBtn" style="flex:1;padding:11px;" onclick="saveEdit()">💾 Kaydet</button>
       <button class="btn-approve" style="padding:11px 14px;" onclick="quickApproveEdit()" title="ISS'i onayla, görünür yap, kaydet">✅ Onayla</button>
@@ -5172,7 +5172,7 @@ function friendlyDbError(e, tableLabel) {
   if (msg.includes('42501') || msg.includes('row-level security') || msg.includes('0 satır')) {
     console.error(`[internetHarita] "${tableLabel}" tablosunda RLS hatası. Detay:`, msg);
     if (typeof isModLoggedIn !== 'undefined' && isModLoggedIn) {
-      return `⚠ Supabase RLS Hatası (42501): Moderatör hesabının "${tableLabel}" tablosunda güncelleme yetkisi yok (0 satır etkilendi).`;
+      return `⚠ İşlem yetkisi doğrulanamadı. Lütfen oturumunuzu yenileyip tekrar deneyin.`;
     }
     return 'İşlem tamamlanamadı. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.';
   }
@@ -10072,7 +10072,7 @@ async function submitPin() {
     if (!p.lat || !p.lng) return false;
     const fp = p.browser_fp || p.ip_hash;
     const myFp = browserFingerprint;
-    const isMine = p.is_own_pin || (myPinIdsList && myPinIdsList.includes(p.id)) || (fp && myFp && fp === myFp);
+    const isMine = p.is_own_pin || (myPinIdsList && myPinIdsList.includes(String(p.id))) || (fp && myFp && fp === myFp);
     if (!isMine) return false;
     const dist = Math.sqrt(Math.pow((p.lat - pinLat)*111000, 2) + Math.pow((p.lng - pinLng)*111000*Math.cos(pinLat*Math.PI/180), 2));
     const age = (Date.now() - new Date(p.created_at).getTime()) / 3600000;
@@ -11365,7 +11365,8 @@ async function loadSpeedRankEditor(search) {
     // Özeti tablonun başına ekle
     tbody.insertBefore(summary, tbody.firstChild);
   } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger);">Hata: ${e.message}</td></tr>`;
+    console.error('[internetHarita] loadSpeedRankEditor hatası:', e);
+    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger);padding:10px;text-align:center;">Veriler yüklenirken bir sorun oluştu. Lütfen tekrar deneyin.</td></tr>`;
   }
 }
 const debouncedLoadSpeedRankEditor = debounce(loadSpeedRankEditor);
@@ -12493,7 +12494,10 @@ async function loadStatEditTable(search) {
         <button class="btn-del" style="padding:4px 8px;font-size:9px;" onclick="modDeletePin('${p.id}',true)" title="Pini Sil" aria-label="Pini Sil">🗑</button>
       </td>
     </tr>`).join('');
-  } catch(e) { tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger);padding:10px;">${e.message}</td></tr>`; }
+  } catch(e) {
+    console.error('[internetHarita] loadStatEditTable hatası:', e);
+    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger);padding:10px;text-align:center;">Veriler yüklenirken bir sorun oluştu. Lütfen tekrar deneyin.</td></tr>`;
+  }
 }
 const debouncedLoadStatEditTable = debounce(loadStatEditTable, 200);
 function filterStatEditTable(search) {
@@ -12534,7 +12538,7 @@ async function signInWithGoogle() {
     if (error) throw error;
   } catch (err) {
     console.error('[internetHarita] Google SignIn hatası:', err);
-    showToast('Google ile giriş başlatılamadı: ' + (err.message || err), 'err');
+    showToast('Google ile oturum başlatılamadı. Lütfen tekrar deneyin.', 'err');
   }
 }
 
@@ -14355,6 +14359,7 @@ function closeSpeedTestModal() {
     try { _cfSpeedEngine.pause(); } catch(e) {}
     stRunning = false;
   }
+  resetSpeedTestUI();
   document.getElementById('speedTestModal').classList.remove('open');
   speedTestTarget = 'form';
 }
