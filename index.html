@@ -1637,6 +1637,11 @@ html.light .leaflet-control-zoom a {
   color: var(--text) !important;
   border-bottom-color: var(--border) !important;
 }
+html.light .leaflet-control-locate a,
+html.light .leaflet-control-reset-view a {
+  background: #ffffff !important;
+  color: var(--text) !important;
+}
 html.light .leaflet-control-attribution {
   background: rgba(255, 255, 255, 0.94) !important;
   color: var(--text2) !important;
@@ -2551,6 +2556,35 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
 .leaflet-control-locate a:hover svg {
   transform: scale(1.1);
 }
+.leaflet-control-reset-view a {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all .15s;
+}
+.leaflet-control-reset-view a svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  transition: transform .2s ease;
+}
+.leaflet-control-reset-view a:hover {
+  background: var(--surface2) !important;
+  color: var(--accent) !important;
+  transform: scale(1.08);
+}
+.leaflet-control-reset-view a:hover svg {
+  transform: rotate(-45deg);
+}
 @media (max-width: 480px) {
   .scorecard-modal { padding: 10px; }
   .scorecard-box { padding: 18px 14px; border-radius: 16px; }
@@ -2918,7 +2952,7 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
         <!-- BENİM ÖLÇÜMLERİM -->
         <div class="sidebar-section">
           <div class="sidebar-section-title">Kişiselleştirme</div>
-          <div class="my-pins-toggle" id="myPinsToggle" onclick="toggleMyPinsUI()">
+          <div class="my-pins-toggle" id="myPinsToggle" role="switch" aria-checked="false" tabindex="0" onclick="toggleMyPinsUI()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleMyPinsUI();}">
             <div class="my-pins-label">📍 Ölçümlerimi Haritada Gör</div>
             <div class="my-pins-dot"></div>
           </div>
@@ -4598,8 +4632,8 @@ async function sbRest(path, opts = {}) {
     }
     clearTimeout(timer);
 
-    // POST minimal, DELETE, ve PATCH minimal: body okuma gerekmiyor, sadece ok/error
-    if (opts.method === 'DELETE' ||
+    // POST minimal, DELETE minimal, ve PATCH minimal: body okuma gerekmiyor, sadece ok/error
+    if ((opts.method === 'DELETE' && opts.prefer !== 'return=representation') ||
         (opts.method === 'PATCH' && opts.prefer?.includes('minimal')) ||
         (opts.method === 'POST' && !opts.prefer)) {
       if (!r.ok) { const err = await r.text(); throw new Error(err || 'İşlem başarısız'); }
@@ -4708,7 +4742,11 @@ function toggleMyPinsUI() {
 
   isMyPinsVisible = !isMyPinsVisible;
   const btn = document.getElementById('myPinsToggle');
-  if (btn) { btn.classList.toggle('active', isMyPinsVisible); syncInteractiveControlState(btn.parentElement); }
+  if (btn) {
+    btn.classList.toggle('active', isMyPinsVisible);
+    btn.setAttribute('aria-checked', isMyPinsVisible ? 'true' : 'false');
+    syncInteractiveControlState(btn.parentElement);
+  }
   if (typeof updateFilterIndicator === 'function') updateFilterIndicator();
   renderMyPins();
   showToast(isMyPinsVisible ? '📍 Ölçümleriniz haritaya eklendi' : '👁 Ölçümleriniz haritadan gizlendi');
@@ -5654,10 +5692,10 @@ async function delPinOwn(id) {
   try {
     result = await sbRest(`pins?id=eq.${sId}`, {
       method: 'PATCH',
-      prefer: 'return=minimal',
+      prefer: 'return=representation',
       body: JSON.stringify({ deleted_at: delIso, gorunur: false })
     });
-    if (result && result.ok) {
+    if (Array.isArray(result) && result.length > 0) {
       success = true;
     }
   } catch(e) {
@@ -5671,11 +5709,11 @@ async function delPinOwn(id) {
       try {
         result = await sbRest(`pins?id=eq.${sId}`, {
           method: 'PATCH',
-          prefer: 'return=minimal',
+          prefer: 'return=representation',
           customFp: pin.browser_fp,
           body: JSON.stringify({ deleted_at: delIso, gorunur: false })
         });
-        if (result && result.ok) {
+        if (Array.isArray(result) && result.length > 0) {
           success = true;
         }
       } catch(e2) {
@@ -5687,8 +5725,8 @@ async function delPinOwn(id) {
   // 3. Yedek olarak DELETE dene
   if (!success) {
     try {
-      result = await sbRest(`pins?id=eq.${sId}`, { method: 'DELETE', prefer: 'return=minimal' });
-      if (result && result.ok) success = true;
+      result = await sbRest(`pins?id=eq.${sId}`, { method: 'DELETE', prefer: 'return=representation' });
+      if (Array.isArray(result) && result.length > 0) success = true;
     } catch(e3) {
       console.warn('[internetHarita] delPinOwn DELETE denemesi:', e3);
     }
@@ -6650,7 +6688,7 @@ async function toggleMaintenanceMode(active) {
   } catch(e) {
     if(e.message.includes("schema cache") || e.message.includes("does not exist")) {
       showToast("Önbellek güncelleniyor. Lütfen 1-2 dk bekleyin veya API Ayarlarından Cache'i yenileyin.", "warn");
-    } else { showToast('Hata: ' + e.message, 'err'); }
+    } else { showToast(friendlyDbError(e, 'site_config'), 'err'); }
     applyMaintenanceMode(!active);
   }
 }
@@ -6678,15 +6716,27 @@ async function clearSubmissionsPaused() {
     await sbRest('site_config', { method:'POST', prefer:'resolution=merge-duplicates,return=minimal', body: JSON.stringify({ key:'submissions_paused', value:'false' }) });
     applySubmissionsPaused(false);
     showToast('✅ Otomatik duraklatma kaldırıldı — veri girişi tekrar açık');
-  } catch(e) { showToast('Hata: ' + e.message, 'err'); }
+  } catch(e) { showToast(friendlyDbError(e, 'site_config'), 'err'); }
 }
 
 let activeHexPins =[];
 function fuzzy(lat, lng) {
-  const o = 0.0013; // ~100m gizlilik şaşırtması (KVKK / GDPR uyumu)
+  const numLat = Number(lat);
+  const numLng = Number(lng);
+  if (isNaN(numLat) || isNaN(numLng)) return { lat: numLat, lng: numLng };
+
+  // 40m – 100m aralığında izotropik polar kaydırma (~100m KVKK / GDPR konum bulanıklaştırma)
+  // Sabit yarıçap aralığı sayesinde pin asla evin tam üstüne (<40m) düşmez
+  const dist = 40 + Math.random() * 60; // 40 ila 100 metre
+  const angle = Math.random() * 2 * Math.PI;
+
+  const latOffset = (dist * Math.cos(angle)) / 111320;
+  const cosLat = Math.cos(numLat * Math.PI / 180);
+  const lngOffset = (dist * Math.sin(angle)) / (111320 * (Math.abs(cosLat) > 0.0001 ? cosLat : 1));
+
   return {
-    lat: +(Number(lat) + (Math.random() - 0.5) * o).toFixed(6),
-    lng: +(Number(lng) + (Math.random() - 0.5) * o).toFixed(6)
+    lat: +(numLat + latOffset).toFixed(6),
+    lng: +(numLng + lngOffset).toFixed(6)
   };
 }
 const IC = { 
@@ -7307,6 +7357,20 @@ async function initMainMap() {
   applyMapBaseLayers(m);
   L.control.zoom({ position:'bottomright' }).addTo(m); 
 
+  // Haritada "Türkiye Geneli Görünüm" kontrolü
+  const resetControl = L.control({ position: 'bottomright' });
+  resetControl.onAdd = function() {
+    const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-reset-view');
+    div.innerHTML = `<a href="javascript:void(0)" title="Türkiye Geneli Görünüm (Sıfırla)" role="button" aria-label="Türkiye Geneli Görünüm"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></a>`;
+    div.onclick = function(e) {
+      if (e.stopPropagation) e.stopPropagation();
+      if (e.preventDefault) e.preventDefault();
+      resetMainMapView();
+    };
+    return div;
+  };
+  resetControl.addTo(m);
+
   // Haritada "Konumuma Git" kontrolü
   const locateControl = L.control({ position: 'bottomright' });
   locateControl.onAdd = function() {
@@ -7361,6 +7425,15 @@ function onZoomEnd() {
   renderHex(); renderModPins(); renderMyPins();
   const z = maps.main.getZoom(); const hints = { 5:'Türkiye geneli', 6:'Bölge bazlı', 7:'İl bazlı', 9:'İlçe bazlı', 11:'Mahalle bazlı', 13:'Sokak bazlı', 15:'Bina bazlı' };
   const found = Object.entries(hints).reverse().find(([k]) => z >= parseInt(k)); if (found) document.getElementById('zoomHint').textContent = found[1] + ' görünümü';
+}
+
+function resetMainMapView() {
+  if (!maps.main) return;
+  const isMobile = window.innerWidth <= 768;
+  const targetCenter = isMobile ? [39.0, 35.5] : [38.8, 37.5];
+  const targetZoom = isMobile ? (window.innerWidth < 480 ? 5 : 6) : 6;
+  maps.main.flyTo(targetCenter, targetZoom, { animate: true, duration: 1.2 });
+  showToast('🇹🇷 Harita görünümü Türkiye geneline sıfırlandı');
 }
 
 function locateUserOnMainMap() {
@@ -7481,7 +7554,25 @@ async function _loadPinsCore() {
 
     // Başarılı pinleri localStorage'a yedekle (çevrimdışı / zayıf ağ koruması)
     try {
-      localStorage.setItem('ih_cached_pins', JSON.stringify({ ts: Date.now(), pins: finalPins }));
+      const compactPins = finalPins.map(p => ({
+        id: p.id,
+        lat: p.lat,
+        lng: p.lng,
+        iss: p.iss,
+        baglanti_turu: p.baglanti_turu,
+        gercek_dl: p.gercek_dl,
+        gercek_ul: p.gercek_ul,
+        puan: p.puan,
+        gorunur: p.gorunur,
+        is_quarantine: p.is_quarantine,
+        is_altyapi_yok: p.is_altyapi_yok,
+        is_own_pin: p.is_own_pin,
+        created_at: p.created_at,
+        il: p.il,
+        ilce: p.ilce,
+        mahalle: p.mahalle
+      }));
+      localStorage.setItem('ih_cached_pins', JSON.stringify({ ts: Date.now(), pins: compactPins }));
     } catch(err) {}
 
     pinsData = finalPins; 
@@ -10167,7 +10258,7 @@ async function submitPin() {
     resetPinForm(); loadPins();
   } catch(e) {
     // Ağ / bağlantı hatası durumunda taslak olarak güvene al
-    const isNetworkError = !navigator.onLine || e?.name === 'TypeError' || String(e).includes('fetch') || String(e).includes('NetworkError') || String(e).includes('Failed to fetch');
+    const isNetworkError = !navigator.onLine || e?.name === 'TypeError' || e?.name === 'AbortError' || String(e).includes('fetch') || String(e).includes('NetworkError') || String(e).includes('Failed to fetch') || String(e).includes('Load failed') || String(e).includes('zaman aşım') || String(e).includes('timeout');
     if (isNetworkError) {
       saveOfflineDraftPin(pinPayload, thankyouData);
       saveMyPinLocal({ ...pinPayload, is_draft: true, created_at: new Date().toISOString() });
@@ -10547,6 +10638,17 @@ async function saveUserEdit() {
   if (!connType) return showToast('Lütfen bağlantı türü seçin', 'err');
   if (!dl) return showToast('Hız verisi boş olamaz', 'err');
   if (!score) return showToast('Lütfen memnuniyet puanı verin', 'err');
+
+  const maxSpeed = Math.max(pkgDL || dl, dl);
+  if (maxSpeed > 100 && (connType === 'adsl' || connType === 'vdsl')) {
+    return showToast('100 Mbps üzeri hızlar VDSL/ADSL olamaz — lütfen "Fiber" seçin', 'err');
+  }
+  if (maxSpeed > 24 && connType === 'adsl') {
+    return showToast('24 Mbps üzeri hızlar ADSL olamaz — lütfen "VDSL" veya "Fiber" seçin', 'err');
+  }
+  if (dl < 0.5 || dl > 2500) return showToast('Geçersiz download hızı (0.5–2500 Mbps)', 'err');
+  if (ul > 2500) return showToast('Geçersiz upload hızı (max 2500 Mbps)', 'err');
+  if (ul > dl * 5) return showToast('Upload hızı download hızının 5 katından fazla olamaz', 'err');
   
   const payload = {
     baglanti_turu: connType,
@@ -10676,6 +10778,9 @@ async function deleteAndRecreatePin() {
       adminPinsCache = adminPinsCache.filter(p => String(p.id) !== sId);
     }
     renderHex();
+    if (isMyPinsVisible && typeof renderMyPins === 'function') renderMyPins();
+    if (typeof renderUserPinsList === 'function') renderUserPinsList();
+    if (document.getElementById('page-istatistik')?.classList.contains('active')) renderStats();
     closeUserEditModal();
     document.getElementById('mapInfo')?.classList.remove('visible');
 
@@ -10862,7 +10967,17 @@ async function modLogin() {
     const emailBadge = document.getElementById('modUserEmailBadge');
     if (emailBadge) emailBadge.textContent = data.user.email;
     showToast('✅ Giriş başarılı'); switchModTab('tumPinler'); refreshModData(); if(maps.main) renderModPins(); loadMaintenanceState();
-  } catch(e) { showToast('Hata: '+e.message,'err'); }
+  } catch(e) {
+    console.error('[internetHarita] modLogin hatası:', e);
+    const msg = e?.message || String(e);
+    if (msg.includes('Invalid login credentials') || msg.includes('invalid_grant')) {
+      showToast('E-posta adresi veya şifre hatalı.', 'err');
+    } else if (msg.includes('moderatör yetkisine') || msg.includes('Yetkisiz') || msg.includes('iframe')) {
+      showToast(msg, 'err');
+    } else {
+      showToast('Giriş yapılamadı. Lütfen bilgilerinizi ve bağlantınızı kontrol edin.', 'err');
+    }
+  }
 }
 async function modLogout() {
   await sbc.auth.signOut(); isModLoggedIn=false; currentModUser=null; 
@@ -11044,7 +11159,7 @@ async function approveCustomIss(iss, normalizedName, color) {
     loadIssManager();
     updateInboxSummary();
     updateModStatsSummary();
-  } catch(e) { showToast('Hata: '+e.message,'err'); }
+  } catch(e) { showToast(friendlyDbError(e, 'iss_list'), 'err'); }
 }
 
 async function rejectCustomIss(iss) {
@@ -11062,7 +11177,7 @@ async function rejectCustomIss(iss) {
     updateInboxSummary();
     updateModStatsSummary();
     loadAdminTable();
-  } catch(e) { showToast('Hata: '+e.message,'err'); }
+  } catch(e) { showToast(friendlyDbError(e, 'iss_list'), 'err'); }
 }
 
 async function deleteCustomIssAndPins(iss) {
@@ -11081,7 +11196,7 @@ async function deleteCustomIssAndPins(iss) {
     updateInboxSummary();
     updateModStatsSummary();
     loadAdminTable();
-  } catch(e) { showToast('Hata: ' + e.message, 'err'); }
+  } catch(e) { showToast(friendlyDbError(e, 'site_config'), 'err'); }
 }
 
 // ===== İSS YÖNETİM PANELİ =====
@@ -11137,7 +11252,7 @@ async function loadIssManager() {
       </div>`;
     }).join('');
     initIssDragDrop();
-  } catch(e) { list.innerHTML='Hata: '+e.message; }
+  } catch(e) { list.innerHTML='<div style="color:var(--danger);padding:10px;">İSS listesi yüklenemedi.</div>'; }
 }
 
 async function addNewIssToList() {
@@ -11150,7 +11265,7 @@ async function addNewIssToList() {
     showToast(`✅ "${name}" listeye eklendi`);
     await loadIssListAndRenderChips();
     loadIssManager();
-  } catch(e) { showToast('Hata: '+e.message,'err'); }
+  } catch(e) { showToast(friendlyDbError(e, 'iss_list'), 'err'); }
 }
 
 async function updateIssColor(id, color, name) {
@@ -11158,7 +11273,7 @@ async function updateIssColor(id, color, name) {
     await patchIss(id, { color });
     await loadIssListAndRenderChips();
     showToast(`🎨 "${name}" rengi güncellendi`);
-  } catch(e) { showToast('Hata: '+e.message,'err'); }
+  } catch(e) { showToast(friendlyDbError(e, 'iss_list'), 'err'); }
 }
 
 async function toggleIssActive(id, active) {
@@ -11166,7 +11281,7 @@ async function toggleIssActive(id, active) {
     await patchIss(id, { active });
     await loadIssListAndRenderChips();
     showToast(active ? '✅ İSS aktifleştirildi' : '👁 İSS gizlendi');
-  } catch(e) { showToast('Hata: '+e.message,'err'); }
+  } catch(e) { showToast(friendlyDbError(e, 'iss_list'), 'err'); }
 }
 
 async function removeIssFromList(id, name) {
@@ -11175,7 +11290,7 @@ async function removeIssFromList(id, name) {
     document.getElementById('issrow_'+id)?.remove();
     await loadIssListAndRenderChips();
     showToast(`🗑 "${name}" listeden kaldırıldı`);
-  } catch(e) { showToast('Hata: '+e.message,'err'); }
+  } catch(e) { showToast(friendlyDbError(e, 'iss_list'), 'err'); }
 }
 
 // ===== ISS DRAG-DROP SIRALAMA =====
@@ -11245,7 +11360,7 @@ async function issDrop(e, targetId) {
     ]);
     await loadIssListAndRenderChips();
     loadIssManager();
-  } catch(e) { showToast('Sıralama hatası: ' + e.message, 'err'); }
+  } catch(e) { showToast(friendlyDbError(e, 'iss_list'), 'err'); }
 }
 
 // Toplu hız testi onay — tabloda görünen sıralamada olmayan kaliteli pinleri işaretle
@@ -11291,7 +11406,7 @@ async function bulkVerifySpeedRank() {
     await loadSpeedRankEditor(document.getElementById('speedRankSearch')?.value || '');
     if (cleanPinsData.length) renderStats();
   } catch(e) {
-    showToast('Hata: ' + e.message, 'err');
+    showToast(friendlyDbError(e, 'pins'), 'err');
   }
   btn.textContent = '⚡ Toplu Onayla'; btn.disabled = false;
 }
@@ -11387,7 +11502,7 @@ async function toggleSpeedTestVerified(id, verified) {
     }
     // İstatistikleri arka planda yenile
     if (cleanPinsData.length) renderStats();
-  } catch(e) { showToast('Hata: ' + e.message, 'err'); }
+  } catch(e) { showToast(friendlyDbError(e, 'site_config'), 'err'); }
 }
 
 async function renameIssInList(id, oldName) {
@@ -11406,7 +11521,7 @@ async function renameIssInList(id, oldName) {
     loadIssManager();
     if (maps.main) { renderHex(); renderModPins(); }
     showToast(`✅ İSS adı "${canonicalNew}" olarak güncellendi ve ${targets.length} pin taşındı`);
-  } catch(e) { showToast('Hata: '+e.message, 'err'); }
+  } catch(e) { showToast(friendlyDbError(e, 'iss_list'), 'err'); }
 }
 function updateModStatsSummary(pins, raporlar) {
   const allPins = applyModOverrides(pins || adminPinsCache || []);
@@ -11810,7 +11925,7 @@ async function groupAction(idsJson, approve) {
     loadAdminTable();
     updateInboxSummary();
     updateModStatsSummary();
-  } catch(e) { showToast('Hata: '+friendlyDbError(e, 'pins'),'err'); }
+  } catch(e) { showToast(friendlyDbError(e, 'pins'),'err'); }
 }
 
 async function groupDelete(idsJson) {
@@ -11832,7 +11947,7 @@ async function groupDelete(idsJson) {
     loadAdminTable();
     updateInboxSummary();
     updateModStatsSummary();
-  } catch(e) { showToast('Hata: '+e.message,'err'); }
+  } catch(e) { showToast(friendlyDbError(e, 'pins'),'err'); }
 }
 
 async function loadAdminTable() {
@@ -11844,7 +11959,7 @@ async function loadAdminTable() {
     const raporlar = await getRaporlar() || [];
     updateModStatsSummary(pins, raporlar);
     filterAdminTable(document.getElementById('tableSearch')?.value || '');
-  } catch(e) { if (tbody) tbody.innerHTML='<tr><td colspan="9">Hata: '+e.message+'</td></tr>'; }
+  } catch(e) { if (tbody) tbody.innerHTML='<tr><td colspan="9" style="color:var(--danger);padding:10px;text-align:center;">Veriler yüklenirken bir sorun oluştu.</td></tr>'; }
 }
 
 async function quickApprovePinRow(id) {
@@ -11898,7 +12013,7 @@ async function quickHidePinRow(id) {
     updateModStatsSummary();
     updateInboxSummary();
   } catch (err) {
-    showToast('Gizleme hatası: ' + err.message, 'err');
+    showToast(friendlyDbError(err, 'pins'), 'err');
   }
 }
 
@@ -12165,7 +12280,7 @@ async function loadGecmisRaporlar() {
       </div>`;
     }).join('');
   } catch(e) {
-    list.innerHTML = 'Hata: ' + e.message;
+    list.innerHTML = '<div style="color:var(--danger);padding:10px;">Geçmiş raporlar yüklenemedi.</div>';
   } finally {
     updateInboxSummary();
   }
@@ -12177,10 +12292,10 @@ async function undoRapor(id) {
     showToast('↩️ Rapor bekleyene geri alındı');
     gecmisRaporlarYuklendi = false;
     loadGecmisRaporlar(); loadRaporlar();
-  } catch(e) { showToast('Hata: '+e.message,'err'); }
+  } catch(e) { showToast(friendlyDbError(e, 'raporlar'),'err'); }
 }
 
-async function handleRapor(id, durum) { try { await patchRapor(id,{durum}); showToast('✅ Rapor güncellendi'); await loadRaporlar(); if (gecmisRaporlarYuklendi) loadGecmisRaporlar(); updateInboxSummary(); } catch(e) { showToast('Hata: '+e.message,'err'); } }
+async function handleRapor(id, durum) { try { await patchRapor(id,{durum}); showToast('✅ Rapor güncellendi'); await loadRaporlar(); if (gecmisRaporlarYuklendi) loadGecmisRaporlar(); updateInboxSummary(); } catch(e) { showToast(friendlyDbError(e, 'raporlar'),'err'); } }
 async function modAction(id, approve) { 
   const sId = String(id);
   try { 
@@ -12207,7 +12322,7 @@ async function modAction(id, approve) {
     loadAdminTable();
     updateInboxSummary();
     updateModStatsSummary();
-  } catch(e) { showToast('Hata: '+e.message,'err'); } 
+  } catch(e) { showToast(friendlyDbError(e, 'pins'),'err'); } 
 }
 
 async function openEditModal(id) {
@@ -12341,9 +12456,9 @@ async function saveEdit() {
         loadAdminTable();
         loadSikayetler();
         refreshModData();
-      } catch(e2) { showToast('Hata: '+e2.message,'err'); }
+      } catch(e2) { showToast(friendlyDbError(e2, 'pins'),'err'); }
     } else if(e.message.includes("does not exist")) showToast("Sunucu şeması güncelleniyor, lütfen birazdan tekrar deneyin.", "err");
-    else showToast('Hata: '+e.message,'err');
+    else showToast(friendlyDbError(e, 'pins'),'err');
   } finally {
     if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Kaydet'; }
   }
@@ -12383,7 +12498,7 @@ async function modDeletePin(id, permanent = false) {
     updateModStatsSummary();
   } catch(e) { 
     if(e.message.includes("does not exist") || e.message.includes("schema cache")) showToast("Sunucu şeması güncelleniyor, lütfen birazdan tekrar deneyin.", "warn");
-    else showToast('Hata: '+e.message,'err'); 
+    else showToast(friendlyDbError(e, 'pins'),'err'); 
   }
 }
 function toggleAllPins(el) { document.querySelectorAll('.pin-check').forEach(cb=>cb.checked=el.checked); }
@@ -12507,7 +12622,7 @@ function filterStatEditTable(search) {
 async function saveStatEdit(id) {
   const dl = parseInt(document.getElementById('se_dl_'+id)?.value); const ul = parseInt(document.getElementById('se_ul_'+id)?.value)||0; const puan = parseInt(document.getElementById('se_puan_'+id)?.value); const gorunur = document.getElementById('se_gor_'+id)?.value === 'true';
   if (!dl || dl < 1) return showToast('Geçersiz DL hızı','err'); if (isNaN(puan) || puan < 1 || puan > 10) return showToast('Puan 1–10 olmalı','err');
-  try { await patchPin(id, { gercek_dl:dl, gercek_ul:ul, puan, gorunur }); showToast('✅ Güncellendi'); await loadPins(); } catch(e) { showToast('Hata: '+e.message,'err'); }
+  try { await patchPin(id, { gercek_dl:dl, gercek_ul:ul, puan, gorunur }); showToast('✅ Güncellendi'); await loadPins(); } catch(e) { showToast(friendlyDbError(e, 'pins'),'err'); }
 }
 
 function showToast(msg, type='') {
@@ -13131,41 +13246,59 @@ function updateOfflineDraftsBanner() {
         <div style="font-size:10px;color:var(--text3);margin-top:1px;">İnternet bağlantınız kurulduğunda otomatik haritaya aktarılır.</div>
       </div>
     </div>
-    <button type="button" class="btn-ghost" style="padding:5px 12px;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer;border-radius:6px;border-color:var(--accent);color:var(--accent);background:var(--accent-dim);" onclick="syncOfflineDrafts()">Şimdi Yükle</button>
+    <button type="button" class="btn-ghost" style="padding:5px 12px;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer;border-radius:6px;border-color:var(--accent);color:var(--accent);background:var(--accent-dim);" onclick="syncOfflineDrafts(true)">Şimdi Yükle</button>
   `;
 }
 
-async function syncOfflineDrafts() {
+let _isSyncingDrafts = false;
+async function syncOfflineDrafts(isManual) {
+  if (_isSyncingDrafts) return false;
   const drafts = ihStorage.getJSON('ih_offline_drafts', []);
-  if (!drafts.length || !navigator.onLine) {
-    if (!navigator.onLine && drafts.length) showToast('İnternet bağlantısı kurulamadı, taslaklar saklanıyor.', 'warn');
-    return true;
+  if (!drafts.length) return true;
+  if (!navigator.onLine) {
+    if (isManual) showToast('İnternet bağlantısı kurulamadı, taslaklar saklanıyor.', 'warn');
+    return false;
   }
+  _isSyncingDrafts = true;
   let successCount = 0;
   const remaining = [];
-  for (const draft of drafts) {
-    try {
-      await addPin(draft.payload);
-      saveMyPinLocal({ ...draft.payload, is_draft: false, created_at: new Date().toISOString() });
-      if (typeof addPinToGoogleAccount === 'function') addPinToGoogleAccount(draft.payload);
-      successCount++;
-    } catch(err) {
-      console.warn('[internetHarita] Taslak senkron hatası:', err);
-      remaining.push(draft);
+  try {
+    for (const draft of drafts) {
+      try {
+        await addPin(draft.payload);
+        saveMyPinLocal({ ...draft.payload, is_draft: false, created_at: new Date().toISOString() });
+        if (typeof addPinToGoogleAccount === 'function') addPinToGoogleAccount(draft.payload);
+        successCount++;
+      } catch(err) {
+        const errMsg = String(err?.message || err);
+        // Sunucuda bu ID zaten kayıtlıysa (ilk denemede yazılıp ağ kesintisinde yanıt gecikmişse), başarılı say
+        if (errMsg.includes('duplicate key') || errMsg.includes('23505') || errMsg.includes('already exists')) {
+          saveMyPinLocal({ ...draft.payload, is_draft: false, created_at: new Date().toISOString() });
+          if (typeof addPinToGoogleAccount === 'function') addPinToGoogleAccount(draft.payload);
+          successCount++;
+        } else {
+          console.warn('[internetHarita] Taslak senkron hatası:', err);
+          remaining.push(draft);
+        }
+      }
     }
-  }
-  // Eski sürümlerden kalma 'taslak_' önekli mükerrer kayıtları temizle
-  if (remaining.length === 0) {
-    try {
-      const localPins = getMyLocalPins().filter(p => !String(p.id).startsWith('taslak_'));
-      ihStorage.setJSON('ih_my_pins', localPins);
-    } catch(e) {}
-  }
-  ihStorage.setJSON('ih_offline_drafts', remaining);
-  updateOfflineDraftsBanner();
-  if (successCount > 0) {
-    showToast(`✅ ${successCount} adet çevrimdışı ölçüm taslağınız haritaya eklendi!`, 'success');
-    await loadPins();
+    // Eski sürümlerden kalma 'taslak_' önekli mükerrer kayıtları temizle
+    if (remaining.length === 0) {
+      try {
+        const localPins = getMyLocalPins().filter(p => !String(p.id).startsWith('taslak_'));
+        ihStorage.setJSON('ih_my_pins', localPins);
+      } catch(e) {}
+    }
+    ihStorage.setJSON('ih_offline_drafts', remaining);
+    updateOfflineDraftsBanner();
+    if (successCount > 0) {
+      showToast(`✅ ${successCount} adet çevrimdışı ölçüm taslağınız haritaya eklendi!`, 'success');
+      await loadPins();
+    } else if (isManual && remaining.length > 0) {
+      showToast('Taslaklar sunucuya iletilemedi. Lütfen bağlantınızı kontrol edip tekrar deneyin.', 'err');
+    }
+  } finally {
+    _isSyncingDrafts = false;
   }
   return true;
 }
@@ -13286,7 +13419,7 @@ async function searchLocation() {
       const parts = res.display_name.split(',');
       const title = parts[0].trim();
       const sub = parts.slice(1,3).join(',').trim();
-      return `<div class="search-result-item" onclick="flyToResult(${res.lat},${res.lon},'${escAttr(title)}','${escAttr(sub)}')">
+      return `<div class="search-result-item" role="button" tabindex="0" onclick="flyToResult(${res.lat},${res.lon},'${escAttr(title)}','${escAttr(sub)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flyToResult(${res.lat},${res.lon},'${escAttr(title)}','${escAttr(sub)}');}">
         <div class="search-result-name">${escHtml(title)}</div>
         <div class="search-result-sub">${escHtml(sub)}</div>
       </div>`;
