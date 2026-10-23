@@ -1174,6 +1174,13 @@ html.light .infra-badge.docsis { color: #2563eb; background: rgba(59,130,246,0.0
 .speedtest-btn.start:hover { background:#33deff; box-shadow:0 4px 16px var(--accent-glow); }
 .speedtest-btn.use { background:rgba(34,197,94,.15); border:1px solid var(--success); color:var(--success); }
 .speedtest-btn.use:hover { background:rgba(34,197,94,.25); }
+.st-benchmark-card { display:none; border-radius:9px; padding:10px 12px; font-size:11px; line-height:1.5; text-align:center; margin-bottom:14px; transition:all .2s; }
+.st-benchmark-card.fast { background:rgba(0,212,255,0.08); border:1px solid rgba(0,212,255,0.28); color:var(--accent); }
+.st-benchmark-card.slow { background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.28); color:var(--warn); }
+.st-benchmark-card.neutral { background:var(--surface2); border:1px solid var(--border); color:var(--text2); }
+html.light .st-benchmark-card.fast { background:rgba(0,136,204,0.08); border-color:rgba(0,136,204,0.28); color:#0077cc; }
+html.light .st-benchmark-card.slow { background:rgba(217,119,6,0.08); border-color:rgba(217,119,6,0.28); color:#b45309; }
+html.light .st-benchmark-card.neutral { background:#f1f5f9; border-color:#cbd5e1; color:#334155; }
 .btn-run-speedtest { display:flex; align-items:center; justify-content:center; gap:6px; padding:9px 14px; background:rgba(0,212,255,.08); border:1px solid rgba(0,212,255,.3); color:var(--accent); border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; font-family:var(--font-body); transition:all .2s; width:100%; margin-bottom:6px; }
 .btn-run-speedtest:hover { background:rgba(0,212,255,.15); }
 .btn-run-speedtest:disabled { opacity:.45; cursor:not-allowed; box-shadow:none; }
@@ -3544,6 +3551,9 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
           <p class="footer-desc" style="margin-top:8px;">
             Sokak ve mahalle bazında fiber, VDSL ve kablonet kapsamasını ve gerçek internet performansını şeffaflaştırır.
           </p>
+          <p class="footer-desc" style="margin-top:8px;">
+            Sitede gösterilen reklamlar, alan adı (domain) ve sunucu işletim maliyetlerini karşılamak amacıyla yayınlanmaktadır. Anlayışınız için teşekkür ederiz.
+          </p>
         </div>
 
         <div>
@@ -5333,15 +5343,7 @@ function copyModSqlPolicy() {
     'DROP POLICY IF EXISTS "Moderatörler ISS yönetir" ON public.iss_list;',
     'CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authenticated USING (true) WITH CHECK (true);'
   ].join('\n');
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(code).then(() => {
-      showToast('✅ SQL panoya kopyalandı! Supabase Dashboard › SQL Editor\'a yapıştırıp Run deyin.');
-    }).catch(() => {
-      showToast('Panoya kopyalanamadı, lütfen kutudaki metni seçip kopyalayın.', 'warn');
-    });
-  } else {
-    showToast('Panoya kopyalanamadı, lütfen kutudaki metni seçip kopyalayın.', 'warn');
-  }
+  copyTextToClipboard(code, '✅ SQL panoya kopyalandı! Supabase Dashboard › SQL Editor\'a yapıştırıp Run deyin.', 'Panoya kopyalanamadı, lütfen kutudaki metni seçip kopyalayın.');
 }
 
 function isRowVerifiedAfterPatch(row, payload) {
@@ -12637,6 +12639,42 @@ function showToast(msg, type='') {
   window._toastTimer = setTimeout(() => t.classList.remove('show'), duration);
 }
 
+// Güvenli ve Evrensel Pano Kopyalama Yardımcısı (Webview / İzin Kısıtlamaları Korumalı)
+function copyTextToClipboard(text, successToast = '📋 Kopyalandı!', failToast = 'Kopyalama başarısız') {
+  if (!text) return Promise.resolve(false);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text).then(() => {
+      if (successToast) showToast(successToast);
+      return true;
+    }).catch(() => {
+      return fallbackCopyTextToClipboard(text, successToast, failToast);
+    });
+  }
+  return Promise.resolve(fallbackCopyTextToClipboard(text, successToast, failToast));
+}
+
+function fallbackCopyTextToClipboard(text, successToast, failToast) {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '-9999px';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (ok) {
+      if (successToast) showToast(successToast);
+      return true;
+    }
+  } catch (err) {}
+  if (failToast) showToast(failToast, 'warn');
+  return false;
+}
+
 // ===== GOOGLE OAUTH & PİN SENKRONİZASYONU (GOOGLE SYNC) =====
 let currentSyncUser = null;
 
@@ -13605,7 +13643,11 @@ function goToSubmittedLocation() {
 
   // Kendi ölçümlerim katmanını kesinlikle aç ve güncelle
   isMyPinsVisible = true;
-  document.getElementById('myPinsToggle')?.classList.add('active');
+  const toggleEl = document.getElementById('myPinsToggle');
+  if (toggleEl) {
+    toggleEl.classList.add('active');
+    toggleEl.setAttribute('aria-checked', 'true');
+  }
   renderMyPins();
 
   let attempts = 0;
@@ -13676,11 +13718,7 @@ function shareSpeedResult(platform) {
     const tweet = `İnternet hızımı @internetharita'da test ettim: ⬇️ ${dl} Mbps indirme | ⬆️ ${ul} Mbps yükleme${ping}. Türkiye'nin bağımsız internet altyapı haritası: ${shareUrl} #internetharita #hıztesti`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`, '_blank');
   } else {
-    navigator.clipboard.writeText(text).then(() => {
-      showToast('📋 Hız testi sonucu ve site bağlantısı panoya kopyalandı!');
-    }).catch(() => {
-      showToast('Kopyalama başarısız', 'err');
-    });
+    copyTextToClipboard(text, '📋 Hız testi sonucu ve site bağlantısı panoya kopyalandı!', 'Kopyalama başarısız');
   }
 }
 
@@ -13697,11 +13735,7 @@ function shareCurrentRegion() {
   if (navigator.share && /mobile|android|iphone/i.test(navigator.userAgent)) {
     navigator.share({ title: `${title} — İnternetHarita`, text, url: shareUrl }).catch(() => {});
   } else {
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      showToast(`📋 ${title} harita bağlantısı kopyalandı!`);
-    }).catch(() => {
-      showToast('Bağlantı kopyalanamadı', 'err');
-    });
+    copyTextToClipboard(shareUrl, `📋 ${title} harita bağlantısı kopyalandı!`, 'Bağlantı kopyalanamadı');
   }
 }
 
@@ -14216,10 +14250,7 @@ async function shareScoreCardNative() {
       showToast('Karne başarıyla paylaşıldı! 🚀');
     } else {
       downloadScoreCardImage();
-      try {
-        await navigator.clipboard.writeText('https://internetharita.com.tr');
-        showToast('📥 Görsel indirildi, site bağlantısı kopyalandı! 🚀');
-      } catch (e) {}
+      copyTextToClipboard('https://internetharita.com.tr', '📥 Görsel indirildi, site bağlantısı kopyalandı! 🚀', '📥 Görsel indirildi!');
     }
   } catch (err) {
     if (err.name !== 'AbortError') {
@@ -14283,11 +14314,7 @@ function copyScoreCardText() {
   const loc = d.ilce ? `${d.ilce}, ${d.il}` : (d.il || '');
   const locStr = loc ? ` (${loc})` : '';
   const text = `İnternet hız karnem${locStr}: ⬇️ ${d.dl || 0} Mbps | ⬆️ ${d.ul || 0} Mbps. Türkiye'nin bağımsız altyapı haritası: https://internetharita.com.tr`;
-  navigator.clipboard.writeText(text).then(() => {
-    showToast('📋 Karne bilgisi panoya kopyalandı!');
-  }).catch(() => {
-    showToast('Kopyalama başarısız', 'err');
-  });
+  copyTextToClipboard(text, '📋 Karne bilgisi panoya kopyalandı!', 'Kopyalama başarısız');
 }
 
 // ESC Tuşu ile Açık Modalları ve Menüleri Kapatma (Erişilebilirlik ve UX İyileştirmesi)
@@ -14385,6 +14412,8 @@ window.addEventListener('online', async function() {
         <div class="sr-avg" id="stULAvg"></div>
       </div>
     </div>
+    <!-- TÜRKİYE ORTALAMASI KARŞILAŞTIRMA ROZETİ -->
+    <div class="st-benchmark-card" id="stBenchmarkCard"></div>
     <button class="speedtest-btn start" id="stStartBtn" onclick="runSpeedTest()">Testi Başlat</button>
     <button class="speedtest-btn use" id="stUseBtn" style="display:none;margin-top:8px;" onclick="applySpeedResults()">✓ Bu Sonuçları Kullan</button>
     <div id="stShareWrap" style="display:none;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);flex-direction:column;gap:6px;">
@@ -14516,10 +14545,24 @@ function resetSpeedTestUI() {
   document.getElementById('stStartBtn').disabled = false;
   document.getElementById('stUseBtn').style.display = 'none';
   document.getElementById('stRetryBtn').style.display = 'none';
+  const benchmarkCard = document.getElementById('stBenchmarkCard');
+  if (benchmarkCard) benchmarkCard.style.display = 'none';
   const shareWrap = document.getElementById('stShareWrap');
   if (shareWrap) shareWrap.style.display = 'none';
   document.getElementById('stSub').style.color = '';
-  document.getElementById('stSub').textContent = 'Sonuçlar otomatik olarak forma aktarılır';
+  if (speedTestTarget === 'standalone') {
+    document.getElementById('stSub').textContent = 'Hızınızı anında ölçün, dilerseniz tek tıkla haritaya ekleyin';
+    const useBtn = document.getElementById('stUseBtn');
+    if (useBtn) useBtn.textContent = '📍 Bu Sonuçları Haritaya Ekle';
+  } else if (speedTestTarget === 'userEdit') {
+    document.getElementById('stSub').textContent = 'Ölçülen hızlar düzenleme formuna aktarılır';
+    const useBtn = document.getElementById('stUseBtn');
+    if (useBtn) useBtn.textContent = '✓ Düzenleme Formuna Aktar';
+  } else {
+    document.getElementById('stSub').textContent = 'Sonuçlar otomatik olarak forma aktarılır';
+    const useBtn = document.getElementById('stUseBtn');
+    if (useBtn) useBtn.textContent = '✓ Bu Sonuçları Kullan';
+  }
   liveLogReset();
 }
 function setGauge(mbps, maxMbps, color) {
@@ -14689,6 +14732,31 @@ function runOfficialSpeedTest(EngineClass) {
         setGauge(finalDL, dlMax, 'var(--accent)');
 
         document.getElementById('stResults').classList.add('show');
+
+        // Türkiye Ortalaması Karşılaştırma Rozeti
+        const benchmarkCard = document.getElementById('stBenchmarkCard');
+        if (benchmarkCard) {
+          const natAvg = (typeof cleanPinsData !== 'undefined' && cleanPinsData.length) ? (function() {
+            const sp = cleanPinsData.filter(p => !p.is_altyapi_yok && p.gercek_dl > 0);
+            return sp.length ? Math.round(sp.reduce((a,p) => a + p.gercek_dl, 0) / sp.length) : 45;
+          })() : 45;
+
+          benchmarkCard.className = 'st-benchmark-card';
+          if (finalDL > natAvg * 1.15) {
+            const pct = Math.round(((finalDL - natAvg) / natAvg) * 100);
+            benchmarkCard.classList.add('fast');
+            benchmarkCard.innerHTML = `🚀 <b>Türkiye ortalamasının (%${pct}) üzerindesiniz!</b> (Ort: ${natAvg} Mbps)<br><span style="font-size:9.5px;opacity:.9;">Mahallenizin ortalamasını yükseltmek için bu sonucu haritaya ekleyin.</span>`;
+          } else if (finalDL < natAvg * 0.85) {
+            const pct = Math.round(((natAvg - finalDL) / natAvg) * 100);
+            benchmarkCard.classList.add('slow');
+            benchmarkCard.innerHTML = `⚠️ <b>Türkiye ortalamasının (%${pct}) altındasınız.</b> (Ort: ${natAvg} Mbps)<br><span style="font-size:9.5px;opacity:.9;">Bölgenizdeki altyapı yetersizliğini belgelemek için bu sonucu haritaya ekleyin.</span>`;
+          } else {
+            benchmarkCard.classList.add('neutral');
+            benchmarkCard.innerHTML = `📊 <b>Türkiye ortalamasına yakın bir hızdasınız</b> (Ort: ${natAvg} Mbps)<br><span style="font-size:9.5px;opacity:.9;">Mahallenizdeki durumu kaydetmek için sonucu haritaya ekleyin.</span>`;
+          }
+          benchmarkCard.style.display = 'block';
+        }
+
         document.getElementById('stStartBtn').style.display = 'none';
         document.getElementById('stUseBtn').style.display = 'block';
         document.getElementById('stRetryBtn').style.display = 'block';
@@ -15124,15 +15192,7 @@ function copyFiberPetition() {
   if (!preview) return;
   if (!preview.textContent) updateFiberPetition();
   var text = preview.textContent;
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(function () {
-      if (typeof showToast === 'function') showToast('📋 Dilekçe metni panoya kopyalandı!', 'ok');
-    }).catch(function () {
-      fallbackCopyText(text);
-    });
-  } else {
-    fallbackCopyText(text);
-  }
+  copyTextToClipboard(text, '📋 Dilekçe metni panoya kopyalandı!', 'Metin kopyalanamadı, lütfen metni seçip kopyalayın.');
 }
 
 function printFiberPetition() {
