@@ -3683,7 +3683,7 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
             <button class="sort-btn" id="ilSortCountBtn" style="padding:2px 7px;font-size:9px;text-transform:none;" onclick="setIlSortMode('count')">📊 Test</button>
           </div>
         </div>
-        <div id="activeIlList"><div class="loading-text">İllere göre ortalama indirme hızı ve doğrulanmış ölçüm sayısı sıralaması.</div></div>
+        <div id="activeIlList"><div class="loading-text">İllere göre ortalama indirme hızı ve ölçüm sayısı sıralaması.</div></div>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;">
@@ -3833,7 +3833,7 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
           <div class="fiu"><input type="number" placeholder="—" id="dlSpeed" aria-label="Ölçülen indirme hızı (Mbps)" readonly min="0" step="1"><span class="fiu-unit">↓ DL</span></div>
           <div class="fiu"><input type="number" placeholder="—" id="ulSpeed" aria-label="Ölçülen yükleme hızı (Mbps)" readonly min="0" step="1"><span class="fiu-unit">↑ UL</span></div>
         </div>
-        <div class="verified-badge" id="speedVerifiedBadge"><div class="verified-tick">✓</div><span>Sayfa içi test ile ölçüldü — Doğrulanmış</span></div>
+        <div class="verified-badge" id="speedVerifiedBadge"><div class="verified-tick">✓</div><span>Sayfa içi hız testi ile ölçüldü</span></div>
         <div style="font-size:9px;color:var(--text3);margin-top:3px;font-family:var(--font-body);">Hız testi yapılmadan form gönderilemez. Verinin güvenilirliği için zorunludur.</div>
       </div>
       <div class="fg"><div class="fl">Memnuniyet Puanı (1–10)</div><div class="score-row" id="scoreRow"></div></div>
@@ -4457,7 +4457,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
         <div class="fiu"><input type="number" placeholder="—" id="userEditDL" aria-label="Ölçülen İndirme Hızı (Mbps)" readonly min="0"><span class="fiu-unit">↓ DL</span></div>
         <div class="fiu"><input type="number" placeholder="—" id="userEditUL" aria-label="Ölçülen Yükleme Hızı (Mbps)" readonly min="0"><span class="fiu-unit">↑ UL</span></div>
       </div>
-      <div class="verified-badge" id="userEditSpeedVerifiedBadge"><div class="verified-tick">✓</div><span>Sayfa içi test ile ölçüldü — Doğrulanmış</span></div>
+      <div class="verified-badge" id="userEditSpeedVerifiedBadge"><div class="verified-tick">✓</div><span>Sayfa içi hız testi ile ölçüldü</span></div>
     </div>
     
     <div class="fg" style="margin-bottom:10px;">
@@ -5963,7 +5963,43 @@ function isPinPublic(p) {
 }
 
 function publicCleanPins(pins) {
-  return pins.filter(p => isPinPublic(p) && isApprovedPublicIss(p.iss));
+  const base = pins.filter(p => isPinPublic(p) && isApprovedPublicIss(p.iss));
+  const overrides = typeof getModOverrides === 'function' ? getModOverrides() : {};
+  // Kısa sürede (15 dk içinde) aynı ilçe ve yakında (<1.5 km) aynı İSS için girilmiş mükerrer kayıtları filtrele
+  const chronological = [...base].sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+  const accepted = [];
+  for (const p of chronological) {
+    const sId = String(p.id);
+    const ov = overrides[sId] || overrides[p.id];
+    if (ov && (ov.gorunur === true || (ov.is_quarantine === false && ov.gorunur !== false))) {
+      accepted.push(p);
+      continue;
+    }
+    const pTime = p.created_at ? new Date(p.created_at).getTime() : 0;
+    const pIss = canonicalIssName(p.iss);
+    const isRapidDup = pTime > 0 && accepted.some(prev => {
+      if (canonicalIssName(prev.iss) !== pIss) return false;
+      const prevTime = prev.created_at ? new Date(prev.created_at).getTime() : 0;
+      const diffHours = Math.abs(pTime - prevTime) / 3600000;
+      if (p.browser_fp && prev.browser_fp && p.browser_fp === prev.browser_fp && diffHours < 24) {
+        const sameIlce = p.ilce && prev.ilce && p.ilce.toLocaleLowerCase('tr-TR') === prev.ilce.toLocaleLowerCase('tr-TR');
+        const dist = (p.lat && p.lng && prev.lat && prev.lng)
+          ? Math.sqrt(Math.pow((p.lat - prev.lat) * 111000, 2) + Math.pow((p.lng - prev.lng) * 111000 * Math.cos(p.lat * Math.PI / 180), 2))
+          : Infinity;
+        if (sameIlce || dist < 2000) return true;
+      }
+      if (diffHours < 0.25 && p.ilce && prev.ilce && p.ilce.toLocaleLowerCase('tr-TR') === prev.ilce.toLocaleLowerCase('tr-TR')) {
+        const dist = (p.lat && p.lng && prev.lat && prev.lng)
+          ? Math.sqrt(Math.pow((p.lat - prev.lat) * 111000, 2) + Math.pow((p.lng - prev.lng) * 111000 * Math.cos(p.lat * Math.PI / 180), 2))
+          : Infinity;
+        if (dist < 1500) return true;
+      }
+      return false;
+    });
+    if (!isRapidDup) accepted.push(p);
+  }
+  const acceptedIds = new Set(accepted.map(p => String(p.id)));
+  return base.filter(p => acceptedIds.has(String(p.id)));
 }
 
 const POSITIVE_FEEDBACK_TAGS = [
@@ -6092,6 +6128,34 @@ async function confirmAddIss() {
 
 
 const KNOWN_ISS = BASE_ISS; // geriye dönük uyumluluk için
+function isDuplicateDeviceSubmission(p) {
+  if (!p || !p.created_at) return false;
+  const pool = (typeof adminPinsCache !== 'undefined' && Array.isArray(adminPinsCache) && adminPinsCache.length)
+    ? adminPinsCache
+    : (typeof pinsData !== 'undefined' && Array.isArray(pinsData) ? pinsData : []);
+  if (!pool.length) return false;
+  const pTime = new Date(p.created_at).getTime();
+  if (!pTime) return false;
+  const pFp = p.browser_fp || p.ip_hash;
+  const pIss = canonicalIssName(p.iss);
+  return pool.some(other => {
+    if (!other || String(other.id) === String(p.id) || other.deleted_at || !other.created_at) return false;
+    const oTime = new Date(other.created_at).getTime();
+    if (!oTime || oTime >= pTime) return false; // Sadece kendisinden daha önce girilmiş kayıtlara bak
+    const diffHours = (pTime - oTime) / 3600000;
+    if (diffHours >= 24) return false;
+    const oFp = other.browser_fp || other.ip_hash;
+    const sameFp = pFp && oFp && pFp === oFp;
+    if (!sameFp) return false;
+    const sameIss = canonicalIssName(other.iss) === pIss;
+    const sameIlce = p.ilce && other.ilce && p.ilce.trim().toLocaleLowerCase('tr-TR') === other.ilce.trim().toLocaleLowerCase('tr-TR');
+    const dist = (p.lat && p.lng && other.lat && other.lng)
+      ? Math.sqrt(Math.pow((p.lat - other.lat) * 111000, 2) + Math.pow((p.lng - other.lng) * 111000 * Math.cos(p.lat * Math.PI / 180), 2))
+      : Infinity;
+    return (sameIss && (sameIlce || dist < 2000)) || (diffHours < 0.25 && (sameIlce || dist < 2000));
+  });
+}
+
 function getSpamReason(p) {
   if (p.is_altyapi_yok) return "";
   if (!p.gercek_dl && !p.is_altyapi_yok) return "Hız verisi eksik";
@@ -6101,6 +6165,7 @@ function getSpamReason(p) {
   const conn = (p.baglanti_turu || '').toLowerCase();
   if (TYPE_DL_CAP[conn] && p.gercek_dl > TYPE_DL_CAP[conn]) return `${conn.toUpperCase()} Sınırı Aşıldı (${p.gercek_dl} Mbps)`;
   if (p.gercek_ul > p.gercek_dl * 3 && p.gercek_dl > 10) return "Şüpheli Simetrik Hız (UL > DL*3)";
+  if (isDuplicateDeviceSubmission(p)) return "Mükerrer Kayıt (Aynı Cihaz & Bölge)";
   
   // Outlier kontrolü
   if (!p.is_altyapi_yok && isOutlier(p.gercek_dl, p.lat, p.lng)) return "Bölge Ortalamasından Sapma";
@@ -6111,14 +6176,15 @@ function getSpamReason(p) {
 
 function isSpam(p) {
   if (p.is_altyapi_yok) return false;
-  // Moderatör tarafından onaylanmış ve yayına alınmış pini spam sayma
-  if (p.gorunur === true && !p.is_quarantine && !(p.sikayet_sayisi > 0)) return false;
   try {
     const overrides = getModOverrides();
     const sId = String(p.id);
     const ov = overrides[sId] || overrides[p.id];
     if (ov && (ov.gorunur === true || (ov.is_quarantine === false && ov.gorunur !== false))) return false;
   } catch(e) {}
+  if (isDuplicateDeviceSubmission(p)) return true;
+  // Moderatör tarafından onaylanmış ve yayına alınmış pini spam sayma
+  if (p.gorunur === true && !p.is_quarantine && !(p.sikayet_sayisi > 0) && p.gercek_dl > 0) return false;
   const reason = getSpamReason(p);
   return reason !== "" && reason !== "Karantina İncelemesi";
 }
@@ -6641,8 +6707,8 @@ function onNoInfraChange(checked) {
 
 function shouldQuarantine() {
   const { dayCnt, hrCnt } = getRateBuckets();
-  // 5+ gün içinde veya 3+ saat içinde → karantinaya al
-  if (dayCnt >= 5 || hrCnt >= 3) return true;
+  // Gün içinde 3+ veya saat içinde 2+ kayıt → karantinaya al
+  if (dayCnt >= 3 || hrCnt >= 2) return true;
   return false;
 }
 // Outlier karantina: bölgenin ortalamasından çok sapan değerleri yakala
@@ -7839,7 +7905,7 @@ function showHexInfo(pins, hexId) {
 
         const unconfirmedClass = !data.confirmed ? 'ib-unconfirmed' : '';
         const titleText = data.confirmed 
-          ? `Doğrulanmış ${turLabel} ölçümü (${data.count} test)` 
+          ? `${turLabel} ölçümü (${data.count} test)` 
           : `Kullanıcı beyanıyla eklenmiş ${turLabel} altyapısı`;
 
         return `
@@ -8785,7 +8851,7 @@ async function renderStats() {
       };
     })
     .sort((a,b) => b.bayes - a.bayes)
-    .map((x,i) => `<div class="rank-item clickable" onclick="filterMapByISS('${escAttr(x.iss)}')" title="${escHtml(displayIssName(x.iss))}: ${x.score} / 10 (${x.c} doğrulanmış ölçüm) — Haritada görmek için tıklayın"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${escHtml(displayIssName(x.iss))}</div><div class="rank-sub">${x.c} ölçüm · <span style="color:var(--accent);font-size:9px;">📍 Haritada Gör</span></div></div><div class="rank-val" style="color:${memColor(x.score)}">${memShapeHtml(parseFloat(x.score))}${x.score}</div></div>`)
+    .map((x,i) => `<div class="rank-item clickable" onclick="filterMapByISS('${escAttr(x.iss)}')" title="${escHtml(displayIssName(x.iss))}: ${x.score} / 10 (${x.c} ölçüm) — Haritada görmek için tıklayın"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${escHtml(displayIssName(x.iss))}</div><div class="rank-sub">${x.c} ölçüm · <span style="color:var(--accent);font-size:9px;">📍 Haritada Gör</span></div></div><div class="rank-val" style="color:${memColor(x.score)}">${memShapeHtml(parseFloat(x.score))}${x.score}</div></div>`)
     .join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok (min. 5 ölçüm gerekli)</div>';
   
   // EN HIZLI LOKASYONLAR (artık ISS filtresiyle de çağrılabilen bağımsız fonksiyon)
@@ -10153,34 +10219,69 @@ async function submitPin() {
   
   const isCustomIss = !isAltyapiYok && issVal === 'Diğer' && !!customIss;
   const outlier = !isAltyapiYok && isOutlier(dl, pinLat, pinLng);
-  const rateQuarantine = shouldQuarantine();
+  let rateQuarantine = shouldQuarantine();
   // Tür bazlı gerçekçilik kontrolü — örn. ADSL için 32 Mbps üstü, DOCSIS için 1200 Mbps üstü
   // beyan edilen download hızı: veri silinmiyor/reddedilmiyor, sadece moderatör incelemesine düşüyor.
   const capExceeded = !isAltyapiYok && TYPE_DL_CAP[selConnVal] && dl > TYPE_DL_CAP[selConnVal];
-  const quarantine = !!(outlier || isCustomIss || rateQuarantine || isAltyapiYok || capExceeded);
 
-  // Konum bazlı tekrar giriş kontrolü — aynı FP veya yerel pin, 500m, 24 saat
+  // Konum ve cihaz bazlı tekrar giriş kontrolü — yerel kayıtlar + sunucu browser_fp sorgusu
   const myPinIdsList = getMyLocalPinIds();
-  const nearbyRecent = cleanPinsData.find(p => {
-    if (!p.lat || !p.lng) return false;
+  const localMyPins = typeof getMyLocalPins === 'function' ? getMyLocalPins() : [];
+  let serverFpPins = [];
+  if (navigator.onLine && browserFingerprint) {
+    try {
+      const fpRows = await sbRest(`pins?browser_fp=eq.${encodeURIComponent(browserFingerprint)}&deleted_at=is.null&select=id,lat,lng,il,ilce,mahalle,iss,baglanti_turu,created_at&order=created_at.desc&limit=10`);
+      if (Array.isArray(fpRows)) serverFpPins = fpRows;
+    } catch(e) {}
+  }
+
+  const candidateMap = new Map();
+  [...localMyPins, ...serverFpPins, ...(cleanPinsData || []).filter(p => {
     const fp = p.browser_fp || p.ip_hash;
-    const myFp = browserFingerprint;
-    const isMine = p.is_own_pin || (myPinIdsList && myPinIdsList.includes(String(p.id))) || (fp && myFp && fp === myFp);
-    if (!isMine) return false;
-    const dist = Math.sqrt(Math.pow((p.lat - pinLat)*111000, 2) + Math.pow((p.lng - pinLng)*111000*Math.cos(pinLat*Math.PI/180), 2));
-    const age = (Date.now() - new Date(p.created_at).getTime()) / 3600000;
-    return dist < 500 && age < 24;
+    return p.is_own_pin || (myPinIdsList && myPinIdsList.includes(String(p.id))) || (fp && browserFingerprint && fp === browserFingerprint);
+  })].forEach(p => {
+    if (p && p.id && !p.deleted_at) candidateMap.set(String(p.id), p);
   });
-  if (nearbyRecent) {
-    // Aynı adreste FARKLI bir İSS veya bağlantı türü giriliyorsa (örn. TurkNet Fiber'dan
-    // sonra TT VDSL), otomatik olarak izin ver — çünkü bu gerçekten ayrı bir altyapı/ölçüm.
-    // Sadece TAM AYNI İSS + bağlantı türü tekrar girilirse (spam/tekrar) engelle.
-    const sameIssType = nearbyRecent.iss === finalIss && nearbyRecent.baglanti_turu === (selConnVal || (isAltyapiYok ? 'yok' : null));
-    if (sameIssType) {
-      submitBtn.disabled=false; submitBtn.textContent='📍 Veriyi Paylaş';
-      return showToast(`⚠ Bu altyapı (${nearbyRecent.iss} - ${(nearbyRecent.baglanti_turu||'').toUpperCase()}) için son 24 saat içinde zaten veri girdiniz.`, 'warn');
+  const myRecentPins = Array.from(candidateMap.values());
+
+  // Sunucu tarafında son 1 saatte 2+ veya son 24 saatte 3+ kayıt varsa yeni kaydı karantinaya al
+  const recent1hCount = myRecentPins.filter(p => p.created_at && ((Date.now() - new Date(p.created_at).getTime()) / 3600000) < 1).length;
+  const recent24hCount = myRecentPins.filter(p => p.created_at && ((Date.now() - new Date(p.created_at).getTime()) / 3600000) < 24).length;
+  if (recent1hCount >= 2 || recent24hCount >= 3) {
+    rateQuarantine = true;
+  }
+
+  const curIl = (document.getElementById('ilInput')?.value || '').trim().toLocaleLowerCase('tr-TR');
+  const curIlce = (document.getElementById('ilceInput')?.value || '').trim().toLocaleLowerCase('tr-TR');
+
+  for (const p of myRecentPins) {
+    if (!p.created_at) continue;
+    const ageHours = (Date.now() - new Date(p.created_at).getTime()) / 3600000;
+    if (ageHours >= 24 || ageHours < 0) continue;
+
+    const hasCoords = p.lat && p.lng && pinLat && pinLng;
+    const distMeters = hasCoords
+      ? Math.sqrt(Math.pow((p.lat - pinLat) * 111000, 2) + Math.pow((p.lng - pinLng) * 111000 * Math.cos(pinLat * Math.PI / 180), 2))
+      : Infinity;
+    const sameDistrict = curIl && curIlce && p.il && p.ilce &&
+      p.il.trim().toLocaleLowerCase('tr-TR') === curIl &&
+      p.ilce.trim().toLocaleLowerCase('tr-TR') === curIlce;
+
+    // 1) Aynı konum/ilçede 15 dakika içinde art arda ikinci gönderimi engelle
+    if ((distMeters < 2000 || sameDistrict) && ageHours < 0.25) {
+      submitBtn.disabled = false; submitBtn.textContent = '📍 Veriyi Paylaş';
+      return showToast('⏳ Bu bölgede az önce bir ölçüm paylaştınız. Mevcut kaydınızı "Ölçümlerim" menüsünden düzenleyebilirsiniz.', 'warn');
+    }
+
+    // 2) Aynı konum/ilçede (2 km çapında veya aynı ilçede) 24 saat içinde aynı İSS tekrar girilirse engelle (bağlantı türü farklı seçilse bile)
+    const sameIss = canonicalIssName(p.iss) === finalIss;
+    if (sameIss && (distMeters < 2000 || sameDistrict)) {
+      submitBtn.disabled = false; submitBtn.textContent = '📍 Veriyi Paylaş';
+      return showToast(`⚠ ${finalIss} için son 24 saat içinde bu bölgede zaten ölçüm girdiniz. Yeni kayıt açmak yerine mevcut ölçümünüzü güncelleyebilirsiniz.`, 'warn');
     }
   }
+
+  const quarantine = !!(outlier || isCustomIss || rateQuarantine || isAltyapiYok || capExceeded);
   const f = fuzzy(pinLat, pinLng);
   lastSubmittedLatLng = { lat: f.lat, lng: f.lng };
   submitBtn.textContent='Gönderiliyor...';
@@ -13125,14 +13226,12 @@ function updateCompareData() {
   const getStats = (issName) => {
     const pins = pool.filter(p => canonicalIssName(p.iss) === issName && !p.is_altyapi_yok);
     const count = pins.length;
-    if (!count) return { count: 0, avgDl: 0, avgUl: 0, avgScore: '—', verifiedPct: 0, topTech: '—' };
+    if (!count) return { count: 0, avgDl: 0, avgUl: 0, avgScore: '—', topTech: '—' };
     const avgDl = Math.round(pins.reduce((s,p) => s + (p.gercek_dl || 0), 0) / count);
     const ulPins = pins.filter(p => (p.gercek_ul || 0) > 0);
     const avgUl = ulPins.length ? Math.round(ulPins.reduce((s,p) => s + p.gercek_ul, 0) / ulPins.length) : 0;
     const scoredPins = pins.filter(p => p.puan > 0);
     const avgScore = scoredPins.length ? (scoredPins.reduce((s,p) => s + p.puan, 0) / scoredPins.length).toFixed(1) : '—';
-    const verifiedCount = pins.filter(p => p.speed_test_verified).length;
-    const verifiedPct = Math.round((verifiedCount / count) * 100);
 
     const techCounts = {};
     pins.forEach(p => {
@@ -13141,7 +13240,7 @@ function updateCompareData() {
     });
     const topTech = Object.entries(techCounts).sort((a,b) => b[1] - a[1])[0]?.[0] || '—';
 
-    return { count, avgDl, avgUl, avgScore, verifiedPct, topTech };
+    return { count, avgDl, avgUl, avgScore, topTech };
   };
 
   const statA = getStats(issA);
@@ -13228,8 +13327,8 @@ function updateCompareData() {
       </div>
     </div>
 
-    <!-- Metrik 3: Memnuniyet & Güvenilirlik -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+    <!-- Metrik 3: Memnuniyet & Baskın Altyapı -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;">
         <div style="font-size:10.5px;color:var(--text3);font-weight:600;margin-bottom:6px;">😊 MEMNUNİYET</div>
         <div style="display:flex;justify-content:space-between;align-items:baseline;">
@@ -13238,21 +13337,11 @@ function updateCompareData() {
         </div>
       </div>
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;">
-        <div style="font-size:10.5px;color:var(--text3);font-weight:600;margin-bottom:6px;">⚡ DOĞRULANMIŞ TEST</div>
+        <div style="font-size:10.5px;color:var(--text3);font-weight:600;margin-bottom:6px;">🌐 BASKIN TEKNOLOJİ</div>
         <div style="display:flex;justify-content:space-between;align-items:baseline;">
-          <div><b style="color:${colorA};font-size:15px;font-family:var(--font-mono);">%${statA.verifiedPct}</b></div>
-          <div><b style="color:${colorB};font-size:15px;font-family:var(--font-mono);">%${statB.verifiedPct}</b></div>
+          <div><b style="color:${colorA};font-size:14px;font-family:var(--font-mono);">${escHtml(statA.topTech)}</b></div>
+          <div><b style="color:${colorB};font-size:14px;font-family:var(--font-mono);">${escHtml(statB.topTech)}</b></div>
         </div>
-      </div>
-    </div>
-
-    <!-- Metrik 4: Baskın Altyapı -->
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-size:11px;color:var(--text3);font-weight:600;">🌐 Baskın Teknoloji</span>
-      <div style="display:flex;gap:12px;font-size:11px;font-weight:700;">
-        <span style="color:${colorA};">${escHtml(statA.topTech)}</span>
-        <span style="color:var(--text3);">vs</span>
-        <span style="color:${colorB};">${escHtml(statB.topTech)}</span>
       </div>
     </div>
   `;
@@ -14069,7 +14158,7 @@ function renderInternetScoreCard(cardData) {
     ctx.fillStyle = '#00d4ff';
     ctx.font = '700 14px "Space Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('⚡ BAĞIMSIZ DOĞRULANMIŞ TEST', 540, 96);
+    ctx.fillText('⚡ HIZ TESTİ SONUCU', 540, 96);
 
     // 2. Logo & Başlık
     ctx.font = '700 40px "DM Sans", -apple-system, sans-serif';
