@@ -6420,7 +6420,7 @@ function syncMapToUrl() {
       }
 
       // Kullanıcı bir şehre, ilçeye veya mahalleye bilhassa yaklaştığında (zoom >= 10) konumu URL'de koru
-      if (!params.get('il')) {
+      if (!params.get('il') && !params.get('city')) {
         params.set('lat', center.lat.toFixed(4));
         params.set('lng', center.lng.toFixed(4));
         params.set('z', zoom);
@@ -6433,7 +6433,7 @@ function syncMapToUrl() {
 function handleUrlParamsOnStartup() {
   try {
     const params = new URLSearchParams(window.location.search);
-    const il = params.get('il');
+    const il = params.get('il') || params.get('city');
     const ilce = params.get('ilce');
     const lat = parseFloat(params.get('lat'));
     const lng = parseFloat(params.get('lng'));
@@ -10568,7 +10568,7 @@ function openUserEditModal(pinId) {
   }
 
   document.getElementById('userEditPinId').value = pinId;
-  selConnValUserEdit = pin.baglanti_turu || '';
+  selConnValUserEdit = (pin.is_altyapi_yok && !pin.baglanti_turu) ? 'yok' : (pin.baglanti_turu || '');
   document.querySelectorAll('#userEditConnWrap .cbtn').forEach(b => {
     b.classList.toggle('sel', b.id === `userEditConn-${pin.baglanti_turu}`);
   });
@@ -10637,31 +10637,35 @@ async function saveUserEdit() {
   const score = selScoreValUserEdit;
   const speedVerified = document.getElementById('userEditSpeedVerifiedBadge').classList.contains('show');
   
+  const isStillNoInfra = (connType === 'yok' && !dl);
   if (!connType) return showToast('Lütfen bağlantı türü seçin', 'err');
-  if (!dl) return showToast('Hız verisi boş olamaz', 'err');
   if (!score) return showToast('Lütfen memnuniyet puanı verin', 'err');
 
-  const maxSpeed = Math.max(pkgDL || dl, dl);
-  if (maxSpeed > 100 && (connType === 'adsl' || connType === 'vdsl')) {
-    return showToast('100 Mbps üzeri hızlar VDSL/ADSL olamaz — lütfen "Fiber" seçin', 'err');
+  if (!isStillNoInfra) {
+    if (!dl) return showToast('Hız verisi boş olamaz', 'err');
+    const maxSpeed = Math.max(pkgDL || dl, dl);
+    if (maxSpeed > 100 && (connType === 'adsl' || connType === 'vdsl')) {
+      return showToast('100 Mbps üzeri hızlar VDSL/ADSL olamaz — lütfen "Fiber" seçin', 'err');
+    }
+    if (maxSpeed > 24 && connType === 'adsl') {
+      return showToast('24 Mbps üzeri hızlar ADSL olamaz — lütfen "VDSL" veya "Fiber" seçin', 'err');
+    }
+    if (dl < 0.5 || dl > 2500) return showToast('Geçersiz download hızı (0.5–2500 Mbps)', 'err');
+    if (ul > 2500) return showToast('Geçersiz upload hızı (max 2500 Mbps)', 'err');
+    if (ul > dl * 5) return showToast('Upload hızı download hızının 5 katından fazla olamaz', 'err');
   }
-  if (maxSpeed > 24 && connType === 'adsl') {
-    return showToast('24 Mbps üzeri hızlar ADSL olamaz — lütfen "VDSL" veya "Fiber" seçin', 'err');
-  }
-  if (dl < 0.5 || dl > 2500) return showToast('Geçersiz download hızı (0.5–2500 Mbps)', 'err');
-  if (ul > 2500) return showToast('Geçersiz upload hızı (max 2500 Mbps)', 'err');
-  if (ul > dl * 5) return showToast('Upload hızı download hızının 5 katından fazla olamaz', 'err');
   
   const payload = {
     baglanti_turu: connType,
-    paket_hizi: pkgDL,
-    paket_hizi_dl: pkgDL,
-    paket_hizi_ul: pkgUL,
-    gercek_dl: dl,
-    gercek_ul: ul,
+    paket_hizi: isStillNoInfra ? null : pkgDL,
+    paket_hizi_dl: isStillNoInfra ? null : pkgDL,
+    paket_hizi_ul: isStillNoInfra ? null : pkgUL,
+    gercek_dl: isStillNoInfra ? 0 : dl,
+    gercek_ul: isStillNoInfra ? 0 : ul,
     puan: score,
     yorum: comment,
-    speed_test_verified: speedVerified,
+    speed_test_verified: isStillNoInfra ? false : speedVerified,
+    is_altyapi_yok: isStillNoInfra,
     updated_at: new Date().toISOString()
   };
   // Bu panelde İSS seçimi yok — kullanıcı bağlantı türünü DOCSIS yaparsa, ana formdaki
@@ -10706,7 +10710,7 @@ async function saveUserEdit() {
       try {
         await patchPinOwn(pinId, fb);
         markEditPin(pinId);
-        showToast('✅ Ölçümünüz güncellendi (DB şeması bekleniyor)');
+        showToast('✅ Ölçümünüz güncellendi!');
         closeUserEditModal();
         document.getElementById('mapInfo').classList.remove('visible');
         await loadPins();
@@ -10825,7 +10829,7 @@ async function deleteAndRecreatePin() {
   }
 }
 
-function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); document.querySelectorAll('#feedbackTags .feedback-tag').forEach(t => t.classList.remove('sel')); selConnVal=''; selScoreVal=0; connUserManuallyChanged=false; const connBdg=document.getElementById('autoConnBadge'); if(connBdg) connBdg.style.display='none'; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); speedVerifiedByTest = false; const kvkkCheck = document.getElementById('kvkkCheck');
+function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); document.querySelectorAll('#feedbackTags .feedback-tag').forEach(t => t.classList.remove('sel')); selConnVal=''; selScoreVal=0; connUserManuallyChanged=false; const connBdg=document.getElementById('autoConnBadge'); if(connBdg) connBdg.style.display='none'; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); speedVerifiedByTest = false; stResults = null; const kvkkCheck = document.getElementById('kvkkCheck');
   if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; }
   const noInfraCheck = document.getElementById('noInfraCheck');
   if (noInfraCheck && noInfraCheck.checked) { noInfraCheck.checked = false; onNoInfraChange(false); }
@@ -12375,7 +12379,7 @@ async function openEditModal(id) {
     }
     const editSaveBtnReset = document.getElementById('editSaveBtn'); if (editSaveBtnReset) { editSaveBtnReset.disabled = false; editSaveBtnReset.textContent = '💾 Kaydet'; }
     document.getElementById('editModal').classList.add('open');
-  } catch(e) { showToast('Hata: '+e.message,'err'); }
+  } catch(e) { showToast(friendlyDbError(e, 'pins'),'err'); }
 }
 
 async function saveEdit() {
@@ -12451,7 +12455,7 @@ async function saveEdit() {
           mod_notu: document.getElementById('editModNote').value.trim()||null,
           diger_altyapilar: editExtraList2.length ? JSON.stringify(editExtraList2) : null
         });
-        showToast('✅ Pin güncellendi (DB şeması bekleniyor — sadece eski Paket Hızı kaydedildi)');
+        showToast('✅ Pin güncellendi');
         closeEditModal();
         await loadPins();
         await loadCustomIss();
@@ -12459,7 +12463,7 @@ async function saveEdit() {
         loadSikayetler();
         refreshModData();
       } catch(e2) { showToast(friendlyDbError(e2, 'pins'),'err'); }
-    } else if(e.message.includes("does not exist")) showToast("Sunucu şeması güncelleniyor, lütfen birazdan tekrar deneyin.", "err");
+    } else if(e.message.includes("does not exist")) showToast("Sunucu güncelleniyor, lütfen birazdan tekrar deneyin.", "err");
     else showToast(friendlyDbError(e, 'pins'),'err');
   } finally {
     if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Kaydet'; }
@@ -12499,7 +12503,7 @@ async function modDeletePin(id, permanent = false) {
     updateInboxSummary();
     updateModStatsSummary();
   } catch(e) { 
-    if(e.message.includes("does not exist") || e.message.includes("schema cache")) showToast("Sunucu şeması güncelleniyor, lütfen birazdan tekrar deneyin.", "warn");
+    if(e.message.includes("does not exist") || e.message.includes("schema cache")) showToast("Sunucu güncelleniyor, lütfen birazdan tekrar deneyin.", "warn");
     else showToast(friendlyDbError(e, 'pins'),'err'); 
   }
 }
@@ -12959,8 +12963,10 @@ async function checkSession() {
       console.warn('[internetHarita] OAuth yönlendirme hatası:', authErrCode, authErrDesc);
       if (authErrCode === 'signup_disabled') {
         showToast('⚠️ Google ile yeni kayıt kabulü şu anda kapalı.', 'warn');
+      } else if (authErrCode === 'access_denied') {
+        showToast('Google giriş izni iptal edildi.', 'warn');
       } else {
-        showToast('Giriş başarısız: ' + (authErrDesc || authErrCode), 'err');
+        showToast('Google ile giriş tamamlanamadı. Lütfen tekrar deneyin.', 'err');
       }
       if (window.history && window.history.replaceState) {
         window.history.replaceState(null, '', window.location.pathname);
@@ -14494,7 +14500,7 @@ function setSpeedEntryMode(mode) {
 function openSpeedTestModal(target = 'form') {
   speedTestTarget = target;
   document.getElementById('speedTestModal').classList.add('open');
-  resetSpeedTestUI();
+  resetSpeedTestUI(speedVerifiedByTest);
   const sub = document.getElementById('stSub');
   const useBtn = document.getElementById('stUseBtn');
   if (target === 'standalone') {
@@ -14516,20 +14522,24 @@ function closeSettingsMenu() {
   document.getElementById('settingsDropdown')?.classList.remove('open');
 }
 
-function closeSpeedTestModal() {
+function closeSpeedTestModal(keepApplied = false) {
   if (stRunning && _cfSpeedEngine) {
     try { _cfSpeedEngine.pause(); } catch(e) {}
     stRunning = false;
   }
-  resetSpeedTestUI();
+  resetSpeedTestUI(keepApplied || speedVerifiedByTest);
   document.getElementById('speedTestModal').classList.remove('open');
   speedTestTarget = 'form';
 }
-function resetSpeedTestUI() {
+function resetSpeedTestUI(keepApplied = false) {
   if (_cfSpeedEngine) {
     try { _cfSpeedEngine.pause(); } catch(e) {}
   }
-  stResults = null; stRunning = false; speedVerifiedByTest = false;
+  stRunning = false;
+  if (!keepApplied) {
+    stResults = null;
+    speedVerifiedByTest = false;
+  }
   document.getElementById('stVal').textContent = '—';
   document.getElementById('stPhase').textContent = 'HAZIR';
   document.getElementById('sgFill').style.strokeDashoffset = '427';
@@ -14712,8 +14722,8 @@ function runOfficialSpeedTest(EngineClass) {
     engine.onFinish = (results) => {
       try {
         const summary = results.getSummary();
-        const finalDL = summary.download ? Math.round(summary.download / 1e6) : 0;
-        const finalUL = summary.upload ? Math.round(summary.upload / 1e6) : 0;
+        const finalDL = summary.download > 0 ? Math.max(1, Math.round(summary.download / 1e6)) : 0;
+        const finalUL = summary.upload > 0 ? Math.max(1, Math.round(summary.upload / 1e6)) : 0;
         const finalPing = summary.latency ? Math.round(summary.latency) : null;
 
         document.getElementById('stPhase').textContent = 'TAMAMLANDI';
@@ -14844,27 +14854,28 @@ async function runSpeedTest() {
 }
 
 function applySpeedResults() {
-  if (!stResults || !stResults.dl || !stResults.ul) {
+  if (!stResults || !stResults.dl) {
     return showToast('Hız testi tamamlanmadan sonuç kullanılamaz','err');
   }
+  const appliedUL = stResults.ul || 0;
   if (speedTestTarget === 'userEdit') {
     document.getElementById('userEditDL').value = stResults.dl;
-    document.getElementById('userEditUL').value = stResults.ul;
+    document.getElementById('userEditUL').value = appliedUL;
     document.getElementById('userEditSpeedVerifiedBadge').classList.add('show');
-    showToast(`✅ ↓${stResults.dl} Mbps · ↑${stResults.ul} Mbps — düzenleme formuna yazıldı`);
+    showToast(`✅ ↓${stResults.dl} Mbps · ↑${appliedUL} Mbps — düzenleme formuna yazıldı`);
   } else {
     setSpeedEntryMode('builtin');
     document.getElementById('dlSpeed').value = stResults.dl;
-    document.getElementById('ulSpeed').value = stResults.ul;
+    document.getElementById('ulSpeed').value = appliedUL;
     document.getElementById('speedVerifiedBadge').classList.add('show');
     speedVerifiedByTest = true; // JS state guncelle
     checkSpeedAndConnSuggestion();
-    showToast(`✅ ↓${stResults.dl} Mbps · ↑${stResults.ul} Mbps — forma aktarıldı`);
+    showToast(`✅ ↓${stResults.dl} Mbps · ↑${appliedUL} Mbps — forma aktarıldı`);
     if (speedTestTarget === 'standalone') {
       showPage('pin');
     }
   }
-  closeSpeedTestModal();
+  closeSpeedTestModal(true);
 }
 
 // ===== PWA: ANA EKRANA EKLE =====

@@ -352,6 +352,17 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
 
 .speed-bar-wrap { width: 100%; max-width: 140px; background: var(--surface2); height: 6px; border-radius: 3px; overflow: hidden; margin-top: 4px; }
 .speed-bar { height: 100%; background: linear-gradient(90deg, var(--accent), #3b82f6); border-radius: 3px; }
+.map-jump-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;
+  color: var(--accent); background: var(--accent-dim);
+  border: 1px solid rgba(0,212,255,0.28); text-decoration: none;
+  white-space: nowrap; transition: all .18s;
+}
+.map-jump-btn:hover {
+  background: var(--accent); color: #000;
+  box-shadow: 0 3px 12px var(--accent-glow); transform: translateY(-1px);
+}
 
 /* REKLAM */
 .ad-container {
@@ -540,11 +551,11 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
       <table id="worldTable">
         <thead>
           <tr>
-            <th style="width:65px;" class="sortable sorted" id="th-w-rank" tabindex="0" role="button" aria-sort="ascending" onclick="sortWorldTable('rank')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortWorldTable('rank');}">Sıra <span class="sort-icon">▲</span></th>
-            <th class="sortable" id="th-w-name" tabindex="0" role="button" aria-sort="none" onclick="sortWorldTable('name')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortWorldTable('name');}">Ülke <span class="sort-icon">↕</span></th>
-            <th class="sortable" id="th-w-dl" tabindex="0" role="button" aria-sort="none" onclick="sortWorldTable('dl')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortWorldTable('dl');}">Ort. İndirme (Download) <span class="sort-icon">↕</span></th>
-            <th class="sortable" id="th-w-ul" tabindex="0" role="button" aria-sort="none" onclick="sortWorldTable('ul')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortWorldTable('ul');}">Ort. Yükleme (Upload) <span class="sort-icon">↕</span></th>
-            <th class="sortable" id="th-w-ping" tabindex="0" role="button" aria-sort="none" onclick="sortWorldTable('ping')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortWorldTable('ping');}">Gecikme (Ping) <span class="sort-icon">↕</span></th>
+            <th scope="col" style="width:65px;" class="sortable sorted" id="th-w-rank" tabindex="0" aria-sort="ascending" onclick="sortWorldTable('rank')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortWorldTable('rank');}">Sıra <span class="sort-icon">▲</span></th>
+            <th scope="col" class="sortable" id="th-w-name" tabindex="0" aria-sort="none" onclick="sortWorldTable('name')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortWorldTable('name');}">Ülke <span class="sort-icon">↕</span></th>
+            <th scope="col" class="sortable" id="th-w-dl" tabindex="0" aria-sort="none" onclick="sortWorldTable('dl')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortWorldTable('dl');}">Ort. İndirme (Download) <span class="sort-icon">↕</span></th>
+            <th scope="col" class="sortable" id="th-w-ul" tabindex="0" aria-sort="none" onclick="sortWorldTable('ul')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortWorldTable('ul');}">Ort. Yükleme (Upload) <span class="sort-icon">↕</span></th>
+            <th scope="col" class="sortable" id="th-w-ping" tabindex="0" aria-sort="none" onclick="sortWorldTable('ping')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortWorldTable('ping');}">Gecikme (Ping) <span class="sort-icon">↕</span></th>
           </tr>
         </thead>
         <tbody id="worldTableBody"></tbody>
@@ -584,12 +595,13 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
       <table id="trTable">
         <thead>
           <tr>
-            <th style="width:65px;" class="sortable sorted" id="th-t-rank" tabindex="0" role="button" aria-sort="ascending" onclick="sortTrTable('rank')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTrTable('rank');}">Sıra <span class="sort-icon">▲</span></th>
-            <th class="sortable" id="th-t-name" tabindex="0" role="button" aria-sort="none" onclick="sortTrTable('name')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTrTable('name');}">Bölge / İl <span class="sort-icon">↕</span></th>
-            <th class="sortable" id="th-t-dl" tabindex="0" role="button" aria-sort="none" onclick="sortTrTable('dl')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTrTable('dl');}">Ort. İndirme (Download) <span class="sort-icon">↕</span></th>
-            <th class="sortable" id="th-t-ul" tabindex="0" role="button" aria-sort="none" onclick="sortTrTable('ul')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTrTable('ul');}">Ort. Yükleme (Upload) <span class="sort-icon">↕</span></th>
-            <th class="sortable" id="th-t-ping" tabindex="0" role="button" aria-sort="none" onclick="sortTrTable('ping')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTrTable('ping');}">Ortalama Ping <span class="sort-icon">↕</span></th>
-            <th class="sortable" id="th-t-status" tabindex="0" role="button" aria-sort="none" onclick="sortTrTable('status')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTrTable('status');}">Durum <span class="sort-icon">↕</span></th>
+            <th scope="col" style="width:65px;" class="sortable sorted" id="th-t-rank" tabindex="0" aria-sort="ascending" onclick="sortTrTable('rank')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTrTable('rank');}">Sıra <span class="sort-icon">▲</span></th>
+            <th scope="col" class="sortable" id="th-t-name" tabindex="0" aria-sort="none" onclick="sortTrTable('name')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTrTable('name');}">Bölge / İl <span class="sort-icon">↕</span></th>
+            <th scope="col" class="sortable" id="th-t-dl" tabindex="0" aria-sort="none" onclick="sortTrTable('dl')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTrTable('dl');}">Ort. İndirme (Download) <span class="sort-icon">↕</span></th>
+            <th scope="col" class="sortable" id="th-t-ul" tabindex="0" aria-sort="none" onclick="sortTrTable('ul')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTrTable('ul');}">Ort. Yükleme (Upload) <span class="sort-icon">↕</span></th>
+            <th scope="col" class="sortable" id="th-t-ping" tabindex="0" aria-sort="none" onclick="sortTrTable('ping')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTrTable('ping');}">Ortalama Ping <span class="sort-icon">↕</span></th>
+            <th scope="col" class="sortable" id="th-t-status" tabindex="0" aria-sort="none" onclick="sortTrTable('status')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTrTable('status');}">Durum <span class="sort-icon">↕</span></th>
+            <th scope="col" style="text-align:right;">Harita</th>
           </tr>
         </thead>
         <tbody id="trTableBody"></tbody>
@@ -950,13 +962,14 @@ function renderTrTable(data) {
   const countEl = document.getElementById('trCityCount');
   if (countEl) countEl.textContent = data ? data.length : 0;
   if (!data || !data.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3);font-size:13px;">🔍 Aradığınız kriterlere uygun il bulunamadı.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3);font-size:13px;">🔍 Aradığınız kriterlere uygun il bulunamadı.</td></tr>';
     return;
   }
   const maxDl = Math.max(...data.map(d => d.dl), 1);
 
   tbody.innerHTML = data.map(item => {
     const barPct = Math.min(100, Math.round((item.dl / maxDl) * 100));
+    const mapUrl = `/?il=${encodeURIComponent(item.name)}`;
     return `
       <tr>
         <td><span class="rank-badge">${item.rank}</span></td>
@@ -968,6 +981,7 @@ function renderTrTable(data) {
         <td><span style="font-family:var(--font-mono); color:var(--text2);">${item.ul.toFixed(1)} Mbps</span></td>
         <td><span style="font-family:var(--font-mono); color:var(--text3);">${item.ping} ms</span></td>
         <td><span style="font-size:11px; font-weight:700; color:${item.color};">${item.status}</span></td>
+        <td style="text-align:right;"><a href="${mapUrl}" class="map-jump-btn" title="${item.name} ilini canlı haritada incele">📍 Haritada Gör</a></td>
       </tr>
     `;
   }).join('');

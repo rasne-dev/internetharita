@@ -2023,9 +2023,9 @@ function analyzeVdslLine() {
   var resBox = document.getElementById('vdslAnalysisResult');
   if (!resBox) return;
 
-  if (isNaN(snr) || isNaN(att)) {
+  if (isNaN(snr) || isNaN(att) || snr < 0 || att < 0) {
     resBox.style.display = 'block';
-    resBox.innerHTML = '<span style="color:var(--danger); font-weight:600;">⚠️ Lütfen geçerli bir SNR ve Hat Zayıflaması değeri girin.</span>';
+    resBox.innerHTML = '<span style="color:var(--danger); font-weight:600;">⚠️ Lütfen 0 veya daha büyük geçerli bir SNR ve Hat Zayıflaması değeri girin.</span>';
     return;
   }
 
@@ -2055,12 +2055,14 @@ function analyzeVdslLine() {
   else maxRecSpeed = 100;
 
   var speedNote = '';
-  if (speed > maxRecSpeed) {
-    speedNote = '<div style="margin-top:10px; padding:10px 12px; background:rgba(239,68,68,0.1); border-left:3px solid var(--danger); border-radius:6px; font-size:12px; color:var(--text); line-height:1.5;">' +
-      '<strong style="color:var(--danger);">⚠️ Aşırı Hız Uyarısı:</strong> Tanımlı hızınız (' + speed + ' Mbps), hattınızın zayıflamasına göre önerilen kararlı hız sınırının (' + maxRecSpeed + ' Mbps) üzerinde. Yaşadığınız kopmaların ana sebebi modeme aşırı hız zorlanması olabilir. Profilinizi ' + maxRecSpeed + " Mbps'ye sabitleterek kopmaları tamamen durdurabilirsiniz.</div>";
-  } else {
-    speedNote = '<div style="margin-top:10px; padding:10px 12px; background:rgba(34,197,94,0.1); border-left:3px solid var(--success); border-radius:6px; font-size:12px; color:var(--text); line-height:1.5;">' +
-      '<strong style="color:var(--success);">✅ Hız Uyumu:</strong> Tanımlı hızınız (' + speed + ' Mbps) hattınızın fiziksel kapasitesi ve saha dolabı mesafesiyle gayet uyumlu.</div>';
+  if (speed > 0) {
+    if (speed > maxRecSpeed) {
+      speedNote = '<div style="margin-top:10px; padding:10px 12px; background:rgba(239,68,68,0.1); border-left:3px solid var(--danger); border-radius:6px; font-size:12px; color:var(--text); line-height:1.5;">' +
+        '<strong style="color:var(--danger);">⚠️ Aşırı Hız Uyarısı:</strong> Tanımlı hızınız (' + speed + ' Mbps), hattınızın zayıflamasına göre önerilen kararlı hız sınırının (' + maxRecSpeed + ' Mbps) üzerinde. Yaşadığınız kopmaların ana sebebi modeme aşırı hız zorlanması olabilir. Profilinizi ' + maxRecSpeed + " Mbps'ye sabitleterek kopmaları tamamen durdurabilirsiniz.</div>";
+    } else {
+      speedNote = '<div style="margin-top:10px; padding:10px 12px; background:rgba(34,197,94,0.1); border-left:3px solid var(--success); border-radius:6px; font-size:12px; color:var(--text); line-height:1.5;">' +
+        '<strong style="color:var(--success);">✅ Hız Uyumu:</strong> Tanımlı hızınız (' + speed + ' Mbps) hattınızın fiziksel kapasitesi ve saha dolabı mesafesiyle gayet uyumlu.</div>';
+    }
   }
 
   resBox.style.display = 'block';
@@ -2108,6 +2110,13 @@ function calculateCaymaBedeli() {
     return;
   }
 
+  if (paidPrice <= 0 || normalPrice <= 0) {
+    resBox.style.display = 'block';
+    resBox.innerHTML = '<span style="color:var(--danger); font-weight:600;">⚠️ Lütfen ödediğiniz fatura tutarını ve paketinizin indirimsiz (liste) fiyatını girin.</span>';
+    return;
+  }
+
+  deviceFee = Math.max(0, deviceFee);
   var remainingMonths = totalMonths - usedMonths;
   var monthlyDiscount = Math.max(0, normalPrice - paidPrice);
 
