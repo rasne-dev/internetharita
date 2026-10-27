@@ -6429,12 +6429,15 @@ function focusLocationOnMap(lat, lng, label) {
 let _urlUpdateTimer = null;
 function syncMapToUrl() {
   if (!maps.main) return;
+  if (!document.getElementById('page-harita')?.classList.contains('active')) return;
   if (_urlUpdateTimer) clearTimeout(_urlUpdateTimer);
   _urlUpdateTimer = setTimeout(() => {
     try {
+      if (!document.getElementById('page-harita')?.classList.contains('active')) return;
       const center = maps.main.getCenter();
       const zoom = maps.main.getZoom();
       const params = new URLSearchParams(window.location.search);
+      const hash = window.location.hash || '';
 
       // Ülke / genel bakış seviyesinde (zoom < 10) URL'yi tertemiz tut
       if (zoom < 10) {
@@ -6443,7 +6446,7 @@ function syncMapToUrl() {
           params.delete('lng');
           params.delete('z');
           const remaining = params.toString();
-          window.history.replaceState(null, '', remaining ? ('?' + remaining) : window.location.pathname);
+          window.history.replaceState(null, '', (remaining ? ('?' + remaining) : window.location.pathname) + hash);
         }
         return;
       }
@@ -6453,7 +6456,7 @@ function syncMapToUrl() {
         params.set('lat', center.lat.toFixed(4));
         params.set('lng', center.lng.toFixed(4));
         params.set('z', zoom);
-        window.history.replaceState(null, '', '?' + params.toString());
+        window.history.replaceState(null, '', '?' + params.toString() + hash);
       }
     } catch(e) {}
   }, 350);
@@ -6461,6 +6464,10 @@ function syncMapToUrl() {
 
 function handleUrlParamsOnStartup() {
   try {
+    const rawHash = (window.location.hash || '').replace(/^#\/?/, '').trim().toLowerCase();
+    if (['istatistik', 'istatistikler', 'bolge', 'bolgeler', 'pin', 'ekle', 'veriekle', 'mod', 'moderator'].includes(rawHash)) {
+      return;
+    }
     const params = new URLSearchParams(window.location.search);
     const il = params.get('il') || params.get('city');
     const ilce = params.get('ilce');
@@ -6930,6 +6937,8 @@ async function loadIssListAndRenderChips() {
     cleanPinsData = publicCleanPins(pinsData);
     renderHex();
     renderModPins();
+    if (document.getElementById('page-istatistik')?.classList.contains('active')) renderStats();
+    if (document.getElementById('page-bolge')?.classList.contains('active')) renderRegions();
   }
 }
 
@@ -7156,14 +7165,20 @@ initSidebarState();
 function showPage(id, updateUrl = true) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('page-'+id)?.classList.add('active');
+  const targetPage = document.getElementById('page-'+id);
+  if (targetPage) {
+    targetPage.classList.add('active');
+    if (id === 'istatistik' || id === 'bolge') {
+      targetPage.scrollTop = 0;
+    }
+  }
   const activeTab = document.getElementById('tab-'+id) || (id === 'mod' ? document.getElementById('navModBtn') : null);
   if (activeTab) {
     activeTab.classList.add('active');
     activeTab.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }
 
-  // URL Hash senkronizasyonu
+  // URL Hash senkronizasyonu (replaceState/pushState ile mükerrer hashchange tetiklemeden)
   if (updateUrl) {
     const targetHash = id === 'mod' ? '#mod'
       : id === 'bolge' ? '#bolgeler'
@@ -7172,7 +7187,7 @@ function showPage(id, updateUrl = true) {
       : '';
     if (targetHash) {
       if (window.location.hash !== targetHash) {
-        window.location.hash = targetHash;
+        history.pushState(null, '', window.location.pathname + window.location.search + targetHash);
       }
     } else {
       if (window.location.hash) {
@@ -7193,6 +7208,8 @@ function showPage(id, updateUrl = true) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     document.getElementById('page-harita')?.scrollTo({ top: 0, behavior: 'smooth' });
   }
+  if (id === 'bolge') renderRegions();
+  if (id === 'istatistik') renderStats();
   setTimeout(async () => { 
     if (id==='harita') { if (!maps.main) await initMainMap(); else maps.main.invalidateSize(); } 
     if (id==='pin') { if (!maps.pin) initPinMap(); else maps.pin.invalidateSize(); renderISSChips(issListCache.filter(i=>i.active!==false)); if (typeof detectAndSuggestIss === 'function') detectAndSuggestIss(); } 
@@ -7601,7 +7618,8 @@ async function _loadPinsCore() {
         created_at: p.created_at,
         il: p.il,
         ilce: p.ilce,
-        mahalle: p.mahalle
+        mahalle: p.mahalle,
+        yorum: p.yorum
       }));
       localStorage.setItem('ih_cached_pins', JSON.stringify({ ts: Date.now(), pins: compactPins }));
     } catch(err) {}
@@ -7610,6 +7628,8 @@ async function _loadPinsCore() {
     cleanPinsData = publicCleanPins(finalPins); 
     renderHex(); renderModPins(); renderMyPins();
     if (typeof updateFilterIndicator === 'function') updateFilterIndicator();
+    if (document.getElementById('page-istatistik')?.classList.contains('active')) renderStats();
+    if (document.getElementById('page-bolge')?.classList.contains('active')) renderRegions();
     
     const speedPins = cleanPinsData.filter(p => !p.is_altyapi_yok);
     const cnt = cleanPinsData.length;
@@ -7630,6 +7650,8 @@ async function _loadPinsCore() {
         cleanPinsData = publicCleanPins(filteredCached);
         renderHex(); renderModPins(); renderMyPins();
         if (typeof updateFilterIndicator === 'function') updateFilterIndicator();
+        if (document.getElementById('page-istatistik')?.classList.contains('active')) renderStats();
+        if (document.getElementById('page-bolge')?.classList.contains('active')) renderRegions();
         
         const speedPins = cleanPinsData.filter(p => !p.is_altyapi_yok);
         const cnt = cleanPinsData.length;
@@ -8186,12 +8208,31 @@ const BOLGELER = {
 
 let selectedRegionName = 'Ege';
 
-function renderRegions() {
+async function renderRegions() {
   const grid = document.getElementById('regionsGrid');
-  const all = cleanPinsData;
+  let all = cleanPinsData;
   if (!all.length) {
-    if (grid) grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🌍</div><div>Henüz veri yok</div></div>';
-    return;
+    try {
+      const cached = JSON.parse(localStorage.getItem('ih_cached_pins') || 'null');
+      if (cached && Array.isArray(cached.pins) && cached.pins.length > 0) {
+        const localDeleted = getDeletedPinsLocal();
+        const filteredCached = cached.pins.filter(p => !localDeleted.has(String(p.id)) && !p.deleted_at);
+        if (!pinsData.length) pinsData = filteredCached;
+        cleanPinsData = publicCleanPins(filteredCached);
+        all = cleanPinsData;
+      }
+    } catch(e) {}
+  }
+  if (!all.length) {
+    if (grid) grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🌍</div><div>Veriler yükleniyor...</div></div>';
+    if (typeof loadPins === 'function') {
+      await loadPins();
+      all = cleanPinsData;
+    }
+    if (!all.length) {
+      if (grid) grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🌍</div><div>Henüz veri yok</div></div>';
+      return;
+    }
   }
 
   // 1. Tüm 7 Bölge İstatistiklerini Hesapla
@@ -8745,7 +8786,29 @@ function renderSpeedRankList(filterIl) {
 
 async function renderStats() {
   let pins = cleanPinsData;
-  if (!pins.length) {['issRankList','speedRankList','connChart','speedBandChart','activeIlList'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = '<div class="loading-text">Henüz veri yok</div>'; }); return; }
+  if (!pins.length) {
+    try {
+      const cached = JSON.parse(localStorage.getItem('ih_cached_pins') || 'null');
+      if (cached && Array.isArray(cached.pins) && cached.pins.length > 0) {
+        const localDeleted = getDeletedPinsLocal();
+        const filteredCached = cached.pins.filter(p => !localDeleted.has(String(p.id)) && !p.deleted_at);
+        if (!pinsData.length) pinsData = filteredCached;
+        cleanPinsData = publicCleanPins(filteredCached);
+        pins = cleanPinsData;
+      }
+    } catch(e) {}
+  }
+  if (!pins.length) {
+    ['issRankList','speedRankList','connChart','speedBandChart','activeIlList'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = '<div class="loading-text">Veriler yükleniyor...</div>'; });
+    if (typeof loadPins === 'function') {
+      await loadPins();
+      pins = cleanPinsData;
+    }
+    if (!pins.length) {
+      ['issRankList','speedRankList','connChart','speedBandChart','activeIlList'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = '<div class="loading-text">Henüz veri yok</div>'; });
+      return;
+    }
+  }
   // "Altyapı Yok" bildirimleri gercek_dl/gercek_ul=0 olarak kayıtlıdır; bunlar gerçek bir hız ölçümü
   // değildir ve hız istatistiklerine (ortalama, bant dağılımı, en hızlı lokasyon vb.) dahil edilirse
   // ortalamaları yanlış şekilde aşağı çeker. Bu yüzden tüm hız hesaplarında speedPins kullanılır.
@@ -14905,6 +14968,444 @@ function runOfficialSpeedTest(EngineClass) {
   });
 }
 
+function finalizeSpeedTestUI(finalDL, finalUL, finalPing) {
+  document.getElementById('stPhase').textContent = 'TAMAMLANDI';
+  document.getElementById('stSub').style.color = '';
+  const fmtSub = v => v >= 1000 ? (v / 1000).toFixed(2) + 'G' : v;
+  document.getElementById('stSub').textContent = `↓ ${fmtSub(finalDL)} Mbps  ·  ↑ ${fmtSub(finalUL)} Mbps${finalPing ? '  ·  ' + finalPing + ' ms' : ''}`;
+
+  document.getElementById('stDLVal').textContent = formatMbps(finalDL);
+  document.getElementById('stULVal').textContent = formatMbps(finalUL);
+  if (finalPing) {
+    document.getElementById('stPingRow').style.display = 'flex';
+    document.getElementById('stPingVal').textContent = finalPing + ' ms';
+  }
+
+  const dlMax = Math.max(Math.ceil(finalDL * 1.15 / 50) * 50, 50);
+  setGauge(finalDL, dlMax, 'var(--accent)');
+  document.getElementById('stResults').classList.add('show');
+
+  const benchmarkCard = document.getElementById('stBenchmarkCard');
+  if (benchmarkCard) {
+    const natAvg = (typeof cleanPinsData !== 'undefined' && cleanPinsData.length) ? (function() {
+      const sp = cleanPinsData.filter(p => !p.is_altyapi_yok && p.gercek_dl > 0);
+      return sp.length ? Math.round(sp.reduce((a, p) => a + p.gercek_dl, 0) / sp.length) : 45;
+    })() : 45;
+
+    benchmarkCard.className = 'st-benchmark-card';
+    if (finalDL > natAvg * 1.15) {
+      const pct = Math.round(((finalDL - natAvg) / natAvg) * 100);
+      benchmarkCard.classList.add('fast');
+      benchmarkCard.innerHTML = `🚀 <b>Türkiye ortalamasının (%${pct}) üzerindesiniz!</b> (Ort: ${natAvg} Mbps)<br><span style="font-size:9.5px;opacity:.9;">Mahallenizin ortalamasını yükseltmek için bu sonucu haritaya ekleyin.</span>`;
+    } else if (finalDL < natAvg * 0.85) {
+      const pct = Math.round(((natAvg - finalDL) / natAvg) * 100);
+      benchmarkCard.classList.add('slow');
+      benchmarkCard.innerHTML = `⚠️ <b>Türkiye ortalamasının (%${pct}) altındasınız.</b> (Ort: ${natAvg} Mbps)<br><span style="font-size:9.5px;opacity:.9;">Bölgenizdeki altyapı yetersizliğini belgelemek için bu sonucu haritaya ekleyin.</span>`;
+    } else {
+      benchmarkCard.classList.add('neutral');
+      benchmarkCard.innerHTML = `📊 <b>Türkiye ortalamasına yakın bir hızdasınız</b> (Ort: ${natAvg} Mbps)<br><span style="font-size:9.5px;opacity:.9;">Mahallenizdeki durumu kaydetmek için sonucu haritaya ekleyin.</span>`;
+    }
+    benchmarkCard.style.display = 'block';
+  }
+
+  document.getElementById('stStartBtn').style.display = 'none';
+  document.getElementById('stUseBtn').style.display = 'block';
+  document.getElementById('stRetryBtn').style.display = 'block';
+  const shareWrap = document.getElementById('stShareWrap');
+  if (shareWrap) shareWrap.style.display = 'flex';
+
+  stResults = { dl: finalDL, ul: finalUL, ping: finalPing };
+}
+
+function calcPercentileVal(arr, p) {
+  if (!arr || !arr.length) return 0;
+  const sorted = arr.slice().sort((a, b) => a - b);
+  const idx = (sorted.length - 1) * p;
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  if (lo === hi) return sorted[lo];
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+}
+
+// ÇOK KANALLI (MULTI-STREAM) YÜKSEK DOĞRULUKLU HIZ TESTİ MOTORU
+// Tekil akışta (single-stream) yüksek RTT (örn. Cloudflare Frankfurt 50ms yönlendirmesi)
+// nedeniyle oluşan TCP BDP (~90 Mbps) darboğazını ve TTFB/Worker gecikme sapmasını
+// 8 paralel indirme + 6 paralel yükleme akışı ve cfL4 çekirdek RTT ölçümüyle ortadan kaldırır.
+async function runMultiStreamSpeedTest() {
+  let cancelled = false;
+  const activeControllers = new Set();
+  const activeXhrs = new Set();
+  const activeIntervals = new Set();
+
+  _cfSpeedEngine = {
+    pause() {
+      cancelled = true;
+      activeControllers.forEach(c => { try { c.abort(); } catch(e) {} });
+      activeControllers.clear();
+      activeXhrs.forEach(x => { try { x.abort(); } catch(e) {} });
+      activeXhrs.clear();
+      activeIntervals.forEach(id => clearInterval(id));
+      activeIntervals.clear();
+    }
+  };
+
+  let liveMax = 200;
+
+  // 1. AŞAMA: PING (GECİKME) ÖLÇÜMÜ
+  document.getElementById('stPhase').textContent = 'PING';
+  document.getElementById('stSub').textContent = 'Ping ölçülüyor...';
+  document.getElementById('sgFill').style.stroke = 'var(--accent)';
+  document.getElementById('stVal').textContent = '…';
+
+  const pingSamples = [];
+  for (let i = 0; i < 9; i++) {
+    if (cancelled) return;
+    const ctrl = new AbortController();
+    activeControllers.add(ctrl);
+    const timer = setTimeout(() => ctrl.abort(), 4000);
+    const url = `${SPEED_DOWNLOAD_URL}?bytes=0&p=${i}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const t0 = performance.now();
+    try {
+      const r = await fetch(url, { signal: ctrl.signal, cache: 'no-store' });
+      await r.arrayBuffer();
+      const t1 = performance.now();
+      const st = r.headers.get('server-timing') || '';
+      const minRttMatch = st.match(/min_rtt=([0-9]+)/i);
+      const rttMatch = st.match(/(?:^|[?&])rtt=([0-9]+)/i);
+      let sampleMs = null;
+      if (minRttMatch && +minRttMatch[1] > 0) {
+        sampleMs = +minRttMatch[1] / 1000;
+      } else if (rttMatch && +rttMatch[1] > 0) {
+        sampleMs = +rttMatch[1] / 1000;
+      } else if (i > 0) {
+        let srvDur = 0;
+        for (const m of st.matchAll(/cfSpeed[a-zA-Z]*;\s*dur=([0-9.]+)/gi)) srvDur += +m[1];
+        const perf = performance.getEntriesByName(url).slice(-1)[0];
+        const rawTtfb = (perf && perf.responseStart > perf.requestStart) ? (perf.responseStart - perf.requestStart) : (t1 - t0);
+        sampleMs = Math.max(1, rawTtfb - srvDur);
+      }
+      if (sampleMs && sampleMs > 0.3 && sampleMs < 2000) {
+        pingSamples.push(sampleMs);
+        const curPing = Math.max(1, Math.round(calcPercentileVal(pingSamples, 0.2)));
+        document.getElementById('stPingRow').style.display = 'flex';
+        document.getElementById('stPingVal').textContent = curPing + ' ms';
+      }
+    } catch (e) {
+      if (cancelled) return;
+    } finally {
+      clearTimeout(timer);
+      activeControllers.delete(ctrl);
+    }
+  }
+
+  if (cancelled) return;
+  if (!pingSamples.length) throw new Error('Ping ölçümü başarısız');
+  const finalPing = Math.max(1, Math.round(calcPercentileVal(pingSamples, 0.15)));
+  document.getElementById('stPingRow').style.display = 'flex';
+  document.getElementById('stPingVal').textContent = finalPing + ' ms';
+
+  // 2. AŞAMA: ÇOK KANALLI İNDİRME (MULTI-STREAM DOWNLOAD)
+  document.getElementById('stPhase').textContent = '↓ İNDİRME';
+  document.getElementById('stSub').textContent = 'İndirme hızı ölçülüyor...';
+  document.getElementById('sgFill').style.stroke = 'var(--accent)';
+
+  const dlDurationMs = 5600;
+  const dlWarmupMs = 650;
+  const dlBucketMs = 200;
+  const dlBuckets = [];
+  const dlChunkRates = [];
+  let dlBucketBytes = 0;
+  let dlTotalBytesAfterWarmup = 0;
+  let dlWarmupDoneAt = 0;
+  const dlStart = performance.now();
+  let dlLastTick = dlStart;
+  let dlActiveStreams = 0;
+  let dlExtraSpawned = false;
+
+  const spawnDownloadWorker = (streamIdx, chunkBytes) => {
+    dlActiveStreams++;
+    return (async () => {
+      while (!cancelled && (performance.now() - dlStart) < dlDurationMs) {
+        const ctrl = new AbortController();
+        activeControllers.add(ctrl);
+        const url = `${SPEED_DOWNLOAD_URL}?bytes=${chunkBytes}&s=${streamIdx}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+        try {
+          const r = await fetch(url, { signal: ctrl.signal, cache: 'no-store' });
+          if (!r.ok) break;
+          if (r.body && typeof r.body.getReader === 'function') {
+            const reader = r.body.getReader();
+            const bodyStart = performance.now();
+            let chunkRead = 0;
+            while (!cancelled) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              const n = value ? value.byteLength : 0;
+              if (n > 0) {
+                chunkRead += n;
+                dlBucketBytes += n;
+                const now = performance.now();
+                if (now - dlStart >= dlWarmupMs) {
+                  if (!dlWarmupDoneAt) dlWarmupDoneAt = now;
+                  dlTotalBytesAfterWarmup += n;
+                }
+              }
+            }
+            const bodyDur = (performance.now() - bodyStart) / 1000;
+            if (bodyDur > 0.08 && chunkRead > 500000) {
+              dlChunkRates.push((chunkRead * 8) / bodyDur / 1e6);
+            }
+          } else {
+            const bodyStart = performance.now();
+            const buf = await r.arrayBuffer();
+            const n = buf.byteLength;
+            dlBucketBytes += n;
+            const now = performance.now();
+            if (now - dlStart >= dlWarmupMs) {
+              if (!dlWarmupDoneAt) dlWarmupDoneAt = now;
+              dlTotalBytesAfterWarmup += n;
+            }
+            const bodyDur = (now - bodyStart) / 1000;
+            if (bodyDur > 0.05 && n > 100000) {
+              dlChunkRates.push((n * 8) / bodyDur / 1e6);
+            }
+          }
+        } catch (e) {
+          break;
+        } finally {
+          activeControllers.delete(ctrl);
+        }
+      }
+    })();
+  };
+
+  const dlWorkers = [];
+  // Başlangıçta 4 paralel akış başlat; hızlı bağlantılarda (>45 Mbps) anında 8 paralel akışa çık
+  for (let s = 0; s < 4; s++) {
+    dlWorkers.push(spawnDownloadWorker(s, 15000000));
+  }
+
+  await new Promise((resolveDL) => {
+    const dlTimer = setInterval(() => {
+      if (cancelled) {
+        clearInterval(dlTimer);
+        activeIntervals.delete(dlTimer);
+        return resolveDL();
+      }
+      const now = performance.now();
+      const dt = (now - dlLastTick) / 1000;
+      const elapsed = now - dlStart;
+      if (dt > 0 && dlBucketBytes > 0) {
+        const instMbps = (dlBucketBytes * 8) / dt / 1e6;
+        dlBucketBytes = 0;
+        dlLastTick = now;
+
+        // Yüksek hızlı fiber bağlantılarda (>45 Mbps) 4 ek kanal daha açarak toplam 8 kanala çık
+        if (!dlExtraSpawned && instMbps > 45) {
+          dlExtraSpawned = true;
+          for (let s = 4; s < 8; s++) {
+            dlWorkers.push(spawnDownloadWorker(s, 25000000));
+          }
+        }
+
+        if (elapsed >= dlWarmupMs) {
+          dlBuckets.push(instMbps);
+        }
+
+        const recent = dlBuckets.length >= 2
+          ? (dlBuckets[dlBuckets.length - 1] * 0.6 + dlBuckets[dlBuckets.length - 2] * 0.4)
+          : instMbps;
+        const liveMbps = Math.max(1, Math.round(recent));
+        liveLogAppend('↓', liveMbps);
+        if (liveMbps > liveMax) liveMax = Math.ceil(liveMbps * 1.3 / 50) * 50;
+        setGauge(liveMbps, liveMax, 'var(--accent)');
+        document.getElementById('stDLVal').textContent = formatMbps(liveMbps);
+      } else {
+        dlLastTick = now;
+      }
+
+      if (elapsed >= dlDurationMs) {
+        clearInterval(dlTimer);
+        activeIntervals.delete(dlTimer);
+        activeControllers.forEach(c => { try { c.abort(); } catch(e) {} });
+        activeControllers.clear();
+        resolveDL();
+      }
+    }, dlBucketMs);
+    activeIntervals.add(dlTimer);
+  });
+
+  await Promise.allSettled(dlWorkers);
+  if (cancelled) return;
+
+  // 800ms (4 ardışık 200ms dilimi) kayan pencere ile anlık işletim sistemi zamanlama dalgalanmalarını yumuşat
+  const dlWindows = [];
+  if (dlBuckets.length >= 4) {
+    for (let i = 0; i <= dlBuckets.length - 4; i++) {
+      dlWindows.push((dlBuckets[i] + dlBuckets[i + 1] + dlBuckets[i + 2] + dlBuckets[i + 3]) / 4);
+    }
+  }
+  const sustainedElapsed = dlWarmupDoneAt ? ((performance.now() - dlWarmupDoneAt) / 1000) : ((dlDurationMs - dlWarmupMs) / 1000);
+  const avgSustainedDL = sustainedElapsed > 0.5 ? ((dlTotalBytesAfterWarmup * 8) / sustainedElapsed / 1e6) : 0;
+  const windowDL = dlWindows.length ? calcPercentileVal(dlWindows, 0.85) : (dlBuckets.length ? calcPercentileVal(dlBuckets, 0.8) : 0);
+  const fallbackDL = dlChunkRates.length ? calcPercentileVal(dlChunkRates, 0.85) * Math.min(dlActiveStreams, 4) : 0;
+  const rawDL = Math.max(windowDL, avgSustainedDL, windowDL > 0 ? 0 : fallbackDL);
+  const finalDL = rawDL > 0 ? Math.max(1, Math.round(rawDL)) : 0;
+  if (!finalDL) throw new Error('İndirme ölçümü tamamlanamadı');
+  document.getElementById('stDLVal').textContent = formatMbps(finalDL);
+
+  // 3. AŞAMA: ÇOK KANALLI YÜKLEME (MULTI-STREAM UPLOAD)
+  document.getElementById('stPhase').textContent = '↑ YÜKLEME';
+  document.getElementById('stSub').textContent = 'Yükleme hızı ölçülüyor...';
+  document.getElementById('sgFill').style.stroke = 'var(--success)';
+
+  const ulDurationMs = 5000;
+  const ulWarmupMs = 650;
+  const ulBucketMs = 200;
+  // İndirme hızına göre adaptif yükleme paket boyutu ve kanal sayısı
+  const ulStreamsCount = finalDL >= 80 ? 5 : (finalDL >= 25 ? 4 : 2);
+  const ulChunkSize = finalDL >= 150 ? 2000000 : (finalDL >= 40 ? 1000000 : 262144);
+  const socketGuardBytes = finalDL >= 40 ? 65536 : 24576;
+  const ulPayload = new Uint8Array(ulChunkSize);
+
+  const ulBuckets = [];
+  const ulServerRates = [];
+  let ulBucketBytes = 0;
+  let ulTotalBytesAfterWarmup = 0;
+  let ulWarmupDoneAt = 0;
+  const ulStart = performance.now();
+  let ulLastTick = ulStart;
+
+  const creditUploadBytes = (n) => {
+    if (n <= 0) return;
+    ulBucketBytes += n;
+    const now = performance.now();
+    if (now - ulStart >= ulWarmupMs) {
+      if (!ulWarmupDoneAt) ulWarmupDoneAt = now;
+      ulTotalBytesAfterWarmup += n;
+    }
+  };
+
+  const spawnUploadWorker = (streamIdx) => {
+    return (async () => {
+      while (!cancelled && (performance.now() - ulStart) < ulDurationMs) {
+        await new Promise((resReq) => {
+          const xhr = new XMLHttpRequest();
+          activeXhrs.add(xhr);
+          const url = `${SPEED_UPLOAD_URL}?u=${streamIdx}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+          xhr.open('POST', url, true);
+          let lastEffectiveLoaded = 0;
+          const reqStart = performance.now();
+
+          xhr.upload.onprogress = (e) => {
+            if (cancelled) return;
+            // İlk socketGuardBytes kadarlık işletim sistemi tampon (OS socket buffer) dolumunu
+            // sunucu yanıtı (onload) gelene kadar beklet; böylece yapay tampon sıçraması oluşmaz
+            const effective = Math.max(0, e.loaded - socketGuardBytes);
+            const delta = effective - lastEffectiveLoaded;
+            if (delta > 0) {
+              lastEffectiveLoaded = effective;
+              creditUploadBytes(delta);
+            }
+          };
+
+          const doneReq = (completed) => {
+            activeXhrs.delete(xhr);
+            if (completed && !cancelled) {
+              const remainder = ulChunkSize - lastEffectiveLoaded;
+              if (remainder > 0) creditUploadBytes(remainder);
+              const reqDurMs = performance.now() - reqStart;
+              const st = xhr.getResponseHeader('server-timing') || '';
+              const workerMatch = st.match(/cfSpeedWorker;\s*dur=([0-9.]+)/i);
+              const netUploadMs = (workerMatch && +workerMatch[1] > 15)
+                ? +workerMatch[1]
+                : Math.max(20, reqDurMs - finalPing);
+              if (netUploadMs > 15) {
+                ulServerRates.push(((ulChunkSize * 8) / (netUploadMs / 1000) / 1e6));
+              }
+            }
+            resReq();
+          };
+
+          xhr.onload = () => doneReq(xhr.status >= 200 && xhr.status < 300);
+          xhr.onerror = () => doneReq(false);
+          xhr.onabort = () => doneReq(false);
+          xhr.ontimeout = () => doneReq(false);
+          try {
+            xhr.send(ulPayload);
+          } catch (e) {
+            doneReq(false);
+          }
+        });
+      }
+    })();
+  };
+
+  const ulWorkers = [];
+  for (let s = 0; s < ulStreamsCount; s++) {
+    ulWorkers.push(spawnUploadWorker(s));
+  }
+
+  await new Promise((resolveUL) => {
+    const ulTimer = setInterval(() => {
+      if (cancelled) {
+        clearInterval(ulTimer);
+        activeIntervals.delete(ulTimer);
+        return resolveUL();
+      }
+      const now = performance.now();
+      const dt = (now - ulLastTick) / 1000;
+      const elapsed = now - ulStart;
+      if (dt > 0 && ulBucketBytes > 0) {
+        const instMbps = (ulBucketBytes * 8) / dt / 1e6;
+        ulBucketBytes = 0;
+        ulLastTick = now;
+
+        if (elapsed >= ulWarmupMs) {
+          ulBuckets.push(instMbps);
+        }
+
+        const recent = ulBuckets.length >= 2
+          ? (ulBuckets[ulBuckets.length - 1] * 0.6 + ulBuckets[ulBuckets.length - 2] * 0.4)
+          : instMbps;
+        const liveMbps = Math.max(1, Math.round(recent));
+        liveLogAppend('↑', liveMbps);
+        if (liveMbps > liveMax) liveMax = Math.ceil(liveMbps * 1.3 / 50) * 50;
+        setGauge(liveMbps, liveMax, 'var(--success)');
+        document.getElementById('stULVal').textContent = formatMbps(liveMbps);
+      } else {
+        ulLastTick = now;
+      }
+
+      if (elapsed >= ulDurationMs) {
+        clearInterval(ulTimer);
+        activeIntervals.delete(ulTimer);
+        activeXhrs.forEach(x => { try { x.abort(); } catch(e) {} });
+        activeXhrs.clear();
+        resolveUL();
+      }
+    }, ulBucketMs);
+    activeIntervals.add(ulTimer);
+  });
+
+  await Promise.allSettled(ulWorkers);
+  if (cancelled) return;
+
+  const ulWindows = [];
+  if (ulBuckets.length >= 4) {
+    for (let i = 0; i <= ulBuckets.length - 4; i++) {
+      ulWindows.push((ulBuckets[i] + ulBuckets[i + 1] + ulBuckets[i + 2] + ulBuckets[i + 3]) / 4);
+    }
+  }
+  const ulSustainedElapsed = ulWarmupDoneAt ? ((performance.now() - ulWarmupDoneAt) / 1000) : ((ulDurationMs - ulWarmupMs) / 1000);
+  const avgSustainedUL = ulSustainedElapsed > 0.5 ? ((ulTotalBytesAfterWarmup * 8) / ulSustainedElapsed / 1e6) : 0;
+  const windowUL = ulWindows.length ? calcPercentileVal(ulWindows, 0.85) : (ulBuckets.length ? calcPercentileVal(ulBuckets, 0.8) : 0);
+  const serverConfirmUL = ulServerRates.length ? calcPercentileVal(ulServerRates, 0.75) * Math.min(ulStreamsCount, 2.2) : 0;
+  const rawUL = Math.max(windowUL, avgSustainedUL, windowUL > 0 ? 0 : serverConfirmUL);
+  const finalUL = rawUL > 0 ? Math.max(1, Math.round(rawUL)) : 1;
+
+  finalizeSpeedTestUI(finalDL, finalUL, finalPing);
+}
+
 // 3. UI GÜNCELLEYİCİ: runSpeedTest
 async function runSpeedTest() {
   if (stRunning) return;
@@ -14929,18 +15430,21 @@ async function runSpeedTest() {
     document.getElementById('stRetryBtn').style.display = 'none';
     document.getElementById('stUseBtn').style.display = 'none';
 
-    // Resmi Cloudflare SpeedTestEngine sınıfını dinamik olarak al
-    let EngineClass = null;
     try {
-      EngineClass = await getSpeedEngineClass();
-    } catch(e) {
-      console.warn('SpeedTestEngine sınıfı yüklenemedi:', e);
-    }
-
-    if (EngineClass) {
-      await runOfficialSpeedTest(EngineClass);
-    } else {
-      throw new Error('Hız testi motoru yüklenemedi. Lütfen internet bağlantınızı kontrol edin.');
+      await runMultiStreamSpeedTest();
+    } catch (multiErr) {
+      console.warn('Multi-stream hız testi yedek motora geçiyor:', multiErr);
+      let EngineClass = null;
+      try {
+        EngineClass = await getSpeedEngineClass();
+      } catch(e) {
+        console.warn('SpeedTestEngine sınıfı yüklenemedi:', e);
+      }
+      if (EngineClass) {
+        await runOfficialSpeedTest(EngineClass);
+      } else {
+        throw multiErr;
+      }
     }
   } catch (err) {
     console.error('Speed test error:', err);

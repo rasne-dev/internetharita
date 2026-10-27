@@ -346,10 +346,18 @@ const cfGetServerTime = (r) => {
 	for (const m of serverTiming.matchAll(/(?:^|,\s*)cfSpeed[a-zA-Z]*;\s*dur=([0-9.]+)/gi)) sum += +m[1];
 	if (sum > SERVER_TIME_MIN_DURATION) return sum;
 };
+const cfGetL4Rtt = (r) => {
+	const serverTiming = r.headers.get(`server-timing`);
+	if (!serverTiming) return;
+	const minMatch = serverTiming.match(/min_rtt=([0-9]+)/i);
+	if (minMatch && +minMatch[1] > 0) return +minMatch[1] / 1e3;
+	const rttMatch = serverTiming.match(/(?:^|[?&])rtt=([0-9]+)/i);
+	if (rttMatch && +rttMatch[1] > 0) return +rttMatch[1] / 1e3;
+};
 const getTtfb = (perf) => perf.responseStart - perf.requestStart;
 const getPayloadDownload = (perf) => perf.responseEnd - perf.responseStart;
-const calcDownloadDuration = ({ ping, payloadDownloadTime }) => ping + payloadDownloadTime;
-const calcUploadDuration = ({ ttfb }) => ttfb;
+const calcDownloadDuration = ({ ping, payloadDownloadTime }) => payloadDownloadTime > 1 ? payloadDownloadTime : ping + payloadDownloadTime;
+const calcUploadDuration = ({ ttfb, serverTime, ping }) => serverTime > 5 ? serverTime : Math.max(1, ttfb - Math.max(0, ping || 0));
 const calcDownloadSpeed = ({ duration, transferSize }, numBytes) => {
 	const bits = 8 * (transferSize || +numBytes * 1.005);
 	const secs = duration / 1e3;
@@ -545,7 +553,7 @@ var BandwidthMeasurementEngine = class {
 				this.#currentAbortController.signal.addEventListener("abort", () => clearTimeout(abortTimeout));
 			}
 		}
-		let serverTime;
+		let serverTime, l4Rtt;
 		fetch(url, {
 			...fetchOpt,
 			signal: this.#currentAbortController.signal
@@ -554,6 +562,7 @@ var BandwidthMeasurementEngine = class {
 			throw new HttpError(r.status, r.statusText, r.headers.get("retry-after"));
 		}).then((r) => {
 			this.getServerTime && (serverTime = this.getServerTime(r));
+			l4Rtt = cfGetL4Rtt(r);
 			return r;
 		}).then((r) => r.text().then((body) => {
 			this.#responseHook({
@@ -587,8 +596,8 @@ var BandwidthMeasurementEngine = class {
 				} else if (delta > 0) console.log(`serverTimeDelta (skipped): ${delta.toFixed(2)}ms`);
 			}
 			const baseServerTime = serverTime || this.#estimatedServerTime;
-			timing.ping = timing.ttfb - baseServerTime - this.#serverTimeDelta;
-			if (timing.ping <= 1) timing.ping = Math.max(0, timing.ttfb - baseServerTime);
+			timing.ping = (l4Rtt && l4Rtt > 0.5) ? l4Rtt : (timing.ttfb - baseServerTime - this.#serverTimeDelta);
+			if (timing.ping <= 1) timing.ping = Math.max(1, (l4Rtt && l4Rtt > 0) ? l4Rtt : (timing.ttfb - baseServerTime));
 			timing.duration = (isDown ? calcDownloadDuration : calcUploadDuration)(timing);
 			timing.bps = (isDown ? calcDownloadSpeed : calcUploadSpeed)(timing, numBytes);
 			const delta = this.#serverTimeDelta;
