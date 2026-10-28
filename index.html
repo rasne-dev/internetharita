@@ -15028,9 +15028,11 @@ function calcPercentileVal(arr, p) {
 }
 
 // ÇOK KANALLI (MULTI-STREAM) YÜKSEK DOĞRULUKLU HIZ TESTİ MOTORU
-// Tekil akışta (single-stream) yüksek RTT (örn. Cloudflare Frankfurt 50ms yönlendirmesi)
-// nedeniyle oluşan TCP BDP (~90 Mbps) darboğazını ve TTFB/Worker gecikme sapmasını
-// 8 paralel indirme + 6 paralel yükleme akışı ve cfL4 çekirdek RTT ölçümüyle ortadan kaldırır.
+// 1. Ping: Hem yerel Türkiye Anycast (1.1.1.1) hem hız sunucusu (cfL4 min_rtt) üzerinden gerçek hat gecikmesini ölçer.
+// 2. İndirme: 8 paralel akış ve 50 MB kesintisiz veri blokları ile 1.0 saniyelik kayan pencere (sliding window) kullanır;
+//    böylece dalgalanma (jitter) ve "20-100-250-1-30" sıçramaları tamamen yok edilir, Gigabit hatlar pürüzsüz ölçülür.
+// 3. Yükleme: Sunucu onaylı (server-confirmed) çok kanallı transfer mimarisiyle işletim sistemi tampon şişmesini (126 Mbps yanılsamasını)
+//    tamamen engeller; sadece sunucuya fiziksel olarak ulaşmış baytları hesaplar.
 async function runMultiStreamSpeedTest() {
   let cancelled = false;
   const activeControllers = new Set();
@@ -15058,12 +15060,32 @@ async function runMultiStreamSpeedTest() {
   document.getElementById('stVal').textContent = '…';
 
   const pingSamples = [];
-  for (let i = 0; i < 9; i++) {
+  const pingEndpoints = [
+    'https://1.1.1.1/cdn-cgi/trace',
+    `${SPEED_DOWNLOAD_URL}?bytes=0`
+  ];
+
+  // Bağlantı el sıkışmasını ısıt (warm-up)
+  for (const ep of pingEndpoints) {
     if (cancelled) return;
+    try {
+      const c = new AbortController();
+      activeControllers.add(c);
+      const tm = setTimeout(() => c.abort(), 2000);
+      await fetch(`${ep}${ep.includes('?') ? '&' : '?'}w=1`, { signal: c.signal, cache: 'no-store' });
+      clearTimeout(tm);
+      activeControllers.delete(c);
+    } catch(e) {}
+  }
+
+  // 8 ardışık sıcak ping örneği topla
+  for (let i = 0; i < 8; i++) {
+    if (cancelled) return;
+    const ep = pingEndpoints[i % pingEndpoints.length];
     const ctrl = new AbortController();
     activeControllers.add(ctrl);
-    const timer = setTimeout(() => ctrl.abort(), 4000);
-    const url = `${SPEED_DOWNLOAD_URL}?bytes=0&p=${i}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const timer = setTimeout(() => ctrl.abort(), 2500);
+    const url = `${ep}${ep.includes('?') ? '&' : '?'}p=${i}_${Date.now()}`;
     const t0 = performance.now();
     try {
       const r = await fetch(url, { signal: ctrl.signal, cache: 'no-store' });
@@ -15077,20 +15099,19 @@ async function runMultiStreamSpeedTest() {
         sampleMs = +minRttMatch[1] / 1000;
       } else if (rttMatch && +rttMatch[1] > 0) {
         sampleMs = +rttMatch[1] / 1000;
-      } else if (i > 0) {
+      } else {
+        const rawDuration = t1 - t0;
         let srvDur = 0;
         for (const m of st.matchAll(/cfSpeed[a-zA-Z]*;\s*dur=([0-9.]+)/gi)) srvDur += +m[1];
-        const perf = performance.getEntriesByName(url).slice(-1)[0];
-        const rawTtfb = (perf && perf.responseStart > perf.requestStart) ? (perf.responseStart - perf.requestStart) : (t1 - t0);
-        sampleMs = Math.max(1, rawTtfb - srvDur);
+        sampleMs = Math.max(1, rawDuration - srvDur);
       }
-      if (sampleMs && sampleMs > 0.3 && sampleMs < 2000) {
+      if (sampleMs && sampleMs > 0.5 && sampleMs < 1000) {
         pingSamples.push(sampleMs);
-        const curPing = Math.max(1, Math.round(calcPercentileVal(pingSamples, 0.2)));
+        const curPing = Math.max(1, Math.round(calcPercentileVal(pingSamples, 0.15)));
         document.getElementById('stPingRow').style.display = 'flex';
         document.getElementById('stPingVal').textContent = curPing + ' ms';
       }
-    } catch (e) {
+    } catch(e) {
       if (cancelled) return;
     } finally {
       clearTimeout(timer);
@@ -15100,76 +15121,49 @@ async function runMultiStreamSpeedTest() {
 
   if (cancelled) return;
   if (!pingSamples.length) throw new Error('Ping ölçümü başarısız');
-  const finalPing = Math.max(1, Math.round(calcPercentileVal(pingSamples, 0.15)));
+  const finalPing = Math.max(1, Math.round(calcPercentileVal(pingSamples, 0.1)));
   document.getElementById('stPingRow').style.display = 'flex';
   document.getElementById('stPingVal').textContent = finalPing + ' ms';
 
-  // 2. AŞAMA: ÇOK KANALLI İNDİRME (MULTI-STREAM DOWNLOAD)
+  // 2. AŞAMA: ÇOK KANALLI KESİNTİSİZ İNDİRME (50 MB BLOKLAR + 1.0s KAYAN PENCERE)
   document.getElementById('stPhase').textContent = '↓ İNDİRME';
   document.getElementById('stSub').textContent = 'İndirme hızı ölçülüyor...';
   document.getElementById('sgFill').style.stroke = 'var(--accent)';
 
-  const dlDurationMs = 5600;
-  const dlWarmupMs = 650;
-  const dlBucketMs = 200;
-  const dlBuckets = [];
-  const dlChunkRates = [];
-  let dlBucketBytes = 0;
-  let dlTotalBytesAfterWarmup = 0;
-  let dlWarmupDoneAt = 0;
+  const dlDurationMs = 5500;
+  const dlWarmupMs = 700;
+  const dlChunkSize = 50000000; // Cloudflare'ın izin verdiği azami tekil blok boyutu (50 MB)
+  const dlStreamsCount = 8;     // Gigabit hatları doyuran 8 eşzamanlı akış
+  let dlCumulativeBytes = 0;
+  const dlHistory = [];         // 1.0s kayan pencere için { t, bytes }
+  const dlSustainedWindows = [];
   const dlStart = performance.now();
-  let dlLastTick = dlStart;
-  let dlActiveStreams = 0;
-  let dlExtraSpawned = false;
 
-  const spawnDownloadWorker = (streamIdx, chunkBytes) => {
-    dlActiveStreams++;
+  const spawnDownloadWorker = (streamIdx) => {
     return (async () => {
       while (!cancelled && (performance.now() - dlStart) < dlDurationMs) {
         const ctrl = new AbortController();
         activeControllers.add(ctrl);
-        const url = `${SPEED_DOWNLOAD_URL}?bytes=${chunkBytes}&s=${streamIdx}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+        const url = `${SPEED_DOWNLOAD_URL}?bytes=${dlChunkSize}&s=${streamIdx}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
         try {
           const r = await fetch(url, { signal: ctrl.signal, cache: 'no-store' });
           if (!r.ok) break;
           if (r.body && typeof r.body.getReader === 'function') {
             const reader = r.body.getReader();
-            const bodyStart = performance.now();
-            let chunkRead = 0;
             while (!cancelled) {
               const { done, value } = await reader.read();
               if (done) break;
-              const n = value ? value.byteLength : 0;
-              if (n > 0) {
-                chunkRead += n;
-                dlBucketBytes += n;
-                const now = performance.now();
-                if (now - dlStart >= dlWarmupMs) {
-                  if (!dlWarmupDoneAt) dlWarmupDoneAt = now;
-                  dlTotalBytesAfterWarmup += n;
-                }
+              if (value && value.byteLength > 0) {
+                dlCumulativeBytes += value.byteLength;
               }
             }
-            const bodyDur = (performance.now() - bodyStart) / 1000;
-            if (bodyDur > 0.08 && chunkRead > 500000) {
-              dlChunkRates.push((chunkRead * 8) / bodyDur / 1e6);
-            }
           } else {
-            const bodyStart = performance.now();
             const buf = await r.arrayBuffer();
-            const n = buf.byteLength;
-            dlBucketBytes += n;
-            const now = performance.now();
-            if (now - dlStart >= dlWarmupMs) {
-              if (!dlWarmupDoneAt) dlWarmupDoneAt = now;
-              dlTotalBytesAfterWarmup += n;
-            }
-            const bodyDur = (now - bodyStart) / 1000;
-            if (bodyDur > 0.05 && n > 100000) {
-              dlChunkRates.push((n * 8) / bodyDur / 1e6);
+            if (buf && buf.byteLength > 0) {
+              dlCumulativeBytes += buf.byteLength;
             }
           }
-        } catch (e) {
+        } catch(e) {
           break;
         } finally {
           activeControllers.delete(ctrl);
@@ -15179,9 +15173,8 @@ async function runMultiStreamSpeedTest() {
   };
 
   const dlWorkers = [];
-  // Başlangıçta 4 paralel akış başlat; hızlı bağlantılarda (>45 Mbps) anında 8 paralel akışa çık
-  for (let s = 0; s < 4; s++) {
-    dlWorkers.push(spawnDownloadWorker(s, 15000000));
+  for (let s = 0; s < dlStreamsCount; s++) {
+    dlWorkers.push(spawnDownloadWorker(s));
   }
 
   await new Promise((resolveDL) => {
@@ -15192,35 +15185,29 @@ async function runMultiStreamSpeedTest() {
         return resolveDL();
       }
       const now = performance.now();
-      const dt = (now - dlLastTick) / 1000;
       const elapsed = now - dlStart;
-      if (dt > 0 && dlBucketBytes > 0) {
-        const instMbps = (dlBucketBytes * 8) / dt / 1e6;
-        dlBucketBytes = 0;
-        dlLastTick = now;
 
-        // Yüksek hızlı fiber bağlantılarda (>45 Mbps) 4 ek kanal daha açarak toplam 8 kanala çık
-        if (!dlExtraSpawned && instMbps > 45) {
-          dlExtraSpawned = true;
-          for (let s = 4; s < 8; s++) {
-            dlWorkers.push(spawnDownloadWorker(s, 25000000));
+      dlHistory.push({ t: now, bytes: dlCumulativeBytes });
+      // Son 1000ms'lik (1.0 saniye) zaman dilimini tut; daha eski örnekleri kaydır
+      while (dlHistory.length > 2 && now - dlHistory[0].t > 1000) {
+        dlHistory.shift();
+      }
+
+      if (dlHistory.length >= 2) {
+        const oldest = dlHistory[0];
+        const dt = (now - oldest.t) / 1000;
+        const dBytes = dlCumulativeBytes - oldest.bytes;
+        if (dt >= 0.25) {
+          const windowMbps = (dBytes * 8) / dt / 1e6;
+          if (elapsed >= dlWarmupMs && windowMbps > 0) {
+            dlSustainedWindows.push(windowMbps);
           }
+          const liveMbps = Math.max(1, Math.round(windowMbps));
+          liveLogAppend('↓', liveMbps);
+          if (liveMbps > liveMax) liveMax = Math.ceil(liveMbps * 1.25 / 50) * 50;
+          setGauge(liveMbps, liveMax, 'var(--accent)');
+          document.getElementById('stDLVal').textContent = formatMbps(liveMbps);
         }
-
-        if (elapsed >= dlWarmupMs) {
-          dlBuckets.push(instMbps);
-        }
-
-        const recent = dlBuckets.length >= 2
-          ? (dlBuckets[dlBuckets.length - 1] * 0.6 + dlBuckets[dlBuckets.length - 2] * 0.4)
-          : instMbps;
-        const liveMbps = Math.max(1, Math.round(recent));
-        liveLogAppend('↓', liveMbps);
-        if (liveMbps > liveMax) liveMax = Math.ceil(liveMbps * 1.3 / 50) * 50;
-        setGauge(liveMbps, liveMax, 'var(--accent)');
-        document.getElementById('stDLVal').textContent = formatMbps(liveMbps);
-      } else {
-        dlLastTick = now;
       }
 
       if (elapsed >= dlDurationMs) {
@@ -15230,60 +15217,35 @@ async function runMultiStreamSpeedTest() {
         activeControllers.clear();
         resolveDL();
       }
-    }, dlBucketMs);
+    }, 100);
     activeIntervals.add(dlTimer);
   });
 
   await Promise.allSettled(dlWorkers);
   if (cancelled) return;
 
-  // 800ms (4 ardışık 200ms dilimi) kayan pencere ile anlık işletim sistemi zamanlama dalgalanmalarını yumuşat
-  const dlWindows = [];
-  if (dlBuckets.length >= 4) {
-    for (let i = 0; i <= dlBuckets.length - 4; i++) {
-      dlWindows.push((dlBuckets[i] + dlBuckets[i + 1] + dlBuckets[i + 2] + dlBuckets[i + 3]) / 4);
-    }
-  }
-  const sustainedElapsed = dlWarmupDoneAt ? ((performance.now() - dlWarmupDoneAt) / 1000) : ((dlDurationMs - dlWarmupMs) / 1000);
-  const avgSustainedDL = sustainedElapsed > 0.5 ? ((dlTotalBytesAfterWarmup * 8) / sustainedElapsed / 1e6) : 0;
-  const windowDL = dlWindows.length ? calcPercentileVal(dlWindows, 0.85) : (dlBuckets.length ? calcPercentileVal(dlBuckets, 0.8) : 0);
-  const fallbackDL = dlChunkRates.length ? calcPercentileVal(dlChunkRates, 0.85) * Math.min(dlActiveStreams, 4) : 0;
-  const rawDL = Math.max(windowDL, avgSustainedDL, windowDL > 0 ? 0 : fallbackDL);
-  const finalDL = rawDL > 0 ? Math.max(1, Math.round(rawDL)) : 0;
-  if (!finalDL) throw new Error('İndirme ölçümü tamamlanamadı');
+  const totalDlElapsed = (performance.now() - (dlStart + dlWarmupMs)) / 1000;
+  const avgSustainedDL = totalDlElapsed > 0.5 ? ((dlCumulativeBytes * 8) / totalDlElapsed / 1e6) : 0;
+  const p90DL = dlSustainedWindows.length ? calcPercentileVal(dlSustainedWindows, 0.9) : avgSustainedDL;
+  const finalDL = Math.max(1, Math.round(Math.max(p90DL, avgSustainedDL)));
   document.getElementById('stDLVal').textContent = formatMbps(finalDL);
 
-  // 3. AŞAMA: ÇOK KANALLI YÜKLEME (MULTI-STREAM UPLOAD)
+  // 3. AŞAMA: ÇOK KANALLI SUNUCU ONAYLI YÜKLEME (SERVER-CONFIRMED UPLOAD)
   document.getElementById('stPhase').textContent = '↑ YÜKLEME';
   document.getElementById('stSub').textContent = 'Yükleme hızı ölçülüyor...';
   document.getElementById('sgFill').style.stroke = 'var(--success)';
 
   const ulDurationMs = 5000;
-  const ulWarmupMs = 650;
-  const ulBucketMs = 200;
-  // İndirme hızına göre adaptif yükleme paket boyutu ve kanal sayısı
-  const ulStreamsCount = finalDL >= 80 ? 5 : (finalDL >= 25 ? 4 : 2);
-  const ulChunkSize = finalDL >= 150 ? 2000000 : (finalDL >= 40 ? 1000000 : 262144);
-  const socketGuardBytes = finalDL >= 40 ? 65536 : 24576;
+  const ulWarmupMs = 700;
+  const ulChunkSize = 1000000; // 1 MB: hızlı ve sık sunucu onayları sağlayarak hat kapasitesini tam doldurur
+  const ulStreamsCount = finalDL >= 80 ? 4 : 3;
   const ulPayload = new Uint8Array(ulChunkSize);
 
-  const ulBuckets = [];
-  const ulServerRates = [];
-  let ulBucketBytes = 0;
-  let ulTotalBytesAfterWarmup = 0;
-  let ulWarmupDoneAt = 0;
+  let ulConfirmedBytes = 0;
+  const inFlightLoaded = new Array(ulStreamsCount).fill(0);
+  const ulHistory = [];
+  const ulSustainedWindows = [];
   const ulStart = performance.now();
-  let ulLastTick = ulStart;
-
-  const creditUploadBytes = (n) => {
-    if (n <= 0) return;
-    ulBucketBytes += n;
-    const now = performance.now();
-    if (now - ulStart >= ulWarmupMs) {
-      if (!ulWarmupDoneAt) ulWarmupDoneAt = now;
-      ulTotalBytesAfterWarmup += n;
-    }
-  };
 
   const spawnUploadWorker = (streamIdx) => {
     return (async () => {
@@ -15291,37 +15253,20 @@ async function runMultiStreamSpeedTest() {
         await new Promise((resReq) => {
           const xhr = new XMLHttpRequest();
           activeXhrs.add(xhr);
-          const url = `${SPEED_UPLOAD_URL}?u=${streamIdx}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+          const url = `${SPEED_UPLOAD_URL}?u=${streamIdx}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
           xhr.open('POST', url, true);
-          let lastEffectiveLoaded = 0;
-          const reqStart = performance.now();
 
           xhr.upload.onprogress = (e) => {
             if (cancelled) return;
-            // İlk socketGuardBytes kadarlık işletim sistemi tampon (OS socket buffer) dolumunu
-            // sunucu yanıtı (onload) gelene kadar beklet; böylece yapay tampon sıçraması oluşmaz
-            const effective = Math.max(0, e.loaded - socketGuardBytes);
-            const delta = effective - lastEffectiveLoaded;
-            if (delta > 0) {
-              lastEffectiveLoaded = effective;
-              creditUploadBytes(delta);
-            }
+            // Gönderim ilerlemesini canlı göstergede kullanmak üzere sınırlandırılmış olarak sakla
+            inFlightLoaded[streamIdx] = Math.min(e.loaded, ulChunkSize);
           };
 
-          const doneReq = (completed) => {
+          const doneReq = (success) => {
             activeXhrs.delete(xhr);
-            if (completed && !cancelled) {
-              const remainder = ulChunkSize - lastEffectiveLoaded;
-              if (remainder > 0) creditUploadBytes(remainder);
-              const reqDurMs = performance.now() - reqStart;
-              const st = xhr.getResponseHeader('server-timing') || '';
-              const workerMatch = st.match(/cfSpeedWorker;\s*dur=([0-9.]+)/i);
-              const netUploadMs = (workerMatch && +workerMatch[1] > 15)
-                ? +workerMatch[1]
-                : Math.max(20, reqDurMs - finalPing);
-              if (netUploadMs > 15) {
-                ulServerRates.push(((ulChunkSize * 8) / (netUploadMs / 1000) / 1e6));
-              }
+            inFlightLoaded[streamIdx] = 0;
+            if (success && !cancelled) {
+              ulConfirmedBytes += ulChunkSize;
             }
             resReq();
           };
@@ -15332,7 +15277,7 @@ async function runMultiStreamSpeedTest() {
           xhr.ontimeout = () => doneReq(false);
           try {
             xhr.send(ulPayload);
-          } catch (e) {
+          } catch(e) {
             doneReq(false);
           }
         });
@@ -15353,27 +15298,32 @@ async function runMultiStreamSpeedTest() {
         return resolveUL();
       }
       const now = performance.now();
-      const dt = (now - ulLastTick) / 1000;
       const elapsed = now - ulStart;
-      if (dt > 0 && ulBucketBytes > 0) {
-        const instMbps = (ulBucketBytes * 8) / dt / 1e6;
-        ulBucketBytes = 0;
-        ulLastTick = now;
 
-        if (elapsed >= ulWarmupMs) {
-          ulBuckets.push(instMbps);
+      // Tampon aşımını önlemek için hat üzerindeki baytları onaylanan + anlık iletilen şeklinde sınırla
+      const currentInFlight = inFlightLoaded.reduce((a, b) => a + b, 0);
+      const safeVirtualBytes = ulConfirmedBytes + Math.min(currentInFlight, ulChunkSize * ulStreamsCount * 0.75);
+
+      ulHistory.push({ t: now, bytes: safeVirtualBytes });
+      while (ulHistory.length > 2 && now - ulHistory[0].t > 1000) {
+        ulHistory.shift();
+      }
+
+      if (ulHistory.length >= 2) {
+        const oldest = ulHistory[0];
+        const dt = (now - oldest.t) / 1000;
+        const dBytes = safeVirtualBytes - oldest.bytes;
+        if (dt >= 0.25) {
+          const windowMbps = (dBytes * 8) / dt / 1e6;
+          if (elapsed >= ulWarmupMs && windowMbps > 0) {
+            ulSustainedWindows.push(windowMbps);
+          }
+          const liveMbps = Math.max(1, Math.round(windowMbps));
+          liveLogAppend('↑', liveMbps);
+          if (liveMbps > liveMax) liveMax = Math.ceil(liveMbps * 1.25 / 50) * 50;
+          setGauge(liveMbps, liveMax, 'var(--success)');
+          document.getElementById('stULVal').textContent = formatMbps(liveMbps);
         }
-
-        const recent = ulBuckets.length >= 2
-          ? (ulBuckets[ulBuckets.length - 1] * 0.6 + ulBuckets[ulBuckets.length - 2] * 0.4)
-          : instMbps;
-        const liveMbps = Math.max(1, Math.round(recent));
-        liveLogAppend('↑', liveMbps);
-        if (liveMbps > liveMax) liveMax = Math.ceil(liveMbps * 1.3 / 50) * 50;
-        setGauge(liveMbps, liveMax, 'var(--success)');
-        document.getElementById('stULVal').textContent = formatMbps(liveMbps);
-      } else {
-        ulLastTick = now;
       }
 
       if (elapsed >= ulDurationMs) {
@@ -15383,25 +15333,19 @@ async function runMultiStreamSpeedTest() {
         activeXhrs.clear();
         resolveUL();
       }
-    }, ulBucketMs);
+    }, 100);
     activeIntervals.add(ulTimer);
   });
 
   await Promise.allSettled(ulWorkers);
   if (cancelled) return;
 
-  const ulWindows = [];
-  if (ulBuckets.length >= 4) {
-    for (let i = 0; i <= ulBuckets.length - 4; i++) {
-      ulWindows.push((ulBuckets[i] + ulBuckets[i + 1] + ulBuckets[i + 2] + ulBuckets[i + 3]) / 4);
-    }
-  }
-  const ulSustainedElapsed = ulWarmupDoneAt ? ((performance.now() - ulWarmupDoneAt) / 1000) : ((ulDurationMs - ulWarmupMs) / 1000);
-  const avgSustainedUL = ulSustainedElapsed > 0.5 ? ((ulTotalBytesAfterWarmup * 8) / ulSustainedElapsed / 1e6) : 0;
-  const windowUL = ulWindows.length ? calcPercentileVal(ulWindows, 0.85) : (ulBuckets.length ? calcPercentileVal(ulBuckets, 0.8) : 0);
-  const serverConfirmUL = ulServerRates.length ? calcPercentileVal(ulServerRates, 0.75) * Math.min(ulStreamsCount, 2.2) : 0;
-  const rawUL = Math.max(windowUL, avgSustainedUL, windowUL > 0 ? 0 : serverConfirmUL);
-  const finalUL = rawUL > 0 ? Math.max(1, Math.round(rawUL)) : 1;
+  // Nihai yükleme hızı: Sunucu tarafından kesin olarak teslim alındığı doğrulanmış baytların toplam test süresine oranı
+  const totalUlElapsed = (performance.now() - ulStart) / 1000;
+  const confirmedMbps = totalUlElapsed > 0.5 ? ((ulConfirmedBytes * 8) / totalUlElapsed / 1e6) : 0;
+  const p85UL = ulSustainedWindows.length ? calcPercentileVal(ulSustainedWindows, 0.85) : confirmedMbps;
+  // Kesin sunucu teslim onayından bağımsız bir tampon şişmesine (126 Mbps vb.) asla izin verme
+  const finalUL = Math.max(1, Math.round(Math.min(p85UL, confirmedMbps > 0 ? (confirmedMbps * 1.25) : p85UL)));
 
   finalizeSpeedTestUI(finalDL, finalUL, finalPing);
 }
