@@ -517,12 +517,13 @@ html.light .sidebar-reset-btn.highlight { background: rgba(0,136,204,0.12) !impo
 .search-input::placeholder { color: rgba(255,255,255,0.2); }
 .search-input:focus { border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.03); }
 .search-btn {
-  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-  background: none; border: none; color: rgba(255,255,255,0.25);
-  cursor: pointer; font-size: 12px; padding: 0; line-height: 1;
-  transition: color .2s;
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: rgba(255,255,255,0.35);
+  cursor: pointer; font-size: 13px; padding: 0; line-height: 1;
+  min-width: 34px; min-height: 34px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 6px; transition: color .2s, background .2s;
 }
-.search-btn:hover { color: var(--accent); }
+.search-btn:hover, .search-btn:focus-visible { color: var(--accent); background: rgba(0,212,255,0.08); outline: none; }
 .search-results {
   position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 600;
   background: rgba(7,11,15,0.98); border: 1px solid rgba(255,255,255,0.1);
@@ -1355,6 +1356,8 @@ html.light .hab-desc b { color: #000; }
 /* ===== ALAN HATA VURGUSU ===== */
 .field-error,.field-error .fi,.field-error .fs,.field-error .fta,.field-error .fiu input,.field-error .cbtn,.field-error .sbtn {
   border-color: var(--danger) !important;
+  outline: 2px solid rgba(239,68,68,0.45) !important;
+  outline-offset: 1px;
 }
 .field-error {
   background: rgba(239,68,68,0.05) !important;
@@ -1363,6 +1366,8 @@ html.light .hab-desc b { color: #000; }
 }
 .field-error-input {
   border-color: var(--danger) !important;
+  outline: 2px solid rgba(239,68,68,0.45) !important;
+  outline-offset: 1px;
   background: rgba(239,68,68,0.05) !important;
   animation: field-shake 0.35s ease;
 }
@@ -2862,11 +2867,11 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
           </div>
           <div class="settings-item" style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px;">
             <span class="settings-item-label" style="font-size:11px;">👋 Tanıtım Rehberi</span>
-            <button class="btn-ghost" type="button" onclick="closeSettingsMenu();openWelcomeModal()" style="font-size:10.5px;padding:3px 8px;border-radius:5px;">Aç</button>
+            <button class="btn-ghost" type="button" onclick="closeSettingsMenu();openWelcomeModal()" aria-label="Tanıtım rehberini aç" style="font-size:10.5px;padding:3px 8px;border-radius:5px;">Aç</button>
           </div>
           <div class="settings-item" style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px;">
             <span class="settings-item-label" style="font-size:11px;">ℹ️ Hakkımızda</span>
-            <a href="/hakkimizda.html" class="btn-ghost" style="font-size:10.5px;padding:3px 8px;border-radius:5px;text-decoration:none;">Gör</a>
+            <a href="/hakkimizda.html" class="btn-ghost" aria-label="Hakkımızda sayfasını görüntüle" style="font-size:10.5px;padding:3px 8px;border-radius:5px;text-decoration:none;">Gör</a>
           </div>
           <div class="settings-item" style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px;">
             <span class="settings-item-label" style="font-size:11px;">🔒 Gizlilik &amp; Şartlar</span>
@@ -3972,9 +3977,9 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
       <button class="mod-tab-btn" id="modTabBtn-yorumlar" onclick="switchModTab('yorumlar')">💬 Kullanıcı Yorumları &amp; İstatistik</button>
       <button class="mod-tab-btn" id="modTabBtn-settings" onclick="switchModTab('settings')">⚙️ İSS &amp; Sistem Yönetimi</button>
       <!-- Gizli butonlar (eski çağrılar için uyumluluk) -->
-      <button id="modTabBtn-sikayetler" style="display:none;" onclick="switchModTab('inbox')"></button>
-      <button id="modTabBtn-issManager" style="display:none;" onclick="switchModTab('settings')"></button>
-      <button id="modTabBtn-statEdit" style="display:none;" onclick="switchModTab('settings')"></button>
+      <button id="modTabBtn-sikayetler" type="button" aria-hidden="true" tabindex="-1" style="display:none;" onclick="switchModTab('inbox')"></button>
+      <button id="modTabBtn-issManager" type="button" aria-hidden="true" tabindex="-1" style="display:none;" onclick="switchModTab('settings')"></button>
+      <button id="modTabBtn-statEdit" type="button" aria-hidden="true" tabindex="-1" style="display:none;" onclick="switchModTab('settings')"></button>
       <span id="raporCount" style="display:none;"></span>
       <span id="onayCount" style="display:none;"></span>
       <span id="pinCount" style="display:none;"></span>
@@ -4053,7 +4058,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
           <button class="filter-tab-btn" id="ftb-karantina" onclick="setTableFilter('karantina',this)">🔒 Karantina <span class="ftb-count" id="fc-karantina"></span></button>
           <button class="filter-tab-btn" id="ftb-spam" onclick="setTableFilter('spam',this)">⚠ Spam <span class="ftb-count" id="fc-spam"></span></button>
           <button class="filter-tab-btn" id="ftb-gizli" onclick="setTableFilter('gizli',this)">🙈 Gizli <span class="ftb-count" id="fc-gizli"></span></button>
-          <button class="filter-tab-btn" id="ftb-bilinmeyen" style="display:none;" onclick="setTableFilter('bilinmeyen',this)"><span id="fc-bilinmeyen"></span></button>
+          <button class="filter-tab-btn" id="ftb-bilinmeyen" type="button" aria-hidden="true" tabindex="-1" style="display:none;" onclick="setTableFilter('bilinmeyen',this)"><span id="fc-bilinmeyen"></span></button>
         </div>
       </div>
       <div class="mod-table-wrap">
@@ -4391,7 +4396,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
       <div class="fg">
         <div class="fl" style="display:flex;justify-content:space-between;align-items:center;">
           İSS
-          <button onclick="showAddIssModal()" style="font-size:9px;padding:2px 8px;background:var(--accent-dim);border:1px solid rgba(0,212,255,.3);color:var(--accent);border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-weight:700;">+ Yeni İSS</button>
+          <button type="button" onclick="showAddIssModal()" aria-label="Yeni servis sağlayıcı ekle veya öner" style="font-size:10px;padding:3px 9px;min-height:24px;background:var(--accent-dim);border:1px solid rgba(0,212,255,.3);color:var(--accent);border-radius:5px;cursor:pointer;font-family:var(--font-mono);font-weight:700;display:inline-flex;align-items:center;">+ Yeni İSS</button>
         </div>
         <select class="fs" id="editIss" aria-label="İnternet Servis Sağlayıcı" onchange="checkEditIssValidity()"></select>
         <div id="editIssWarning" style="display:none;font-size:9px;color:var(--warn);font-family:var(--font-mono);margin-top:3px;">⚠ Bu İSS onaylı listede değil — kaydetmek pini haritada göstermez</div>
@@ -6003,7 +6008,7 @@ function extractValidFeedbackTags(yorumStr) {
 
 // Moderatörün oturumda eklediği ISS'ler localStorage'da saklanır
 function getExtraIss() { try { return JSON.parse(localStorage.getItem('ih_extra_iss') || '[]'); } catch(e) { return []; } }
-function saveExtraIss(list) { localStorage.setItem('ih_extra_iss', JSON.stringify(list)); }
+function saveExtraIss(list) { try { localStorage.setItem('ih_extra_iss', JSON.stringify(list)); } catch(e) {} }
 function getAllIss() { return [...new Set([...BASE_ISS, ...getExtraIss()].map(canonicalIssName))]; }
 
 function buildIssOptions(selectEl, currentVal) {
@@ -11341,7 +11346,10 @@ async function loadCustomIss() {
         </div>
       </div>`;
     }).join('');
-  } catch(e) { list.innerHTML='Hata: '+e.message; } finally { updateInboxSummary(); }
+  } catch(e) {
+    console.error('[internetHarita] Özel İSS yükleme hatası:', e);
+    list.innerHTML = '<div class="empty-state" style="color:var(--danger)">⚠️ Özel İSS teklifleri yüklenirken bir sorun oluştu.</div>';
+  } finally { updateInboxSummary(); }
 }
 
 async function approveCustomIss(iss, normalizedName, color) {
@@ -12093,7 +12101,8 @@ async function loadSikayetler() {
         </div>`;
       }).join('');
   } catch(e) {
-    list.innerHTML = 'Hata: ' + e.message;
+    console.error('[internetHarita] Karantina listesi yükleme hatası:', e);
+    list.innerHTML = '<div class="empty-state" style="color:var(--danger)">⚠️ Karantina verileri yüklenirken bir sorun oluştu.</div>';
   } finally {
     updateInboxSummary();
   }
@@ -12443,7 +12452,8 @@ async function loadRaporlar() {
       </div>`;
     }).join('');
   } catch(e) {
-    list.innerHTML = 'Hata: ' + e.message;
+    console.error('[internetHarita] Bildirimler yüklenirken hata:', e);
+    list.innerHTML = '<div class="empty-state" style="color:var(--danger)">⚠️ Bildirimler yüklenirken bir sorun oluştu.</div>';
   } finally {
     updateInboxSummary();
   }
@@ -14075,6 +14085,13 @@ function openScoreCardModal(source) {
       cardData.iss = customIss.value;
     } else if (issSelect && issSelect.value && issSelect.value !== 'Diğer') {
       cardData.iss = issSelect.value;
+    } else if (typeof _detectedIssResult !== 'undefined' && _detectedIssResult && _detectedIssResult.iss) {
+      cardData.iss = _detectedIssResult.iss;
+    } else {
+      cardData.iss = 'Kullanıcı Ölçümü';
+    }
+    if (!cardData.il && typeof currentProvince !== 'undefined' && currentProvince) {
+      cardData.il = currentProvince;
     }
     if (typeof selConnVal !== 'undefined' && selConnVal) cardData.conn = selConnVal.toUpperCase();
     if (noInfra && noInfra.checked) cardData.isAltyapiYok = true;
@@ -15470,6 +15487,8 @@ async function runSpeedTest() {
   } catch (err) {
     console.error('Speed test error:', err);
     document.getElementById('stPhase').textContent = 'HATA';
+    document.getElementById('stVal').textContent = '!';
+    setGauge(0, 100, 'var(--danger)');
     document.getElementById('stSub').style.color = 'var(--danger)';
     document.getElementById('stSub').textContent = 'Test tamamlanamadı. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.';
     const btn = document.getElementById('stStartBtn');
