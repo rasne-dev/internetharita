@@ -3873,7 +3873,7 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
       <!-- KVKK / Açık Rıza Alanı -->
       <div class="kvkk-box" style="background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:12px; margin-top:5px; margin-bottom:10px;">
         <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
-          <input type="checkbox" id="kvkkCheck" aria-label="Aydınlatma ve Açık Rıza şartlarını kabul ediyorum" style="margin-top:2px; cursor:pointer;" onchange="document.getElementById('submitBtn').disabled = !this.checked;">
+          <input type="checkbox" id="kvkkCheck" aria-label="Aydınlatma ve Açık Rıza şartlarını kabul ediyorum" style="margin-top:2px; cursor:pointer;">
           <span style="font-size:10px; color:var(--text2); line-height:1.4;">
             <b style="color:var(--text);">Aydınlatma ve Açık Rıza:</b> 
             Harita oluşturmak amacıyla internet performans verilerimin (sağlayıcı, bağlantı türü, hız, puan, deneyim etiketleri ve yaklaşık konum) yayınlanmasını onaylıyorum. 
@@ -3885,7 +3885,7 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
         </label>
       </div>
 
-      <button class="btn-submit" id="submitBtn" onclick="submitPin()" disabled>📍 Veriyi Paylaş</button>
+      <button class="btn-submit" id="submitBtn" onclick="submitPin()">📍 Veriyi Paylaş</button>
     </div>
   </div>
 </div>
@@ -4520,6 +4520,7 @@ const SB_URL = 'https://vpnaxxxoiomorcvloend.supabase.co';
 const SB_KEY = 'sb_publishable_4LErt91-jMdX3WiaDyBPcw_KMQ0sU-r';
 const { createClient } = supabase;
 const sbc = createClient(SB_URL, SB_KEY);
+let lastSubmittedLatLng = null; // "Haritada Gör" butonu için son eklenen pinin konumu
 
 // Güvenli yerel depolama sarmalayıcısı (Safari Private Mode & Quota hatalarına karşı koruma)
 const ihStorage = {
@@ -6725,7 +6726,7 @@ async function toggleMaintenanceMode(active) {
     applyMaintenanceMode(active); showToast(active ? '🔧 Bakım modu aktif' : '✅ Bakım modu kapatıldı', active ? 'warn' : '');
   } catch(e) {
     if(e.message.includes("schema cache") || e.message.includes("does not exist")) {
-      showToast("Önbellek güncelleniyor. Lütfen 1-2 dk bekleyin veya API Ayarlarından Cache'i yenileyin.", "warn");
+      showToast("Sistem güncelleniyor. Lütfen 1-2 dakika sonra tekrar deneyin.", "warn");
     } else { showToast(friendlyDbError(e, 'site_config'), 'err'); }
     applyMaintenanceMode(!active);
   }
@@ -6939,6 +6940,9 @@ async function loadIssListAndRenderChips() {
     renderModPins();
     if (document.getElementById('page-istatistik')?.classList.contains('active')) renderStats();
     if (document.getElementById('page-bolge')?.classList.contains('active')) renderRegions();
+    if (document.getElementById('compareModal')?.classList.contains('open') && typeof openCompareModal === 'function') {
+      openCompareModal(document.getElementById('compareLocation')?.value);
+    }
   }
 }
 
@@ -7630,6 +7634,9 @@ async function _loadPinsCore() {
     if (typeof updateFilterIndicator === 'function') updateFilterIndicator();
     if (document.getElementById('page-istatistik')?.classList.contains('active')) renderStats();
     if (document.getElementById('page-bolge')?.classList.contains('active')) renderRegions();
+    if (document.getElementById('compareModal')?.classList.contains('open') && typeof openCompareModal === 'function') {
+      openCompareModal(document.getElementById('compareLocation')?.value);
+    }
     
     const speedPins = cleanPinsData.filter(p => !p.is_altyapi_yok);
     const cnt = cleanPinsData.length;
@@ -7797,7 +7804,7 @@ function showHexInfo(pins, hexId) {
   document.getElementById('reportHexId').value = hexId||''; document.getElementById('reportBolge').value = locStr;
   const speedPins = pins.filter(p => !p.is_altyapi_yok);
   const avgDL = speedPins.length ? Math.round(speedPins.reduce((a,p)=>a+p.gercek_dl,0)/speedPins.length) : 0;
-  const avgS = (pins.reduce((a,p)=>a+p.puan,0)/pins.length).toFixed(1);
+  const avgS = speedPins.length ? (speedPins.reduce((a,p)=>a+p.puan,0)/speedPins.length).toFixed(1) : '—';
   const ulPins = speedPins.filter(p=>p.gercek_ul>0);
   const avgUL = ulPins.length ? Math.round(ulPins.reduce((a,p)=>a+p.gercek_ul,0)/ulPins.length) : 0;
   const dlEl = document.getElementById('infoDL');
@@ -7805,7 +7812,15 @@ function showHexInfo(pins, hexId) {
   const ulEl = document.getElementById('infoUL');
   if (ulEl) ulEl.textContent = avgUL + ' Mbps';
   const scEl = document.getElementById('infoScore');
-  if (scEl) { scEl.innerHTML = memShapeHtml(parseFloat(avgS)) + avgS + '/10'; scEl.style.color = memColor(parseFloat(avgS)); }
+  if (scEl) {
+    if (avgS !== '—') {
+      scEl.innerHTML = memShapeHtml(parseFloat(avgS)) + avgS + '/10';
+      scEl.style.color = memColor(parseFloat(avgS));
+    } else {
+      scEl.innerHTML = '—';
+      scEl.style.color = 'var(--text3)';
+    }
+  }
   document.getElementById('infoCount').textContent = pins.length+' ölçüm';
   // BÖLGESEL SAĞLAYICI VE ALTYAPI MATRİSİ
   // Hangi İSS'nin bu altıgende Fiber, VDSL, ADSL veya DOCSIS sunduğunu net eşleştir
@@ -7943,7 +7958,7 @@ function showHexInfo(pins, hexId) {
   const hexAnalysisEl = document.getElementById('infoHexAnalysis');
   if (hexAnalysisEl) {
     const hasFiber = pins.some(p => (p.baglanti_turu || '').toLowerCase() === 'fiber');
-    const scoreNum = parseFloat(avgS) || 7;
+    const scoreNum = (avgS !== '—' && !isNaN(parseFloat(avgS))) ? parseFloat(avgS) : 7;
 
     // 1) Oyun Uygunluğu
     const gameClass = (avgDL >= 50 && (hasFiber || scoreNum >= 7.2)) ? 'good' : (avgDL >= 24 && scoreNum >= 5.5) ? 'mid' : 'poor';
@@ -8475,7 +8490,7 @@ async function renderRegions() {
       citiesHtml = `
         <div style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;padding-right:4px;">
           ${citiesWithData.map((c, idx) => `
-            <div style="display:grid;grid-template-columns:110px 1fr 65px 55px;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:11px;">
+            <div class="clickable" onclick="focusProvinceOnMap('${escAttr(c.il)}')" title="${escHtml(c.il)} ilini haritada görmek için tıklayın" style="display:grid;grid-template-columns:110px 1fr 65px 55px;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:11px;cursor:pointer;transition:background .2s;">
               <div style="font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                 <span style="color:var(--text3);font-family:var(--font-mono);font-size:10px;margin-right:4px;">#${idx+1}</span>${escHtml(c.il)}
               </div>
@@ -8784,31 +8799,41 @@ function renderSpeedRankList(filterIl) {
   }
 }
 
-async function renderStats() {
-  let pins = cleanPinsData;
-  if (!pins.length) {
-    try {
-      const cached = JSON.parse(localStorage.getItem('ih_cached_pins') || 'null');
-      if (cached && Array.isArray(cached.pins) && cached.pins.length > 0) {
-        const localDeleted = getDeletedPinsLocal();
-        const filteredCached = cached.pins.filter(p => !localDeleted.has(String(p.id)) && !p.deleted_at);
-        if (!pinsData.length) pinsData = filteredCached;
-        cleanPinsData = publicCleanPins(filteredCached);
-        pins = cleanPinsData;
-      }
-    } catch(e) {}
-  }
-  if (!pins.length) {
-    ['issRankList','speedRankList','connChart','speedBandChart','activeIlList'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = '<div class="loading-text">Veriler yükleniyor...</div>'; });
-    if (typeof loadPins === 'function') {
-      await loadPins();
-      pins = cleanPinsData;
+let _renderStatsPromise = null;
+function renderStats() {
+  if (_renderStatsPromise) return _renderStatsPromise;
+  _renderStatsPromise = _renderStatsCore().finally(() => {
+    _renderStatsPromise = null;
+  });
+  return _renderStatsPromise;
+}
+
+async function _renderStatsCore() {
+  try {
+    let pins = cleanPinsData;
+    if (!pins.length) {
+      try {
+        const cached = JSON.parse(localStorage.getItem('ih_cached_pins') || 'null');
+        if (cached && Array.isArray(cached.pins) && cached.pins.length > 0) {
+          const localDeleted = getDeletedPinsLocal();
+          const filteredCached = cached.pins.filter(p => !localDeleted.has(String(p.id)) && !p.deleted_at);
+          if (!pinsData.length) pinsData = filteredCached;
+          cleanPinsData = publicCleanPins(filteredCached);
+          pins = cleanPinsData;
+        }
+      } catch(e) {}
     }
     if (!pins.length) {
-      ['issRankList','speedRankList','connChart','speedBandChart','activeIlList'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = '<div class="loading-text">Henüz veri yok</div>'; });
-      return;
+      ['sumGrid','issRankList','speedRankList','connChart','speedBandChart','activeIlList'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = '<div class="loading-text">Veriler yükleniyor...</div>'; });
+      if (typeof loadPins === 'function') {
+        await loadPins();
+        pins = cleanPinsData;
+      }
+      if (!pins.length) {
+        ['sumGrid','issRankList','speedRankList','connChart','speedBandChart','activeIlList'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = '<div class="loading-text">Henüz veri yok</div>'; });
+        return;
+      }
     }
-  }
   // "Altyapı Yok" bildirimleri gercek_dl/gercek_ul=0 olarak kayıtlıdır; bunlar gerçek bir hız ölçümü
   // değildir ve hız istatistiklerine (ortalama, bant dağılımı, en hızlı lokasyon vb.) dahil edilirse
   // ortalamaları yanlış şekilde aşağı çeker. Bu yüzden tüm hız hesaplarında speedPins kullanılır.
@@ -9031,6 +9056,9 @@ async function renderStats() {
 
   // EN HIZLI / EN AKTİF İLLER
   renderIlList();
+  } catch(err) {
+    console.error('renderStats core error:', err);
+  }
 }
 
 function renderOperatorExperienceReport() {
@@ -10277,7 +10305,7 @@ async function submitPin() {
   const kvkk = document.getElementById('kvkkCheck')?.checked;
   if (!kvkk) {
     highlightRequired('kvkkCheck');
-    return showToast('Aydınlatma metnini onaylamanız gerekmektedir.','err');
+    return showToast('Lütfen Aydınlatma ve Açık Rıza şartlarını onaylayın.', 'err');
   }
   if (!canSubmit()) return showToast(rateLimitMessage(), 'warn');
 
@@ -11003,7 +11031,9 @@ async function deleteAndRecreatePin() {
 }
 
 function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.removeLayer(pinMarker);pinMarker=null;} document.getElementById('locDot').classList.remove('set'); document.getElementById('locText').textContent='Henüz seçilmedi';['issSelect','infraSelect','ilInput','ilceInput','mahalleInput','dlSpeed','ulSpeed','packageSpeedDL','packageSpeedUL','commentInput'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const issSelReset=document.getElementById('issSelect'); if(issSelReset) issSelReset.disabled=false; const infraSelReset=document.getElementById('infraSelect'); if(infraSelReset) infraSelReset.disabled=false; const docsisNoteReset=document.getElementById('docsisNote'); if(docsisNoteReset) docsisNoteReset.style.display='none'; toggleCustomIss(''); document.querySelectorAll('.cbtn,.sbtn').forEach(b=>b.classList.remove('sel')); document.querySelectorAll('#feedbackTags .feedback-tag').forEach(t => t.classList.remove('sel')); selConnVal=''; selScoreVal=0; connUserManuallyChanged=false; const connBdg=document.getElementById('autoConnBadge'); if(connBdg) connBdg.style.display='none'; setSpeedEntryMode('builtin'); document.getElementById('speedVerifiedBadge')?.classList.remove('show'); speedVerifiedByTest = false; stResults = null; const kvkkCheck = document.getElementById('kvkkCheck');
-  if (kvkkCheck) { kvkkCheck.checked = false; document.getElementById('submitBtn').disabled = true; }
+  if (kvkkCheck) { kvkkCheck.checked = false; }
+  const sBtn = document.getElementById('submitBtn');
+  if (sBtn) { sBtn.disabled = false; sBtn.textContent = '📍 Veriyi Paylaş'; }
   const noInfraCheck = document.getElementById('noInfraCheck');
   if (noInfraCheck && noInfraCheck.checked) { noInfraCheck.checked = false; onNoInfraChange(false); }
   issUserManuallyChanged = false;
@@ -13255,6 +13285,25 @@ function openCompareModal(preselectedProvince) {
     if (p.il && p.il.trim()) ilSet.add(p.il.trim());
   });
 
+  // Eğer pin verisi henüz bellekte yoksa approvedIssNames() ve BOLGELER illerini fallback olarak kullan
+  if (issSet.size === 0 && typeof approvedIssNames === 'function') {
+    approvedIssNames().forEach(iss => {
+      if (iss && iss !== 'Bilinmeyen' && isApprovedPublicIss(iss)) issSet.add(iss);
+    });
+  }
+  if (ilSet.size === 0 && typeof BOLGELER !== 'undefined') {
+    Object.values(BOLGELER).forEach(b => (b.iller || []).forEach(il => ilSet.add(il)));
+  }
+
+  // Pinler henüz çekilmemişse arka planda yüklemeyi tetikle
+  if ((!cleanPinsData || !cleanPinsData.length) && typeof loadPins === 'function') {
+    loadPins().then(() => {
+      if (document.getElementById('compareModal')?.classList.contains('open')) {
+        updateCompareData();
+      }
+    }).catch(() => {});
+  }
+
   const issList = Array.from(issSet).sort((a,b) => a.localeCompare(b, 'tr-TR'));
   const ilList = Array.from(ilSet).sort((a,b) => a.localeCompare(b, 'tr-TR'));
 
@@ -14623,7 +14672,6 @@ window.addEventListener('online', async function() {
 // ===== YENİLENMİŞ HIZ TESTİ MOTORU =====
 let stResults = null, stRunning = false;
 let speedVerifiedByTest = false; // CSS class'a bagli degil, guvenilir JS state
-let lastSubmittedLatLng = null; // "Haritada Gör" butonu için son eklenen pinin konumu
 const SPEED_DOWNLOAD_URL = 'https://speed.cloudflare.com/__down';
 const SPEED_UPLOAD_URL = window.SPEED_TEST_UPLOAD_URL || 'https://speed.cloudflare.com/__up';
 
@@ -14992,18 +15040,47 @@ function finalizeSpeedTestUI(finalDL, finalUL, finalPing) {
       return sp.length ? Math.round(sp.reduce((a, p) => a + p.gercek_dl, 0) / sp.length) : 45;
     })() : 45;
 
+    // İSS Karşılaştırması (Kullanıcının algılanan veya seçili servis sağlayıcısı)
+    let detectedIssName = null;
+    if (typeof _detectedIssResult !== 'undefined' && _detectedIssResult && _detectedIssResult.iss) {
+      detectedIssName = canonicalIssName(_detectedIssResult.iss);
+    }
+    if (!detectedIssName) {
+      const issSel = document.getElementById('issSelect');
+      if (issSel && issSel.value && issSel.value !== 'Diğer') {
+        detectedIssName = canonicalIssName(issSel.value);
+      }
+    }
+
+    let issComparisonHtml = '';
+    if (detectedIssName && typeof cleanPinsData !== 'undefined' && cleanPinsData.length) {
+      const issPins = cleanPinsData.filter(p => canonicalIssName(p.iss) === detectedIssName && !p.is_altyapi_yok && p.gercek_dl > 0);
+      if (issPins.length >= 3) {
+        const issAvg = Math.round(issPins.reduce((a, p) => a + p.gercek_dl, 0) / issPins.length);
+        if (finalDL > issAvg * 1.05) {
+          const diffPct = Math.round(((finalDL - issAvg) / issAvg) * 100);
+          issComparisonHtml = `<div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,0.2);font-size:10.5px;">⚡ <b>${escHtml(displayIssName(detectedIssName))}</b> ortalamasından (%${diffPct}) daha hızlısınız! (Firma Ort: ${issAvg} Mbps)</div>`;
+        } else if (finalDL < issAvg * 0.95) {
+          const diffPct = Math.round(((issAvg - finalDL) / issAvg) * 100);
+          issComparisonHtml = `<div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,0.2);font-size:10.5px;">📉 <b>${escHtml(displayIssName(detectedIssName))}</b> ortalamasının (%${diffPct}) altındasınız. (Firma Ort: ${issAvg} Mbps)</div>`;
+        } else {
+          issComparisonHtml = `<div style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,0.2);font-size:10.5px;">⚖️ <b>${escHtml(displayIssName(detectedIssName))}</b> genel ortalamasıyla (${issAvg} Mbps) benzer hızdasınız.</div>`;
+        }
+      }
+    }
+
     benchmarkCard.className = 'st-benchmark-card';
     if (finalDL > natAvg * 1.15) {
       const pct = Math.round(((finalDL - natAvg) / natAvg) * 100);
       benchmarkCard.classList.add('fast');
-      benchmarkCard.innerHTML = `🚀 <b>Türkiye ortalamasının (%${pct}) üzerindesiniz!</b> (Ort: ${natAvg} Mbps)<br><span style="font-size:9.5px;opacity:.9;">Mahallenizin ortalamasını yükseltmek için bu sonucu haritaya ekleyin.</span>`;
+      benchmarkCard.innerHTML = `🚀 <b>Türkiye ortalamasının (%${pct}) üzerindesiniz!</b> (Ort: ${natAvg} Mbps)${issComparisonHtml}<br><span style="font-size:9.5px;opacity:.9;">Mahallenizin ortalamasını yükseltmek için bu sonucu haritaya ekleyin.</span>`;
     } else if (finalDL < natAvg * 0.85) {
       const pct = Math.round(((natAvg - finalDL) / natAvg) * 100);
       benchmarkCard.classList.add('slow');
-      benchmarkCard.innerHTML = `⚠️ <b>Türkiye ortalamasının (%${pct}) altındasınız.</b> (Ort: ${natAvg} Mbps)<br><span style="font-size:9.5px;opacity:.9;">Bölgenizdeki altyapı yetersizliğini belgelemek için bu sonucu haritaya ekleyin.</span>`;
+      benchmarkCard.innerHTML = `⚠️ <b>Türkiye ortalamasının (%${pct}) altındasınız.</b> (Ort: ${natAvg} Mbps)${issComparisonHtml}<br><span style="font-size:9.5px;opacity:.9;">Bölgenizdeki altyapı yetersizliğini belgelemek için bu sonucu haritaya ekleyin.</span>`;
     } else {
       benchmarkCard.classList.add('neutral');
-      benchmarkCard.innerHTML = `📊 <b>Türkiye ortalamasına yakın bir hızdasınız</b> (Ort: ${natAvg} Mbps)<br><span style="font-size:9.5px;opacity:.9;">Mahallenizdeki durumu kaydetmek için sonucu haritaya ekleyin.</span>`;
+      benchmarkCard.innerHTML = `📊 <b>Türkiye ortalamasına yakın bir hızdasınız</b> (Ort: ${natAvg} Mbps)${issComparisonHtml}<br><span style="font-size:9.5px;opacity:.9;">Mahallenizdeki durumu kaydetmek için sonucu haritaya ekleyin.</span>`;
     }
     benchmarkCard.style.display = 'block';
   }
