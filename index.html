@@ -181,12 +181,13 @@ nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
   height: var(--nav-h); background: rgba(7,11,15,0.96); backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 clamp(10px, 1.8vw, 24px);
-  gap: 10px;
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center;
+  padding: 0 clamp(12px, 2vw, 28px);
+  gap: 12px;
 }
 .nav-top-row { display: contents; }
 .logo {
+  grid-column: 1;
   display: flex; align-items: center; gap: 8px;
   cursor: pointer; text-decoration: none; flex-shrink: 0;
   z-index: 2;
@@ -203,16 +204,16 @@ nav {
 .logo-text span { color: var(--accent); }
 
 .nav-tabs {
-  position: relative !important;
+  grid-column: 2;
+  position: static !important;
   left: auto !important;
   transform: none !important;
   display: flex;
-  gap: 4px;
+  gap: 5px;
   align-items: center;
   justify-content: center;
-  flex: 1 1 auto;
-  min-width: 0;
   margin: 0 auto;
+  min-width: 0;
   z-index: 1;
 }
 .nav-tab {
@@ -238,7 +239,8 @@ nav {
 .nav-tab.mod-tab.active { color: var(--warn); background: rgba(245,158,11,0.2); border-color: var(--warn); }
 
 .nav-right {
-  display: flex; align-items: center; gap: 6px;
+  grid-column: 3;
+  display: flex; align-items: center; justify-content: flex-end; gap: 6px;
   flex-shrink: 0; z-index: 2; margin-left: auto;
 }
 .nav-badge {
