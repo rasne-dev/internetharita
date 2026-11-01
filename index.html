@@ -181,13 +181,13 @@ nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
   height: var(--nav-h); background: rgba(7,11,15,0.96); backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
-  display: grid; grid-template-columns: auto 1fr auto; align-items: center;
-  padding: 0 clamp(12px, 2vw, 28px);
-  gap: 12px;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
+  padding: 0 clamp(12px, 1.8vw, 28px);
+  gap: 10px;
 }
 .nav-top-row { display: contents; }
 .logo {
-  grid-column: 1;
+  grid-column: 1; grid-row: 1;
   display: flex; align-items: center; gap: 8px;
   cursor: pointer; text-decoration: none; flex-shrink: 0;
   z-index: 2;
@@ -204,25 +204,39 @@ nav {
 .logo-text span { color: var(--accent); }
 
 .nav-tabs {
-  grid-column: 2;
+  grid-column: 2; grid-row: 1;
   position: static !important;
   left: auto !important;
   transform: none !important;
   display: flex;
-  gap: 5px;
+  gap: 4px;
   align-items: center;
-  justify-content: center;
-  margin: 0 auto;
+  justify-content: flex-start !important;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+  margin: 0;
+  padding: 2px 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
   z-index: 1;
 }
+.nav-tabs::-webkit-scrollbar { display: none; }
+.nav-tabs > :first-child { margin-left: auto; }
+.nav-tabs > :last-child { margin-right: auto; }
+
 .nav-tab {
   padding: 6px 10px; border-radius: 8px; cursor: pointer;
-  font-size: 12px; font-weight: 600; font-family: var(--font-body);
+  font-size: 12.5px; font-weight: 600; font-family: var(--font-body);
+  line-height: 1.25;
   color: var(--text2); transition: all .2s; border: 1px solid transparent;
   background: transparent; white-space: nowrap; flex-shrink: 0;
   display: inline-flex; align-items: center; gap: 4px; text-decoration: none;
 }
+.nav-tab:focus-visible { outline-offset: -2px; }
 .nav-tab:hover {
   color: var(--text); background: var(--surface2); border-color: var(--border);
 }
@@ -239,7 +253,7 @@ nav {
 .nav-tab.mod-tab.active { color: var(--warn); background: rgba(245,158,11,0.2); border-color: var(--warn); }
 
 .nav-right {
-  grid-column: 3;
+  grid-column: 3; grid-row: 1;
   display: flex; align-items: center; justify-content: flex-end; gap: 6px;
   flex-shrink: 0; z-index: 2; margin-left: auto;
 }
@@ -281,42 +295,30 @@ nav {
   transform: translateY(-1px);
 }
 
-@media(min-width: 769px) and (max-width: 1420px) {
-  .tab-text.short, .add-text-short, .sync-text-short { display: inline !important; }
-  .tab-text.full, .add-text-full, .sync-text-full { display: none !important; }
+@media(min-width: 769px) and (max-width: 1320px) {
+  .sync-text-short { display: inline !important; }
+  .sync-text-full { display: none !important; }
   .header-mtoggle-text { display: none !important; }
-  nav { padding: 0 10px; gap: 6px; }
+  nav { padding: 0 12px; gap: 8px; }
   .nav-tabs { gap: 3px; }
-  .nav-tab { padding: 5px 7px; font-size: 11px; }
+  .nav-tab { padding: 6px 8px; font-size: 12px; }
+  #navAddPinBtn { padding: 6px 10px; font-size: 11.5px; }
+}
+
+@media(min-width: 769px) and (max-width: 1100px) {
+  .tab-text.short, .add-text-short { display: inline !important; }
+  .tab-text.full, .add-text-full { display: none !important; }
+  .nav-tabs { gap: 3px; }
+  .nav-tab { padding: 5px 7px; font-size: 11.5px; }
   #navAddPinBtn { padding: 5px 9px; font-size: 11px; }
+  .logo-text { font-size: 13.5px; }
 }
 
-@media(max-width:1160px) and (min-width:769px) {
-  .nav-tabs { gap: 2px; }
-  .nav-tab { padding: 4px 6px; font-size: 10.5px; }
-  .logo-text { font-size: 13px; }
-}
-@media(max-width:980px) and (min-width:769px) {
+@media(min-width: 769px) and (max-width: 900px) {
   .logo-text { display: none; }
-  .nav-tab { padding: 4px 5px; font-size: 10px; gap: 2px; }
+  .nav-tab { padding: 5px 6px; font-size: 11px; gap: 3px; }
 }
 
-
-/* ===== NAV SEKMELERİ: taşma / sığmama düzeltmesi ===== */
-/* Sekmeler dar ekranda sığmazsa sağdaki butonların üstüne binmek yerine yatay kayar.
-   Ortalama, ilk/son çocuğa auto margin verilerek yapılır; böylece taşma olduğunda
-   soldaki sekmeler kesilmez (justify-content:center bunu kesiyordu). */
-.nav-tabs {
-  overflow-x: auto; overflow-y: hidden;
-  scrollbar-width: none; -ms-overflow-style: none;
-  padding: 4px 4px; justify-content: flex-start !important;
-  -webkit-overflow-scrolling: touch;
-}
-.nav-tabs::-webkit-scrollbar { display: none; }
-.nav-tabs > :first-child { margin-left: auto; }
-.nav-tabs > :last-child { margin-right: auto; }
-.nav-tab { line-height: 1.25; }
-.nav-tab:focus-visible { outline-offset: -2px; }
 @media(max-width:768px){
   /* Mobil: üst satır ve sekme satırı sabit, menü yüksekliği JS ile ölçülür (syncNavHeight) */
   .nav-tabs { padding: 2px 0 3px; }
@@ -2959,8 +2961,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     <button class="nav-tab" id="tab-istatistik" onclick="showPage('istatistik')">📊 <span class="tab-text full">İstatistikler</span><span class="tab-text short">İstat.</span></button>
     <button class="nav-tab" id="tab-karsilastir" onclick="openCompareModal()">⚖️ <span class="tab-text full">İSS Kıyasla</span><span class="tab-text short">Kıyas</span></button>
     <a href="/speedtest-verileri.html" class="nav-tab" id="tab-speedtest" style="text-decoration:none;display:inline-flex;align-items:center;">📡 <span class="tab-text full">Speedtest</span><span class="tab-text short">Speed</span></a>
-    <a href="/rehber.html" class="nav-tab" id="tab-rehber" style="text-decoration:none;display:inline-flex;align-items:center;">📘 <span class="tab-text full">Rehber</span><span class="tab-text short">Rehber</span></a>
-    <a href="/tarihce.html" class="nav-tab" id="tab-tarihce" style="text-decoration:none;display:inline-flex;align-items:center;">🏛️ <span class="tab-text full">Tarihçe</span><span class="tab-text short">Tarihçe</span></a>
+    <a href="/rehber.html" class="nav-tab" id="tab-rehber" style="text-decoration:none;display:inline-flex;align-items:center;">📖 <span class="tab-text full">Rehber</span><span class="tab-text short">Rehber</span></a>
+    <a href="/tarihce.html" class="nav-tab" id="tab-tarihce" style="text-decoration:none;display:inline-flex;align-items:center;">⏳ <span class="tab-text full">Tarihçe</span><span class="tab-text short">Tarihçe</span></a>
     <button class="nav-tab mod-tab" id="navModBtn" onclick="showPage('mod')">🔧 <span class="tab-text full">Moderatör</span><span class="tab-text short">Mod</span></button>
   </div>
 </nav>
@@ -2986,8 +2988,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   <div id="mapLoadingOverlay" class="map-loading-overlay hidden" aria-live="polite">
     <div class="mlo-box">
       <div class="mlo-spinner" id="mloSpinner"></div>
-      <div class="mlo-title" id="mloTitle">Canlı ölçümler senkronize ediliyor</div>
-      <div class="mlo-desc" id="mloDesc">Bölgesel altyapı katmanları güncelleniyor</div>
+      <div class="mlo-title" id="mloTitle">Harita verileri yükleniyor</div>
+      <div class="mlo-desc" id="mloDesc">Bölgesel hız ve altyapı ölçümleri hazırlanıyor</div>
       <div style="display:flex;gap:6px;align-items:center;">
         <button class="mlo-btn" id="mloRetryBtn" onclick="retryLoadMap()" style="display:none;">↺ Yeniden Dene</button>
         <button class="mlo-btn" id="mloDismissBtn" onclick="hideMapLoading()" style="display:none;background:var(--surface2);color:var(--text2);border:1px solid var(--border);">✕ Kapat</button>
@@ -3032,7 +3034,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
         <!-- BENİM ÖLÇÜMLERİM -->
         <div class="sidebar-section">
           <div class="sidebar-section-title">Kişiselleştirme</div>
-          <div class="my-pins-toggle" id="myPinsToggle" role="switch" aria-checked="false" tabindex="0" onclick="toggleMyPinsUI()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleMyPinsUI();}">
+          <div class="my-pins-toggle" id="myPinsToggle" role="switch" aria-checked="false" tabindex="0" onclick="toggleMyPinsUI()">
             <div class="my-pins-label">📍 Ölçümlerimi Haritada Gör</div>
             <div class="my-pins-dot"></div>
           </div>
@@ -3040,7 +3042,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
           <!-- KULLANICI ÖLÇÜMLERİ LİSTESİ -->
           <div class="user-pins-accordion" style="margin-top:8px;">
-            <button type="button" class="user-pins-collapse-btn" id="userPinsToggleBtn" onclick="toggleUserPinsAccordion()" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;">
+            <button type="button" class="user-pins-collapse-btn" id="userPinsToggleBtn" aria-expanded="false" aria-controls="userPinsListBox" onclick="toggleUserPinsAccordion()" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;">
               <span id="userPinsListTitle">📋 Eklediğim Ölçümler (0)</span>
               <span id="userPinsListArrow" style="font-size:9px;color:var(--text3);transition:transform .2s;">▼</span>
             </button>
@@ -3131,6 +3133,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     <div class="map-info-drag-handle" aria-hidden="true"></div>
     <div class="info-head"><div class="info-title" id="infoTitle">—</div><button type="button" class="info-close" aria-label="Bölge detayını kapat" onclick="document.getElementById('mapInfo').classList.remove('visible')">×</button></div>
     <div class="map-info-body">
+      <div id="infoHexTechFilter" style="display:none;margin-bottom:8px;flex-wrap:wrap;gap:4px;"></div>
       <div class="info-row"><span class="info-label">Ort. İndirme</span><span class="info-val" id="infoDL" style="color:var(--accent)">—</span></div>
       <div class="info-row"><span class="info-label">Ort. Yükleme</span><span class="info-val" id="infoUL">—</span></div>
       <div class="info-row"><span class="info-label">Memnuniyet</span><span class="info-val" id="infoScore">—</span></div>
@@ -3889,7 +3892,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
           <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;flex-shrink:0;"></span>
           <span>Ölçülen hızınıza göre seçildi: <b id="autoConnBadgeName" style="color:var(--accent);"></b> <span id="autoConnBadgeNote" style="color:var(--text3);font-size:9.5px;">(Farklı bir teknoloji ise değiştirebilirsiniz)</span></span>
         </div>
-        <div id="docsisNote" style="display:none;font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">DOCSIS, Türksat'ın TV kablosu (coaxial) üzerinden verdiği internet türüdür. Türksat'tan fiber veya VDSL hizmeti alıyorsanız DOCSIS'i değil, "Fiber" veya "VDSL"yi seçin — DOCSIS sadece kablo TV hattından gelen Türksat bağlantıları içindir.</div>
+        <div id="docsisNote" style="display:none;font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">DOCSIS, Türksat Kablonet'in kablo TV hattı üzerinden sunduğu internet türüdür. Türksat'tan fiber veya VDSL hizmeti alıyorsanız "Fiber" veya "VDSL" seçeneğini işaretleyin.</div>
       </div>
       <div class="fg">
         <div class="fl">Paket Hızı <span style="color:var(--text3);font-weight:400;">(tarifenizdeki hız — opsiyonel)</span></div>
@@ -4287,7 +4290,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
 
       <p style="margin-bottom:8px;"><b style="color:var(--text);">4) Veri Güvenliği ve Anti-Spam Koruması:</b> Platforma otomatik botların veya kötü niyetli betiklerin sahte ölçüm basmasını engellemek amacıyla standart hız sınırlamaları (rate limiting) ve görünmez form güvenlik önlemleri uygulanmaktadır.</p>
 
-      <p style="margin-bottom:8px;"><b style="color:var(--text);">5) Yerel Depolama (LocalStorage) &amp; Ölçüm Yönetimi:</b> Tema tercihiniz (karanlık/aydınlık) ile eklediğiniz ölçümleri üyelik gerektirmeden tanıyabilmeniz için tarayıcınızın yerel hafızası (<code>localStorage</code>) kullanılır. Haritadaki kendi ölçümünüzü dilediğiniz an <b>"✏️ Düzenle"</b> veya <b>"🗑 Sil"</b> butonlarıyla kalıcı olarak silebilirsiniz (Unutulma Hakkı). Sistemde kimlik veya e-posta kaydı tutulmadığından ölçüm yönetimi yalnızca verinin eklendiği cihaz ve tarayıcı üzerinden gerçekleştirilebilir.</p>
+      <p style="margin-bottom:8px;"><b style="color:var(--text);">5) Cihaz Hafızası &amp; Ölçüm Yönetimi:</b> Tema tercihiniz (karanlık/aydınlık) ile eklediğiniz ölçümleri üyelik gerektirmeden tanıyabilmeniz için tarayıcınızın yerel cihaz hafızası kullanılır. Haritadaki kendi ölçümünüzü dilediğiniz an <b>"✏️ Düzenle"</b> veya <b>"🗑 Sil"</b> butonlarıyla kalıcı olarak silebilirsiniz (Unutulma Hakkı). Sistemde kimlik veya e-posta kaydı tutulmadığından ölçüm yönetimi yalnızca verinin eklendiği cihaz ve tarayıcı üzerinden gerçekleştirilebilir.</p>
 
       <p style="margin-bottom:8px;"><b style="color:var(--text);">6) Çerezler ve Reklam Tercihleri (Google AdSense):</b> Sitemizi ücretsiz sunabilmek amacıyla reklamlar gösterilmektedir. Ziyaretçilerimiz onay penceresi veya Ayarlar menüsü üzerinden <b>"Kabul Et"</b> ile kişiselleştirilmiş reklamları onaylayabilir, <b>"Reddet"</b> seçeneği ile profil verileri işlenmeksizin yalnızca kişiselleştirilmemiş (bağlamsal) reklamları tercih edebilir. Tercihinizi dilediğiniz an <button type="button" data-consent-open style="background:none;border:none;color:var(--accent);text-decoration:underline;cursor:pointer;font:inherit;padding:0;">buradan</button> değiştirebilirsiniz.</p>
 
@@ -4512,7 +4515,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
         <div class="cbtn adsl" id="userEditConn-adsl" onclick="selConnUserEdit(this,'adsl')">ADSL</div>
         <div class="cbtn docsis" id="userEditConn-docsis" onclick="selConnUserEdit(this,'docsis')">DOCSIS</div>
       </div>
-      <div id="userEditDocsisNote" style="display:none;font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">DOCSIS seçildiğinde İSS ve Altyapı Sahibi otomatik olarak Türksat'a ayarlanır.</div>
+      <div id="userEditDocsisNote" style="display:none;font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">DOCSIS (Kablo İnternet) seçildiğinde İSS ve Altyapı Sahibi otomatik olarak Türksat Kablonet'e ayarlanır.</div>
     </div>
     
     <div class="fg" style="margin-bottom:10px;">
@@ -4573,7 +4576,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
   <div class="modal" style="max-width:340px;">
     <span class="modal-close" onclick="closeAddIssModal()">×</span>
     <div class="modal-title">🏷 Yeni İSS Ekle</div>
-    <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">Listeye yeni bir İSS ekleyin. Hem bu oturumda hem sonraki kullanımlarda görünür. Kalıcı eklemek için kodu güncelleyin.</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:14px;">Listeye yeni bir internet servis sağlayıcı ekleyin. Eklediğiniz sağlayıcı tüm seçim listelerinde görünür.</div>
     <div class="fg" style="margin-bottom:16px;">
       <div class="fl">İSS Adı</div>
       <input class="fi" type="text" id="addIssName" aria-label="Eklenecek yeni İSS adı" placeholder="Örn: Fibernet, Bimcell..." maxlength="60" onkeydown="if(event.key==='Enter')confirmAddIss()">
@@ -4815,9 +4818,7 @@ function removeMyPinLocal(pinId) {
 function toggleMyPinsUI() {
   if (!maps.main) return;
   
-  const localDeleted = getDeletedPinsLocal();
-  const myPinIds = new Set(getMyLocalPinIds().map(String));
-  const myPins = (pinsData || []).filter(p => !localDeleted.has(String(p.id)) && !p.deleted_at && (p.is_own_pin || myPinIds.has(String(p.id)) || (browserFingerprint && p.browser_fp === browserFingerprint)));
+  const myPins = getAllUserPins().filter(p => p.lat && p.lng);
   
   if (!isMyPinsVisible && myPins.length === 0) {
     loadPins();
@@ -4843,9 +4844,7 @@ function renderMyPins() {
   if (!isMyPinsVisible) return;
   
   myPinsLayer = L.layerGroup().addTo(maps.main);
-  const localDeleted = getDeletedPinsLocal();
-  const myPinIds = new Set(getMyLocalPinIds().map(String));
-  const myPins = (pinsData || []).filter(p => !localDeleted.has(String(p.id)) && !p.deleted_at && (p.is_own_pin || myPinIds.has(String(p.id)) || (browserFingerprint && p.browser_fp === browserFingerprint)));
+  const myPins = getAllUserPins().filter(p => p.lat && p.lng);
   
   myPins.forEach(p => {
     const isApproved = isPinPublic(p);
@@ -4868,20 +4867,20 @@ function renderMyPins() {
     }).addTo(myPinsLayer);
     
     const dateStr = new Date(p.created_at).toLocaleDateString('tr-TR');
-    const statusText = isApproved ? 'YAYINDA' : 'İNCELEMEDE';
-    const statusDesc = isApproved ? 'Bu ölçüm haritada herkes tarafından görülebilir.' : 'Bu ölçüm şu an sadece size görünür, moderatör onayı bekliyor.';
+    const statusText = p.is_draft ? 'TASLAK' : (isApproved ? 'YAYINDA' : 'İNCELEMEDE');
+    const statusDesc = p.is_draft ? 'Bu ölçüm çevrimdışı taslak olarak kaydedildi; bağlantı sağlandığında haritaya aktarılacak.' : (isApproved ? 'Bu ölçüm haritada herkes tarafından görülebilir.' : 'Bu ölçüm şu an sadece size görünür, moderatör onayı bekliyor.');
     
     m.bindPopup(`
       <div class="popup-inner">
         <div class="popup-title">Senin Ölçümün <span class="own-pin-badge" style="margin-left:0;margin-top:4px;background:${isApproved?'var(--accent)':'var(--warn)'};color:#000;">${statusText}</span></div>
         <div style="font-size:9px;color:var(--text3);margin-bottom:8px;line-height:1.3;">${statusDesc}</div>
-        <div class="popup-row"><span class="popup-key">Veri No</span><span class="popup-val" style="font-family:var(--font-mono);font-weight:700;color:var(--accent);">#${p.id}</span></div>
+        <div class="popup-row"><span class="popup-key">Veri No</span><span class="popup-val" style="font-family:var(--font-mono);font-weight:700;color:var(--accent);">#${escHtml(p.id)}</span></div>
         <div class="popup-row"><span class="popup-key">İSS</span><span class="popup-val">${escHtml(p.iss)}</span></div>
-        <div class="popup-row"><span class="popup-key">Hız</span><span class="popup-val" style="color:${color}">${p.gercek_dl} Mbps ↓</span></div>
+        <div class="popup-row"><span class="popup-key">Hız</span><span class="popup-val" style="color:${color}">${p.is_altyapi_yok ? 'Altyapı Yok' : `${p.gercek_dl} Mbps ↓`}</span></div>
         <div class="popup-row"><span class="popup-key">Tarih</span><span class="popup-val">${dateStr}</span></div>
         <div class="popup-actions">
-          <div class="popup-btn btn-edit" onclick="openUserEditModal('${p.id}')">✏️ Düzenle</div>
-          <div class="popup-btn popup-del" onclick="deleteUserPin('${p.id}')">🗑 Sil</div>
+          <div class="popup-btn btn-edit" role="button" tabindex="0" onclick="openUserEditModal('${escAttr(p.id)}')">✏️ Düzenle</div>
+          <div class="popup-btn popup-del" role="button" tabindex="0" onclick="deleteUserPin('${escAttr(p.id)}')">🗑 Sil</div>
         </div>
       </div>
     `);
@@ -4917,11 +4916,15 @@ function toggleUserPinsAccordion() {
   isUserPinsAccordionOpen = !isUserPinsAccordionOpen;
   const box = document.getElementById('userPinsListBox');
   const arrow = document.getElementById('userPinsListArrow');
+  const btn = document.getElementById('userPinsToggleBtn');
   if (box) {
     box.style.display = isUserPinsAccordionOpen ? 'flex' : 'none';
   }
   if (arrow) {
     arrow.textContent = isUserPinsAccordionOpen ? '▲' : '▼';
+  }
+  if (btn) {
+    btn.setAttribute('aria-expanded', String(isUserPinsAccordionOpen));
   }
   if (isUserPinsAccordionOpen) {
     renderUserPinsList();
@@ -4936,7 +4939,11 @@ function focusUserPinOnMap(pinId, lat, lng) {
   }
   if (!isMyPinsVisible) {
     isMyPinsVisible = true;
-    document.getElementById('myPinsToggle')?.classList.add('active');
+    const toggleBtn = document.getElementById('myPinsToggle');
+    if (toggleBtn) {
+      toggleBtn.classList.add('active');
+      toggleBtn.setAttribute('aria-checked', 'true');
+    }
     renderMyPins();
   }
   if (maps.main) {
@@ -4976,10 +4983,10 @@ function renderUserPinsList() {
   box.innerHTML = userPins.map(p => {
     const locParts = [p.mahalle, p.ilce, p.il].filter(Boolean);
     const locStr = locParts.length ? locParts.join(', ') : (p.lat ? `${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}` : 'Konum Belirtilmemiş');
-    const isApproved = p.gorunur === true && !p.is_quarantine;
-    const statusBg = isApproved ? 'rgba(34,197,94,.12)' : 'rgba(245,158,11,.12)';
-    const statusColor = isApproved ? 'var(--success)' : 'var(--warn)';
-    const statusText = isApproved ? 'YAYINDA' : 'İNCELEMEDE';
+    const isApproved = isPinPublic(p);
+    const statusBg = p.is_draft ? 'rgba(0,212,255,.12)' : (isApproved ? 'rgba(34,197,94,.12)' : 'rgba(245,158,11,.12)');
+    const statusColor = p.is_draft ? 'var(--accent)' : (isApproved ? 'var(--success)' : 'var(--warn)');
+    const statusText = p.is_draft ? 'TASLAK' : (isApproved ? 'YAYINDA' : 'İNCELEMEDE');
     const brandColor = ic(p.iss);
     const spColor = speedColor(p.gercek_dl);
     const speedText = p.is_altyapi_yok ? 'Altyapı Yok' : (p.gercek_dl ? `${p.gercek_dl} Mbps ↓` : '—');
@@ -4991,7 +4998,7 @@ function renderUserPinsList() {
           <span style="font-size:8px;padding:1px 5px;border-radius:4px;font-family:var(--font-mono);font-weight:700;background:${statusBg};color:${statusColor};letter-spacing:0.3px;">${statusText}</span>
         </div>
         <div style="font-size:9.5px;display:flex;align-items:center;justify-content:space-between;gap:4px;">
-          <span><b style="color:${brandColor};">● ${escHtml(p.iss || 'İSS')}</b> · ${(p.baglanti_turu||'').toUpperCase()}</span>
+          <span><b style="color:${brandColor};">● ${escHtml(p.iss || 'İSS')}</b> · ${escHtml((p.baglanti_turu||'').toUpperCase())}</span>
           <span style="font-family:var(--font-mono);font-weight:700;color:${spColor};">${speedText}</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;padding-top:4px;border-top:1px dashed var(--border);font-size:9px;">
@@ -6539,7 +6546,7 @@ function syncMapToUrl() {
 function handleUrlParamsOnStartup() {
   try {
     const rawHash = (window.location.hash || '').replace(/^#\/?/, '').trim().toLowerCase();
-    if (['istatistik', 'istatistikler', 'bolge', 'bolgeler', 'pin', 'ekle', 'veriekle', 'mod', 'moderator'].includes(rawHash)) {
+    if (['istatistik', 'istatistikler', 'bolge', 'bolgeler', 'pin', 'ekle', 'veriekle', 'mod', 'moderator', 'karsilastir', 'kiyasla', 'iss-kiyasla'].includes(rawHash)) {
       return;
     }
     const params = new URLSearchParams(window.location.search);
@@ -6925,7 +6932,7 @@ function toggleColorblindMode() {
   if (typeof renderModPins === 'function') renderModPins();
   if (activeHexPins && activeHexPins.length) {
     const rHexId = document.getElementById('reportHexId')?.value;
-    showHexInfo(activeHexPins, rHexId);
+    showHexInfo((activeHexAllPins && activeHexAllPins.length) ? activeHexAllPins : activeHexPins, rHexId, activeHexFilterType, true);
   }
   if (document.getElementById('page-bolge')?.classList.contains('active')) renderRegions();
   if (document.getElementById('page-istatistik')?.classList.contains('active')) renderStats();
@@ -7089,7 +7096,7 @@ let colorMode = 'hiz', hexLayers =[], pinMarkerLayers =[], isModLoggedIn = false
 // Bu yaklaşım mevcut görsel tasarımı korurken Enter ve Boşluk tuşlarını gerçek
 // butonlardaki gibi çalıştırır; dinamik eklenen İSS çipleri de bu fonksiyondan geçer.
 function enhanceInteractiveControls(root = document) {
-  root.querySelectorAll('.chip, .mode-tab, .cbtn, .feedback-tag, .sbtn, .my-pins-toggle, .map-sidebar-toggle, .sidebar-collapse-btn, .info-close').forEach(el => {
+  root.querySelectorAll('.chip, .mode-tab, .cbtn, .feedback-tag, .sbtn, .my-pins-toggle, .map-sidebar-toggle, .sidebar-collapse-btn, .info-close, .btn-loc').forEach(el => {
     if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
     if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
     if (!el.hasAttribute('aria-label')) el.setAttribute('aria-label', el.classList.contains('info-close') ? 'Kapat' : (el.getAttribute('title') || el.textContent || '').trim());
@@ -7098,6 +7105,7 @@ function enhanceInteractiveControls(root = document) {
       el.addEventListener('keydown', event => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
+          event.stopPropagation();
           el.click();
           window.setTimeout(syncInteractiveControlState, 0);
         }
@@ -7114,8 +7122,11 @@ function enhanceInteractiveControls(root = document) {
 }
 
 function syncInteractiveControlState(root = document) {
-  root.querySelectorAll('.chip, .mode-tab, .cbtn, .feedback-tag, .sbtn, .my-pins-toggle').forEach(el => {
+  root.querySelectorAll('.chip, .mode-tab, .cbtn, .feedback-tag, .sbtn').forEach(el => {
     el.setAttribute('aria-pressed', String(el.classList.contains('on') || el.classList.contains('active') || el.classList.contains('sel')));
+  });
+  root.querySelectorAll('.my-pins-toggle').forEach(el => {
+    el.setAttribute('aria-checked', String(el.classList.contains('active')));
   });
 }
 
@@ -7192,7 +7203,11 @@ function resetAllFilters(e) {
   // Kendi ölçümlerim katmanı
   if (isMyPinsVisible) {
     isMyPinsVisible = false;
-    document.getElementById('myPinsToggle')?.classList.remove('active');
+    const toggleBtn = document.getElementById('myPinsToggle');
+    if (toggleBtn) {
+      toggleBtn.classList.remove('active');
+      toggleBtn.setAttribute('aria-checked', 'false');
+    }
     renderMyPins();
   }
   updateFilterIndicator();
@@ -7345,6 +7360,9 @@ function handleHashRoute() {
     showPage('istatistik', false);
   } else if (rawHash === 'pin' || rawHash === 'ekle' || rawHash === 'veriekle') {
     showPage('pin', false);
+  } else if (rawHash === 'karsilastir' || rawHash === 'kiyasla' || rawHash === 'iss-kiyasla') {
+    showPage('harita', false);
+    if (typeof openCompareModal === 'function') openCompareModal();
   } else if (rawHash === 'speedtest' || rawHash === 'hiztesti' || rawHash === 'hiz-testi') {
     showPage('harita', false);
     openSpeedTestModal('standalone');
@@ -7395,8 +7413,8 @@ function showMapLoading() {
   const btn = document.getElementById('mloRetryBtn');
   const dismissBtn = document.getElementById('mloDismissBtn');
   if (spinner) spinner.style.display = 'block';
-  if (title) { title.textContent = 'Canlı ölçümler senkronize ediliyor'; title.style.color = 'var(--text)'; }
-  if (desc) desc.textContent = 'Bölgesel altyapı katmanları güncelleniyor';
+  if (title) { title.textContent = 'Harita verileri yükleniyor'; title.style.color = 'var(--text)'; }
+  if (desc) desc.textContent = 'Bölgesel hız ve altyapı ölçümleri hazırlanıyor';
   if (btn) btn.style.display = 'none';
   if (dismissBtn) dismissBtn.style.display = 'none';
 
@@ -7770,7 +7788,7 @@ async function _loadPinsCore() {
     
     if (!usedCache) {
       document.getElementById('mapStats').textContent = 'Bağlanamadı';
-      showMapLoadingError('Sunucuya bağlanırken bir sorun oluştu. Lütfen bağlantınızı, DNS veya VPN ayarlarınızı kontrol edip tekrar deneyin.');
+      showMapLoadingError('Harita verilerine şu anda ulaşılamıyor. İnternet bağlantınızı kontrol edip tekrar deneyebilirsiniz.');
     }
   }
 }
@@ -7881,8 +7899,53 @@ function renderModPins() {
   });
 }
 
-function showHexInfo(pins, hexId) {
-  activeHexPins = pins;
+let activeHexAllPins = [];
+let activeHexFilterType = 'all';
+
+function filterHexInfoByTech(tech) {
+  if (!activeHexAllPins || !activeHexAllPins.length) return;
+  const hexId = document.getElementById('reportHexId')?.value || '';
+  showHexInfo(activeHexAllPins, hexId, tech, true);
+}
+
+function showHexInfo(pins, hexId, filterTech = 'all', keepScroll = false) {
+  if (!pins || !pins.length) return;
+  activeHexAllPins = pins;
+  activeHexFilterType = filterTech || 'all';
+
+  // Bağlantı türü dağılımını hesapla ve birden fazla tür varsa hızlı filtre çubuğunu göster
+  const techCounts = { fiber: 0, vdsl: 0, docsis: 0, adsl: 0 };
+  pins.forEach(p => {
+    const t = (p.baglanti_turu || '').toLowerCase();
+    if (techCounts[t] !== undefined) techCounts[t]++;
+  });
+  const availableTechs = Object.entries(techCounts).filter(([, c]) => c > 0);
+  const filterBar = document.getElementById('infoHexTechFilter');
+  if (filterBar) {
+    if (availableTechs.length > 1) {
+      const labels = { fiber: 'Fiber', vdsl: 'VDSL', docsis: 'Kablo', adsl: 'ADSL' };
+      const colors = { fiber: '#a855f7', vdsl: '#06b6d4', docsis: '#3b82f6', adsl: '#ef4444' };
+      const allActive = activeHexFilterType === 'all';
+      let pillsHtml = `<button type="button" onclick="filterHexInfoByTech('all')" aria-pressed="${allActive}" style="padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;font-family:var(--font-mono);cursor:pointer;border:1px solid ${allActive ? 'var(--accent)' : 'var(--border)'};background:${allActive ? 'var(--accent-dim)' : 'var(--surface2)'};color:${allActive ? 'var(--accent)' : 'var(--text2)'};transition:all .15s;">Tümü (${pins.length})</button>`;
+      availableTechs.forEach(([t, cnt]) => {
+        const isSel = activeHexFilterType === t;
+        const c = colors[t] || 'var(--accent)';
+        pillsHtml += `<button type="button" onclick="filterHexInfoByTech('${t}')" aria-pressed="${isSel}" style="padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;font-family:var(--font-mono);cursor:pointer;border:1px solid ${isSel ? c : 'var(--border)'};background:${isSel ? c + '22' : 'var(--surface2)'};color:${isSel ? c : 'var(--text2)'};transition:all .15s;">${labels[t] || t.toUpperCase()} (${cnt})</button>`;
+      });
+      filterBar.innerHTML = pillsHtml;
+      filterBar.style.display = 'flex';
+    } else {
+      filterBar.style.display = 'none';
+      filterBar.innerHTML = '';
+      activeHexFilterType = 'all';
+    }
+  }
+
+  const filteredPins = activeHexFilterType === 'all'
+    ? pins
+    : pins.filter(p => (p.baglanti_turu || '').toLowerCase() === activeHexFilterType);
+  activeHexPins = filteredPins.length ? filteredPins : pins;
+
   // DUZELTME: eskiden pins[0].il/ilce/mahalle kullaniliyordu → ilk pin
   // hexagonu temsil etmiyor (farkli mahallede kayitli olabilir, GPS drift vb).
   // Artik hexagon icerisindeki pinlerin EN SIK gectigi il+ilce+mahalle
@@ -7898,7 +7961,7 @@ function showHexInfo(pins, hexId) {
     : ([pins[0].il, pins[0].ilce, pins[0].mahalle].filter(Boolean).join(' › ') || 'Bilinmeyen Bölge');
   document.getElementById('infoTitle').textContent = locStr;
   document.getElementById('reportHexId').value = hexId||''; document.getElementById('reportBolge').value = locStr;
-  const speedPins = pins.filter(p => !p.is_altyapi_yok);
+  const speedPins = activeHexPins.filter(p => !p.is_altyapi_yok);
   const avgDL = speedPins.length ? Math.round(speedPins.reduce((a,p)=>a+p.gercek_dl,0)/speedPins.length) : 0;
   const avgS = speedPins.length ? (speedPins.reduce((a,p)=>a+p.puan,0)/speedPins.length).toFixed(1) : '—';
   const ulPins = speedPins.filter(p=>p.gercek_ul>0);
@@ -7917,11 +7980,13 @@ function showHexInfo(pins, hexId) {
       scEl.style.color = 'var(--text3)';
     }
   }
-  document.getElementById('infoCount').textContent = pins.length+' ölçüm';
+  document.getElementById('infoCount').textContent = activeHexFilterType === 'all'
+    ? `${activeHexPins.length} ölçüm`
+    : `${activeHexPins.length} / ${pins.length} ölçüm`;
   // BÖLGESEL SAĞLAYICI VE ALTYAPI MATRİSİ
   // Hangi İSS'nin bu altıgende Fiber, VDSL, ADSL veya DOCSIS sunduğunu net eşleştir
   const providerMatrix = {};
-  pins.forEach(p => {
+  activeHexPins.forEach(p => {
     const issName = canonicalIssName(p.iss);
     if (!issName || issName === 'Bilinmeyen' || !isApprovedPublicIss(issName)) return;
     if (!providerMatrix[issName]) {
@@ -8048,12 +8113,12 @@ function showHexInfo(pins, hexId) {
   document.getElementById('infoISS').innerHTML = matrixHtml;
 
   // BÖLGE SAKİNLERİNİN DENEYİMLERİ (Yalnızca geçerli hazır etiketler, eski serbest metinler filtrelenir)
-  const validFeedbackPins = pins.filter(p => extractValidFeedbackTags(p.yorum).length > 0);
+  const validFeedbackPins = activeHexPins.filter(p => extractValidFeedbackTags(p.yorum).length > 0);
   
   // AKILLI BÖLGE ANALİZİ (KULLANIM UYGUNLUK ROZETLERİ + ÖZET NOT)
   const hexAnalysisEl = document.getElementById('infoHexAnalysis');
   if (hexAnalysisEl) {
-    const hasFiber = pins.some(p => (p.baglanti_turu || '').toLowerCase() === 'fiber');
+    const hasFiber = activeHexPins.some(p => (p.baglanti_turu || '').toLowerCase() === 'fiber');
     const scoreNum = (avgS !== '—' && !isNaN(parseFloat(avgS))) ? parseFloat(avgS) : 7;
 
     // 1) Oyun Uygunluğu
@@ -8159,7 +8224,7 @@ function showHexInfo(pins, hexId) {
     // Bölgenin En Çok Tercih Edilen / Lider Sağlayıcısı
     let leaderBadgeHtml = '';
     const issStats = {};
-    pins.filter(p => !p.is_altyapi_yok && p.iss && p.iss !== 'Altyapı Yok').forEach(p => {
+    activeHexPins.filter(p => !p.is_altyapi_yok && p.iss && p.iss !== 'Altyapı Yok').forEach(p => {
       const name = canonicalIssName(p.iss);
       if (!name || name === 'Bilinmeyen' || !isApprovedPublicIss(name)) return;
       if (!issStats[name]) issStats[name] = { count: 0, totalDl: 0, dlCount: 0, totalScore: 0, scoreCount: 0 };
@@ -8176,7 +8241,7 @@ function showHexInfo(pins, hexId) {
       const brandColor = ic(topName);
       const scoreStr = topScore ? ` · Memnuniyet: <b>${topScore}/10</b>` : '';
       const dlStr = topAvgDl > 0 ? ` · Ort: <b>${topAvgDl} Mbps</b>` : '';
-      const pctOfHex = Math.round((topStat.count / Math.max(1, pins.length)) * 100);
+      const pctOfHex = Math.round((topStat.count / Math.max(1, activeHexPins.length)) * 100);
 
       leaderBadgeHtml = `
         <div style="margin-top:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid ${brandColor};border-radius:8px;font-size:11px;display:flex;align-items:center;gap:8px;">
@@ -8240,13 +8305,15 @@ function showHexInfo(pins, hexId) {
   }
 
   document.getElementById('mapInfo').classList.add('visible');
-  const body = document.querySelector('.map-info-body'); if(body) body.scrollTop = 0;
+  if (!keepScroll) {
+    const body = document.querySelector('.map-info-body'); if(body) body.scrollTop = 0;
+  }
   // Ölçüm listesini sıfırla
   const hexList = document.getElementById('hexPinsList');
   const hexBtn = document.getElementById('hexPinsToggleBtn');
   const bildirBtn = document.getElementById('infoBildirBtn');
   if (hexList) { hexList.style.display = 'none'; hexList.innerHTML = ''; }
-  if (hexBtn) { hexBtn.style.display = 'block'; hexBtn.textContent = `▼ Tüm ölçümleri gör (${pins.length})`; }
+  if (hexBtn) { hexBtn.style.display = 'block'; hexBtn.textContent = `▼ Tüm ölçümleri gör (${activeHexPins.length})`; }
   if (bildirBtn) bildirBtn.style.display = 'block';
 }
 
@@ -8269,12 +8336,12 @@ function toggleHexPinsList() {
           const isOwnPin = p.is_own_pin || (browserFingerprint && p.browser_fp === browserFingerprint);
           const ownPinBadge = isOwnPin ? `<span class="own-pin-badge">Senin Ölçümün</span>` : '';
           const turKey = (p.baglanti_turu || 'diger').toLowerCase();
-          const connBadge = `<span class="hex-pin-conn-badge conn-${turKey}">${(p.baglanti_turu||'').toUpperCase()}</span>`;
-          const extraBadges = parseDigerAltyapi(p.diger_altyapilar).map(e=>`<span class="hex-pin-sub-badge" title="${escAttr(e.iss||'')}">+${e.iss ? escHtml(e.iss)+' ' : ''}${e.tur.toUpperCase()}</span>`).join('');
+          const connBadge = `<span class="hex-pin-conn-badge conn-${escAttr(turKey)}">${escHtml((p.baglanti_turu||'').toUpperCase())}</span>`;
+          const extraBadges = parseDigerAltyapi(p.diger_altyapilar).map(e=>`<span class="hex-pin-sub-badge" title="${escAttr(e.iss||'')}">+${e.iss ? escHtml(e.iss)+' ' : ''}${escHtml(e.tur.toUpperCase())}</span>`).join('');
           const actions = isOwnPin ? `
             <div class="user-pin-actions">
-              <span class="user-pin-action edit" onclick="event.stopPropagation(); openUserEditModal('${p.id}')">✏️ Düzenle</span>
-              <span class="user-pin-action del" onclick="event.stopPropagation(); deleteUserPin('${p.id}')">🗑 Sil</span>
+              <span class="user-pin-action edit" role="button" tabindex="0" onclick="event.stopPropagation(); openUserEditModal('${escAttr(p.id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.stopPropagation();event.preventDefault();openUserEditModal('${escAttr(p.id)}');}">✏️ Düzenle</span>
+              <span class="user-pin-action del" role="button" tabindex="0" onclick="event.stopPropagation(); deleteUserPin('${escAttr(p.id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.stopPropagation();event.preventDefault();deleteUserPin('${escAttr(p.id)}');}">🗑 Sil</span>
             </div>
           ` : '';
           
@@ -9922,7 +9989,7 @@ function toggleManualAddress() {
 function populateIlSelect() {
   const sel = document.getElementById('manualIl');
   const iller = Object.keys(IL_COORDS).sort((a,b) => a.localeCompare(b,'tr'));
-  sel.innerHTML = '<option value="">İl seçin...</option>' + iller.map(il => `<option value="${il}">${il}</option>`).join('');
+  sel.innerHTML = '<option value="">İl seçin...</option>' + iller.map(il => `<option value="${escAttr(il)}">${escHtml(il)}</option>`).join('');
 }
 
 async function onManualIlChange() {
@@ -10238,6 +10305,7 @@ function createExtraAltyapiRow(containerId, prefillIss, prefillTurs) {
     if (sel) { sel.value = prefillIss; if (sel.value !== prefillIss) { const o=document.createElement('option'); o.value=prefillIss; o.textContent=prefillIss; sel.insertBefore(o, sel.firstChild.nextSibling); sel.value=prefillIss; } }
   }
   (prefillTurs || []).forEach(t => { row.querySelector(`.cbtn[data-tur="${t}"]`)?.classList.add('sel'); });
+  enhanceInteractiveControls(row);
   return rowId;
 }
 function addExtraAltyapiRow() {}
@@ -10287,6 +10355,7 @@ function toggleFeedbackTag(el) {
 
 function toggleUserEditFeedbackTag(el) {
   el.classList.toggle('sel');
+  syncInteractiveControlState(el.parentElement);
   const selTags = [];
   document.querySelectorAll('#userEditFeedbackTags .feedback-tag.sel').forEach(t => {
     const val = t.getAttribute('data-val') || t.textContent.trim();
@@ -10314,7 +10383,7 @@ function highlightRequired(elementOrId, scrollTo = true) {
 }
 
 async function submitPin() {
-  if (window.top !== window.self) return showToast('🔒 Güvenlik nedeniyle gömülü pencere (iframe) içinden veri eklenemez','err');
+  if (window.top !== window.self) return showToast('🔒 Güvenlik nedeniyle gömülü pencere içinden veri eklenemez','err');
   if (isMaintenanceMode) return showToast('🔧 Bakım modu aktif — şu an veri eklenemiyor','warn');
   if (isSubmissionsPaused) return showToast('🚨 Otomatik güvenlik duraklatması aktif — moderatör incelemesi bekleniyor, lütfen birazdan tekrar deneyin','warn');
 
@@ -10851,6 +10920,7 @@ function markEditPin(pinId) {
 function selConnUserEdit(el, type) {
   document.querySelectorAll('#userEditConnWrap .cbtn').forEach(b => b.classList.remove('sel'));
   el.classList.add('sel');
+  syncInteractiveControlState(el.parentElement);
   selConnValUserEdit = type;
   const note = document.getElementById('userEditDocsisNote');
   if (note) note.style.display = (type === 'docsis') ? 'block' : 'none';
@@ -10859,6 +10929,7 @@ function selConnUserEdit(el, type) {
 function selScoreUserEdit(el, val) {
   document.querySelectorAll('#userEditScoreRow .sbtn').forEach(b => b.classList.remove('sel'));
   el.classList.add('sel');
+  syncInteractiveControlState(el.parentElement);
   selScoreValUserEdit = val;
 }
 
@@ -10873,6 +10944,7 @@ function buildUserEditScoreRow() {
     b.onclick = () => selScoreUserEdit(b, i);
     row.appendChild(b);
   }
+  enhanceInteractiveControls(row);
 }
 
 function openUserEditModal(pinId) {
@@ -11285,7 +11357,7 @@ async function isAuthorizedModEmail(email) {
 async function modLogin() {
   try {
     if (window.top !== window.self) {
-      throw new Error('Güvenlik nedeniyle gömülü pencere (iframe) içinden moderatör girişi yapılamaz.');
+      throw new Error('Güvenlik nedeniyle gömülü pencere içinden moderatör girişi yapılamaz.');
     }
     const emailVal = (document.getElementById('modEmail').value || '').trim();
     if (!await isAuthorizedModEmail(emailVal)) {
@@ -12941,21 +13013,21 @@ async function loadStatEditTable(search) {
       tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:25px;color:var(--text3);font-size:12px;">Eşleşen pin kaydı bulunamadı.</td></tr>';
       return;
     }
-    tbody.innerHTML = pins.map(p => `<tr id="se_${p.id}">
+    tbody.innerHTML = pins.map(p => `<tr id="se_${escAttr(p.id)}">
       <td style="font-size:11px;font-weight:700;">${escHtml(p.iss)}</td>
-      <td><span style="color:${cc(p.baglanti_turu)};font-family:var(--font-mono);font-size:10px">${(p.baglanti_turu||'').toUpperCase()}</span></td>
-      <td><input class="fi" type="number" value="${p.gercek_dl||''}" id="se_dl_${p.id}" aria-label="DL Hızı Mbps" style="padding:4px 8px;font-size:11px;width:70px;"></td>
-      <td><input class="fi" type="number" value="${p.gercek_ul||''}" id="se_ul_${p.id}" aria-label="UL Hızı Mbps" style="padding:4px 8px;font-size:11px;width:70px;"></td>
-      <td><input class="fi" type="number" min="1" max="10" value="${p.puan||''}" id="se_puan_${p.id}" aria-label="Memnuniyet Puanı" style="padding:4px 8px;font-size:11px;width:55px;"></td>
+      <td><span style="color:${cc(p.baglanti_turu)};font-family:var(--font-mono);font-size:10px">${escHtml((p.baglanti_turu||'').toUpperCase())}</span></td>
+      <td><input class="fi" type="number" value="${p.gercek_dl||''}" id="se_dl_${escAttr(p.id)}" aria-label="DL Hızı Mbps" style="padding:4px 8px;font-size:11px;width:70px;"></td>
+      <td><input class="fi" type="number" value="${p.gercek_ul||''}" id="se_ul_${escAttr(p.id)}" aria-label="UL Hızı Mbps" style="padding:4px 8px;font-size:11px;width:70px;"></td>
+      <td><input class="fi" type="number" min="1" max="10" value="${p.puan||''}" id="se_puan_${escAttr(p.id)}" aria-label="Memnuniyet Puanı" style="padding:4px 8px;font-size:11px;width:55px;"></td>
       <td>
-        <select class="fs" id="se_gor_${p.id}" aria-label="Görünürlük Durumu" style="padding:4px 6px;font-size:10px;width:80px;">
+        <select class="fs" id="se_gor_${escAttr(p.id)}" aria-label="Görünürlük Durumu" style="padding:4px 6px;font-size:10px;width:80px;">
           <option value="true" ${p.gorunur!==false?'selected':''}>👁 Görünür</option>
           <option value="false" ${p.gorunur===false?'selected':''}>🙈 Gizli</option>
         </select>
       </td>
       <td style="display:flex;gap:4px;">
-        <button class="btn-approve" style="padding:4px 8px;font-size:9px;" onclick="saveStatEdit('${p.id}')" title="Kaydet" aria-label="Kaydet">💾</button>
-        <button class="btn-del" style="padding:4px 8px;font-size:9px;" onclick="modDeletePin('${p.id}',true)" title="Pini Sil" aria-label="Pini Sil">🗑</button>
+        <button class="btn-approve" style="padding:4px 8px;font-size:9px;" onclick="saveStatEdit('${escAttr(p.id)}')" title="Kaydet" aria-label="Kaydet">💾</button>
+        <button class="btn-del" style="padding:4px 8px;font-size:9px;" onclick="modDeletePin('${escAttr(p.id)}',true)" title="Pini Sil" aria-label="Pini Sil">🗑</button>
       </td>
     </tr>`).join('');
   } catch(e) {
@@ -13854,11 +13926,6 @@ document.addEventListener('click', e => {
   const sr = document.getElementById('searchResults');
   if (sr && sr.classList.contains('open') && !e.target.closest('.search-wrap')) {
     sr.classList.remove('open');
-  }
-});
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    document.getElementById('searchResults')?.classList.remove('open');
   }
 });
 
@@ -15805,33 +15872,6 @@ function pwaDismiss() {
     });
 
     // Üst gezinme: aktif sekme için aria-current
-    
-    // Klavye Erişilebilirliği: div tabanlı çip, buton ve bağlantı türü seçicileri için Enter/Boşluk desteği
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' || e.key === ' ') {
-        var t = e.target;
-        if (t && (t.matches && t.matches('.chip, .cbtn, .mode-tab, .btn-loc') || (t.getAttribute && t.getAttribute('role') === 'button'))) {
-          if (t.tagName !== 'BUTTON' && t.tagName !== 'INPUT' && t.tagName !== 'A') {
-            e.preventDefault();
-            t.click();
-          }
-        }
-      }
-    });
-
-    function setupInteractiveA11y() {
-      var interactive = document.querySelectorAll('.chip, .cbtn, .mode-tab, .btn-loc');
-      interactive.forEach(function(el) {
-        if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
-        if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
-      });
-    }
-    setupInteractiveA11y();
-    if (typeof MutationObserver !== 'undefined') {
-      var a11yObs = new MutationObserver(function() { setupInteractiveA11y(); });
-      a11yObs.observe(document.body, { childList: true, subtree: true });
-    }
-
     var tabs = document.querySelectorAll('.nav-tab');
     function syncTabs() { tabs.forEach(function (t) { if (t.classList.contains('active')) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); }); }
     var tmo = new MutationObserver(syncTabs);

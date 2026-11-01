@@ -1,7 +1,14 @@
-const CACHE = 'iharita-v108';
+const CACHE = 'iharita-v109';
 const ASSETS = [
   '/',
   '/index.html',
+  '/speedtest-verileri.html',
+  '/rehber.html',
+  '/tarihce.html',
+  '/hakkimizda.html',
+  '/gizlilik-politikasi.html',
+  '/kullanim-sartlari.html',
+  '/iletisim.html',
   '/logo.svg',
   '/manifest.json',
   '/speedtest.js',
@@ -49,18 +56,18 @@ self.addEventListener('fetch', e => {
           caches.open(CACHE).then(c => c.put(e.request, clone));
         }
         return res;
-      }).catch(() => caches.match(e.request).then(hit => hit || caches.match('/index.html')).then(res => res || Response.error()))
+      }).catch(() => caches.match(e.request, { ignoreSearch: true }).then(hit => hit || caches.match('/index.html')).then(res => res || Response.error()))
     );
     return;
   }
 
   e.respondWith(
-    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
+    caches.match(e.request, { ignoreSearch: isSameOrigin }).then(hit => hit || fetch(e.request).then(res => {
       if (res && res.status === 200 && (isSameOrigin || isStaticCdn)) {
         const clone = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, clone));
       }
       return res;
-    }).catch(() => caches.match(e.request).then(r => r || Response.error())))
+    }).catch(() => caches.match(e.request, { ignoreSearch: isSameOrigin }).then(r => r || Response.error())))
   );
 });

@@ -87,13 +87,14 @@ nav {
 html.light nav { background: rgba(255,255,255,0.96); }
 .nav-container {
   width: 100%; height: 100%; margin: 0 auto;
-  padding: 0 clamp(16px, 2.5vw, 32px);
-  display: flex; align-items: center; justify-content: space-between;
-  position: relative;
+  padding: 0 clamp(12px, 1.8vw, 28px);
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
+  gap: 10px; position: relative;
 }
 .nav-top-row { display: contents; }
 .logo {
-  display: flex; align-items: center; gap: 10px; text-decoration: none; flex-shrink: 0;
+  grid-column: 1; grid-row: 1;
+  display: flex; align-items: center; gap: 8px; text-decoration: none; flex-shrink: 0;
   z-index: 2;
 }
 .logo-icon {
@@ -105,23 +106,29 @@ html.light nav { background: rgba(255,255,255,0.96); }
 .logo-text span { color: var(--accent); }
 
 .nav-links {
-  position: absolute; left: 50%; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 5px; margin: 0; flex-shrink: 0;
-  z-index: 1;
+  grid-column: 2; grid-row: 1;
+  position: static; transform: none; left: auto;
+  display: flex; align-items: center; justify-content: flex-start; gap: 4px;
+  width: 100%; max-width: 100%; min-width: 0; margin: 0; padding: 2px 4px;
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch; z-index: 1;
 }
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-links > :first-child { margin-left: auto; }
+.nav-links > :last-child { margin-right: auto; }
 .btn-nav {
-  padding: 7px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 600; font-family: var(--font-body);
-  text-decoration: none; color: var(--text2); transition: all .2s; border: 1px solid transparent;
-  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+  padding: 6px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600; font-family: var(--font-body);
+  line-height: 1.25; text-decoration: none; color: var(--text2); transition: all .2s; border: 1px solid transparent;
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; flex-shrink: 0;
 }
 .btn-nav:hover { color: var(--text); background: var(--surface2); border-color: var(--border); }
 .btn-nav.active {
   color: var(--accent); background: var(--accent-dim);
   border-color: rgba(0,212,255,0.25); box-shadow: 0 0 12px rgba(0,212,255,0.12);
 }
-.btn-nav.mod-tab { color: var(--warn); }
-.btn-nav.mod-tab:hover { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.2); }
-.btn-nav.mod-tab.active { color: var(--warn); background: rgba(245,158,11,0.15); border-color: var(--warn); }
+.btn-nav.mod-tab { color: var(--warn); border-color: rgba(245,158,11,0.25); background: rgba(245,158,11,0.06); }
+.btn-nav.mod-tab:hover { background: rgba(245,158,11,0.14); border-color: var(--warn); }
+.btn-nav.mod-tab.active { color: var(--warn); background: rgba(245,158,11,0.2); border-color: var(--warn); }
 html.light .btn-nav.mod-tab { color: #b45309; }
 html.light .btn-nav.mod-tab:hover { background: rgba(217,119,6,0.08); }
 html.light .btn-nav.mod-tab.active { color: #b45309; background: rgba(217,119,6,0.15); border-color: #b45309; }
@@ -130,6 +137,7 @@ html.light .btn-nav.mod-tab.active { color: #b45309; background: rgba(217,119,6,
 .tab-text.full, .add-text-full { display: inline; }
 
 .nav-right-actions {
+  grid-column: 3; grid-row: 1;
   display: flex; align-items: center; gap: 8px;
   z-index: 2; margin-left: auto;
 }
@@ -266,7 +274,9 @@ html.light .btn-nav.mod-tab.active { color: #b45309; background: rgba(217,119,6,
 @media (max-width: 768px) {
   :root { --nav-h: 78px; }
   nav { height: auto; min-height: var(--nav-h); padding: max(5px, env(safe-area-inset-top, 5px)) 8px 5px; }
-  .nav-container { flex-direction: column; gap: 3px; align-items: stretch; }
+  .nav-container { display: flex; flex-direction: column; gap: 3px; align-items: stretch; }
+  .nav-links > :first-child { margin-left: 0; }
+  .nav-links > :last-child { margin-right: 0; }
   .nav-top-row { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 32px; }
   .logo { gap: 6px; }
   .logo-text { font-size: 12px; }
@@ -332,9 +342,10 @@ html.light .btn-nav.mod-tab.active { color: #b45309; background: rgba(217,119,6,
       <a href="/" class="btn-nav">🗺 Harita</a>
       <a href="/#bolgeler" class="btn-nav">🌍 <span class="tab-text full">Bölgeler</span><span class="tab-text short">Bölge</span></a>
       <a href="/#istatistikler" class="btn-nav">📊 <span class="tab-text full">İstatistikler</span><span class="tab-text short">İstat.</span></a>
+      <a href="/#karsilastir" class="btn-nav">⚖️ <span class="tab-text full">İSS Kıyasla</span><span class="tab-text short">Kıyas</span></a>
       <a href="/speedtest-verileri.html" class="btn-nav">📡 <span class="tab-text full">Speedtest</span><span class="tab-text short">Speed</span></a>
-      <a href="/rehber.html" class="btn-nav">📖 Rehber</a>
-      <a href="/tarihce.html" class="btn-nav">⏳ Tarihçe</a>
+      <a href="/rehber.html" class="btn-nav">📖 <span class="tab-text full">Rehber</span><span class="tab-text short">Rehber</span></a>
+      <a href="/tarihce.html" class="btn-nav">⏳ <span class="tab-text full">Tarihçe</span><span class="tab-text short">Tarihçe</span></a>
       <a href="/#mod" class="btn-nav mod-tab">🔧 <span class="tab-text full">Moderatör</span><span class="tab-text short">Mod</span></a>
     </div>
   </div>
