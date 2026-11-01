@@ -2741,6 +2741,24 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
 .hex-suit-pill.good { border-color: rgba(34, 197, 94, 0.35); background: rgba(34, 197, 94, 0.08); color: var(--success); }
 .hex-suit-pill.mid { border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.08); color: var(--warn); }
 .hex-suit-pill.poor, .hex-suit-pill.low { border-color: rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.08); color: var(--danger); }
+/* ===== ERİŞİLEBİLİRLİK (A11Y) VE DOKUNMATİK ODAK İYİLEŞTİRMELERİ ===== */
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible, .chip:focus-visible, .cbtn:focus-visible, .mode-tab:focus-visible, .btn-loc:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
+}
+.btn-loc {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  cursor: pointer;
+}
+.cbtn {
+  user-select: none;
+  cursor: pointer;
+}
+
 </style>
 <!-- Clickjacking koruması: Yalnızca doğrulanmış Google AdSense/Preview ana bilgisayarlarına (salt-okunur) izin ver -->
 <script>
@@ -4632,7 +4650,7 @@ async function sbRest(path, opts = {}) {
       'Authorization': `Bearer ${token || SB_KEY}`,
       'Content-Type': 'application/json',
       'Prefer': preferHeader,
-      'X-Browser-FP': opts.customFp || browserFingerprint || localStorage.getItem('ih_browser_fp') || ''
+      'X-Browser-FP': opts.customFp || browserFingerprint || ihStorage.get('ih_browser_fp', '') || ''
     };
     
     const controller = new AbortController();
@@ -4928,10 +4946,10 @@ function renderUserPinsList() {
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;padding-top:4px;border-top:1px dashed var(--border);font-size:9px;">
           <span style="font-family:var(--font-mono);color:var(--accent);font-weight:600;">#${escHtml(p.id)}</span>
-          <div style="display:flex;gap:6px;align-items:center;">
-            ${p.lat ? `<a href="javascript:void(0)" onclick="focusUserPinOnMap('${p.id}', ${p.lat}, ${p.lng})" style="color:var(--accent);text-decoration:none;font-weight:600;">📍 Göster</a>` : ''}
-            <a href="javascript:void(0)" onclick="openUserEditModal('${p.id}')" style="color:var(--text2);text-decoration:none;font-weight:600;">✏️ Düzenle</a>
-            <a href="javascript:void(0)" onclick="deleteUserPin('${p.id}')" style="color:var(--danger);text-decoration:none;font-weight:600;">🗑 Sil</a>
+          <div style="display:flex;gap:8px;align-items:center;">
+            ${p.lat ? `<button type="button" onclick="focusUserPinOnMap('${escAttr(String(p.id))}', ${Number(p.lat)}, ${Number(p.lng)})" style="background:none;border:none;padding:3px 5px;color:var(--accent);font-weight:600;font-size:10.5px;cursor:pointer;display:inline-flex;align-items:center;gap:2px;" title="Haritada Odaklan">📍 Göster</button>` : ''}
+            <button type="button" onclick="openUserEditModal('${escAttr(String(p.id))}')" style="background:none;border:none;padding:3px 5px;color:var(--text2);font-weight:600;font-size:10.5px;cursor:pointer;display:inline-flex;align-items:center;gap:2px;" title="Ölçümü Düzenle">✏️ Düzenle</button>
+            <button type="button" onclick="deleteUserPin('${escAttr(String(p.id))}')" style="background:none;border:none;padding:3px 5px;color:var(--danger);font-weight:600;font-size:10.5px;cursor:pointer;display:inline-flex;align-items:center;gap:2px;" title="Ölçümü Sil">🗑 Sil</button>
           </div>
         </div>
       </div>
@@ -8065,7 +8083,42 @@ function showHexInfo(pins, hexId) {
       }
     }
 
-    hexAnalysisEl.innerHTML = suitabilityHtml + summaryBadgeHtml;
+    // Bölgenin En Çok Tercih Edilen / Lider Sağlayıcısı
+    let leaderBadgeHtml = '';
+    const issStats = {};
+    pins.filter(p => !p.is_altyapi_yok && p.iss && p.iss !== 'Altyapı Yok').forEach(p => {
+      const name = canonicalIssName(p.iss);
+      if (!name || name === 'Bilinmeyen' || !isApprovedPublicIss(name)) return;
+      if (!issStats[name]) issStats[name] = { count: 0, totalDl: 0, dlCount: 0, totalScore: 0, scoreCount: 0 };
+      issStats[name].count++;
+      if (p.gercek_dl > 0) { issStats[name].totalDl += p.gercek_dl; issStats[name].dlCount++; }
+      if (p.puan > 0) { issStats[name].totalScore += p.puan; issStats[name].scoreCount++; }
+    });
+
+    const sortedIss = Object.entries(issStats).sort((a,b) => b[1].count - a[1].count);
+    if (sortedIss.length > 0) {
+      const [topName, topStat] = sortedIss[0];
+      const topAvgDl = topStat.dlCount ? Math.round(topStat.totalDl / topStat.dlCount) : 0;
+      const topScore = topStat.scoreCount ? (topStat.totalScore / topStat.scoreCount).toFixed(1) : null;
+      const brandColor = ic(topName);
+      const scoreStr = topScore ? ` · Memnuniyet: <b>${topScore}/10</b>` : '';
+      const dlStr = topAvgDl > 0 ? ` · Ort: <b>${topAvgDl} Mbps</b>` : '';
+      const pctOfHex = Math.round((topStat.count / Math.max(1, pins.length)) * 100);
+
+      leaderBadgeHtml = `
+        <div style="margin-top:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid ${brandColor};border-radius:8px;font-size:11px;display:flex;align-items:center;gap:8px;">
+          <div style="font-size:18px;line-height:1;">🏆</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:9.5px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;">Bölgenin En Çok Tercih Edileni</div>
+            <div style="font-size:12px;font-weight:700;color:var(--text);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              <span style="color:${brandColor};">● ${escHtml(topName)}</span>
+              <span style="font-size:10px;color:var(--text2);font-weight:600;">(%${pctOfHex} oran${dlStr}${scoreStr})</span>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    hexAnalysisEl.innerHTML = suitabilityHtml + leaderBadgeHtml + summaryBadgeHtml;
     hexAnalysisEl.style.display = 'block';
   }
 
@@ -13351,7 +13404,29 @@ function updateCompareData() {
   const issB = document.getElementById('compareIssB')?.value;
   const loc = document.getElementById('compareLocation')?.value;
   const container = document.getElementById('compareResultsBox');
-  if (!container || !issA || !issB) return;
+  if (!container) return;
+
+  if (!issA || !issB) {
+    container.innerHTML = `
+      <div style="text-align:center;padding:24px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;">
+        <span style="font-size:24px;display:block;margin-bottom:8px;">⚖️</span>
+        <b style="color:var(--text);font-size:13px;">Karşılaştırmak için iki sağlayıcı seçin</b>
+        <p style="font-size:11.5px;color:var(--text3);margin-top:4px;line-height:1.5;">Yukarıdaki kutulardan kıyaslamak istediğiniz iki farklı internet servis sağlayıcısını belirleyin.</p>
+      </div>
+    `;
+    return;
+  }
+
+  if (issA === issB) {
+    container.innerHTML = `
+      <div style="text-align:center;padding:24px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:12px;">
+        <span style="font-size:24px;display:block;margin-bottom:8px;">⚠️</span>
+        <b style="color:var(--text);font-size:13px;">Lütfen iki farklı sağlayıcı seçin</b>
+        <p style="font-size:11.5px;color:var(--text3);margin-top:4px;line-height:1.5;">Her iki kutuda da aynı firma (<b>${escHtml(issA)}</b>) seçili. Karşılaştırma yapabilmek için lütfen farklı firmalar belirleyin.</p>
+      </div>
+    `;
+    return;
+  }
 
   let pool = cleanPinsData || [];
   if (loc) {
@@ -15657,6 +15732,33 @@ function pwaDismiss() {
     });
 
     // Üst gezinme: aktif sekme için aria-current
+    
+    // Klavye Erişilebilirliği: div tabanlı çip, buton ve bağlantı türü seçicileri için Enter/Boşluk desteği
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        var t = e.target;
+        if (t && (t.matches && t.matches('.chip, .cbtn, .mode-tab, .btn-loc') || (t.getAttribute && t.getAttribute('role') === 'button'))) {
+          if (t.tagName !== 'BUTTON' && t.tagName !== 'INPUT' && t.tagName !== 'A') {
+            e.preventDefault();
+            t.click();
+          }
+        }
+      }
+    });
+
+    function setupInteractiveA11y() {
+      var interactive = document.querySelectorAll('.chip, .cbtn, .mode-tab, .btn-loc');
+      interactive.forEach(function(el) {
+        if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
+        if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+      });
+    }
+    setupInteractiveA11y();
+    if (typeof MutationObserver !== 'undefined') {
+      var a11yObs = new MutationObserver(function() { setupInteractiveA11y(); });
+      a11yObs.observe(document.body, { childList: true, subtree: true });
+    }
+
     var tabs = document.querySelectorAll('.nav-tab');
     function syncTabs() { tabs.forEach(function (t) { if (t.classList.contains('active')) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); }); }
     var tmo = new MutationObserver(syncTabs);
