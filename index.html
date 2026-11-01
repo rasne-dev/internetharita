@@ -302,6 +302,29 @@ nav {
 }
 
 
+/* ===== NAV SEKMELERİ: taşma / sığmama düzeltmesi ===== */
+/* Sekmeler dar ekranda sığmazsa sağdaki butonların üstüne binmek yerine yatay kayar.
+   Ortalama, ilk/son çocuğa auto margin verilerek yapılır; böylece taşma olduğunda
+   soldaki sekmeler kesilmez (justify-content:center bunu kesiyordu). */
+.nav-tabs {
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none; -ms-overflow-style: none;
+  padding: 4px 4px; justify-content: flex-start !important;
+  -webkit-overflow-scrolling: touch;
+}
+.nav-tabs::-webkit-scrollbar { display: none; }
+.nav-tabs > :first-child { margin-left: auto; }
+.nav-tabs > :last-child { margin-right: auto; }
+.nav-tab { line-height: 1.25; }
+.nav-tab:focus-visible { outline-offset: -2px; }
+@media(max-width:768px){
+  /* Mobil: üst satır ve sekme satırı sabit, menü yüksekliği JS ile ölçülür (syncNavHeight) */
+  .nav-tabs { padding: 2px 0 3px; }
+  .nav-tabs > :first-child { margin-left: 0; }
+  .nav-tabs > :last-child { margin-right: 0; }
+  .nav-top-row { min-height: 32px; height: auto; }
+}
+
 /* ===== MAINTENANCE ===== */
 .maintenance-banner { position:fixed;top:var(--nav-h);left:0;right:0;z-index:999; background:rgba(245,158,11,.15);border-bottom:1px solid var(--warn); padding:8px 16px;text-align:center;font-size:11px;color:var(--warn);font-weight:700; display:none; }
 .maintenance-banner.active{display:block;}
@@ -7272,6 +7295,29 @@ function showPage(id, updateUrl = true) {
     if (id==='mod' && isModLoggedIn) refreshModData(); 
   }, 50);
 }
+
+// Menü gerçek yüksekliğine göre --nav-h ayarla. Sabit 78px, yazı boyutu/zoom/çentik
+// yüzünden menü uzayınca sekmelerin haritanın altında kalmasına yol açıyordu.
+function syncNavHeight() {
+  const root = document.documentElement;
+  const nav = document.querySelector('nav');
+  if (!nav) return;
+  root.style.removeProperty('--nav-h');
+  if (window.innerWidth <= 768) {
+    const base = parseFloat(getComputedStyle(root).getPropertyValue('--nav-h')) || 78;
+    const h = Math.ceil(nav.getBoundingClientRect().height);
+    if (h > base) root.style.setProperty('--nav-h', h + 'px');
+  }
+}
+(function initNavHeightSync() {
+  let raf = 0;
+  const run = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(syncNavHeight); };
+  window.addEventListener('resize', run);
+  window.addEventListener('orientationchange', run);
+  window.addEventListener('load', () => { run(); setTimeout(run, 600); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(run).catch(() => {});
+  if (document.readyState !== 'loading') run(); else document.addEventListener('DOMContentLoaded', run);
+})();
 
 function scrollToEditorial() {
   const target = document.getElementById('landingInfo');
