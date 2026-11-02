@@ -403,7 +403,7 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
 
 /* ===== MAP PAGE ===== */
 #page-harita{position:relative;inset:auto;top:auto;margin-top:var(--nav-h);flex-direction:column;width:100%;height:auto !important;min-height:calc(100vh - var(--nav-h));overflow:visible;} 
-.map-view-container{position:relative;width:100%;height:calc(80vh - var(--nav-h));min-height:460px;flex-shrink:0;overflow:hidden;border-bottom:1px solid var(--border);}
+.map-view-container{position:relative;width:100%;height:calc(100vh - var(--nav-h));min-height:480px;flex-shrink:0;overflow:hidden;border-bottom:1px solid var(--border);}
 #map{width:100%;height:100%;z-index:1;min-height:0;min-width:0;}
 .leaflet-container{background:#0d1318!important;}
 .leaflet-pane,.leaflet-map-pane{will-change:transform;}
@@ -2667,7 +2667,7 @@ html.light .cookie-consent-banner { background: rgba(255, 255, 255, 0.96); borde
 
 /* ===== UX / ERİŞİLEBİLİRLİK İYİLEŞTİRMELERİ (yalnızca ekleme, mevcut kurallar korunur) ===== */
 /* Mobil tarayıcılarda 100vh adres çubuğunu hesaba katmaz → harita altı/lejant kesiliyordu. dvh destekleyenlerde düzelir. */
-.map-view-container { height: calc(80dvh - var(--nav-h)); }
+.map-view-container { height: calc(100dvh - var(--nav-h)); }
 .mod-auth { min-height: calc(100dvh - 56px - 40px); }
 /* iOS Safari, 16px'ten küçük alanlara odaklanınca sayfayı otomatik yakınlaştırıyordu */
 @media (max-width: 768px) {
