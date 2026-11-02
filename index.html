@@ -104,7 +104,15 @@
           "name": "İnternet altyapı haritası verileri ne kadar güvenilir?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Veriler bağımsız kullanıcıların tarayıcı tabanlı hız testi ölçümleri, anti-spam algoritmaları, anomali denetimleri ve moderatör incelemeleriyle filtrelenerek yayınlanmaktadır. Mükerrer veya yapay veriler otomatik karantinaya alınır."
+            "text": "Veriler gerçek kullanıcıların hız testi ölçümleri ve moderatör kontrolleriyle doğrulanarak yayınlanmaktadır. Hatalı veya yanıltıcı bildirimler filtrelenir."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Ölçümüm neden istatistikler kısmına hemen yansımadı?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yeni eklenen ölçümler kısa bir doğrulama kontrolünden geçer. Ayrıca istatistik ve sıralama tablolarının tek bir testle yanıltıcı sonuç vermemesi için ilgili sağlayıcı veya mahallede yeterli sayıda ölçüm birikmesi beklenir. Kendi ölçümünüzü haritada ve 'Eklediğim Ölçümler' listesinde anında görebilirsiniz."
           }
         },
         {
@@ -2192,7 +2200,7 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   .logo-text { font-size: 12px; display: inline-block !important; }
   .logo-icon { width: 24px; height: 24px; }
   .nav-right { margin-left: 0; gap: 4px; }
-  .nav-right .btn-ghost, #navAddPinBtn {
+  #navAddPinBtn {
     display: inline-flex !important; padding: 3px 8px !important; font-size: 10.5px !important;
     border-radius: 6px; background: var(--accent-dim) !important; border: 1px solid var(--accent) !important;
     color: var(--accent) !important; font-weight: 700; box-shadow: none !important; transform: none !important;
@@ -3301,7 +3309,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
         <div class="landing-card">
           <h3 class="landing-card-title">Memnuniyet puanı neyi anlatır?</h3>
           <p class="landing-card-text">
-            Hız tek başına yetmez: sık kopma, akşam yavaşlaması veya zor ulaşılan müşteri desteği puanı düşürebilir. Bu yüzden her ölçüme 1–10 arası puan ve hazır deneyim etiketleri eklenir. İstatistikler sayfasında az sayıda oyla şişmiş puanların sıralamayı bozmaması için ağırlıklı bir hesaplama kullanılır.
+            Hız tek başına yetmez: sık kopma, akşam yavaşlaması veya zor ulaşılan müşteri desteği puanı düşürebilir. Bu yüzden her ölçüme 1–10 arası puan ve hazır deneyim etiketleri eklenir; sağlayıcıların genel memnuniyet ve deneyim karnesi bu geri bildirimlerden oluşturulur.
           </p>
         </div>
         <div class="landing-card">
@@ -3572,11 +3580,22 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
         <details class="landing-faq-item">
           <summary class="landing-faq-summary">
+            <span>Ölçümüm neden istatistikler kısmına hemen yansımadı?</span>
+          </summary>
+          <div class="landing-faq-content">
+            <p>
+              Yeni eklenen ölçümler kısa bir doğrulama kontrolünden geçer. Ayrıca istatistik ve sıralama tablolarının tek bir testle yanıltıcı sonuç vermemesi için ilgili sağlayıcı veya mahallede yeterli sayıda ölçüm birikmesi beklenir. Kendi ölçümünüzü haritada ve sol menüdeki <strong>"📋 Eklediğim Ölçümler"</strong> listesinde anında görebilirsiniz.
+            </p>
+          </div>
+        </details>
+
+        <details class="landing-faq-item">
+          <summary class="landing-faq-summary">
             <span>Evimin veya iş yerimin hızını haritaya nasıl ekleyebilirim?</span>
           </summary>
           <div class="landing-faq-content">
             <p>
-              Sayfanın üst kısmındaki harita görünümünde yer alan '+' (Ölçüm Ekle) butonuna tıklayarak doğrudan hız testi yapabilir veya mevcut ölçüm değerlerinizi (indirme, yükleme, ping, altyapı türü ve ISS) konumunuzu seçerek haritaya ekleyebilirsiniz. Ölçümünüz anti-spam denetiminin ardından haritaya işlenir.
+              Sayfanın üst kısmındaki harita görünümünde yer alan <strong>"+ Veri Ekle"</strong> butonuna tıklayarak doğrudan hız testi yapabilir veya mevcut ölçüm değerlerinizi (indirme, yükleme, altyapı türü ve İSS) konumunuzu seçerek haritaya ekleyebilirsiniz.
             </p>
           </div>
         </details>
@@ -3635,9 +3654,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
         <div>
           <div class="footer-col-title">Sayfalar &amp; Analiz</div>
           <ul class="footer-links">
-            <li><a href="javascript:void(0)" onclick="scrollToMapTop()">🗺️ Canlı Harita</a></li>
-            <li><a href="/#bolgeler" onclick="showPage('bolge')">🌍 Bölgesel Analiz</a></li>
-            <li><a href="/#istatistikler" onclick="showPage('istatistik')">📊 İSS İstatistikleri</a></li>
+            <li><a href="/#harita" onclick="event.preventDefault();scrollToMapTop()">🗺️ Canlı Harita</a></li>
+            <li><a href="/#bolgeler" onclick="event.preventDefault();showPage('bolge')">🌍 Bölgesel Analiz</a></li>
+            <li><a href="/#istatistikler" onclick="event.preventDefault();showPage('istatistik')">📊 İSS İstatistikleri</a></li>
+            <li><a href="/#karsilastir" onclick="event.preventDefault();openCompareModal()">⚖️ İSS Kıyasla</a></li>
             <li><a href="/speedtest-verileri.html">📡 Speedtest Verileri</a></li>
             <li><a href="/rehber.html">📖 Altyapı Rehberi</a></li>
             <li><a href="/tarihce.html">⏳ İnternet Tarihçesi</a></li>
@@ -3750,7 +3770,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   <div class="stats-top" id="sumGrid"></div>
   <div class="stats-grid">
     <div style="display:flex;flex-direction:column;gap:14px;">
-      <div class="stat-card"><div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;"><span>ISS Memnuniyet Sıralaması</span><span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);font-weight:normal;">min. 5 ölçüm</span></div><div id="issRankList" style="max-height:330px;overflow-y:auto;padding-right:12px;scrollbar-gutter:stable;"><div class="loading-text">En az 5 doğrulanan ölçüme sahip sağlayıcıların Bayes ağırlıklı kullanıcı memnuniyet sıralaması.</div></div></div>
+      <div class="stat-card"><div class="stat-title"><span>ISS Memnuniyet Sıralaması</span></div><div id="issRankList" style="max-height:330px;overflow-y:auto;padding-right:12px;scrollbar-gutter:stable;"><div class="loading-text">İnternet servis sağlayıcılarının kullanıcı memnuniyet sıralaması.</div></div></div>
       <div class="stat-card">
         <div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
           <span id="activeIlTitle">En Hızlı İller</span>
@@ -3765,14 +3785,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     <div style="display:flex;flex-direction:column;gap:14px;">
       <div class="stat-card">
         <div class="stat-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <span>En Hızlı Lokasyonlar</span>
-            <span style="font-size:9px;color:var(--text3);font-family:var(--font-mono);font-weight:normal;text-transform:none;">min. 2 ölçüm</span>
-          </div>
+          <span>En Hızlı Lokasyonlar</span>
           <select class="fs" id="speedRankIlFilter" aria-label="Hız sıralaması il filtresi" style="width:auto;max-width:130px;padding:3px 6px;font-size:9px;text-transform:none;letter-spacing:0;font-weight:600;" onchange="renderSpeedRankList(this.value)"><option value="">Tüm İller</option></select>
         </div>
         <div id="speedRankList"><div class="loading-text">Mahalle ve ilçe bazında en yüksek ortalama indirme hızına sahip lokasyonlar.</div></div>
-        <div style="font-size:9px;color:var(--text3);margin-top:8px;font-family:var(--font-mono);line-height:1.4;border-top:1px dashed var(--border);padding-top:6px;">ℹ️ Mahalle bazlı sıralamadır; sıralamaya girmek için ilgili mahallede en az 2 onaylı ölçüm gereklidir.</div>
       </div>
       <div class="stat-card"><div class="stat-title">Hız Bandı Dağılımı</div><div id="speedBandChart"><div class="loading-text">Türkiye geneli ölçümlerin Mbps hız aralıklarına göre yüzdesel dağılımı.</div></div></div>
     </div>
@@ -7255,6 +7271,7 @@ function initSidebarState() {
 initSidebarState();
 
 function showPage(id, updateUrl = true) {
+  document.getElementById('compareModal')?.classList.remove('open');
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   const targetPage = document.getElementById('page-'+id);
@@ -7365,7 +7382,8 @@ function handleHashRoute() {
     if (typeof openCompareModal === 'function') openCompareModal();
   } else if (rawHash === 'speedtest' || rawHash === 'hiztesti' || rawHash === 'hiz-testi') {
     showPage('harita', false);
-    openSpeedTestModal('standalone');
+    if (typeof openSpeedTestModal === 'function') openSpeedTestModal('standalone');
+    else setTimeout(() => { if (typeof openSpeedTestModal === 'function') openSpeedTestModal('standalone'); }, 100);
   } else if (rawHash === 'kvkk' || rawHash === 'gizlilik') {
     showPage('harita', false);
     openKvkkModal();
@@ -8635,9 +8653,9 @@ async function renderRegions() {
           </div>
 
           <!-- Relatif Hız Çubuğu -->
-          <div style="margin-top:10px;" title="Türkiye'nin en hızlı bölgesi (${fastest.name}: ${fastest.avgDL} Mbps) %100 kabul edildiğinde, bu bölgenin bağıl hız performans oranıdır.">
-            <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-bottom:3px;cursor:help;">
-              <span style="display:flex;align-items:center;gap:3px;border-bottom:1px dotted var(--text3);">Bölgesel Hız Skoru <span style="font-size:10px;">ⓘ</span></span>
+          <div style="margin-top:10px;" title="En hızlı bölgeye (${fastest.name}: ${fastest.avgDL} Mbps) kıyasla hız oranı">
+            <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-bottom:3px;">
+              <span>Hız Oranı</span>
               <span style="color:${r.color};font-weight:700;">%${speedPctOfMax}</span>
             </div>
             <div style="background:var(--surface3);height:4px;border-radius:2px;overflow:hidden;">
@@ -8815,7 +8833,7 @@ async function renderRegions() {
       <div style="min-width:440px;">
         <div style="display:grid;grid-template-columns:120px 1fr 65px 65px 50px;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:6px;">
           <div>Bölge</div>
-          <div title="Türkiye'nin en hızlı bölgesine (%100) kıyasla bağıl hız performans çubuğu" style="cursor:help;">Hız Çubuğu ⓘ</div>
+          <div>Ortalama Hız</div>
           <div style="text-align:center;">Fiber %</div>
           <div style="text-align:center;">Puan</div>
           <div style="text-align:right;">Ölçüm</div>
@@ -8987,8 +9005,8 @@ function renderSpeedRankList(filterIl) {
 
   if (!entries.length) {
     speedRankEl.innerHTML = filterIl
-      ? `<div style="color:var(--text3);font-size:11px;padding:8px 0;">${escHtml(filterIl)} için henüz yeterli veri yok (min. 2 ölçüm gerekli)</div>`
-      : '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok (min. 2 ölçüm gerekli)</div>';
+      ? `<div style="color:var(--text3);font-size:11px;padding:8px 0;">${escHtml(filterIl)} için henüz yeterli veri yok</div>`
+      : '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok</div>';
   } else {
     const [top, ...rest] = entries;
     speedRankEl.innerHTML =
@@ -9101,7 +9119,7 @@ async function _renderStatsCore() {
     })
     .sort((a,b) => b.bayes - a.bayes)
     .map((x,i) => `<div class="rank-item clickable" onclick="filterMapByISS('${escAttr(x.iss)}')" title="${escHtml(displayIssName(x.iss))}: ${x.score} / 10 (${x.c} ölçüm) — Haritada görmek için tıklayın"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${escHtml(displayIssName(x.iss))}</div><div class="rank-sub">${x.c} ölçüm · <span style="color:var(--accent);font-size:9px;">📍 Haritada Gör</span></div></div><div class="rank-val" style="color:${memColor(x.score)}">${memShapeHtml(parseFloat(x.score))}${x.score}</div></div>`)
-    .join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok (min. 5 ölçüm gerekli)</div>';
+    .join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok</div>';
   
   // EN HIZLI LOKASYONLAR (artık ISS filtresiyle de çağrılabilen bağımsız fonksiyon)
   populateSpeedRankIlFilter(pins);
@@ -9199,7 +9217,7 @@ async function _renderStatsCore() {
         </div>
       </div>`;
     }).join('');
-    trendEl.innerHTML = '<div class="trend-title" style="display:flex;justify-content:space-between;align-items:center;"><span>İSS Başına Ort. İndirme & Yükleme Hızı</span><span style="font-size:9px;color:var(--text3);font-family:var(--font-mono);font-weight:normal;">min. 3 ölçüm · Harita filtresi için tıklayın</span></div>'
+    trendEl.innerHTML = '<div class="trend-title" style="display:flex;justify-content:space-between;align-items:center;"><span>İSS Başına Ort. İndirme & Yükleme Hızı</span><span style="font-size:9px;color:var(--text3);font-family:var(--font-mono);font-weight:normal;">Harita filtresi için tıklayın</span></div>'
       + '<div class="trend-chart">' + rows + '</div>';
   }
 
@@ -9413,7 +9431,7 @@ function renderOperatorExperienceReport() {
           <div>
             <div style="font-weight:700;color:var(--text);font-size:13px;">Topluluk Operatör Karnesi Hazırlanıyor</div>
             <div style="color:var(--text3);font-size:11px;margin-top:2px;">
-              Operatörlerin kopma, ping ve destek karnesinin tarafsız listelenebilmesi için sağlayıcı başına en az 3 bağımsız adres bildirimi toplanmaktadır. (Şu an toplam: <b style="color:var(--text2);">${validPins.length} bildirim</b>)
+              Operatörlerin kopma, ping ve destek karnesi, kullanıcı deneyimleri eklendikçe burada listelenir.
             </div>
           </div>
         </div>
@@ -9439,12 +9457,7 @@ function renderOperatorExperienceReport() {
     return b.taggedCount - a.taggedCount || b.total - a.total;
   });
 
-  const infoBanner = `
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text3);line-height:1.4;">
-      <span style="font-size:14px;flex-shrink:0;">💡</span>
-      <span><b>Nasıl Hesaplanır?</b> Oranlar, hız testi yapan ve deneyimini paylaşan gerçek kullanıcıların bildirimlerinden derlenir. Az sayıda bildirimi olan sağlayıcıların yanıltıcı sıralama oluşturmaması için istatistiksel güven dengelemesi uygulanır.</span>
-    </div>
-  `;
+  const infoBanner = '';
 
   const sortBar = `
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
@@ -13484,6 +13497,12 @@ function openCompareModal(preselectedProvince) {
   const modal = document.getElementById('compareModal');
   if (!modal) return;
   modal.classList.add('open');
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const cmpTab = document.getElementById('tab-karsilastir');
+  if (cmpTab) {
+    cmpTab.classList.add('active');
+    cmpTab.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
 
   const issSet = new Set();
   const ilSet = new Set();
@@ -13538,6 +13557,22 @@ function openCompareModal(preselectedProvince) {
 function closeCompareModal() {
   const modal = document.getElementById('compareModal');
   if (modal) modal.classList.remove('open');
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const activePage = document.querySelector('.page.active');
+  const pageId = activePage ? activePage.id.replace('page-', '') : 'harita';
+  const activeTab = document.getElementById('tab-' + pageId) || (pageId === 'mod' ? document.getElementById('navModBtn') : null);
+  if (activeTab) activeTab.classList.add('active');
+  const rawHash = (window.location.hash || '').replace(/^#\/?/, '').trim().toLowerCase();
+  if (rawHash === 'karsilastir' || rawHash === 'kiyasla' || rawHash === 'iss-kiyasla') {
+    const targetHash = pageId === 'mod' ? '#mod'
+      : pageId === 'bolge' ? '#bolgeler'
+      : pageId === 'istatistik' ? '#istatistikler'
+      : pageId === 'pin' ? '#ekle'
+      : '';
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search + targetHash);
+    }
+  }
 }
 
 function openCompareModalForHex(province) {
@@ -13844,6 +13879,9 @@ document.addEventListener('DOMContentLoaded', function() {
 function toggleSettingsMenu(e) {
   if (e) e.stopPropagation();
   document.getElementById('settingsDropdown')?.classList.toggle('open');
+}
+function closeSettingsMenu() {
+  document.getElementById('settingsDropdown')?.classList.remove('open');
 }
 document.addEventListener('click', function(e) {
   const wrap = document.getElementById('settingsMenuWrap');

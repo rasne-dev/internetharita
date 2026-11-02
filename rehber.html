@@ -95,6 +95,14 @@
             "@type": "Answer",
             "text": "İnternetHarita tamamen tarafsız ve bağımsız bir topluluk projesidir. Veriler hiçbir internet servis sağlayıcısının sponsorluğu olmadan, Türkiye'nin dört bir yanındaki gerçek kullanıcıların doğrulanan hız ölçümleri ve altyapı bildirimleriyle oluşturulmaktadır."
           }
+        },
+        {
+          "@type": "Question",
+          "name": "Ölçümüm neden istatistikler kısmına hemen yansımadı?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yeni eklenen ölçümler kısa bir doğrulama kontrolünden geçer. Ayrıca istatistik ve sıralama tablolarının tek bir testle yanıltıcı sonuç vermemesi için ilgili sağlayıcı veya mahallede yeterli sayıda ölçüm birikmesi beklenir. Kendi ölçümünüzü haritada ve 'Eklediğim Ölçümler' listesinde anında görebilirsiniz."
+          }
         }
       ]
     }
@@ -634,14 +642,14 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
     scrollbar-width: none; max-width: 100%;
   }
   .nav-links::-webkit-scrollbar { display: none; }
-  .btn-nav {
+  .nav-links .btn-nav {
     flex: 1 0 auto; min-width: max-content; padding: 5px 6px;
     font-size: 10.5px; font-weight: 600; text-align: center;
     display: inline-flex; align-items: center; justify-content: center; gap: 2px;
     border-radius: 6px; background: var(--surface2); border: 1px solid var(--border);
     color: var(--text2); white-space: nowrap;
   }
-  .btn-nav.active {
+  .nav-links .btn-nav.active {
     background: var(--accent-dim); border-color: var(--accent); color: var(--accent);
     font-weight: 700; box-shadow: 0 0 8px rgba(0,212,255,0.25);
   }
@@ -1571,7 +1579,17 @@ html.light .petition-preview { background: #f8fafc; border-color: #cbd5e1; color
           <span class="faq-arrow">▼</span>
         </div>
         <div class="faq-body">
-          Sistemimize girilen ölçümler IP doğrulama, tarayıcı parmak izi, olağandışı hız/anomali tespiti ve moderatör onayı gibi çok katmanlı güvenlik filtrelerinden geçer. Gerçekçi olmayan veya spam amaçlı hız testleri otomatik olarak karantinaya alınır.
+          Eklenen ölçümler hız/altyapı tutarlılığı kontrolünden ve moderatör onayından geçer. Gerçekçi olmayan veya hatalı bildirimler ayıklanarak harita verilerinin doğruluğu korunur.
+        </div>
+      </div>
+
+      <div class="faq-item searchable">
+        <div class="faq-header" onclick="toggleFaq(this)">
+          <span>Ölçümüm neden istatistikler kısmına hemen yansımadı?</span>
+          <span class="faq-arrow">▼</span>
+        </div>
+        <div class="faq-body">
+          Yeni eklenen ölçümler kısa bir doğrulama kontrolünden geçer. Ayrıca istatistik ve sıralama tablolarının tek bir testle yanıltıcı sonuç vermemesi için ilgili sağlayıcı veya mahallede yeterli sayıda ölçüm birikmesi beklenir. Kendi ölçümünüzü haritada ve sol paneldeki <strong>"📋 Eklediğim Ölçümler"</strong> listesinde anında görebilirsiniz.
         </div>
       </div>
 
