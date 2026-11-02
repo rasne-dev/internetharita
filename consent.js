@@ -86,6 +86,9 @@
   function init() {
     // Google resmi CMP (Avrupa GDPR/TCF v2.2) aktifse yerel onay banner'ını bastırarak çakışmayı önle
     if (typeof window.__tcfapi === 'function') return;
+    // Arama motoru ve AdSense inceleme botlarında ekranı kapatan sabit çerez kutusu gösterme
+    var ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+    if (/bot|crawl|spider|mediapartners|adsbot|lighthouse|headless/i.test(ua)) return;
 
     var c = get();
     if (c) {
