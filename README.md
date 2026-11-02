@@ -1,8 +1,8 @@
-# 🗺 İnternetHarita
+# 🗺 İnternetHarita — Türkiye İnternet Altyapı Haritası ve Altyapı Sorgulama
 
-**Türkiye'nin bağımsız, kullanıcı kaynaklı internet hız ve altyapı memnuniyet haritası.**
+**Türkiye'nin bağımsız, kullanıcı kaynaklı internet altyapı haritası, fiber haritası ve hız sorgulama platformu.**
 
-🔗 **Canlı Site:** [https://internetharita.com.tr](https://internetharita.com.tr)  
+🔗 **Canlı Site:** [Türkiye İnternet Altyapı Haritası — internetharita.com.tr](https://internetharita.com.tr)  
 📦 **Açık Kaynak Kod:** [github.com/rasne-dev/internetharita](https://github.com/rasne-dev/internetharita)
 
 ---
@@ -81,7 +81,7 @@ Haritada tutarsız veya sahte olduğunu düşündüğünüz bir kayıt görürse
 ---
 ---
 
-# 🗺 İnternetHarita — English
+# 🗺 İnternetHarita — Türkiye İnternet Altyapı Haritası ve Altyapı Sorgulama — English
 
 **A community-driven, crowdsourced internet speed and infrastructure satisfaction map of Turkey.**
 
