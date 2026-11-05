@@ -373,6 +373,59 @@ input:checked + .toggle-slider { background:var(--warn); } input:checked + .togg
 .btn-primary:hover{background:#33deff;box-shadow:0 4px 16px var(--accent-glow);}
 .btn-ghost { padding:7px 14px;background:transparent;color:var(--accent); border:1px solid rgba(0,212,255,.35);border-radius:7px; font-weight:600;font-size:12px;cursor:pointer; font-family:var(--font-body);transition:all .2s; }
 .btn-ghost:hover{background:var(--accent-dim);}
+.btn-add {
+  padding: 8px 16px;
+  background: var(--accent);
+  color: #000;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all .2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn-add:hover {
+  background: #33deff;
+  box-shadow: 0 4px 14px var(--accent-glow);
+  transform: translateY(-1px);
+}
+.btn-sub {
+  padding: 7px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all .2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn-sub:hover {
+  background: var(--surface3);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+.user-pins-collapse-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  transition: all .2s ease;
+}
+.user-pins-collapse-btn:hover {
+  border-color: var(--border2);
+  background: var(--surface3);
+}
 
 /* Klavye ve ekran okuyucu erişilebilirliği */
 .skip-link {
@@ -1168,15 +1221,15 @@ html.light .landing-faq-content {
   margin-top: 14px;
 }
 .info-head{
-  display:flex;justify-content:space-between;align-items:flex-start;
-  padding:14px 14px 10px;
+  display:flex;justify-content:space-between;align-items:flex-start;gap:8px;
+  padding:12px 14px 10px;
   border-bottom:1px solid var(--border);
   flex-shrink:0; /* sticky başlık — hiç kaybolmaz */
   background:rgba(7,11,15,0.97);
 }
-.map-info-body{ overflow-y:auto; padding:12px 14px 14px; flex:1; }
+.map-info-body{ overflow-y:auto; padding:12px 14px 28px; flex:1; }
 html.light .map-info-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
-.info-title{font-size:13px;font-weight:700;line-height:1.3;}
+.info-title{font-size:13px;font-weight:700;line-height:1.35;flex:1;min-width:0;padding-right:6px;word-break:break-word;}
 .info-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;}
 .info-label{color:var(--text3);} .info-val{font-weight:700;font-family:var(--font-mono);}
 .info-iss-list{margin-top:10px;border-top:1px solid var(--border);padding-top:10px;}
@@ -1257,14 +1310,17 @@ html.light .st-benchmark-card.neutral { background:#f1f5f9; border-color:#cbd5e1
 html.light .speedtest-box { background:#fff; }
 html.light .sr-box { background:#f5f7fa; }
 html.light .sr-ping { background:#f5f7fa; }
-#page-bolge, #page-istatistik{flex-direction:column;overflow-y:auto;padding:20px;gap:16px;}
+#page-bolge, #page-istatistik{flex-direction:column;overflow-y:auto;padding:20px 20px 64px 20px;gap:16px;}
 .page-header{padding-bottom:14px;border-bottom:1px solid var(--border);}
 .page-title{font-family:var(--font-mono);font-size:20px;font-weight:700;letter-spacing:-0.5px;}
 .page-sub{font-size:12px;color:var(--text3);margin-top:4px;}
 .sort-bar{display:flex;gap:8px;align-items:center;margin-bottom:4px;flex-wrap:wrap;}
 .sort-btn{padding:4px 10px;border-radius:5px;border:1px solid var(--border2);background:var(--surface2);color:var(--text3);font-size:10px;font-weight:700;font-family:var(--font-mono);cursor:pointer;transition:all .15s;}
 .sort-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
-.regions-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+.regions-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;}
+@media (min-width: 1350px) {
+  .regions-grid { grid-template-columns: repeat(4, 1fr); }
+}
 .region-card{ background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px; transition:all .2s;position:relative;overflow:hidden; cursor:pointer; }
 .region-card:hover{border-color:var(--border2);transform:translateY(-1px);}
 .region-card.active-region{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);background:var(--surface2);}
@@ -1567,8 +1623,8 @@ html.light .hab-desc b { color: #000; }
 .user-sync-action-btn.signout { color: var(--danger); border-color: rgba(239,68,68,0.25); background: rgba(239,68,68,0.06); }
 .user-sync-action-btn.signout:hover { background: rgba(239,68,68,0.15); border-color: var(--danger); }
 .google-sync-card {
-  margin-top: 8px; background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 8px; padding: 10px;
+  margin-top: 6px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 8px;
 }
 .sync-card-desc { font-size: 10px; color: var(--text3); line-height: 1.4; margin-bottom: 8px; }
 .btn-sync-connect {
@@ -1603,6 +1659,7 @@ html.light ::-webkit-scrollbar-thumb { background: var(--border2); }
 html.light #navAddPinBtn,
 html.light .btn-primary,
 html.light .btn-submit,
+html.light .btn-add,
 html.light .mob-add-btn,
 html.light .speedtest-btn.start,
 html.light .ty-btn.primary,
@@ -1612,10 +1669,21 @@ html.light .own-pin-badge {
 html.light #navAddPinBtn:hover,
 html.light .btn-primary:hover,
 html.light .btn-submit:hover,
+html.light .btn-add:hover,
 html.light .speedtest-btn.start:hover,
 html.light .ty-btn.primary:hover {
   background: #0066b3 !important;
   color: #ffffff !important;
+}
+html.light .btn-sub {
+  background: var(--surface);
+  border-color: var(--border2);
+  color: var(--text);
+}
+html.light .btn-sub:hover {
+  background: var(--surface2);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* Nav & mobile nav */
@@ -2303,7 +2371,7 @@ html.colorblind-mode .speed-shape, html.colorblind-mode .legend-shape { display:
   .sum-val { font-size: 22px; }
   .stats-grid { grid-template-columns:1fr; }
   #page-mod { padding:14px; }
-  #page-bolge, #page-istatistik { padding:12px 14px; }
+  #page-bolge, #page-istatistik { padding:12px 14px 48px 14px; }
   .regions-grid { grid-template-columns:1fr; }
   .rstat-val { font-size: 13.5px; }
   .header-mtoggle-text { display: none; }
@@ -3062,19 +3130,20 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
           <!-- GOOGLE SENKRONİZASYON KARTI -->
           <div class="google-sync-card" id="sidebarGoogleSyncCard">
             <div id="syncCardLoggedOut">
-              <div class="sync-card-desc">Ölçümlerinizi kaybetmemek ve tüm cihazlarınızdan yönetebilmek için Google ile senkronize edin.</div>
-              <button class="btn-sync-connect" onclick="signInWithGoogle()">
-                <svg viewBox="0 0 24 24" width="13" height="13" style="margin-right:6px;"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+              <button class="btn-sync-connect" onclick="signInWithGoogle()" title="Ölçümlerinizi buluta yedeklemek ve tüm cihazlarınızdan yönetmek için Google ile bağlayın" style="padding:5px 8px;font-size:10.5px;">
+                <svg viewBox="0 0 24 24" width="12" height="12" style="margin-right:5px;flex-shrink:0;"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
                 Google ile Senkronize Et
               </button>
+              <div class="sync-card-desc" style="font-size:9px;color:var(--text3);text-align:center;margin:3px 0 0;line-height:1.2;">Ölçümleri cihazlarınız arasında korur</div>
             </div>
             <div id="syncCardLoggedIn" style="display:none;">
-              <div class="sync-card-status">
-                <span class="sync-check-icon">✓</span>
-                <span id="syncCardUserEmail" class="sync-email-text">user@gmail.com</span>
+              <div class="sync-card-status" style="font-size:10px;display:flex;align-items:center;justify-content:space-between;padding:2px 0;">
+                <span style="display:inline-flex;align-items:center;gap:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;">
+                  <span class="sync-check-icon">✓</span>
+                  <span id="syncCardUserEmail" class="sync-email-text" style="font-size:10px;">user@gmail.com</span>
+                </span>
+                <a href="javascript:void(0)" onclick="signOutGoogleUser()" class="sync-signout-link" style="font-size:9px;flex-shrink:0;">Çıkış</a>
               </div>
-              <div class="sync-card-sub">Ölçümleriniz Google hesabınızla eşitleniyor.</div>
-              <a href="javascript:void(0)" onclick="signOutGoogleUser()" class="sync-logout-link">Çıkış Yap</a>
             </div>
           </div>
         </div>
@@ -9070,10 +9139,14 @@ function renderSpeedRankList(filterIl) {
   const lm = buildLocationMap(speedEligiblePins);
   const allEntries = Object.entries(lm).map(([k,d]) => withScore(d));
   // Sıralamaya girmek için en az 2 onaylı ölçüm şartı
+  // Doğrudan ölçülen ortalama indirme hızına göre kesin azalan sıralama (eşitlikte yükleme hızı ve ölçüm sayısı)
   let entries = allEntries
     .filter(x => x.c >= 2)
-    .sort((a,b) => b.bayesScore - a.bayesScore || b.ul - a.ul)
+    .sort((a,b) => b.dl - a.dl || b.ul - a.ul || b.c - a.c)
     .slice(0, 8);
+  if (!entries.length) {
+    entries = allEntries.filter(x => x.c >= 1).sort((a,b) => b.dl - a.dl || b.ul - a.ul).slice(0, 8);
+  }
 
   function renderLocEntry(x, i) {
     const clickAttr = (x.lat && x.lng)
@@ -9092,7 +9165,7 @@ function renderSpeedRankList(filterIl) {
   }
 
   function renderSpotlight(top, second) {
-    const diff = second ? Math.max(top.score - second.score, 0) : 0;
+    const diff = second ? Math.max(top.dl - second.dl, 0) : 0;
     const deltaHtml = (second && diff > 0)
       ? `<div class="spotlight-delta">▲ 2. sıradaki ${locTitle(second)} konumundan ortalama ${diff} Mbps önde</div>`
       : '';
@@ -9755,19 +9828,28 @@ function renderIlList() {
     ilEl.innerHTML = topIller.map((x, i) => {
       const pct = Math.round((x.avgDL / maxSpeed) * 100);
       const col = speedColor(x.avgDL);
+      const rankBadge = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : `${i+1}`));
+      const barBg = i === 0
+        ? 'linear-gradient(90deg, #d97706, #fbbf24)'
+        : (i === 1
+          ? 'linear-gradient(90deg, #64748b, #cbd5e1)'
+          : (i === 2
+            ? 'linear-gradient(90deg, #b45309, #fb923c)'
+            : col));
+      const valColor = i === 0 ? '#fbbf24' : (i === 1 ? '#e2e8f0' : (i === 2 ? '#fb923c' : col));
       return `<div class="il-item clickable" onclick="focusProvinceOnMap('${escAttr(x.il)}')" title="${escHtml(x.il)}: ortalama ${x.avgDL} Mbps (${x.dlCount} hız testi) — Haritada görmek için tıklayın" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:4px 6px;border-radius:6px;">
-        <div style="width:14px;font-size:10px;color:var(--text3);font-family:var(--font-mono);flex-shrink:0;">${i+1}</div>
+        <div style="width:18px;font-size:${i < 3 ? '13px' : '10px'};color:var(--text3);font-family:var(--font-mono);flex-shrink:0;text-align:center;">${rankBadge}</div>
         <div style="flex:1;min-width:0;">
           <div style="display:flex;align-items:center;gap:6px;">
             <div style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(x.il)}</div>
             <span style="font-size:9px;color:var(--text3);font-family:var(--font-mono);">(${x.dlCount} hız testi)</span>
           </div>
           <div style="background:var(--surface2);border-radius:3px;height:5px;margin-top:3px;overflow:hidden;">
-            <div style="width:${pct}%;height:100%;background:${col};border-radius:3px;transition:width .4s;"></div>
+            <div style="width:${pct}%;height:100%;background:${barBg};border-radius:3px;transition:width .4s;"></div>
           </div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
-          <div style="font-size:11px;font-family:var(--font-mono);color:${col};font-weight:700;">${speedShapeHtml(x.avgDL)}${x.avgDL} <span style="font-size:9px;font-weight:400;">Mbps</span></div>
+          <div style="font-size:11px;font-family:var(--font-mono);color:${valColor};font-weight:700;">${speedShapeHtml(x.avgDL)}${x.avgDL} <span style="font-size:9px;font-weight:400;">Mbps</span></div>
           <div style="font-size:9px;color:var(--accent);font-family:var(--font-mono);">📍 Haritada Gör</div>
         </div>
       </div>`;
@@ -15688,8 +15770,9 @@ function calcPercentileVal(arr, p) {
 // 2. İndirme: Web Worker içinde 6 paralel akış ve adaptif bloklar (15 MB -> 35 MB) ile Cloudflare POP
 //    noktasına kesintisiz bağlanır. Isınma süresi (1.2 sn) sonrasındaki gerçek doymuş hat kapasitesini ölçer.
 // 3. Yükleme: Hat hızına göre kendini dinamik ayarlayan (256 KB -> 2 MB) adaptif paketler ve 4 eşzamanlı
-//    akış kullanır. İşletim sistemi soket tampon şişmesini (bufferbloat) tamamen bertaraf eder; sadece
-//    sunucu tarafından teslim alındığı HTTP 200 ile onaylanan baytlar üzerinden net yükleme hızını hesaplar.
+//    akış kullanır; sunucunun onayladığı bayt farkı (ısınma sonrası) üzerinden net hızı hesaplar.
+// NOT: HTTP/2-3'te aynı origin'e giden tüm akışlar TEK bağlantıda birleşir; probeDownloadOrigins() ek HTTPS
+//    portlarını yoklayıp akışları ayrı bağlantılara dağıtır (uzak sunucuda tek bağlantı tavanını aşmak için).
 function calcTrimmedBandwidth(samples, lowPct = 0.20, highPct = 0.85) {
   if (!samples || !samples.length) return 0;
   if (samples.length < 4) return calcPercentileVal(samples, 0.70);
@@ -15698,6 +15781,27 @@ function calcTrimmedBandwidth(samples, lowPct = 0.20, highPct = 0.85) {
   const endIdx = Math.max(startIdx + 1, Math.ceil(sorted.length * highPct));
   const slice = sorted.slice(startIdx, endIdx);
   return slice.reduce((acc, v) => acc + v, 0) / slice.length;
+}
+
+// DÜZELTME (çoklu bağlantı): HTTP/2 ve HTTP/3'te aynı origin'e giden TÜM akışlar TEK TCP/QUIC bağlantısında
+// birleşir. Uzak sunucuda (yüksek RTT) tek bağlantı hat hızına ulaşamaz (ör. 885 Mbps hatta ~300 Mbps okunur).
+// Cloudflare aynı alan adını birkaç HTTPS portunda da sunar; her port ayrı origin = ayrı bağlantı.
+// Portlar test başında denenir, yanıt verenler kullanılır (en fazla 6 origin). Hiçbiri yanıt vermezse eski davranış sürer.
+async function probeDownloadOrigins() {
+  const primary = SPEED_DOWNLOAD_URL;
+  let base;
+  try { base = new URL(primary); } catch(e) { return [primary]; }
+  const ports = (window.SPEED_TEST_DL_PORTS && window.SPEED_TEST_DL_PORTS.length) ? window.SPEED_TEST_DL_PORTS : [8443, 2053, 2083, 2087, 2096];
+  const cands = ports.map(p => { const x = new URL(primary); x.port = String(p); return x.toString(); });
+  const res = await Promise.all(cands.map(async (b) => {
+    const c = new AbortController();
+    const tm = setTimeout(() => c.abort(), 1500);
+    try {
+      const r = await fetch(`${b}?bytes=0&pr=${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, { signal: c.signal, cache: 'no-store', credentials: 'omit', mode: 'cors' });
+      return r.ok ? b : null;
+    } catch(e) { return null; } finally { clearTimeout(tm); }
+  }));
+  return [primary].concat(res.filter(Boolean)).slice(0, 6);
 }
 
 async function runMultiStreamSpeedTest() {
@@ -15732,6 +15836,7 @@ async function runMultiStreamSpeedTest() {
   document.getElementById('stVal').textContent = '…';
 
   const pingSamples = [];
+  const dlOriginsPromise = probeDownloadOrigins(); // ping sırasında paralel çalışır
   const primaryPingUrl = `${SPEED_DOWNLOAD_URL}?bytes=0`;
   const fallbackPingUrl = 'https://1.1.1.1/cdn-cgi/trace';
 
@@ -15802,6 +15907,10 @@ async function runMultiStreamSpeedTest() {
   document.getElementById('stPingRow').style.display = 'flex';
   document.getElementById('stPingVal').textContent = finalPing + ' ms';
 
+  const dlBaseUrls = await dlOriginsPromise;
+  if (cancelled) return;
+  window.__speedDiag = { ping: finalPing, origins: dlBaseUrls }; // tanı: konsolda window.__speedDiag
+
   // 2. AŞAMA: ÇOK KANALLI İNDİRME (6 KESİNTİSİZ AKIŞ + WEB WORKER + DOĞRU STEADY-STATE ÖLÇÜMÜ)
   document.getElementById('stPhase').textContent = '↓ İNDİRME';
   document.getElementById('stSub').textContent = 'İndirme hızı ölçülüyor...';
@@ -15813,6 +15922,7 @@ async function runMultiStreamSpeedTest() {
   let dlCumulativeBytes = 0;
   let dlWarmupBytes = null;
   let dlWarmupTime = null;
+  let dlLastUpdateTime = null; // sayaç en son ne zaman güncellendi (worker 80 ms'de bir raporlar)
   const dlSustainedWindows = [];
   let lastDlSampleBytes = 0;
   let lastDlSampleTime = null;
@@ -15831,7 +15941,7 @@ async function runMultiStreamSpeedTest() {
           ctrls.forEach(c => { try { c.abort(); } catch(_) {} });
           ctrls.clear();
         } else if (e.data && e.data.cmd === 'start') {
-          const { baseUrl, streams, durationMs } = e.data;
+          const { baseUrl, baseUrls, streams, durationMs } = e.data;
           const tStart = performance.now();
           const reportTimer = setInterval(() => {
             if (stopped) { clearInterval(reportTimer); return; }
@@ -15842,7 +15952,7 @@ async function runMultiStreamSpeedTest() {
             while (!stopped && (performance.now() - tStart) < durationMs) {
               const c = new AbortController();
               ctrls.add(c);
-              const u = baseUrl + '?bytes=250000000&s=' + idx + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+              const u = ((baseUrls && baseUrls.length) ? baseUrls[idx % baseUrls.length] : baseUrl) + '?bytes=250000000&s=' + idx + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
               try {
                 const r = await fetch(u, { signal: c.signal, cache: 'no-store', mode: 'cors' });
                 if (!r.ok) break;
@@ -15890,6 +16000,7 @@ async function runMultiStreamSpeedTest() {
     activeWorker.onmessage = (e) => {
       if (e.data && typeof e.data.bytes === 'number') {
         dlCumulativeBytes = e.data.bytes;
+        dlLastUpdateTime = performance.now();
       }
     };
     activeWorker.onerror = () => {
@@ -15897,7 +16008,7 @@ async function runMultiStreamSpeedTest() {
         for (let s = 0; s < dlStreamsCount; s++) dlWorkers.push(spawnMainThreadDownloadWorker(s));
       }
     };
-    activeWorker.postMessage({ cmd: 'start', baseUrl: SPEED_DOWNLOAD_URL, streams: dlStreamsCount, durationMs: dlDurationMs });
+    activeWorker.postMessage({ cmd: 'start', baseUrl: SPEED_DOWNLOAD_URL, baseUrls: dlBaseUrls, streams: dlStreamsCount, durationMs: dlDurationMs });
   }
 
   const spawnMainThreadDownloadWorker = (streamIdx) => {
@@ -15906,7 +16017,7 @@ async function runMultiStreamSpeedTest() {
       while (!cancelled && (performance.now() - dlStart) < dlDurationMs) {
         const ctrl = new AbortController();
         activeControllers.add(ctrl);
-        const url = `${SPEED_DOWNLOAD_URL}?bytes=${chunkSize}&s=${streamIdx}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+        const url = `${dlBaseUrls[streamIdx % dlBaseUrls.length]}?bytes=${chunkSize}&s=${streamIdx}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
         try {
           const r = await fetch(url, { signal: ctrl.signal, cache: 'no-store', mode: 'cors' });
           if (!r.ok) break;
@@ -15917,6 +16028,7 @@ async function runMultiStreamSpeedTest() {
               if (done) break;
               if (value && value.byteLength > 0) {
                 dlCumulativeBytes += value.byteLength;
+                dlLastUpdateTime = performance.now();
               }
             }
           } else {
@@ -15958,7 +16070,7 @@ async function runMultiStreamSpeedTest() {
       // Isınma süresi (1.5 sn) tamamlandığında referansı kaydet
       if (elapsed >= dlWarmupMs && dlWarmupBytes === null) {
         dlWarmupBytes = dlCumulativeBytes;
-        dlWarmupTime = now;
+        dlWarmupTime = dlLastUpdateTime || now;
         lastDlSampleBytes = dlCumulativeBytes;
         lastDlSampleTime = now;
       }
@@ -16002,13 +16114,14 @@ async function runMultiStreamSpeedTest() {
   if (dlWorkers.length) await Promise.allSettled(dlWorkers);
   if (cancelled) return;
 
-  const dlEndNow = performance.now();
+  const dlEndNow = Math.max(dlLastUpdateTime || 0, dlWarmupTime || 0) || performance.now();
   const effectiveDlBytes = dlWarmupBytes !== null ? Math.max(0, dlCumulativeBytes - dlWarmupBytes) : dlCumulativeBytes;
   const effectiveDlSec = dlWarmupTime !== null ? ((dlEndNow - dlWarmupTime) / 1000) : ((dlEndNow - dlStart) / 1000);
   const throughputDL = effectiveDlSec > 0.5 ? ((effectiveDlBytes * 8) / effectiveDlSec / 1e6) : 0;
   // Doygunluk pencerelerinden alt ve üst %15 uç değerleri eleyen güvenilir medyan dilim ortalaması
   const trimmedDL = dlSustainedWindows.length >= 3 ? calcTrimmedBandwidth(dlSustainedWindows, 0.15, 0.85) : throughputDL;
-  const finalDL = Math.max(1, Math.round(trimmedDL > 0 ? trimmedDL : throughputDL));
+  // Nihai değer: ısınma sonrası toplam bayt / süre (bayt-zaman eşlemeli). Budanmış pencere ortalaması yalnızca yedek.
+  const finalDL = Math.max(1, Math.round(throughputDL > 0 ? throughputDL : trimmedDL));
   document.getElementById('stDLVal').textContent = formatMbps(finalDL);
 
   // 3. AŞAMA: ADAPTİF ÇOK KANALLI SUNUCU ONAYLI YÜKLEME (SERVER-CONFIRMED UPLOAD)
@@ -16016,66 +16129,95 @@ async function runMultiStreamSpeedTest() {
   document.getElementById('stSub').textContent = 'Yükleme hızı ölçülüyor...';
   document.getElementById('sgFill').style.stroke = 'var(--success)';
 
-  const ulDurationMs = 6000;
-  const ulWarmupMs = 1200;
-  const ulStreamsCount = 4; // 4 eşzamanlı adaptif akış
-
-  // Bellek dostu tek parça 16 MB paylaşımlı tampon; subarray sıfır-kopyalı görünüm ile RAM tüketimini ve GC baskısını önler
-  const sharedUlBuffer = new Uint8Array(16777216);
+  // DÜZELTME (yükleme): Blok boyutu önceden İNDİRME hızına göre seçiliyordu. Asimetrik hatlarda (ör. 300/30)
+  // 6 MB x 6 akış = 36 MB havadaydı; 30 Mbps'te bu ~10 sn sürer, test 6 sn olduğu için hiçbir blok
+  // tamamlanmıyor ve sonuç ~1 Mbps çıkıyordu. Artık her akış kendi blok süresine göre ~600 ms hedefleyerek
+  // boyutunu uyarlar, ölçüm tamamlanan blok sayısına değil tarayıcının gönderdiği baytlara dayanır.
+  const ulDurationMs = 7000;
+  const ulWarmupMs = 1500;
+  const ulStreamsCount = 4;
+  const UL_MIN_CHUNK = 65536, UL_MAX_CHUNK = 8000000, UL_TARGET_REQ_MS = 600;
+  const ulStartChunk = finalDL < 15 ? 65536 : (finalDL < 60 ? 131072 : 524288);
+  const ulBuffer = new Uint8Array(UL_MAX_CHUNK); // tek sefer ayrılır, her istekte subarray gönderilir
 
   let ulConfirmedBytes = 0;
-  let ulWarmupConfirmedBytes = 0;
+  let ulWarmupVirtualBytes = null;
   let ulWarmupTime = null;
-  const confirmedUploads = []; // { t, bytes, durationMs }
-  const ulWindowSamples = [];
-  let lastUlSampleBytes = 0;
-  let lastUlSampleTime = null;
+  let ulEndVirtualBytes = null;
+  let ulEndTime = null;
+  let ulWarmupConfirmed = null;
+  let ulEndConfirmed = null;
+  let ulErrors = 0;
+  const inFlightLoaded = new Array(ulStreamsCount).fill(0);
+  const ulChunkSizes = new Array(ulStreamsCount).fill(ulStartChunk);
+  const ulServerBpsSamples = [];
+  // DÜZELTME: Yükleme akışları da indirmedeki gibi tek HTTP/2 bağlantısında birleşiyordu; aynı origin listesini kullan.
+  const ulBaseUrls = dlBaseUrls.map(b => {
+    try {
+      const d = new URL(b), u = new URL(SPEED_UPLOAD_URL);
+      if (d.hostname !== u.hostname || d.protocol !== u.protocol) return SPEED_UPLOAD_URL;
+      u.port = d.port; return u.toString();
+    } catch(e) { return SPEED_UPLOAD_URL; }
+  });
+  const ulStreamOrigin = new Array(ulStreamsCount).fill(0).map((_, i) => i % ulBaseUrls.length);
+  const ulHistory = [];
+  const ulSustainedWindows = [];
   const ulStart = performance.now();
+  // Sanal bayt = onaylanan + uçuştaki (tarayıcının ağa verdiği). İki anlık görüntünün FARKI alınır;
+  // sabit rejimde tampondaki bayt her iki ucta da vardır ve birbirini götürür.
+  const ulVirtualBytes = () => ulConfirmedBytes + inFlightLoaded.reduce((x, y) => x + y, 0);
 
   const spawnUploadWorker = (streamIdx) => {
     return (async () => {
-      let currentChunkSize = 524288; // Başlangıç: 512 KB
       while (!cancelled && (performance.now() - ulStart) < ulDurationMs) {
-        await new Promise((resReq) => {
+        if (ulErrors >= 6 && ulConfirmedBytes === 0) break;
+        const size = ulChunkSizes[streamIdx];
+        const ok = await new Promise((resReq) => {
           const xhr = new XMLHttpRequest();
           activeXhrs.add(xhr);
-          const url = `${SPEED_UPLOAD_URL}?u=${streamIdx}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+          const url = `${ulBaseUrls[ulStreamOrigin[streamIdx]]}?u=${streamIdx}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
           const reqStart = performance.now();
           xhr.open('POST', url, true);
+          xhr.timeout = 20000;
+
+          xhr.upload.onprogress = (e) => {
+            if (cancelled) return;
+            inFlightLoaded[streamIdx] = Math.min(e.loaded, size);
+          };
 
           const doneReq = (success) => {
             activeXhrs.delete(xhr);
-            const nowConfirm = performance.now();
-            const reqDur = nowConfirm - reqStart;
-
             if (success && !cancelled) {
-              ulConfirmedBytes += currentChunkSize;
-              confirmedUploads.push({ t: nowConfirm, bytes: currentChunkSize, durationMs: reqDur });
-
-              // Dinamik Paket Ölçekleme (Yüksek hızda RTT darboğazını kırma):
-              // Paket 150 ms'den kısa sürdüyse (örneğin yüksek hızlı fiber), sunucu onay gecikmesini
-              // aşmak için paketi 16 MB'a kadar büyüt. 600 ms'den uzun sürdüyse sık onay için küçült.
-              if (reqDur < 150 && currentChunkSize < 16777216) {
-                currentChunkSize *= 2;
-              } else if (reqDur > 600 && currentChunkSize > 262144) {
-                currentChunkSize = Math.max(262144, currentChunkSize / 2);
+              // onaylanan += size ve uçuştaki = 0 aynı senkron adımda: sanal bayt geriye gitmez
+              ulConfirmedBytes += size;
+              inFlightLoaded[streamIdx] = 0;
+              const reqMs = Math.max(30, performance.now() - reqStart);
+              const factor = Math.min(4, Math.max(0.25, UL_TARGET_REQ_MS / reqMs));
+              ulChunkSizes[streamIdx] = Math.round(Math.min(UL_MAX_CHUNK, Math.max(UL_MIN_CHUNK, size * factor)));
+              const stHeader = xhr.getResponseHeader('server-timing') || '';
+              const durMatch = stHeader.match(/cfReq(?:uest)?Dur(?:ation)?;\s*dur=([0-9.]+)/i);
+              if (durMatch && +durMatch[1] > 5) {
+                const srvMbps = ((size * 8) / (+durMatch[1] / 1000)) / 1e6;
+                if (srvMbps > 0 && srvMbps < 10000) ulServerBpsSamples.push(srvMbps);
               }
+            } else {
+              inFlightLoaded[streamIdx] = 0;
+              if (!cancelled) { ulErrors++; ulStreamOrigin[streamIdx] = 0; } // ek origin başarısızsa ana sunucuya dön
             }
-            resReq();
+            resReq(success && !cancelled);
           };
 
           xhr.onload = () => doneReq(xhr.status >= 200 && xhr.status < 300);
           xhr.onerror = () => doneReq(false);
           xhr.onabort = () => doneReq(false);
           xhr.ontimeout = () => doneReq(false);
-
-          const payload = sharedUlBuffer.subarray(0, currentChunkSize);
           try {
-            xhr.send(payload);
+            xhr.send(ulBuffer.subarray(0, size));
           } catch(e) {
             doneReq(false);
           }
         });
+        if (!ok && !cancelled) await new Promise(r => setTimeout(r, 150));
       }
     })();
   };
@@ -16094,57 +16236,71 @@ async function runMultiStreamSpeedTest() {
       }
       const now = performance.now();
       const elapsed = now - ulStart;
+      const vBytes = ulVirtualBytes();
 
-      // 1.2 sn ısınma tamamlandığında referansı al
       if (elapsed >= ulWarmupMs && ulWarmupTime === null) {
-        ulWarmupConfirmedBytes = ulConfirmedBytes;
+        ulWarmupVirtualBytes = vBytes;
+        ulWarmupConfirmed = ulConfirmedBytes;
         ulWarmupTime = now;
-        lastUlSampleBytes = ulConfirmedBytes;
-        lastUlSampleTime = now;
       }
 
-      // Canlı ibre ve pencereli örnekler (ısınma sonrası)
-      if (elapsed >= ulWarmupMs && lastUlSampleTime !== null) {
-        const dt = (now - lastUlSampleTime) / 1000;
-        if (dt >= 0.4) {
-          const dBytes = ulConfirmedBytes - lastUlSampleBytes;
-          if (dBytes > 0) {
-            const windowMbps = (dBytes * 8) / dt / 1e6;
-            if (windowMbps > 0) {
-              ulWindowSamples.push(windowMbps);
-              const liveMbps = Math.max(1, Math.round(windowMbps));
-              liveLogAppend('↑', liveMbps);
-              if (liveMbps > liveMax) liveMax = Math.ceil(liveMbps * 1.25 / 50) * 50;
-              setGauge(liveMbps, liveMax, 'var(--success)');
-              document.getElementById('stULVal').textContent = formatMbps(liveMbps);
-            }
+      ulHistory.push({ t: now, bytes: vBytes });
+      while (ulHistory.length > 2 && now - ulHistory[0].t > 1200) {
+        ulHistory.shift();
+      }
+
+      if (ulHistory.length >= 2) {
+        const oldest = ulHistory[0];
+        const dt = (now - oldest.t) / 1000;
+        const dBytes = vBytes - oldest.bytes;
+        if (dt >= 0.5) {
+          const windowMbps = (dBytes * 8) / dt / 1e6;
+          if (elapsed >= ulWarmupMs && dt >= 0.75 && windowMbps > 0) {
+            ulSustainedWindows.push(windowMbps);
           }
-          lastUlSampleBytes = ulConfirmedBytes;
-          lastUlSampleTime = now;
+          const liveMbps = Math.max(1, Math.round(windowMbps));
+          liveLogAppend('↑', liveMbps);
+          if (liveMbps > liveMax) liveMax = Math.ceil(liveMbps * 1.25 / 50) * 50;
+          setGauge(liveMbps, liveMax, 'var(--success)');
+          document.getElementById('stULVal').textContent = formatMbps(liveMbps);
         }
       }
 
       if (elapsed >= ulDurationMs) {
+        // Bitiş anlık görüntüsü iptalden ÖNCE alınır (abort uçuştaki baytları sıfırlar)
+        ulEndVirtualBytes = vBytes;
+        ulEndConfirmed = ulConfirmedBytes;
+        ulEndTime = now;
         clearInterval(ulTimer);
         activeIntervals.delete(ulTimer);
         activeXhrs.forEach(x => { try { x.abort(); } catch(e) {} });
         activeXhrs.clear();
         resolveUL();
       }
-    }, 70);
+    }, 100);
     activeIntervals.add(ulTimer);
   });
 
   await Promise.allSettled(ulWorkers);
   if (cancelled) return;
+  if (ulConfirmedBytes === 0) throw new Error('Yükleme ölçümü başarısız (sunucu hiçbir bloğu onaylamadı)');
 
-  // Nihai yükleme hızı: Yalnızca ısınma sonrası sunucuya ulaşmış kesin baytlar ve süre
-  const ulEndNow = performance.now();
-  const effectiveUlBytes = Math.max(0, ulConfirmedBytes - (ulWarmupConfirmedBytes || 0));
-  const effectiveUlSec = ulWarmupTime !== null ? ((ulEndNow - ulWarmupTime) / 1000) : ((ulEndNow - ulStart) / 1000);
-  const throughputUL = effectiveUlSec > 0.5 ? ((effectiveUlBytes * 8) / effectiveUlSec / 1e6) : 0;
-  const trimmedUL = ulWindowSamples.length >= 3 ? calcTrimmedBandwidth(ulWindowSamples, 0.15, 0.85) : throughputUL;
-  const finalUL = Math.max(1, Math.round(trimmedUL > 0 ? trimmedUL : throughputUL));
+  // Nihai yükleme hızı: ısınma sonrası gönderilen toplam bayt / geçen süre (yukarı yanlı düzeltme yok)
+  let measuredUL = 0;
+  if (ulWarmupTime !== null && ulEndTime !== null && (ulEndTime - ulWarmupTime) > 500) {
+    const dtSec = (ulEndTime - ulWarmupTime) / 1000;
+    const virtMbps = ((ulEndVirtualBytes - ulWarmupVirtualBytes) * 8) / dtSec / 1e6;
+    const confMbps = ((ulEndConfirmed - ulWarmupConfirmed) * 8) / dtSec / 1e6;
+    // Tarayıcı/modem tamponu (bufferbloat) 'gönderildi' baytını şişirebilir; sunucunun onayladığı bayta güven.
+    // Onaylı veri çok seyrekse (aşırı yavaş hat) sanal ölçüme dön.
+    measuredUL = (ulEndConfirmed - ulWarmupConfirmed) >= 4 * UL_MIN_CHUNK ? confMbps : virtMbps;
+  } else if (ulEndTime !== null && (ulEndTime - ulStart) > 500) {
+    measuredUL = (ulConfirmedBytes * 8) / ((ulEndTime - ulStart) / 1000) / 1e6;
+  }
+  const trimmedWindowUL = ulSustainedWindows.length ? calcTrimmedBandwidth(ulSustainedWindows, 0.25, 0.85) : 0;
+  const rawFinalUL = measuredUL > 0 ? measuredUL : trimmedWindowUL;
+  const finalUL = Math.max(1, Math.round(rawFinalUL));
+
   finalizeSpeedTestUI(finalDL, finalUL, finalPing);
 }
 
