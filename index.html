@@ -3139,6 +3139,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     <div class="info-head"><div class="info-title" id="infoTitle">—</div><button type="button" class="info-close" aria-label="Bölge detayını kapat" onclick="document.getElementById('mapInfo').classList.remove('visible')">×</button></div>
     <div class="map-info-body">
       <div id="infoHexTechFilter" style="display:none;margin-bottom:8px;flex-wrap:wrap;gap:4px;"></div>
+      <div id="infoTechDistribution" style="display:none;margin-bottom:10px;"></div>
       <div class="info-row"><span class="info-label">Ort. İndirme</span><span class="info-val" id="infoDL" style="color:var(--accent)">—</span></div>
       <div class="info-row"><span class="info-label">Ort. Yükleme</span><span class="info-val" id="infoUL">—</span></div>
       <div class="info-row"><span class="info-label">Memnuniyet</span><span class="info-val" id="infoScore">—</span></div>
@@ -4301,7 +4302,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
   </div>
 </div>
 
-<div class="modal-bg" id="kvkkModal" onclick="if(event.target===this)closeKvkkModal()">
+<div class="modal-bg" id="kvkkModal" role="dialog" aria-modal="true" aria-label="Aydınlatma ve Açık Rıza Metni" onclick="if(event.target===this)closeKvkkModal()">
   <div class="modal" style="max-width:590px; max-height:85vh; overflow-y:auto;">
     <span class="modal-close" onclick="closeKvkkModal()">×</span>
     <div class="modal-title">🔒 Gizlilik Politikası, KVKK / GDPR ve Aydınlatma Metni</div>
@@ -4330,7 +4331,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
 </div>
 
 <!-- İLK GİRİŞ KARŞILAMA VE REHBER TUR MODALI -->
-<div class="modal-bg" id="welcomeModal" style="z-index:9900;" onclick="if(event.target===this)closeWelcomeModal(true)">
+<div class="modal-bg" id="welcomeModal" role="dialog" aria-modal="true" aria-label="Hoş Geldiniz Bilgilendirmesi" style="z-index:9900;" onclick="if(event.target===this)closeWelcomeModal(true)">
   <div class="modal" style="max-width:540px; max-height:88vh; overflow-y:auto;">
     <span class="modal-close" onclick="closeWelcomeModal(true)">×</span>
     <div class="modal-title" style="display:flex;align-items:center;gap:8px;">
@@ -4390,7 +4391,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
 </div>
 
 <!-- İSS KARŞILAŞTIRMA MODALI -->
-<div class="modal-bg" id="compareModal" onclick="if(event.target===this)closeCompareModal()">
+<div class="modal-bg" id="compareModal" role="dialog" aria-modal="true" aria-label="İSS Karşılaştırma Aracı" onclick="if(event.target===this)closeCompareModal()">
   <div class="modal" style="max-width:640px; max-height:88vh; overflow-y:auto; padding:20px;">
     <span class="modal-close" onclick="closeCompareModal()">×</span>
     <div class="modal-title" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
@@ -4426,7 +4427,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
 </div>
 
 <!-- HAKKINDA & İLETİŞİM MODALI -->
-<div class="modal-bg" id="aboutModal" onclick="if(event.target===this)closeAboutModal()">
+<div class="modal-bg" id="aboutModal" role="dialog" aria-modal="true" aria-label="internetHarita Hakkında ve İletişim" onclick="if(event.target===this)closeAboutModal()">
   <div class="modal" style="max-width:540px; max-height:85vh; overflow-y:auto;">
     <span class="modal-close" onclick="closeAboutModal()">×</span>
     <div class="modal-title">ℹ️ internetHarita Hakkında &amp; İletişim</div>
@@ -4457,7 +4458,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
     </div>
   </div>
 </div>
-<div class="modal-bg" id="reportModal" onclick="if(event.target===this)closeReportModal()">
+<div class="modal-bg" id="reportModal" role="dialog" aria-modal="true" aria-label="Bölge veya Veri Hata Bildirimi" onclick="if(event.target===this)closeReportModal()">
   <div class="modal">
     <span class="modal-close" onclick="closeReportModal()">×</span>
     <div class="modal-title">🚩 Bölge/Veri Bildir</div>
@@ -4483,7 +4484,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
   </div>
 </div>
 
-<div class="modal-bg" id="editModal" onclick="if(event.target===this)closeEditModal()">
+<div class="modal-bg" id="editModal" role="dialog" aria-modal="true" aria-label="Moderatör Pin Düzenleme" onclick="if(event.target===this)closeEditModal()">
   <div class="modal" style="max-width:480px;">
     <span class="modal-close" onclick="closeEditModal()">×</span>
     <div class="modal-title">✏️ Pin Düzenle</div>
@@ -4527,7 +4528,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
   </div>
 </div>
 
-<div class="modal-bg" id="userEditModal" onclick="if(event.target===this)closeUserEditModal()">
+<div class="modal-bg" id="userEditModal" role="dialog" aria-modal="true" aria-label="Kendi Ölçümünü Düzenle" onclick="if(event.target===this)closeUserEditModal()">
   <div class="modal" style="max-width:440px;">
     <span class="modal-close" onclick="closeUserEditModal()">×</span>
     <div class="modal-title">✏️ Ölçümümü Güncelle</div>
@@ -4599,7 +4600,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
   </div>
 </div>
 
-<div class="modal-bg" id="addIssModal" onclick="if(event.target===this)closeAddIssModal()">
+<div class="modal-bg" id="addIssModal" role="dialog" aria-modal="true" aria-label="Yeni Servis Sağlayıcı Ekle" onclick="if(event.target===this)closeAddIssModal()">
   <div class="modal" style="max-width:340px;">
     <span class="modal-close" onclick="closeAddIssModal()">×</span>
     <div class="modal-title">🏷 Yeni İSS Ekle</div>
@@ -7982,6 +7983,70 @@ function showHexInfo(pins, hexId, filterTech = 'all', keepScroll = false) {
     }
   }
 
+  // Altyapı Türü Dağılım Çubuğu (Fiber / VDSL / Kablo / ADSL / Altyapı Yok)
+  const distEl = document.getElementById('infoTechDistribution');
+  if (distEl) {
+    const distCounts = { fiber: 0, vdsl: 0, docsis: 0, adsl: 0, yok: 0 };
+    let totalDist = 0;
+    pins.forEach(p => {
+      if (p.is_altyapi_yok || (p.baglanti_turu || '').toLowerCase() === 'yok') {
+        distCounts.yok++;
+        totalDist++;
+      } else {
+        const t = (p.baglanti_turu || '').toLowerCase();
+        if (distCounts[t] !== undefined) {
+          distCounts[t]++;
+          totalDist++;
+        }
+      }
+    });
+
+    if (totalDist > 0) {
+      const techMeta = [
+        { key: 'fiber', label: 'Fiber', color: '#a855f7' },
+        { key: 'vdsl', label: 'VDSL', color: '#06b6d4' },
+        { key: 'docsis', label: 'Kablo', color: '#3b82f6' },
+        { key: 'adsl', label: 'ADSL', color: '#ef4444' },
+        { key: 'yok', label: 'Altyapı Yok', color: '#64748b' }
+      ];
+
+      const activeMeta = techMeta
+        .map(tm => ({ ...tm, count: distCounts[tm.key], pct: Math.round((distCounts[tm.key] / totalDist) * 100) }))
+        .filter(tm => tm.count > 0);
+
+      const segmentsHtml = activeMeta.map(t => {
+        const widthPct = Math.max(2, (t.count / totalDist) * 100);
+        return `<div style="width:${widthPct}%;background:${t.color};min-width:4px;transition:width .3s ease;" title="${t.label}: %${t.pct} (${t.count} ölçüm)"></div>`;
+      }).join('');
+
+      const tagsHtml = activeMeta.map(t => `
+        <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-family:var(--font-mono);color:var(--text2);font-weight:600;">
+          <span style="width:7px;height:7px;border-radius:50%;background:${t.color};display:inline-block;flex-shrink:0;"></span>
+          ${t.label} <b style="color:var(--text);">%${t.pct}</b>
+        </span>
+      `).join('');
+
+      distEl.innerHTML = `
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:9.5px;font-family:var(--font-mono);font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Altyapı Dağılımı</span>
+            <span style="font-size:9.5px;font-family:var(--font-mono);color:var(--text3);">${totalDist} ölçüm</span>
+          </div>
+          <div role="progressbar" aria-label="Altyapı Türü Dağılımı" style="height:6px;border-radius:4px;display:flex;overflow:hidden;background:var(--surface);margin-bottom:6px;gap:1px;">
+            ${segmentsHtml}
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+            ${tagsHtml}
+          </div>
+        </div>
+      `;
+      distEl.style.display = 'block';
+    } else {
+      distEl.style.display = 'none';
+      distEl.innerHTML = '';
+    }
+  }
+
   const filteredPins = activeHexFilterType === 'all'
     ? pins
     : pins.filter(p => (p.baglanti_turu || '').toLowerCase() === activeHexFilterType);
@@ -8401,7 +8466,7 @@ function toggleHexPinsList() {
           const ownPinBadge = isOwnPin ? `<span class="own-pin-badge">Senin Ölçümün</span>` : '';
           const turKey = (p.baglanti_turu || 'diger').toLowerCase();
           const connBadge = `<span class="hex-pin-conn-badge conn-${escAttr(turKey)}">${escHtml((p.baglanti_turu||'').toUpperCase())}</span>`;
-          const extraBadges = parseDigerAltyapi(p.diger_altyapilar).map(e=>`<span class="hex-pin-sub-badge" title="${escAttr(e.iss||'')}">+${e.iss ? escHtml(e.iss)+' ' : ''}${escHtml(e.tur.toUpperCase())}</span>`).join('');
+          const extraBadges = parseDigerAltyapi(p.diger_altyapilar).map(e=>`<span class="hex-pin-sub-badge" title="${escAttr(e.iss||'')}">+${e.iss ? escHtml(e.iss)+' ' : ''}${escHtml((e.tur || '').toUpperCase())}</span>`).join('');
           const actions = isOwnPin ? `
             <div class="user-pin-actions">
               <span class="user-pin-action edit" role="button" tabindex="0" onclick="event.stopPropagation(); openUserEditModal('${escAttr(p.id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.stopPropagation();event.preventDefault();openUserEditModal('${escAttr(p.id)}');}">✏️ Düzenle</span>
@@ -10533,6 +10598,7 @@ async function submitPin() {
       const speedBtn = document.querySelector('.btn-run-speedtest');
       if (speedBtn) {
         speedBtn.classList.add('field-error-input');
+        speedBtn.focus?.();
         speedBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
         setTimeout(() => speedBtn.classList.remove('field-error-input'), 2500);
       }
@@ -10684,7 +10750,7 @@ async function submitPin() {
     ul,
     ping: (typeof stResults !== 'undefined' && stResults && stResults.ping) ? stResults.ping : null,
     iss: finalIss,
-    conn: typeof selConnVal !== 'undefined' ? selConnVal.toUpperCase() : '',
+    conn: selConnVal ? selConnVal.toUpperCase() : (isAltyapiYok ? 'YOK' : ''),
     il: pinPayload.il || document.getElementById('ilInput')?.value || '',
     ilce: pinPayload.ilce ? (pinPayload.mahalle ? `${pinPayload.ilce} (${pinPayload.mahalle})` : pinPayload.ilce) : (document.getElementById('ilceInput')?.value || ''),
     puan: pinPayload.puan || null,
@@ -10711,7 +10777,7 @@ async function submitPin() {
     if (isAltyapiYok) markSubmitNoInfra();
     
     if (quarantine) {
-      const reason = isAltyapiYok ? '⚠ Altyapı yok bildirimi' : (outlier ? '⚠ Bölge ortalamasından sapma' : (capExceeded ? `⚠ ${selConnVal.toUpperCase()} için olağan dışı yüksek hız` : (rateQuarantine ? '⚠ Hızlı giriş algılandı' : '⚠ Verini aldık')));
+      const reason = isAltyapiYok ? '⚠ Altyapı yok bildirimi' : (outlier ? '⚠ Bölge ortalamasından sapma' : (capExceeded ? `⚠ ${(selConnVal || '').toUpperCase()} için olağan dışı yüksek hız` : (rateQuarantine ? '⚠ Hızlı giriş algılandı' : '⚠ Verini aldık')));
       showToast(`${reason} — incelemeye alındı`, 'warn');
       showThankyou(thankyouData);
     } else {
@@ -14297,7 +14363,7 @@ if ('serviceWorker' in navigator) {
 </script>
 
 <!-- TEŞEKKÜR MODALI -->
-<div class="thankyou-modal" id="thankYouModal" onclick="if(event.target===this)closeThankyou()">
+<div class="thankyou-modal" id="thankYouModal" role="dialog" aria-modal="true" aria-label="Ölçüm Özeti ve Teşekkür" onclick="if(event.target===this)closeThankyou()">
   <div class="thankyou-box">
     <span class="ty-icon">🎉</span>
     <div class="ty-title">Teşekkürler!</div>
@@ -15111,7 +15177,7 @@ window.addEventListener('online', async function() {
   if (typeof loadPins === 'function') loadPins();
 });
 </script>
-<div class="speedtest-modal" id="speedTestModal" onclick="if(event.target===this)closeSpeedTestModal()">
+<div class="speedtest-modal" id="speedTestModal" role="dialog" aria-modal="true" aria-label="İnternet Hız Testi" onclick="if(event.target===this)closeSpeedTestModal()">
   <div class="speedtest-box">
     <div class="speedtest-close" onclick="closeSpeedTestModal()">×</div>
     <div class="speedtest-title">⚡ Hız Testi</div>
@@ -15161,7 +15227,7 @@ window.addEventListener('online', async function() {
 </div>
 
 <!-- İNTERNET HIZ KARNESİ PAYLAŞIM MODALI -->
-<div class="scorecard-modal" id="scoreCardModal" onclick="if(event.target===this)closeScoreCardModal()">
+<div class="scorecard-modal" id="scoreCardModal" role="dialog" aria-modal="true" aria-label="Hız Karnesi Paylaşım Kartı" onclick="if(event.target===this)closeScoreCardModal()">
   <div class="scorecard-box">
     <div class="scorecard-close" onclick="closeScoreCardModal()" title="Kapat">×</div>
     <div class="scorecard-badge">📊 SOSYAL MEDYA KARNESİ</div>
@@ -15954,16 +16020,8 @@ async function runMultiStreamSpeedTest() {
   const ulWarmupMs = 1200;
   const ulStreamsCount = 4; // 4 eşzamanlı adaptif akış
 
-  // Bellek dostu sabit boyutlu veri blokları (256 KB -> 16 MB)
-  const ulPayloads = {
-    262144: new Uint8Array(262144),
-    524288: new Uint8Array(524288),
-    1048576: new Uint8Array(1048576),
-    2097152: new Uint8Array(2097152),
-    4194304: new Uint8Array(4194304),
-    8388608: new Uint8Array(8388608),
-    16777216: new Uint8Array(16777216)
-  };
+  // Bellek dostu tek parça 16 MB paylaşımlı tampon; subarray sıfır-kopyalı görünüm ile RAM tüketimini ve GC baskısını önler
+  const sharedUlBuffer = new Uint8Array(16777216);
 
   let ulConfirmedBytes = 0;
   let ulWarmupConfirmedBytes = 0;
@@ -16011,7 +16069,7 @@ async function runMultiStreamSpeedTest() {
           xhr.onabort = () => doneReq(false);
           xhr.ontimeout = () => doneReq(false);
 
-          const payload = ulPayloads[currentChunkSize] || ulPayloads[524288];
+          const payload = sharedUlBuffer.subarray(0, currentChunkSize);
           try {
             xhr.send(payload);
           } catch(e) {
