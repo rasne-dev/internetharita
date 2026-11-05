@@ -4102,10 +4102,10 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
           <span>🔒 Karantina &amp; İncelenmesi Gereken Pinler</span>
           <span style="font-size:10px;font-weight:400;color:var(--text3);">Aşırı hız, bölge sapması, hız sınırı aşımı veya şüpheli cihaz kayıtları</span>
         </div>
-        <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--warn);border-radius:6px;padding:9px 12px;margin:8px 0 10px 0;font-size:11px;color:var(--text2);line-height:1.5;">
-          <b style="color:var(--text);">💡 Pinler Neden Buraya Düşer?</b>
-          Kullanıcı verileri haritada yayınlanmadan önce otomatik algoritmalardan geçer: <b>Yeni/Bilinmeyen İSS</b> girişi, <b>bölge ortalamasından belirgin sapma (outlier)</b>, <b>teknik hız sınırı aşımı</b> (örn. ADSL &gt; 24 Mbps, VDSL &gt; 100 Mbps), <b>hız testi yapılmadan manuel beyan</b> girilmesi veya <b>aynı cihazdan çoklu gönderim</b> durumunda pinler güvenlik için doğrudan buraya düşer. Her kartın altında inceleme gerekçesi detaylıca listelenir.
-        </div>
+        <details style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--warn);border-radius:6px;padding:7px 12px;margin:8px 0 10px 0;font-size:11px;color:var(--text2);cursor:pointer;">
+          <summary style="font-weight:700;color:var(--text);outline:none;user-select:none;">💡 Pinler Neden Buraya Düşer? (Ayrıntılar için tıklayın)</summary>
+          <div style="margin-top:6px;line-height:1.5;">Kullanıcı verileri haritada yayınlanmadan önce otomatik algoritmalardan geçer: <b>Yeni/Bilinmeyen İSS</b> girişi, <b>bölge ortalamasından belirgin sapma (outlier)</b>, <b>teknik hız sınırı aşımı</b> (örn. ADSL &gt; 24 Mbps, VDSL &gt; 100 Mbps), <b>hız testi yapılmadan manuel beyan</b> girilmesi veya <b>aynı cihazdan çoklu gönderim</b> durumunda pinler güvenlik için doğrudan buraya düşer. Her kartın altında inceleme gerekçesi detaylıca listelenir.</div>
+        </details>
         <div id="sikayetList" style="margin-top:10px;"><div class="loading-text loading-dots">Yükleniyor</div></div>
       </div>
 
@@ -4115,10 +4115,10 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
           <span>🏷 Yeni Özel İSS Teklifleri</span>
           <span style="font-size:10px;font-weight:400;color:var(--text3);">Kullanıcıların "Diğer" seçerek girdiği yeni internet sağlayıcı isimleri</span>
         </div>
-        <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:6px;padding:9px 12px;margin:8px 0 10px 0;font-size:11px;color:var(--text2);line-height:1.5;">
-          <b style="color:var(--text);">💡 Neden Buraya Düşer?</b>
-          Kullanıcılar veri eklerken mevcut listede olmayan bir internet sağlayıcısı için <b>"Diğer"</b> seçeneğini seçip İSS adını manuel yazdığında oluşur. Yazım hatasını düzeltip onayladığınızda hem İSS resmi listeye eklenir hem de bu İSS ile girilen tüm bekleyen pinler otomatik olarak haritada yayına alınır.
-        </div>
+        <details style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:6px;padding:7px 12px;margin:8px 0 10px 0;font-size:11px;color:var(--text2);cursor:pointer;">
+          <summary style="font-weight:700;color:var(--text);outline:none;user-select:none;">💡 Neden Buraya Düşer? (Ayrıntılar için tıklayın)</summary>
+          <div style="margin-top:6px;line-height:1.5;">Kullanıcılar veri eklerken mevcut listede olmayan bir internet sağlayıcısı için <b>"Diğer"</b> seçeneğini seçip İSS adını manuel yazdığında oluşur. Yazım hatasını düzeltip onayladığınızda hem İSS resmi listeye eklenir hem de bu İSS ile girilen tüm bekleyen pinler otomatik olarak haritada yayına alınır.</div>
+        </details>
         <div id="customIssList" style="margin-top:10px;"><div class="loading-text loading-dots">Yükleniyor</div></div>
       </div>
     </div>
@@ -4464,7 +4464,10 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
       <div>Bölgenize yeni bir Fiber altyapısı gelmiş olması, diğer binalardaki veya komşularınızdaki VDSL/ADSL ölçümlerini hatalı kılmaz (binaların altyapıları veya kullanıcı paketleri farklı olabilir). Kendi binanızdaki yeni Fiber hızını paylaşmak için lütfen doğrudan haritaya kendi ölçümünüzü ekleyin:</div>
       <button type="button" class="btn-ghost" onclick="redirectToNewPinFromReport()" style="margin-top:8px;width:100%;font-size:11px;color:var(--accent);border-color:var(--accent);padding:7px 10px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;">📍 Kendi Hız Ölçümünü Haritaya Ekle (+ Veri Ekle)</button>
     </div>
-    <div class="fg" style="margin-bottom:16px;"><div class="fl">Açıklama (opsiyonel)</div><textarea class="fta" id="reportText" aria-label="Şikayet veya düzeltme gerekçesi" placeholder="Neyin yanlış olduğunu veya güncel altyapı durumunu açıklayın..."></textarea></div>
+    <div class="fg" style="margin-bottom:16px;">
+      <div class="fl">Açıklama <span style="color:var(--danger)">*</span></div>
+      <textarea class="fta" id="reportText" aria-label="Şikayet veya düzeltme gerekçesi" placeholder="Neyin yanlış olduğunu veya güncel durumu kısaca açıklayın (en az 5 karakter)..."></textarea>
+    </div>
     <button class="btn-primary" id="reportSubmitBtn" style="width:100%;padding:11px;" onclick="submitReport()">Bildirimi Gönder</button>
   </div>
 </div>
@@ -11295,11 +11298,13 @@ function openHexReport() {
   if (!activeHexPins || !activeHexPins.length) return showToast('Önce haritada bir bölge seçin','warn');
   // Harita sayfasında değilsek bildirim modal'ını yine de aç (sayfa değiştirme)
   document.getElementById('reportPinId').value = '';
+  document.getElementById('reportHexId').value = '';
   document.getElementById('reportBolge').value = locText;
   document.getElementById('reportLocationText').textContent = locText;
   document.getElementById('reportLocationInfo').style.display = 'block';
-  document.getElementById('reportType').value = 'yanlis_hiz';
-  onReportTypeChange('yanlis_hiz');
+  // Bölge bildirimlerinde varsayılan olarak "Altyapı değişti / Güncelleme" seçilir
+  document.getElementById('reportType').value = 'guncelleme';
+  onReportTypeChange('guncelleme');
   document.getElementById('reportText').value = '';
   const rsb2 = document.getElementById('reportSubmitBtn'); if (rsb2) { rsb2.disabled = false; rsb2.textContent = 'Bildirimi Gönder'; }
   document.getElementById('reportModal').classList.add('open');
@@ -11320,12 +11325,16 @@ function redirectToNewPinFromReport() {
 // HATA ÖNLEYİCİ GÜNCELLEME (SCHEMA CACHE FALLBACK)
 async function submitReport() {
   const pinId = document.getElementById('reportPinId').value; const bolge = document.getElementById('reportBolge').value || null; const hexId = document.getElementById('reportHexId').value || null;
+  const aciklama = (document.getElementById('reportText').value || '').trim();
+  if (aciklama.length < 5) {
+    return showToast('Lütfen neyin hatalı veya güncel olduğunu en az 5 karakterle açıklayın.', 'warn');
+  }
+
   // BÖLGE BİLDİRİMİ İYİLEŞTİRMESİ: Eğer pinId boşsa (bölge bildirimi yapılıyorsa),
   // o bölgedeki masum kullanıcı pinlerini hedef almak yerine bağımsız tek bir bölge bildirimi (pin_id: null) açıyoruz.
   const targets = pinId ? [{pin_id:pinId}] : [{pin_id:null}];
   if (!targets.length) return showToast('Bildirilecek veri yok','err');
   const tip = document.getElementById('reportType').value;
-  const aciklama = document.getElementById('reportText').value || null;
   // Çift tıklama koruması: buton devre dışı bırakılmazsa hızlı çift tıklamada mükerrer bildirim satırı oluşuyordu.
   const btn = document.getElementById('reportSubmitBtn');
   if (btn) { if (btn.disabled) return; btn.disabled = true; btn.textContent = 'Gönderiliyor...'; }
@@ -12646,6 +12655,105 @@ function cleanBolgeStr(s) {
   return s.split('›').map(p => p.trim()).filter(p => p && p !== '—' && p !== '-').join(' › ');
 }
 
+// Haritada arama kutusuna yazarak belirli bir mahalleye/bölgeye uçma
+function focusOnRegionStr(bolgeStr) {
+  if (!bolgeStr) return;
+  const clean = cleanBolgeStr(bolgeStr);
+  if (!clean) return;
+  showPage('harita');
+  setTimeout(() => {
+    const input = document.getElementById('mapSearchInput');
+    if (input) {
+      input.value = clean.replace(/·/g, ' ').replace(/\s+/g, ' ').trim();
+      searchLocation();
+    }
+  }, 100);
+}
+
+function renderReportCard(r, isGecmis = false) {
+  const tarihStr = new Date(r.created_at).toLocaleString('tr-TR');
+  const pin = adminPinsCache.find(p => String(p.id) === String(r.pin_id));
+  const cleanBolge = cleanBolgeStr(r.bolge);
+
+  // Harita butonu: Koordinat varsa pine, yoksa bölgeye odaklanır
+  let mapBtn = '';
+  if (pin && pin.lat && pin.lng) {
+    mapBtn = `<button type="button" class="btn-sub" style="padding:6px 10px;font-size:11px;" onclick="focusOnMap(${pin.lat}, ${pin.lng})" title="Haritada Odaklan">📍 Haritada Göster</button>`;
+  } else if (cleanBolge) {
+    mapBtn = `<button type="button" class="btn-sub" style="padding:6px 10px;font-size:11px;" onclick="focusOnRegionStr('${escAttr(cleanBolge)}')" title="Bölgeyi Haritada Aç">🗺️ Bölgeyi Haritada Aç</button>`;
+  }
+
+  // Kapsam Rozeti
+  const scopeBadge = r.pin_id
+    ? `<span style="padding:2px 7px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:4px;font-size:9.5px;color:var(--accent);font-family:var(--font-mono);font-weight:600;">📌 Veri #${escHtml(r.pin_id.slice(0,8))}</span>`
+    : `<span style="padding:2px 7px;background:rgba(251,140,0,.1);border:1px solid rgba(251,140,0,.3);border-radius:4px;font-size:9.5px;color:var(--warn);font-family:var(--font-mono);font-weight:600;">🗺️ Genel Bölge</span>`;
+
+  // Konum Başlığı
+  const locationText = cleanBolge || (pin ? `${pin.il||''}${pin.ilce?' · '+pin.ilce:''}` : 'Bilinmeyen Konum');
+
+  // Geçmiş durum rozeti
+  const durumBadge = isGecmis ? (r.durum === 'islendi'
+    ? '<span style="color:var(--success);font-weight:700;font-size:10.5px;">✅ Çözüldü</span>'
+    : '<span style="color:var(--danger);font-weight:700;font-size:10.5px;">❌ Geçersiz Sayıldı</span>'
+  ) : '';
+
+  // Pin Bilgi Satırı (Varsa)
+  let pinInfoHtml = '';
+  if (r.pin_id && pin) {
+    pinInfoHtml = `
+      <div style="font-size:11px;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span style="font-weight:700;color:var(--text);">${escHtml(pin.iss||'—')}</span> ·
+        <span style="color:${cc(pin.baglanti_turu)};font-weight:600;">${(pin.baglanti_turu||'').toUpperCase()}</span> ·
+        <span>⚡ ${pin.gercek_dl||'?'} Mbps</span>
+      </div>
+    `;
+  }
+
+  // Aksiyonlar
+  let actionsHtml = '';
+  if (!isGecmis) {
+    actionsHtml = `
+      <div class="mod-actions" style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:9px;padding-top:7px;border-top:1px dashed var(--border);">
+        ${mapBtn}
+        ${r.pin_id ? `<button type="button" class="btn-sub" style="padding:6px 10px;font-size:11px;" onclick="openEditModal('${r.pin_id}')" title="Pindeki hatayı düzenle">✏️ Pini Düzenle</button>` : ''}
+        <div style="margin-left:auto;display:flex;gap:6px;">
+          <button type="button" class="btn-approve" style="padding:6px 12px;font-size:11px;" onclick="handleRapor('${r.id}','islendi')" title="Bildirimi çözüldü olarak kapat">✓ Çözüldü Olarak Kapat</button>
+          <button type="button" class="btn-hide" style="padding:6px 12px;font-size:11px;" onclick="handleRapor('${r.id}','reddedildi')" title="Asılsız/geçersiz bildirimi kapat">✕ Geçersiz Say</button>
+        </div>
+      </div>
+    `;
+  } else {
+    actionsHtml = `
+      <div class="mod-actions" style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:9px;padding-top:7px;border-top:1px dashed var(--border);">
+        ${mapBtn}
+        ${r.pin_id ? `<button type="button" class="btn-sub" style="padding:6px 10px;font-size:11px;" onclick="openEditModal('${r.pin_id}')" title="Pindeki hatayı düzenle">✏️ Pini Düzenle</button>` : ''}
+        <button type="button" class="btn-sub" style="padding:6px 12px;font-size:11px;margin-left:auto;" onclick="undoRapor('${r.id}')" title="Bu bildirimi tekrar bekleyen listesine taşır">↩️ Bekleyene Geri Al</button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="report-card" style="padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:9px;margin-bottom:10px;${isGecmis ? 'opacity:0.8;' : ''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span class="report-type" style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;">${RAPOR_TIP_LABELS[r.tip]||escHtml(r.tip)}</span>
+          ${scopeBadge}
+          <span style="font-size:11.5px;font-weight:600;color:var(--text);">${escHtml(locationText)}</span>
+          ${durumBadge}
+        </div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);">${tarihStr}</div>
+      </div>
+
+      <div style="background:var(--surface2);border-radius:6px;padding:8px 11px;font-size:12px;color:var(--text);border-left:3px solid var(--accent);line-height:1.45;margin-bottom:8px;">
+        ${r.aciklama ? `<span style="color:var(--text3);font-size:9.5px;font-weight:700;display:block;margin-bottom:2px;letter-spacing:0.4px;">KULLANICI BİLDİRİMİ:</span>${escHtml(r.aciklama)}` : `<span style="color:var(--text3);font-style:italic;">Kullanıcı açıklama belirtmedi.</span>`}
+      </div>
+
+      ${pinInfoHtml}
+      ${actionsHtml}
+    </div>
+  `;
+}
+
 async function loadRaporlar() {
   const list = document.getElementById('bekleyenList');
   if (!list) return;
@@ -12658,23 +12766,7 @@ async function loadRaporlar() {
       list.innerHTML = '<div class="empty-state">Bekleyen rapor yok ✅</div>';
       return;
     }
-    const siblingGroups = groupRaporSiblings(raporlar);
-    list.innerHTML = raporlar.map(r => {
-      const tarihStr = new Date(r.created_at).toLocaleString('tr-TR');
-      const pin = adminPinsCache.find(p => String(p.id) === String(r.pin_id));
-      const focusBtn = (pin && pin.lat) ? `<button class="btn-edit" onclick="focusOnMap(${pin.lat}, ${pin.lng})" title="Haritada Odaklan">📍 Harita</button>` : '';
-      return `<div class="report-card">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div class="report-type">${RAPOR_TIP_LABELS[r.tip]||escHtml(r.tip)}</div><div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);">${tarihStr}</div></div>
-        <div class="report-text">${escHtml(r.aciklama)||'Açıklama girilmedi'}</div>
-        ${buildRaporScopeAndPinHtml(r, pin, siblingGroups)}
-        <div class="mod-actions" style="margin-top:8px;">
-          ${focusBtn}
-          ${r.pin_id?`<button class="btn-edit" onclick="openEditModal('${r.pin_id}')" title="Pindeki hatayı burada düzelt">✏️ Pini Düzelt</button>`:''}
-          <button class="btn-approve" onclick="handleRapor('${r.id}','islendi')" title="Sadece bu BİLDİRİMİ kapatır — pini değiştirmez">✅ Bildirimi Kapat (İşlendi)</button>
-          <button class="btn-hide" onclick="handleRapor('${r.id}','reddedildi')" title="Bildirim geçersiz/asılsız — pini SİLMEZ, sadece bildirimi kapatır">❌ Bildirimi Reddet</button>
-        </div>
-      </div>`;
-    }).join('');
+    list.innerHTML = raporlar.map(r => renderReportCard(r, false)).join('');
   } catch(e) {
     console.error('[internetHarita] Bildirimler yüklenirken hata:', e);
     list.innerHTML = '<div class="empty-state" style="color:var(--danger)">⚠️ Bildirimler yüklenirken bir sorun oluştu.</div>';
@@ -12708,24 +12800,7 @@ async function loadGecmisRaporlar() {
       list.innerHTML = '<div class="empty-state">Henüz işlenmiş rapor yok</div>';
       return;
     }
-    const siblingGroups = groupRaporSiblings(raporlar);
-    const durumBadge = { islendi:'<span style="color:var(--success);font-weight:700;">✅ İşlendi</span>', reddedildi:'<span style="color:var(--danger);font-weight:700;">❌ Reddedildi</span>' };
-    list.innerHTML = raporlar.map(r => {
-      const tarihStr = new Date(r.created_at).toLocaleString('tr-TR');
-      const pin = adminPinsCache.find(p => String(p.id) === String(r.pin_id));
-      const focusBtn = (pin && pin.lat) ? `<button class="btn-edit" onclick="focusOnMap(${pin.lat}, ${pin.lng})" title="Haritada Odaklan">📍 Harita</button>` : '';
-      return `<div class="report-card" style="opacity:.75;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div class="report-type">${RAPOR_TIP_LABELS[r.tip]||escHtml(r.tip)}</div><div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);">${tarihStr}</div></div>
-        <div style="margin-bottom:5px;font-size:11px;">${durumBadge[r.durum]||escHtml(r.durum)}</div>
-        <div class="report-text">${escHtml(r.aciklama)||'Açıklama girilmedi'}</div>
-        ${buildRaporScopeAndPinHtml(r, pin, siblingGroups)}
-        <div class="mod-actions" style="margin-top:8px;">
-          ${focusBtn}
-          ${r.pin_id?`<button class="btn-edit" onclick="openEditModal('${r.pin_id}')" title="Pindeki hatayı burada düzelt">✏️ Pini Düzelt</button>`:''}
-          <button class="btn-edit" onclick="undoRapor('${r.id}')" title="Bu bildirimi tekrar 'bekleyen' listesine taşır">↩️ Geri Al (Bekleyene Taşı)</button>
-        </div>
-      </div>`;
-    }).join('');
+    list.innerHTML = raporlar.map(r => renderReportCard(r, true)).join('');
   } catch(e) {
     list.innerHTML = '<div style="color:var(--danger);padding:10px;">Geçmiş raporlar yüklenemedi.</div>';
   } finally {
@@ -15525,22 +15600,23 @@ async function runMultiStreamSpeedTest() {
   document.getElementById('stPingRow').style.display = 'flex';
   document.getElementById('stPingVal').textContent = finalPing + ' ms';
 
-  // 2. AŞAMA: ÇOK KANALLI İNDİRME (6 PARALEL AKIŞ + WEB WORKER + DOĞRU STEADY-STATE ÖLÇÜMÜ)
+  // 2. AŞAMA: ÇOK KANALLI İNDİRME (6 KESİNTİSİZ AKIŞ + WEB WORKER + DOĞRU STEADY-STATE ÖLÇÜMÜ)
   document.getElementById('stPhase').textContent = '↓ İNDİRME';
   document.getElementById('stSub').textContent = 'İndirme hızı ölçülüyor...';
   document.getElementById('sgFill').style.stroke = 'var(--accent)';
 
   const dlDurationMs = 7000;
-  const dlWarmupMs = 1200;
-  const dlStreamsCount = 6; // HTTP/2 tarayıcı havuzu için optimum 6 paralel akış
+  const dlWarmupMs = 1500; // 1.5 sn ısınma süresi (TCP slow-start geçişi tamamen elenir)
+  const dlStreamsCount = 6;
   let dlCumulativeBytes = 0;
   let dlWarmupBytes = null;
   let dlWarmupTime = null;
-  const dlHistory = [];
   const dlSustainedWindows = [];
+  let lastDlSampleBytes = 0;
+  let lastDlSampleTime = null;
   const dlStart = performance.now();
 
-  // Web Worker içinde 6 paralel indirme akışını başlat (UI thread donmalarını engeller)
+  // Web Worker içinde 6 kesintisiz paralel indirme akışını başlat (UI thread donmalarını engeller)
   let workerSupported = false;
   try {
     const workerCode = `
@@ -15557,14 +15633,14 @@ async function runMultiStreamSpeedTest() {
           const tStart = performance.now();
           const reportTimer = setInterval(() => {
             if (stopped) { clearInterval(reportTimer); return; }
-            self.postMessage({ type: 'progress', bytes: totalBytes, t: performance.now() - tStart });
+            self.postMessage({ type: 'progress', bytes: totalBytes, t: performance.now() });
           }, 80);
           const spawn = async (idx) => {
-            let chunkBytes = 15000000; // 15 MB başlangıç
+            // Her akış için 250 MB kesintisiz akış açarak ara duraksamaları (gap/RTT kaybı) tamamen önle
             while (!stopped && (performance.now() - tStart) < durationMs) {
               const c = new AbortController();
               ctrls.add(c);
-              const u = baseUrl + '?bytes=' + chunkBytes + '&s=' + idx + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+              const u = baseUrl + '?bytes=250000000&s=' + idx + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
               try {
                 const r = await fetch(u, { signal: c.signal, cache: 'no-store', mode: 'cors' });
                 if (!r.ok) break;
@@ -15575,8 +15651,6 @@ async function runMultiStreamSpeedTest() {
                     if (done) break;
                     if (value && value.byteLength > 0) {
                       totalBytes += value.byteLength;
-                      // Hızlı hatlarda (30 MB+ indirildiğinde) akış kesilmemesi için blok boyutunu 35 MB'a çıkar
-                      if (totalBytes > 30000000) chunkBytes = 35000000;
                     }
                   }
                 } else {
@@ -15626,7 +15700,7 @@ async function runMultiStreamSpeedTest() {
 
   const spawnMainThreadDownloadWorker = (streamIdx) => {
     return (async () => {
-      let chunkSize = 15000000;
+      let chunkSize = 250000000;
       while (!cancelled && (performance.now() - dlStart) < dlDurationMs) {
         const ctrl = new AbortController();
         activeControllers.add(ctrl);
@@ -15641,7 +15715,6 @@ async function runMultiStreamSpeedTest() {
               if (done) break;
               if (value && value.byteLength > 0) {
                 dlCumulativeBytes += value.byteLength;
-                if (dlCumulativeBytes > 30000000) chunkSize = 35000000;
               }
             }
           } else {
@@ -15680,32 +15753,32 @@ async function runMultiStreamSpeedTest() {
         for (let s = 0; s < dlStreamsCount; s++) dlWorkers.push(spawnMainThreadDownloadWorker(s));
       }
 
-      // Isınma süresi (1.2 sn) tamamlandığında referansı kaydet
+      // Isınma süresi (1.5 sn) tamamlandığında referansı kaydet
       if (elapsed >= dlWarmupMs && dlWarmupBytes === null) {
         dlWarmupBytes = dlCumulativeBytes;
         dlWarmupTime = now;
+        lastDlSampleBytes = dlCumulativeBytes;
+        lastDlSampleTime = now;
       }
 
-      dlHistory.push({ t: now, bytes: dlCumulativeBytes });
-      // Son 1000ms'lik pencereyi tut
-      while (dlHistory.length > 2 && now - dlHistory[0].t > 1000) {
-        dlHistory.shift();
-      }
-
-      if (dlHistory.length >= 2) {
-        const oldest = dlHistory[0];
-        const dt = (now - oldest.t) / 1000;
-        const dBytes = dlCumulativeBytes - oldest.bytes;
-        if (dt >= 0.4) {
-          const windowMbps = (dBytes * 8) / dt / 1e6;
-          if (elapsed >= dlWarmupMs && dt >= 0.6 && windowMbps > 0) {
-            dlSustainedWindows.push(windowMbps);
+      // Isınma sonrası: Her 350ms'de bir pencereli hız hesapla ve ibreyi güncelle
+      if (elapsed >= dlWarmupMs && lastDlSampleTime !== null) {
+        const dt = (now - lastDlSampleTime) / 1000;
+        if (dt >= 0.35) {
+          const dBytes = dlCumulativeBytes - lastDlSampleBytes;
+          if (dBytes > 0) {
+            const windowMbps = (dBytes * 8) / dt / 1e6;
+            if (windowMbps > 0) {
+              dlSustainedWindows.push(windowMbps);
+              const liveMbps = Math.max(1, Math.round(windowMbps));
+              liveLogAppend('↓', liveMbps);
+              if (liveMbps > liveMax) liveMax = Math.ceil(liveMbps * 1.25 / 50) * 50;
+              setGauge(liveMbps, liveMax, 'var(--accent)');
+              document.getElementById('stDLVal').textContent = formatMbps(liveMbps);
+            }
           }
-          const liveMbps = Math.max(1, Math.round(windowMbps));
-          liveLogAppend('↓', liveMbps);
-          if (liveMbps > liveMax) liveMax = Math.ceil(liveMbps * 1.25 / 50) * 50;
-          setGauge(liveMbps, liveMax, 'var(--accent)');
-          document.getElementById('stDLVal').textContent = formatMbps(liveMbps);
+          lastDlSampleBytes = dlCumulativeBytes;
+          lastDlSampleTime = now;
         }
       }
 
@@ -15720,7 +15793,7 @@ async function runMultiStreamSpeedTest() {
         activeControllers.clear();
         resolveDL();
       }
-    }, 100);
+    }, 70);
     activeIntervals.add(dlTimer);
   });
 
@@ -15730,13 +15803,10 @@ async function runMultiStreamSpeedTest() {
   const dlEndNow = performance.now();
   const effectiveDlBytes = dlWarmupBytes !== null ? Math.max(0, dlCumulativeBytes - dlWarmupBytes) : dlCumulativeBytes;
   const effectiveDlSec = dlWarmupTime !== null ? ((dlEndNow - dlWarmupTime) / 1000) : ((dlEndNow - dlStart) / 1000);
-  const sustainedThroughput = effectiveDlSec > 0.5 ? ((effectiveDlBytes * 8) / effectiveDlSec / 1e6) : 0;
-  const trimmedWindowDL = dlSustainedWindows.length ? calcTrimmedBandwidth(dlSustainedWindows, 0.20, 0.85) : sustainedThroughput;
-  // Doygun hat akışını ve pencereli ortalamayı yapay çarpan kullanmadan dengeli harmanla
-  const rawFinalDL = sustainedThroughput > 0
-    ? (sustainedThroughput * 0.65 + trimmedWindowDL * 0.35)
-    : trimmedWindowDL;
-  const finalDL = Math.max(1, Math.round(rawFinalDL));
+  const throughputDL = effectiveDlSec > 0.5 ? ((effectiveDlBytes * 8) / effectiveDlSec / 1e6) : 0;
+  // Doygunluk pencerelerinden alt ve üst %15 uç değerleri eleyen güvenilir medyan dilim ortalaması
+  const trimmedDL = dlSustainedWindows.length >= 3 ? calcTrimmedBandwidth(dlSustainedWindows, 0.15, 0.85) : throughputDL;
+  const finalDL = Math.max(1, Math.round(trimmedDL > 0 ? trimmedDL : throughputDL));
   document.getElementById('stDLVal').textContent = formatMbps(finalDL);
 
   // 3. AŞAMA: ADAPTİF ÇOK KANALLI SUNUCU ONAYLI YÜKLEME (SERVER-CONFIRMED UPLOAD)
@@ -15745,26 +15815,32 @@ async function runMultiStreamSpeedTest() {
   document.getElementById('sgFill').style.stroke = 'var(--success)';
 
   const ulDurationMs = 6000;
-  const ulWarmupMs = 1000;
+  const ulWarmupMs = 1200;
   const ulStreamsCount = 4; // 4 eşzamanlı adaptif akış
 
-  // Bellek dostu sabit boyutlu veri blokları (256 KB, 512 KB, 1 MB, 2 MB)
+  // Bellek dostu sabit boyutlu veri blokları (256 KB -> 16 MB)
   const ulPayloads = {
     262144: new Uint8Array(262144),
     524288: new Uint8Array(524288),
     1048576: new Uint8Array(1048576),
-    2097152: new Uint8Array(2097152)
+    2097152: new Uint8Array(2097152),
+    4194304: new Uint8Array(4194304),
+    8388608: new Uint8Array(8388608),
+    16777216: new Uint8Array(16777216)
   };
 
   let ulConfirmedBytes = 0;
-  let lastUlConfirmTime = null;
+  let ulWarmupConfirmedBytes = 0;
+  let ulWarmupTime = null;
   const confirmedUploads = []; // { t, bytes, durationMs }
-  const inFlightBytes = new Array(ulStreamsCount).fill(0);
+  const ulWindowSamples = [];
+  let lastUlSampleBytes = 0;
+  let lastUlSampleTime = null;
   const ulStart = performance.now();
 
   const spawnUploadWorker = (streamIdx) => {
     return (async () => {
-      let currentChunkSize = 262144; // Başlangıç: 256 KB (Yavaş/asimetrik hatlarda hızlı teslimat garantisi)
+      let currentChunkSize = 524288; // Başlangıç: 512 KB
       while (!cancelled && (performance.now() - ulStart) < ulDurationMs) {
         await new Promise((resReq) => {
           const xhr = new XMLHttpRequest();
@@ -15773,28 +15849,21 @@ async function runMultiStreamSpeedTest() {
           const reqStart = performance.now();
           xhr.open('POST', url, true);
 
-          xhr.upload.onprogress = (e) => {
-            if (cancelled) return;
-            inFlightBytes[streamIdx] = Math.min(e.loaded, currentChunkSize);
-          };
-
           const doneReq = (success) => {
             activeXhrs.delete(xhr);
-            inFlightBytes[streamIdx] = 0;
             const nowConfirm = performance.now();
             const reqDur = nowConfirm - reqStart;
 
             if (success && !cancelled) {
               ulConfirmedBytes += currentChunkSize;
-              lastUlConfirmTime = nowConfirm;
               confirmedUploads.push({ t: nowConfirm, bytes: currentChunkSize, durationMs: reqDur });
 
-              // Adaptif paket boyutu ölçekleme (Hata önleyici algoritma):
-              // - Paket 120ms'den kısa sürdüyse (hızlı hat): Bir üst boyuta çık (256KB -> 512KB -> 1MB -> 2MB)
-              // - Paket 500ms'den uzun sürdüyse (yavaş hat): Bir alt boyuta inerek sık sunucu onayı sağla
-              if (reqDur < 120 && currentChunkSize < 2097152) {
+              // Dinamik Paket Ölçekleme (Yüksek hızda RTT darboğazını kırma):
+              // Paket 150 ms'den kısa sürdüyse (örneğin yüksek hızlı fiber), sunucu onay gecikmesini
+              // aşmak için paketi 16 MB'a kadar büyüt. 600 ms'den uzun sürdüyse sık onay için küçült.
+              if (reqDur < 150 && currentChunkSize < 16777216) {
                 currentChunkSize *= 2;
-              } else if (reqDur > 500 && currentChunkSize > 262144) {
+              } else if (reqDur > 600 && currentChunkSize > 262144) {
                 currentChunkSize = Math.max(262144, currentChunkSize / 2);
               }
             }
@@ -15806,7 +15875,7 @@ async function runMultiStreamSpeedTest() {
           xhr.onabort = () => doneReq(false);
           xhr.ontimeout = () => doneReq(false);
 
-          const payload = ulPayloads[currentChunkSize] || ulPayloads[262144];
+          const payload = ulPayloads[currentChunkSize] || ulPayloads[524288];
           try {
             xhr.send(payload);
           } catch(e) {
@@ -15832,17 +15901,33 @@ async function runMultiStreamSpeedTest() {
       const now = performance.now();
       const elapsed = now - ulStart;
 
-      // Canlı ibre: Son 1000ms içinde tamamlanmış kesin teslimatlara göre hesapla
-      const recentCompleted = confirmedUploads.filter(u => (now - u.t) <= 1000);
-      if (recentCompleted.length > 0) {
-        const recentBytes = recentCompleted.reduce((acc, u) => acc + u.bytes, 0);
-        const earliestT = Math.min(...recentCompleted.map(u => u.t - u.durationMs));
-        const spanSec = Math.max(0.4, (now - earliestT) / 1000);
-        const liveMbps = Math.max(1, Math.round((recentBytes * 8) / spanSec / 1e6));
-        liveLogAppend('↑', liveMbps);
-        if (liveMbps > liveMax) liveMax = Math.ceil(liveMbps * 1.25 / 50) * 50;
-        setGauge(liveMbps, liveMax, 'var(--success)');
-        document.getElementById('stULVal').textContent = formatMbps(liveMbps);
+      // 1.2 sn ısınma tamamlandığında referansı al
+      if (elapsed >= ulWarmupMs && ulWarmupTime === null) {
+        ulWarmupConfirmedBytes = ulConfirmedBytes;
+        ulWarmupTime = now;
+        lastUlSampleBytes = ulConfirmedBytes;
+        lastUlSampleTime = now;
+      }
+
+      // Canlı ibre ve pencereli örnekler (ısınma sonrası)
+      if (elapsed >= ulWarmupMs && lastUlSampleTime !== null) {
+        const dt = (now - lastUlSampleTime) / 1000;
+        if (dt >= 0.4) {
+          const dBytes = ulConfirmedBytes - lastUlSampleBytes;
+          if (dBytes > 0) {
+            const windowMbps = (dBytes * 8) / dt / 1e6;
+            if (windowMbps > 0) {
+              ulWindowSamples.push(windowMbps);
+              const liveMbps = Math.max(1, Math.round(windowMbps));
+              liveLogAppend('↑', liveMbps);
+              if (liveMbps > liveMax) liveMax = Math.ceil(liveMbps * 1.25 / 50) * 50;
+              setGauge(liveMbps, liveMax, 'var(--success)');
+              document.getElementById('stULVal').textContent = formatMbps(liveMbps);
+            }
+          }
+          lastUlSampleBytes = ulConfirmedBytes;
+          lastUlSampleTime = now;
+        }
       }
 
       if (elapsed >= ulDurationMs) {
@@ -15852,31 +15937,20 @@ async function runMultiStreamSpeedTest() {
         activeXhrs.clear();
         resolveUL();
       }
-    }, 100);
+    }, 70);
     activeIntervals.add(ulTimer);
   });
 
   await Promise.allSettled(ulWorkers);
   if (cancelled) return;
 
-  // Nihai yükleme hızı: Yalnızca sunucuya ulaştığı HTTP 200 ile doğrulanmış paketler
-  let confirmedMbps = 0;
-  const postWarmupUploads = confirmedUploads.filter(u => u.t >= (ulStart + ulWarmupMs));
-  if (postWarmupUploads.length >= 2) {
-    const postBytes = postWarmupUploads.reduce((sum, u) => sum + u.bytes, 0);
-    const spanSec = (postWarmupUploads[postWarmupUploads.length - 1].t - postWarmupUploads[0].t) / 1000;
-    if (spanSec > 0.4 && postBytes > 0) {
-      confirmedMbps = (postBytes * 8) / spanSec / 1e6;
-    }
-  }
-
-  // Eğer post-warmup teslimatları yetersizse (çok yavaş hat), tüm onaylanan baytları toplam süreye böl
-  if (confirmedMbps <= 0 && confirmedUploads.length > 0 && lastUlConfirmTime && lastUlConfirmTime > ulStart + 400) {
-    const totalSec = (lastUlConfirmTime - ulStart) / 1000;
-    confirmedMbps = (ulConfirmedBytes * 8) / totalSec / 1e6;
-  }
-
-  const finalUL = Math.max(1, Math.round(confirmedMbps));
+  // Nihai yükleme hızı: Yalnızca ısınma sonrası sunucuya ulaşmış kesin baytlar ve süre
+  const ulEndNow = performance.now();
+  const effectiveUlBytes = Math.max(0, ulConfirmedBytes - (ulWarmupConfirmedBytes || 0));
+  const effectiveUlSec = ulWarmupTime !== null ? ((ulEndNow - ulWarmupTime) / 1000) : ((ulEndNow - ulStart) / 1000);
+  const throughputUL = effectiveUlSec > 0.5 ? ((effectiveUlBytes * 8) / effectiveUlSec / 1e6) : 0;
+  const trimmedUL = ulWindowSamples.length >= 3 ? calcTrimmedBandwidth(ulWindowSamples, 0.15, 0.85) : throughputUL;
+  const finalUL = Math.max(1, Math.round(trimmedUL > 0 ? trimmedUL : throughputUL));
   finalizeSpeedTestUI(finalDL, finalUL, finalPing);
 }
 
