@@ -3154,6 +3154,17 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
       </div>
       <button class="hex-pins-toggle" id="hexPinsToggleBtn" onclick="toggleHexPinsList()">▼ Tüm ölçümleri gör</button>
       <div class="hex-pins-list" id="hexPinsList" style="display:none;"></div>
+      <div id="infoLowSampleNotice" style="display:none;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:11px;color:var(--text2);line-height:1.45;">
+        <div style="font-weight:700;color:var(--warn);margin-bottom:3px;display:flex;align-items:center;gap:5px;">
+          <span>📊</span> Düşük Örneklem (<span id="infoLowSampleCount">1</span> ölçüm)
+        </div>
+        <div style="font-size:10.5px;color:var(--text3);margin-bottom:8px;">
+          Bu bölgedeki hız ortalaması az sayıda teste dayanır. Genel bölge bildirimi açmak yerine kendi hızınızı ekleyerek ortalamayı güncelleyebilirsiniz.
+        </div>
+        <button type="button" class="btn-primary" style="width:100%;padding:7px;font-size:11px;display:flex;align-items:center;justify-content:center;gap:5px;" onclick="showPage('pin')">
+          <span>⚡</span> Kendi Hızını Ekle (+ Veri Ekle)
+        </button>
+      </div>
       <button class="popup-btn popup-report" id="infoBildirBtn" onclick="openHexReport()" style="width:100%;margin-top:10px;padding:7px;">🚩 Bu Bölgeyi Bildir</button>
       <button class="btn-ghost" onclick="shareCurrentRegion()" style="width:100%;margin-top:6px;padding:7px;font-size:11px;display:flex;align-items:center;justify-content:center;gap:6px;border-color:rgba(0,212,255,0.3);color:var(--accent);background:rgba(0,212,255,0.04);">🔗 Bu Bölgenin Bağlantısını Paylaş</button>
       <button class="btn-ghost" onclick="openScoreCardModal('region')" style="width:100%;margin-top:6px;padding:7px;font-size:11px;display:flex;align-items:center;justify-content:center;gap:6px;border-color:rgba(0,212,255,0.4);color:var(--accent);background:rgba(0,212,255,0.06);">📸 Bu Bölgenin İnternet Karnesini Paylaş</button>
@@ -8010,9 +8021,16 @@ function showHexInfo(pins, hexId, filterTech = 'all', keepScroll = false) {
       scEl.style.color = 'var(--text3)';
     }
   }
-  document.getElementById('infoCount').textContent = activeHexFilterType === 'all'
-    ? `${activeHexPins.length} ölçüm`
-    : `${activeHexPins.length} / ${pins.length} ölçüm`;
+  const countEl = document.getElementById('infoCount');
+  if (countEl) {
+    if (pins.length < 3) {
+      countEl.innerHTML = `${pins.length} ölçüm <span style="font-size:9.5px;color:var(--warn);font-weight:700;margin-left:4px;background:rgba(245,158,11,.15);padding:1px 5px;border-radius:4px;border:1px solid rgba(245,158,11,.3);">Düşük Örneklem</span>`;
+    } else {
+      countEl.textContent = activeHexFilterType === 'all'
+        ? `${activeHexPins.length} ölçüm`
+        : `${activeHexPins.length} / ${pins.length} ölçüm`;
+    }
+  }
   // BÖLGESEL SAĞLAYICI VE ALTYAPI MATRİSİ
   // Hangi İSS'nin bu altıgende Fiber, VDSL, ADSL veya DOCSIS sunduğunu net eşleştir
   const providerMatrix = {};
@@ -8345,9 +8363,22 @@ function showHexInfo(pins, hexId, filterTech = 'all', keepScroll = false) {
   const hexList = document.getElementById('hexPinsList');
   const hexBtn = document.getElementById('hexPinsToggleBtn');
   const bildirBtn = document.getElementById('infoBildirBtn');
+  const sampleNotice = document.getElementById('infoLowSampleNotice');
+  const sampleCount = document.getElementById('infoLowSampleCount');
   if (hexList) { hexList.style.display = 'none'; hexList.innerHTML = ''; }
   if (hexBtn) { hexBtn.style.display = 'block'; hexBtn.textContent = `▼ Tüm ölçümleri gör (${activeHexPins.length})`; }
-  if (bildirBtn) bildirBtn.style.display = 'block';
+
+  // 3'ten az ölçüm olan bölgelerde genel şikayet butonunu kapatıp hız ekleme uyarısı göster
+  if (pins.length < 3) {
+    if (bildirBtn) bildirBtn.style.display = 'none';
+    if (sampleNotice) {
+      sampleNotice.style.display = 'block';
+      if (sampleCount) sampleCount.textContent = pins.length;
+    }
+  } else {
+    if (bildirBtn) bildirBtn.style.display = 'block';
+    if (sampleNotice) sampleNotice.style.display = 'none';
+  }
 }
 
 function toggleHexPinsList() {
@@ -11294,6 +11325,9 @@ function openReportModal(pinId, locStr) {
   document.getElementById('reportModal').classList.add('open');
 }
 function openHexReport() {
+  if (!activeHexPins || activeHexPins.length < 3) {
+    return showToast('Bu bölgede henüz yeterli ölçüm bulunmuyor. Kendi hızınızı ekleyerek veriyi artırabilirsiniz.', 'warn');
+  }
   const locText = document.getElementById('infoTitle')?.textContent || document.getElementById('reportBolge').value || 'Seçili bölge';
   if (!activeHexPins || !activeHexPins.length) return showToast('Önce haritada bir bölge seçin','warn');
   // Harita sayfasında değilsek bildirim modal'ını yine de aç (sayfa değiştirme)
@@ -14135,6 +14169,7 @@ function showSearchResultCard(targetLat, targetLng, title, sub) {
     const haEl = document.getElementById('infoHexAnalysis'); if (haEl) haEl.style.display = 'none';
     const fbSec = document.getElementById('infoFeedbackSection'); if (fbSec) fbSec.style.display = 'none';
     const bildirBtn = document.getElementById('infoBildirBtn'); if (bildirBtn) bildirBtn.style.display = 'none';
+    const sampleNotice = document.getElementById('infoLowSampleNotice'); if (sampleNotice) sampleNotice.style.display = 'none';
     const infoEl = document.getElementById('mapInfo');
     if (infoEl) infoEl.classList.add('visible');
   }
