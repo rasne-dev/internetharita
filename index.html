@@ -7934,7 +7934,7 @@ function renderModPins() {
           ${p.yorum ? `<div class="user-comment-box">${escHtml(p.yorum)}</div>` : ''}
           ${p.mod_notu ? `<div class="mod-note-box">${escHtml(p.mod_notu)}</div>` : ''}
         </div>
-        <div class="popup-actions"><div class="popup-btn btn-edit" onclick="openEditModal('${p.id}')">✏️ Düzenle</div><div class="popup-btn popup-report" onclick="openReportModal('${p.id}','${escAttr((p.il||'')+(p.ilce?' › '+p.ilce:''))}')">🚩 Bildir</div><div class="popup-btn popup-del" onclick="modDeletePin('${p.id}')">🗑 Sil</div></div>
+        <div class="popup-actions"><div class="popup-btn btn-edit" onclick="openEditModal('${p.id}')">✏️ Düzenle</div><div class="popup-btn popup-del" onclick="modDeletePin('${p.id}')">🗑 Sil</div></div>
       </div>`, {maxWidth:280});
     pinMarkerLayers.push(m);
   });
@@ -11308,18 +11308,18 @@ function resetPinForm() { pinLat=null; pinLng=null; if(pinMarker){maps.pin.remov
   }
 }
 
-function openReportModal(pinId, locStr) {
-  document.getElementById('reportPinId').value = pinId || '';
+function openReportModal(locStr) {
+  document.getElementById('reportPinId').value = '';
   document.getElementById('reportHexId').value = '';
   document.getElementById('reportBolge').value = locStr || '';
   if (locStr) {
-    document.getElementById('reportLocationText').textContent = (pinId ? `[Veri #${pinId}] ` : '') + locStr;
+    document.getElementById('reportLocationText').textContent = locStr;
     document.getElementById('reportLocationInfo').style.display = 'block';
   } else {
     document.getElementById('reportLocationInfo').style.display = 'none';
   }
-  document.getElementById('reportType').value = 'yanlis_hiz';
-  onReportTypeChange('yanlis_hiz');
+  document.getElementById('reportType').value = 'guncelleme';
+  onReportTypeChange('guncelleme');
   document.getElementById('reportText').value = '';
   const rsb1 = document.getElementById('reportSubmitBtn'); if (rsb1) { rsb1.disabled = false; rsb1.textContent = 'Bildirimi Gönder'; }
   document.getElementById('reportModal').classList.add('open');
@@ -11364,9 +11364,10 @@ async function submitReport() {
     return showToast('Lütfen neyin hatalı veya güncel olduğunu en az 5 karakterle açıklayın.', 'warn');
   }
 
-  // BÖLGE BİLDİRİMİ İYİLEŞTİRMESİ: Eğer pinId boşsa (bölge bildirimi yapılıyorsa),
-  // o bölgedeki masum kullanıcı pinlerini hedef almak yerine bağımsız tek bir bölge bildirimi (pin_id: null) açıyoruz.
-  const targets = pinId ? [{pin_id:pinId}] : [{pin_id:null}];
+  // TEK PİN BİLDİRİMİ KAPATILDI: Kullanıcı pinleri kişisel yorum içermediğinden ve
+  // hız anomalileri karantina algoritmasıyla otomatik izlendiğinden, tüm bildirimler
+  // bağımsız genel bölge/altyapı bildirimi (pin_id: null) olarak kaydedilir.
+  const targets = [{pin_id: null}];
   if (!targets.length) return showToast('Bildirilecek veri yok','err');
   const tip = document.getElementById('reportType').value;
   // Çift tıklama koruması: buton devre dışı bırakılmazsa hızlı çift tıklamada mükerrer bildirim satırı oluşuyordu.
