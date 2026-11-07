@@ -3919,7 +3919,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
         <div class="loc-actions">
           <div class="btn-loc" onclick="autoLocate()">📍 Konumumu Bul</div>
           <div class="btn-loc" onclick="showToast('Haritaya tıklayarak konum seçin','warn')">🗺 Haritadan Seç</div>
-          <div class="btn-loc" style="background:var(--surface2);border-color:var(--border2);color:var(--text2);" onclick="toggleManualAddress()">📋 İl/İlçe/Mahalle Yanlışsa Düzelt</div>
+          <div class="btn-loc" style="background:var(--surface2);border-color:var(--border2);color:var(--text2);" onclick="toggleManualAddress()">📍 Adresi Manuel Seç</div>
         </div>
         <div class="loc-actions" style="margin-top:4px;">
           <div class="btn-loc" style="flex:1;background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.35);color:var(--danger);" onclick="clearPinLocation()">✕ Konumu Temizle</div>
@@ -3938,7 +3938,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
       <!-- MANUEL ADRES GİRİŞİ (gizli, toggle ile açılır) -->
       <div id="manualAddressWrap" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;gap:10px;flex-direction:column;">
-        <div style="font-size:9px;color:var(--accent);font-family:var(--font-mono);font-weight:700;">📍 Buradan seçeceğiniz İl, İlçe ve Mahalle haritada otomatik bulunur ve pin seçtiğiniz mahalleye konumlandırılır.</div>
+        <div style="font-size:9px;color:var(--accent);font-family:var(--font-mono);font-weight:700;">📍 Buradan seçeceğiniz İl, İlçe, Mahalle ve Sokak haritada otomatik bulunur ve pin adresinize konumlandırılır.</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <div class="fg">
             <div class="fl">İl</div>
@@ -3960,10 +3960,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
           </select>
         </div>
         <div class="fg" id="manualSokakWrap" style="position:relative;">
-          <div class="fl">Cadde / Sokak <span style="color:var(--text3);font-weight:400;">(opsiyonel)</span></div>
-          <input type="text" class="fi" id="manualSokak" aria-label="Manuel Cadde veya Sokak seçimi" placeholder="Önce mahalle seçin" autocomplete="off" disabled>
+          <div class="fl">Cadde / Sokak</div>
+          <div style="position:relative;">
+            <input type="text" class="fi" id="manualSokak" aria-label="Manuel Cadde veya Sokak seçimi" placeholder="Önce mahalle seçin" autocomplete="off" style="padding-right:26px;" disabled>
+            <span id="manualSokakArrow" style="position:absolute;right:9px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text3);font-size:9px;">▼</span>
+          </div>
           <div id="manualSokakSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:7px;max-height:160px;overflow-y:auto;z-index:100;margin-top:2px;box-shadow:0 8px 24px rgba(0,0,0,0.5);"></div>
-          <div style="font-size:9px;color:var(--text3);margin-top:3px;line-height:1.3;">Sokağınızı yazabilir veya önerilerden seçebilirsiniz; pin doğrudan sokağınıza odaklanır.</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px;line-height:1.3;">Sokağınızı yazarak veya açılan seçeneklerden seçebilirsiniz; pin doğrudan sokağınıza odaklanır.</div>
         </div>
         <button type="button" class="btn-ghost" style="font-size:11px;padding:8px;" onclick="applyManualAddress()">✅ Bu Adresi Kullan</button>
       </div>
@@ -10307,7 +10310,7 @@ function onManualMahalleChange() {
   if (mahalle) {
     sokakInput.disabled = false;
     sokakInput.value = '';
-    sokakInput.placeholder = 'Örn: Atatürk Cad., Gül Sok. (opsiyonel)';
+    sokakInput.placeholder = 'Sokak / cadde adı yazın veya seçin...';
   } else {
     sokakInput.disabled = true;
     sokakInput.value = '';
@@ -10323,11 +10326,11 @@ function setupManualSokakAutocomplete() {
   const listEl = document.getElementById('manualSokakSuggestions');
   if (!sokakInput || !listEl) return;
 
-  sokakInput.addEventListener('input', () => {
+  const triggerSearch = () => {
     const q = sokakInput.value.trim();
     if (_sokakTimer) clearTimeout(_sokakTimer);
     if (_sokakController) _sokakController.abort();
-    if (q.length < 2) {
+    if (q.length < 1) {
       listEl.style.display = 'none';
       listEl.innerHTML = '';
       return;
@@ -10343,7 +10346,7 @@ function setupManualSokakAutocomplete() {
       const searchQuery = `${q}, ${cleanMah ? cleanMah + ', ' : ''}${ilce ? ilce + ', ' : ''}${il}`;
 
       try {
-        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&countrycodes=tr&format=json&limit=6&addressdetails=1`;
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&countrycodes=tr&format=json&limit=8&addressdetails=1`;
         const res = await fetch(url, {
           signal: _sokakController.signal,
           headers: { 'Accept': 'application/json', 'Accept-Language': 'tr' }
@@ -10362,7 +10365,7 @@ function setupManualSokakAutocomplete() {
           }
         });
 
-        if (!matches.length && q.length >= 3) {
+        if (!matches.length && q.length >= 2) {
           items.forEach(it => {
             if (it.name && !streetSet.has(it.name) && (it.type === 'residential' || it.type === 'service' || it.type === 'tertiary' || it.type === 'secondary' || it.type === 'primary')) {
               streetSet.add(it.name);
@@ -10373,8 +10376,9 @@ function setupManualSokakAutocomplete() {
 
         if (matches.length > 0) {
           listEl.innerHTML = matches.map(m => `
-            <div class="sokak-suggest-item" style="padding:6px 10px;font-size:11px;cursor:pointer;color:var(--text);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'" onclick="selectManualSokak('${escAttr(m.name)}')">
+            <div class="sokak-suggest-item" style="padding:7px 10px;font-size:11px;cursor:pointer;color:var(--text);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'" onclick="selectManualSokak('${escAttr(m.name)}')">
               <span>🛣 ${escHtml(m.name)}</span>
+              <span style="font-size:9.5px;color:var(--accent);font-family:var(--font-mono);">Seç ↵</span>
             </div>
           `).join('');
           listEl.style.display = 'block';
@@ -10384,8 +10388,11 @@ function setupManualSokakAutocomplete() {
       } catch(e) {
         listEl.style.display = 'none';
       }
-    }, 350);
-  });
+    }, 280);
+  };
+
+  sokakInput.addEventListener('input', triggerSearch);
+  sokakInput.addEventListener('focus', () => { if (sokakInput.value.trim().length >= 1) triggerSearch(); });
 
   document.addEventListener('click', (e) => {
     if (!e.target.closest('#manualSokakWrap')) {
@@ -10412,6 +10419,9 @@ async function applyManualAddress() {
   const mahalleSel = document.getElementById('manualMahalle');
   if (!mahalle && mahalleSel && mahalleSel.options.length > 1 && mahalleSel.value === '') {
     return showToast('Lütfen mahalle seçin', 'err');
+  }
+  if (!sokak) {
+    return showToast('Lütfen cadde veya sokak seçin / yazın', 'err');
   }
   
   document.getElementById('ilInput').value = il;
