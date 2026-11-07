@@ -3,13 +3,19 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://internetharita.com.tr/</loc>
-    <lastmod>2026-11-03</lastmod>
+    <lastmod>2026-11-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://internetharita.com.tr/favicon-512x512.png</image:loc>
       <image:title>İnternetHarita — Türkiye İnternet Altyapı Haritası ve Altyapı Sorgulama</image:title>
     </image:image>
+  </url>
+  <url>
+    <loc>https://internetharita.com.tr/harita.html</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://internetharita.com.tr/rehber.html</loc>

@@ -1,9 +1,9 @@
 {
   "name": "internetHarita — Türkiye İnternet Altyapı Haritası ve Altyapı Sorgulama",
   "short_name": "iHarita",
-  "version": "2.1.4",
+  "version": "2.1.5",
   "description": "Türkiye'nin mahalle ve ilçe bazlı bağımsız internet altyapı ve hız haritası.",
-  "start_url": "/",
+  "start_url": "/harita.html",
   "display": "standalone",
   "background_color": "#070b0f",
   "theme_color": "#00d4ff",
