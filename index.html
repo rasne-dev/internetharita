@@ -256,7 +256,11 @@ if (btt) { if (window.pageYOffset > 300) btt.classList.add('visible'); else btt.
 });
 function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 if ('serviceWorker' in navigator) {
-window.addEventListener('load', function() { navigator.serviceWorker.register('/sw.js').catch(function() {}); });
+var _swRef = false, _hadCtrl = !!navigator.serviceWorker.controller;
+navigator.serviceWorker.addEventListener('controllerchange', function() {
+if (_swRef || !_hadCtrl) return; _swRef = true; window.location.reload();
+});
+window.addEventListener('load', function() { navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(function(r){ r.update().catch(function(){}); }).catch(function() {}); });
 }
 </script>
 <button class="back-to-top" id="backToTop" onclick="scrollToTop()" title="Yukarı Çık" aria-label="Yukarı Çık">↑</button>

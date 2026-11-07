@@ -1,4 +1,4 @@
-const CACHE = 'iharita-v126';
+const CACHE = 'iharita-v127';
 const ASSETS = [
   '/',
   '/index.html',
@@ -42,7 +42,7 @@ self.addEventListener('fetch', e => {
   if (!url.startsWith('http')) return;
 
   const isSameOrigin = url.startsWith(self.location.origin);
-  const isStaticCdn = ['unpkg.com/leaflet', 'unpkg.com/h3-js', 'cdn.jsdelivr.net/npm/@supabase', 'cdn.jsdelivr.net/npm/@fingerprintjs', 'fonts.googleapis.com', 'fonts.gstatic.com'].some(d => url.includes(d));
+  const isStaticCdn = ['unpkg.com/leaflet', 'unpkg.com/h3-js', 'cdn.jsdelivr.net/npm/@supabase', 'cdn.jsdelivr.net/npm/@fingerprintjs', 'fonts.googleapis.com', 'fonts.gstatic.com', 'onurusluca/turkey-geo-api'].some(d => url.includes(d));
 
   // Üçüncü taraf reklam (AdSense, DoubleClick, FundingChoices), veritabanı ve hız testi isteklerine hiç dokunma
   if (!isSameOrigin && !isStaticCdn) return;
@@ -51,7 +51,7 @@ self.addEventListener('fetch', e => {
   // HTML sayfaları (navigate) için her zaman önce ağdan güncel sürümü çek ve önbelleği güncelle, çevrimdışıysa önbelleğe düş
   if (e.request.mode === 'navigate') {
     e.respondWith(
-      fetch(new Request(e.request.url, { cache: 'reload' })).then(res => {
+      fetch(e.request.url, { cache: 'no-store' }).then(res => {
         if (res && res.status === 200) {
           const clone = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, clone));
