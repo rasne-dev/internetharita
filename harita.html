@@ -3959,14 +3959,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
             <option value="">Önce ilçe seçin</option>
           </select>
         </div>
-        <div class="fg" id="manualSokakWrap" style="position:relative;">
+        <div class="fg" id="manualSokakWrap">
           <div class="fl">Cadde / Sokak</div>
-          <div style="position:relative;">
-            <input type="text" class="fi" id="manualSokak" aria-label="Manuel Cadde veya Sokak seçimi" placeholder="Önce mahalle seçin" autocomplete="off" style="padding-right:26px;" disabled>
-            <span id="manualSokakArrow" style="position:absolute;right:9px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text3);font-size:9px;">▼</span>
+          <select class="fs" id="manualSokak" aria-label="Manuel Cadde veya Sokak seçimi" onchange="onManualSokakChange()" disabled>
+            <option value="">Önce mahalle seçin</option>
+          </select>
+          <div id="manualSokakCustomWrap" style="display:none;margin-top:6px;">
+            <input type="text" class="fi" id="manualSokakCustom" aria-label="Özel Cadde veya Sokak adı" placeholder="Listede yoksa cadde/sokak adını yazın..." autocomplete="off">
+            <div style="font-size:9px;color:var(--text3);margin-top:3px;line-height:1.3;">Sokağınız listede yer almıyorsa buraya yazabilirsiniz.</div>
           </div>
-          <div id="manualSokakSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:7px;max-height:160px;overflow-y:auto;z-index:100;margin-top:2px;box-shadow:0 8px 24px rgba(0,0,0,0.5);"></div>
-          <div style="font-size:9px;color:var(--text3);margin-top:3px;line-height:1.3;">Sokağınızı yazarak veya açılan seçeneklerden seçebilirsiniz; pin doğrudan sokağınıza odaklanır.</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px;line-height:1.3;">Mahallenizdeki cadde veya sokağı listeden seçin; harita doğrudan sokağınıza odaklanır.</div>
         </div>
         <button type="button" class="btn-ghost" style="font-size:11px;padding:8px;" onclick="applyManualAddress()">✅ Bu Adresi Kullan</button>
       </div>
@@ -6523,7 +6525,7 @@ function getProvinceCoords(ilName) {
   const clean = String(ilName).trim();
   if (typeof IL_COORDS !== 'undefined') {
     if (IL_COORDS[clean]) return IL_COORDS[clean];
-    if (clean === 'Mersin' || clean === 'İçel') return IL_COORDS['İçel (Mersin)'];
+    if (clean === 'Mersin' || clean === 'İçel') return IL_COORDS['Mersin'];
     if (clean === 'Afyon') return IL_COORDS['Afyonkarahisar'];
     if (clean === 'Kocaeli (İzmit)') return IL_COORDS['Kocaeli'];
     if (clean === 'Sakarya (Adapazarı)') return IL_COORDS['Sakarya'];
@@ -7238,8 +7240,7 @@ function syncInteractiveControlState(root = document) {
 
 document.addEventListener('DOMContentLoaded', () => {
   enhanceInteractiveControls();
-  setupManualSokakAutocomplete();
-  // Dinamik Leaflet popup butonları için genel klavye desteği
+    // Dinamik Leaflet popup butonları için genel klavye desteği
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       const target = e.target && e.target.closest && e.target.closest('.popup-btn');
@@ -9923,7 +9924,7 @@ function findProvince(a) {
     for (const prov of Object.keys(IL_COORDS)) {
       const normProv = normalizeTurkish(prov);
       if (norm === normProv) return prov;
-      if (prov === 'İçel (Mersin)' && (norm === 'mersin' || norm === 'icel')) return prov;
+      if ((prov === 'Mersin' || prov === 'İçel') && (norm === 'mersin' || norm === 'icel')) return 'Mersin';
       if (prov === 'Afyonkarahisar' && norm === 'afyon') return prov;
     }
   }
@@ -10095,7 +10096,7 @@ const IL_COORDS = {
   'Diyarbakır':[37.91,40.22],'Edirne':[41.68,26.56],'Elazığ':[38.68,39.22],'Erzincan':[39.75,39.49],
   'Erzurum':[39.90,41.27],'Eskişehir':[39.78,30.52],'Gaziantep':[37.06,37.38],'Giresun':[40.91,38.39],
   'Gümüşhane':[40.46,39.48],'Hakkari':[37.57,43.74],'Hatay':[36.40,36.35],'Isparta':[37.76,30.55],
-  'İçel (Mersin)':[36.81,34.64],'İstanbul':[41.01,28.95],'İzmir':[38.42,27.14],'Kars':[40.61,43.09],
+  'Mersin':[36.81,34.64],'İstanbul':[41.01,28.95],'İzmir':[38.42,27.14],'Kars':[40.61,43.09],
   'Kastamonu':[41.38,33.78],'Kayseri':[38.72,35.49],'Kırklareli':[41.73,27.22],'Kırşehir':[39.15,34.17],
   'Kocaeli':[40.85,29.88],'Konya':[37.87,32.49],'Kütahya':[39.42,29.98],'Malatya':[38.35,38.32],
   'Manisa':[38.62,27.43],'Kahramanmaraş':[37.58,36.94],'Mardin':[37.31,40.74],'Muğla':[37.21,28.36],
@@ -10217,14 +10218,15 @@ async function onManualIlChange() {
   ilceSel.disabled = true;
   mahalleSel.innerHTML = '<option value="">Önce ilçe seçin</option>';
   mahalleSel.disabled = true;
-  const sokakInput = document.getElementById('manualSokak');
-  if (sokakInput) {
-    sokakInput.value = '';
-    sokakInput.disabled = true;
-    sokakInput.placeholder = 'Önce mahalle seçin';
+  const sokakSel = document.getElementById('manualSokak');
+  if (sokakSel) {
+    sokakSel.innerHTML = '<option value="">Önce mahalle seçin</option>';
+    sokakSel.disabled = true;
   }
-  const sokakSuggestions = document.getElementById('manualSokakSuggestions');
-  if (sokakSuggestions) sokakSuggestions.style.display = 'none';
+  const customWrap = document.getElementById('manualSokakCustomWrap');
+  if (customWrap) customWrap.style.display = 'none';
+  const customInput = document.getElementById('manualSokakCustom');
+  if (customInput) customInput.value = '';
   if (!il) { ilceSel.innerHTML='<option value="">Önce il seçin</option>'; return; }
 
   const buildIlceOptions = (ilceler) =>
@@ -10266,16 +10268,17 @@ function onManualIlceChange() {
   const il = document.getElementById('manualIl')?.value || '';
   const ilce = document.getElementById('manualIlce')?.value || '';
   const mahalleSel = document.getElementById('manualMahalle');
-  const sokakInput = document.getElementById('manualSokak');
-  const sokakSuggestions = document.getElementById('manualSokakSuggestions');
+  const sokakSel = document.getElementById('manualSokak');
   mahalleSel.innerHTML = '<option value="">Yükleniyor...</option>';
   mahalleSel.disabled = true;
-  if (sokakInput) {
-    sokakInput.value = '';
-    sokakInput.disabled = true;
-    sokakInput.placeholder = 'Önce mahalle seçin';
+  if (sokakSel) {
+    sokakSel.innerHTML = '<option value="">Önce mahalle seçin</option>';
+    sokakSel.disabled = true;
   }
-  if (sokakSuggestions) sokakSuggestions.style.display = 'none';
+  const customWrap = document.getElementById('manualSokakCustomWrap');
+  if (customWrap) customWrap.style.display = 'none';
+  const customInput = document.getElementById('manualSokakCustom');
+  if (customInput) customInput.value = '';
   if (!ilce) { mahalleSel.innerHTML = '<option value="">Önce ilçe seçin</option>'; return; }
   const ctrl = new AbortController();
   setTimeout(() => ctrl.abort(), 6000);
@@ -10301,118 +10304,126 @@ function onManualIlceChange() {
     });
 }
 
-function onManualMahalleChange() {
+let _currentStreetController = null;
+
+async function onManualMahalleChange() {
+  const il = document.getElementById('manualIl')?.value || '';
+  const ilce = document.getElementById('manualIlce')?.value || '';
   const mahalle = document.getElementById('manualMahalle')?.value || '';
-  const sokakInput = document.getElementById('manualSokak');
-  const sokakSuggestions = document.getElementById('manualSokakSuggestions');
-  if (sokakSuggestions) sokakSuggestions.style.display = 'none';
-  if (!sokakInput) return;
-  if (mahalle) {
-    sokakInput.disabled = false;
-    sokakInput.value = '';
-    sokakInput.placeholder = 'Sokak / cadde adı yazın veya seçin...';
-  } else {
-    sokakInput.disabled = true;
-    sokakInput.value = '';
-    sokakInput.placeholder = 'Önce mahalle seçin';
+  const sokakSel = document.getElementById('manualSokak');
+  const customWrap = document.getElementById('manualSokakCustomWrap');
+  const customInput = document.getElementById('manualSokakCustom');
+
+  if (customWrap) customWrap.style.display = 'none';
+  if (customInput) customInput.value = '';
+  if (!sokakSel) return;
+
+  if (!mahalle) {
+    sokakSel.disabled = true;
+    sokakSel.innerHTML = '<option value="">Önce mahalle seçin</option>';
+    return;
+  }
+
+  sokakSel.disabled = true;
+  sokakSel.innerHTML = '<option value="">Sokaklar taranıyor...</option>';
+
+  if (_currentStreetController) {
+    try { _currentStreetController.abort(); } catch(e) {}
+  }
+  _currentStreetController = new AbortController();
+  const signal = _currentStreetController.signal;
+
+  try {
+    const cleanMah = mahalle.replace(/\s+Mahallesi$/i, '').replace(/\s+Mah\.?$/i, '').trim();
+    // 1. Nominatim ile mahalle koordinat ve sınırlarını (bbox) al
+    const nomUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(`${cleanMah} Mahallesi, ${ilce}, ${il}, Türkiye`)}&format=json&limit=1`;
+    const nomRes = await fetch(nomUrl, { signal, headers: { 'Accept': 'application/json' } });
+    if (!nomRes.ok) throw new Error('Nominatim error');
+    const nomData = await nomRes.json();
+
+    let streets = [];
+    if (nomData && nomData.length && nomData[0].boundingbox) {
+      const bbox = nomData[0].boundingbox; // [s, n, w, e]
+      const q = `[out:json][timeout:5];way["highway"~"^(residential|living_street|tertiary|secondary|primary|service|unclassified)$"]["name"](${bbox[0]},${bbox[2]},${bbox[1]},${bbox[3]});out tags qt;`;
+      
+      const opMirrors = [
+        'https://lz4.overpass-api.de/api/interpreter',
+        'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+        'https://overpass-api.de/api/interpreter'
+      ];
+
+      for (const m of opMirrors) {
+        if (signal.aborted) return;
+        try {
+          const timeoutCtrl = new AbortController();
+          const tId = setTimeout(() => timeoutCtrl.abort(), 4000);
+          const r = await fetch(`${m}?data=${encodeURIComponent(q)}`, { signal: timeoutCtrl.signal });
+          clearTimeout(tId);
+          if (r.ok) {
+            const j = await r.json();
+            if (j && j.elements && j.elements.length) {
+              const names = [...new Set(j.elements.map(e => e.tags && e.tags.name).filter(Boolean))];
+              if (names.length) {
+                streets = names.sort((a,b) => a.localeCompare(b, 'tr'));
+                break;
+              }
+            }
+          }
+        } catch(e) {}
+      }
+    }
+
+    if (signal.aborted) return;
+
+    if (streets.length > 0) {
+      sokakSel.innerHTML = '<option value="">Cadde / Sokak seçin...</option>' +
+        streets.map(s => `<option value="${escAttr(s)}">${escHtml(s)}</option>`).join('') +
+        '<option value="Mahalle Geneli / Ana Cadde">Mahalle Geneli / Ana Cadde</option>' +
+        '<option value="__custom__">➕ Listede Olmayan Sokak Ekle...</option>';
+      sokakSel.disabled = false;
+    } else {
+      sokakSel.innerHTML = '<option value="">Cadde / Sokak seçin...</option>' +
+        '<option value="Mahalle Geneli / Ana Cadde">Mahalle Geneli / Ana Cadde</option>' +
+        '<option value="Merkez / Köy İçi">Merkez / Köy İçi</option>' +
+        '<option value="__custom__">➕ Listede Olmayan Sokak Ekle...</option>';
+      sokakSel.disabled = false;
+    }
+  } catch(err) {
+    if (signal.aborted) return;
+    sokakSel.innerHTML = '<option value="">Cadde / Sokak seçin...</option>' +
+      '<option value="Mahalle Geneli / Ana Cadde">Mahalle Geneli / Ana Cadde</option>' +
+      '<option value="Merkez / Köy İçi">Merkez / Köy İçi</option>' +
+      '<option value="__custom__">➕ Listede Olmayan Sokak Ekle...</option>';
+    sokakSel.disabled = false;
   }
 }
 
-let _sokakTimer = null;
-let _sokakController = null;
-
-function setupManualSokakAutocomplete() {
-  const sokakInput = document.getElementById('manualSokak');
-  const listEl = document.getElementById('manualSokakSuggestions');
-  if (!sokakInput || !listEl) return;
-
-  const triggerSearch = () => {
-    const q = sokakInput.value.trim();
-    if (_sokakTimer) clearTimeout(_sokakTimer);
-    if (_sokakController) _sokakController.abort();
-    if (q.length < 1) {
-      listEl.style.display = 'none';
-      listEl.innerHTML = '';
-      return;
-    }
-
-    _sokakTimer = setTimeout(async () => {
-      const il = document.getElementById('manualIl')?.value || '';
-      const ilce = document.getElementById('manualIlce')?.value || '';
-      const mahalle = document.getElementById('manualMahalle')?.value || '';
-      const cleanMah = mahalle ? mahalle.replace(/\s+Mahallesi$/i, '').replace(/\s+Mah\.?$/i, '').trim() : '';
-
-      _sokakController = new AbortController();
-      const searchQuery = `${q}, ${cleanMah ? cleanMah + ', ' : ''}${ilce ? ilce + ', ' : ''}${il}`;
-
-      try {
-        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&countrycodes=tr&format=json&limit=8&addressdetails=1`;
-        const res = await fetch(url, {
-          signal: _sokakController.signal,
-          headers: { 'Accept': 'application/json', 'Accept-Language': 'tr' }
-        });
-        if (!res.ok) return;
-        const items = await res.json();
-        const streetSet = new Set();
-        const matches = [];
-
-        items.forEach(it => {
-          const addr = it.address || {};
-          const streetName = addr.road || addr.pedestrian || addr.footway || addr.path || addr.street;
-          if (streetName && !streetSet.has(streetName)) {
-            streetSet.add(streetName);
-            matches.push({ name: streetName });
-          }
-        });
-
-        if (!matches.length && q.length >= 2) {
-          items.forEach(it => {
-            if (it.name && !streetSet.has(it.name) && (it.type === 'residential' || it.type === 'service' || it.type === 'tertiary' || it.type === 'secondary' || it.type === 'primary')) {
-              streetSet.add(it.name);
-              matches.push({ name: it.name });
-            }
-          });
-        }
-
-        if (matches.length > 0) {
-          listEl.innerHTML = matches.map(m => `
-            <div class="sokak-suggest-item" style="padding:7px 10px;font-size:11px;cursor:pointer;color:var(--text);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'" onclick="selectManualSokak('${escAttr(m.name)}')">
-              <span>🛣 ${escHtml(m.name)}</span>
-              <span style="font-size:9.5px;color:var(--accent);font-family:var(--font-mono);">Seç ↵</span>
-            </div>
-          `).join('');
-          listEl.style.display = 'block';
-        } else {
-          listEl.style.display = 'none';
-        }
-      } catch(e) {
-        listEl.style.display = 'none';
-      }
-    }, 280);
-  };
-
-  sokakInput.addEventListener('input', triggerSearch);
-  sokakInput.addEventListener('focus', () => { if (sokakInput.value.trim().length >= 1) triggerSearch(); });
-
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('#manualSokakWrap')) {
-      if (listEl) listEl.style.display = 'none';
-    }
-  });
-}
-
-function selectManualSokak(streetName) {
-  const sokakInput = document.getElementById('manualSokak');
-  const listEl = document.getElementById('manualSokakSuggestions');
-  if (sokakInput) sokakInput.value = streetName;
-  if (listEl) listEl.style.display = 'none';
+function onManualSokakChange() {
+  const sokakSel = document.getElementById('manualSokak');
+  const customWrap = document.getElementById('manualSokakCustomWrap');
+  const customInput = document.getElementById('manualSokakCustom');
+  if (!sokakSel) return;
+  if (sokakSel.value === '__custom__') {
+    if (customWrap) customWrap.style.display = 'block';
+    if (customInput) customInput.focus();
+  } else {
+    if (customWrap) customWrap.style.display = 'none';
+    if (customInput) customInput.value = '';
+  }
 }
 
 async function applyManualAddress() {
   const il = document.getElementById('manualIl').value;
   const ilce = document.getElementById('manualIlce').value;
   const mahalle = document.getElementById('manualMahalle')?.value || '';
-  const sokak = (document.getElementById('manualSokak')?.value || '').trim();
+  const sokakSel = document.getElementById('manualSokak');
+  let sokak = sokakSel ? sokakSel.value : '';
+  if (sokak === '__custom__') {
+    sokak = (document.getElementById('manualSokakCustom')?.value || '').trim();
+    if (sokak) {
+      sokak = sokak.replace(/(?:^|\s)\S/g, a => a.toLocaleUpperCase('tr'));
+    }
+  }
 
   if (!il) return showToast('Lütfen il seçin', 'err');
   if (!ilce) return showToast('Lütfen ilçe seçin', 'err');
@@ -10421,7 +10432,7 @@ async function applyManualAddress() {
     return showToast('Lütfen mahalle seçin', 'err');
   }
   if (!sokak) {
-    return showToast('Lütfen cadde veya sokak seçin / yazın', 'err');
+    return showToast('Lütfen cadde veya sokak seçin', 'err');
   }
   
   document.getElementById('ilInput').value = il;
