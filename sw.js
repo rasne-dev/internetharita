@@ -1,4 +1,4 @@
-const CACHE = 'iharita-v127';
+const CACHE = 'iharita-v128';
 const ASSETS = [
   '/',
   '/index.html',

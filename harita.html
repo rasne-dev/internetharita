@@ -3933,7 +3933,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
           <input type="checkbox" id="noInfraCheck" aria-label="Bu konumda internet altyapısı yok" onchange="onNoInfraChange(this.checked)" style="width:16px; height:16px; cursor:pointer;">
           <span style="font-size:12px; font-weight:700; color:var(--warn); font-family:var(--font-mono);">BU KONUMDA ALTYAPI YOK</span>
         </label>
-        <div style="font-size:9px; color:var(--text3); margin-top:4px; line-height:1.4;">Seçildiğinde hız testi zorunluluğu kalkar. Veri moderatör onayından sonra listelenir.</div>
+        <div style="font-size:9px; color:var(--text3); margin-top:4px; line-height:1.4;">Seçildiğinde hız testi ve sağlayıcı seçimi zorunluluğu kalkar.</div>
       </div>
 
       <!-- MANUEL ADRES GİRİŞİ (gizli, toggle ile açılır) -->
@@ -5334,6 +5334,10 @@ function applyModOverrides(pins, authoritative) {
           }
           return merged;
         }
+        const isNoInfra = !!(p.is_altyapi_yok || (p.baglanti_turu || '').toLowerCase() === 'yok' || canonicalIssName(p.iss) === 'Altyapı Yok');
+        if (isNoInfra && p.is_quarantine === true && (p.sikayet_sayisi || 0) === 0) {
+          return { ...p, gorunur: true, is_quarantine: false };
+        }
         return p;
       });
       // Veritabanından gelen listede eksik kalan (ancak onaylanmış) pinleri hafızadan ekle
@@ -5356,6 +5360,14 @@ function applyModOverrides(pins, authoritative) {
             }
           }
         }
+      });
+    } else {
+      updated = updated.map(p => {
+        const isNoInfra = !!(p.is_altyapi_yok || (p.baglanti_turu || '').toLowerCase() === 'yok' || canonicalIssName(p.iss) === 'Altyapı Yok');
+        if (isNoInfra && p.is_quarantine === true && (p.sikayet_sayisi || 0) === 0) {
+          return { ...p, gorunur: true, is_quarantine: false };
+        }
+        return p;
       });
     }
     return updated.filter(p => !localDeleted.has(String(p.id)) && !p.deleted_at);
@@ -6077,6 +6089,7 @@ function displayIssName(name) {
 function registerLocalApprovedIss(issName, syncCloud = true) {
   if (!issName) return;
   const canonical = canonicalIssName(issName);
+  if (!canonical || canonical === 'Altyapı Yok' || canonical.toLowerCase() === 'altyapı yok' || canonical.toLowerCase() === 'diğer') return;
   try {
     const existing = JSON.parse(localStorage.getItem('ih_local_approved_iss') || '[]');
     if (!existing.includes(canonical)) {
@@ -6138,7 +6151,7 @@ function approvedIssNames() {
     });
   } catch(e) {}
 
-  return new Set(active.length ? active : BASE_ISS);
+  return new Set((active.length ? active : BASE_ISS).filter(x => x !== 'Altyapı Yok' && x.toLowerCase() !== 'diğer'));
 }
 function isApprovedPublicIss(name) {
   const canonical = canonicalIssName(name);
@@ -6357,8 +6370,9 @@ function getQuarantineReasons(p, groupPins = null) {
   }
 
   // 1. Yeni / Onaysız İSS ("Diğer" seçilerek girilenler)
-  const isUnapproved = !isApprovedPublicIss(p.iss);
-  if (p.custom_iss || isUnapproved) {
+  const isNoInfraPin = !!(p.is_altyapi_yok || (p.baglanti_turu || '').toLowerCase() === 'yok' || canonicalIssName(p.iss) === 'Altyapı Yok');
+  const isUnapproved = !isNoInfraPin && !isApprovedPublicIss(p.iss);
+  if (!isNoInfraPin && (p.custom_iss || isUnapproved)) {
     reasons.push({
       type: 'iss',
       icon: '🏷️',
@@ -6367,18 +6381,8 @@ function getQuarantineReasons(p, groupPins = null) {
     });
   }
 
-  // 2. Altyapı Yok Bildirimi
-  if (p.is_altyapi_yok) {
-    reasons.push({
-      type: 'altyapi_yok',
-      icon: '🚫',
-      title: 'Altyapı Yok Bildirimi',
-      detail: 'Kullanıcı bölgede sabit altyapı olmadığını bildirdi.'
-    });
-  }
-
-  // 3. Hız Anormallikleri ve Aşırılıklar
-  if (!p.is_altyapi_yok) {
+  // 2. Hız Anormallikleri ve Aşırılıklar
+  if (!isNoInfraPin) {
     const conn = (p.baglanti_turu || '').toLowerCase();
     const cap = TYPE_DL_CAP[conn];
     if (cap && p.gercek_dl > cap) {
@@ -6745,17 +6749,17 @@ function isPinVisibleOnMap(p) {
   return p.gorunur !== false && !p.is_quarantine && !isSpam(p) && isApprovedPublicIss(p.iss);
 }
 function countPendingCustomIss(pins) {
-  const knownNames = approvedIssNames();
   const overrides = getModOverrides();
   const grouped = {};
   (pins || []).filter(p => {
     if (!p || p.deleted_at) return false;
+    if (p.is_altyapi_yok || (p.baglanti_turu || '').toLowerCase() === 'yok') return false;
+    const cName = canonicalIssName(p.iss);
+    if (!cName || cName === 'Altyapı Yok' || cName.toLowerCase() === 'altyapı yok' || cName.toLowerCase() === 'diğer') return false;
     const sId = String(p.id);
     const ov = overrides[sId] || overrides[p.id];
     if (ov && (ov.is_quarantine === false || ov.gorunur === true || ov.deleted_at)) return false;
-    return p.is_quarantine && p.iss &&
-      !knownNames.has(canonicalIssName(p.iss)) &&
-      canonicalIssName(p.iss) !== 'diğer';
+    return p.is_quarantine && !isApprovedPublicIss(cName);
   }).forEach(p => { grouped[p.iss] = true; });
   return Object.keys(grouped).length;
 }
@@ -7929,12 +7933,13 @@ function renderHex() {
   const hexMap = {};
   cleanPinsData.forEach(p => { 
     if (!p.lat) return; 
-    const matchesTypeFilter = activeFilters.has(p.baglanti_turu) || parseDigerAltyapi(p.diger_altyapilar).some(e => activeFilters.has(e.tur)); 
+    const isNoInfra = !!(p.is_altyapi_yok || (p.baglanti_turu || '').toLowerCase() === 'yok' || canonicalIssName(p.iss) === 'Altyapı Yok');
+    const matchesTypeFilter = isNoInfra ? (activeFilters.size === 4 || activeFilters.has('yok')) : (activeFilters.has(p.baglanti_turu) || parseDigerAltyapi(p.diger_altyapilar).some(e => activeFilters.has(e.tur))); 
     if (!matchesTypeFilter) return; 
     const canonicalIss = canonicalIssName(p.iss); 
     if (!isApprovedPublicIss(canonicalIss)) return; 
     const isPop = isPopularIss(canonicalIss);
-    const matchesIss = isPop ? activeISSFilters.has(canonicalIss) : activeISSFilters.has('Diğer');
+    const matchesIss = isNoInfra ? true : (isPop ? activeISSFilters.has(canonicalIss) : activeISSFilters.has('Diğer'));
     if (!matchesIss) return;
     try { const h = h3.latLngToCell(p.lat, p.lng, res); if (!hexMap[h]) hexMap[h]=[]; hexMap[h].push(p); } 
     catch(e) {} 
@@ -7942,9 +7947,12 @@ function renderHex() {
   Object.entries(hexMap).forEach(([hex, pins]) => {
     try {
       const coords = h3.cellToBoundary(hex).map(([lat,lng]) =>[lat,lng]);
-      const avgDL = pins.reduce((a,p)=>a+p.gercek_dl,0)/pins.length; const avgScore = pins.reduce((a,p)=>a+p.puan,0)/pins.length;
+      const speedPinsInHex = pins.filter(p => !p.is_altyapi_yok && (p.baglanti_turu || '').toLowerCase() !== 'yok' && canonicalIssName(p.iss) !== 'Altyapı Yok');
+      const avgDL = speedPinsInHex.length ? speedPinsInHex.reduce((a,p)=>a+p.gercek_dl,0)/speedPinsInHex.length : 0;
+      const avgScore = pins.reduce((a,p)=>a+(p.puan||0),0)/pins.length;
       let color, hasData = true;
-      if (colorMode==='hiz') color = speedColor(avgDL);
+      if (!speedPinsInHex.length) color = speedColor(0);
+      else if (colorMode==='hiz') color = speedColor(avgDL);
       else { if (!pins.some(p=>p.puan)) { color='#374151'; hasData=false; } else color=memColor(avgScore); }
 
       // FIX: fillOpacity zoom'a gore dinamik + tema bazlı.
@@ -8085,8 +8093,8 @@ function showHexInfo(pins, hexId, filterTech = 'all', keepScroll = false) {
         { key: 'fiber', label: 'Fiber', color: '#a855f7' },
         { key: 'vdsl', label: 'VDSL', color: '#06b6d4' },
         { key: 'docsis', label: 'Kablo', color: '#3b82f6' },
-        { key: 'adsl', label: 'ADSL', color: '#ef4444' },
-        { key: 'yok', label: 'Altyapı Yok', color: '#64748b' }
+        { key: 'adsl', label: 'ADSL', color: '#f97316' },
+        { key: 'yok', label: 'Altyapı Yok', color: '#ef4444' }
       ];
 
       const activeMeta = techMeta
@@ -8178,8 +8186,14 @@ function showHexInfo(pins, hexId, filterTech = 'all', keepScroll = false) {
   // BÖLGESEL SAĞLAYICI VE ALTYAPI MATRİSİ
   // Hangi İSS'nin bu altıgende Fiber, VDSL, ADSL veya DOCSIS sunduğunu net eşleştir
   const providerMatrix = {};
+  let noInfraPinCount = 0;
   activeHexPins.forEach(p => {
     const issName = canonicalIssName(p.iss);
+    const isNoInfra = !!(p.is_altyapi_yok || (p.baglanti_turu || '').toLowerCase() === 'yok' || issName === 'Altyapı Yok');
+    if (isNoInfra) {
+      noInfraPinCount++;
+      return;
+    }
     if (!issName || issName === 'Bilinmeyen' || !isApprovedPublicIss(issName)) return;
     if (!providerMatrix[issName]) {
       providerMatrix[issName] = {
@@ -8301,6 +8315,11 @@ function showHexInfo(pins, hexId, filterTech = 'all', keepScroll = false) {
     }
 
     matrixHtml += `</div>`;
+    if (noInfraPinCount > 0) {
+      matrixHtml += `<div style="margin-top:8px;padding:7px 10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:7px;font-size:11px;color:#ef4444;font-weight:600;display:flex;align-items:center;gap:6px;"><span>🚫</span> Bu bölgede ${noInfraPinCount} adet "Altyapı Yok" bildirimi bulunuyor.</div>`;
+    }
+  } else if (noInfraPinCount > 0) {
+    matrixHtml = `<div style="padding:10px 12px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);border-radius:8px;font-size:11.5px;color:#ef4444;font-weight:700;text-align:center;">🚫 Bu bölgede sabit internet altyapısı olmadığı bildirildi (${noInfraPinCount} bildirim)</div>`;
   } else {
     matrixHtml = `<div style="font-size:11px;color:var(--text3);padding:8px 0;text-align:center;">Bu bölgede henüz altyapı verisi yok.</div>`;
   }
@@ -11041,7 +11060,7 @@ async function submitPin() {
     }
   }
 
-  const quarantine = !!(outlier || isCustomIss || rateQuarantine || isAltyapiYok || capExceeded);
+  const quarantine = !!(outlier || isCustomIss || rateQuarantine || capExceeded);
   const f = fuzzy(pinLat, pinLng);
   lastSubmittedLatLng = { lat: f.lat, lng: f.lng };
   submitBtn.textContent='Gönderiliyor...';
@@ -11113,7 +11132,7 @@ async function submitPin() {
     if (isAltyapiYok) markSubmitNoInfra();
     
     if (quarantine) {
-      const reason = isAltyapiYok ? '⚠ Altyapı yok bildirimi' : (outlier ? '⚠ Bölge ortalamasından sapma' : (capExceeded ? `⚠ ${(selConnVal || '').toUpperCase()} için olağan dışı yüksek hız` : (rateQuarantine ? '⚠ Hızlı giriş algılandı' : '⚠ Verini aldık')));
+      const reason = outlier ? '⚠ Bölge ortalamasından sapma' : (capExceeded ? `⚠ ${(selConnVal || '').toUpperCase()} için olağan dışı yüksek hız` : (rateQuarantine ? '⚠ Hızlı giriş algılandı' : '⚠ Verini aldık'));
       showToast(`${reason} — incelemeye alındı`, 'warn');
       showThankyou(thankyouData);
     } else {
@@ -11135,7 +11154,7 @@ async function submitPin() {
 
     // Schema cache fallback (is_altyapi_yok kolonu henüz yoksa)
     if(e.message && e.message.includes("is_altyapi_yok")) {
-      const fb = { ...pinPayload, gorunur:false, is_quarantine:true };
+      const fb = { ...pinPayload, gorunur: !quarantine, is_quarantine: quarantine };
       delete fb.is_altyapi_yok;
       try { 
         await addPin(fb); 
@@ -11969,16 +11988,17 @@ async function loadCustomIss() {
     // Taze cache — az önce ISS eklenmiş olabilir
     await loadIssListAndRenderChips();
     const pins = await getAllPinsAdmin() || [];
-    const knownNames = approvedIssNames();
     const overrides = getModOverrides();
     const customPins = pins.filter(p => {
       if (p.deleted_at) return false;
+      if (p.is_altyapi_yok || (p.baglanti_turu || '').toLowerCase() === 'yok' || canonicalIssName(p.iss) === 'Altyapı Yok') return false;
       const sId = String(p.id);
       const ov = overrides[sId] || overrides[p.id];
       if (ov && (ov.is_quarantine === false || ov.gorunur === true || ov.deleted_at)) return false;
-      return p.is_quarantine && p.iss &&
-        !knownNames.has(canonicalIssName(p.iss)) &&
-        canonicalIssName(p.iss) !== 'diğer';
+      const cName = canonicalIssName(p.iss);
+      return p.is_quarantine && cName &&
+        !isApprovedPublicIss(cName) &&
+        cName.toLowerCase() !== 'diğer';
     });
     const grouped = {};
     customPins.forEach(p => { if(!grouped[p.iss]) grouped[p.iss]={pins:[],count:0}; grouped[p.iss].pins.push(p); grouped[p.iss].count++; });
@@ -12704,6 +12724,8 @@ async function loadSikayetler() {
       const sId = String(p.id);
       const ov = overrides[sId] || overrides[p.id];
       if (ov && (ov.gorunur === true || ov.is_quarantine === false || ov.deleted_at)) return false;
+      const isNoInfraPin = !!(p.is_altyapi_yok || (p.baglanti_turu || '').toLowerCase() === 'yok' || canonicalIssName(p.iss) === 'Altyapı Yok');
+      if (isNoInfraPin && (p.sikayet_sayisi || 0) === 0 && !isSpam(p) && getQuarantineReasons(p).length === 0) return false;
       return ((p.sikayet_sayisi||0)>0 || p.is_quarantine === true || isSpam(p));
     });
     if (!flagged.length) {
@@ -12794,7 +12816,8 @@ async function groupAction(idsJson, approve) {
     if (approve) {
       const targetPins = (adminPinsCache || []).filter(p => idsSet.has(String(p.id)));
       for (const p of targetPins) {
-        if (p.iss) {
+        const isNoInfraPin = !!(p.is_altyapi_yok || (p.baglanti_turu || '').toLowerCase() === 'yok' || canonicalIssName(p.iss) === 'Altyapı Yok');
+        if (p.iss && !isNoInfraPin && !isApprovedPublicIss(p.iss)) {
           registerLocalApprovedIss(p.iss, false);
           try { await addIssToList({ name: p.iss, color: issHashColor(p.iss), active: true, sort_order: 99 }); } catch(issErr) {}
         }
@@ -13441,11 +13464,13 @@ async function openEditModal(id) {
 
 async function saveEdit() {
   const id = document.getElementById('editPinId').value;
-  const dl = parseInt(document.getElementById('editDL').value);
-  const puan = parseInt(document.getElementById('editPuan').value);
-  if (!dl) return showToast('DL hızı girin','err');
-  if (puan<1||puan>10||isNaN(puan)) return showToast('Puan 1-10 arasında olmalı','err');
   const newIss = document.getElementById('editIss').value;
+  const connVal = document.getElementById('editConn').value;
+  const isNoInfraEdit = connVal === 'yok' || canonicalIssName(newIss) === 'Altyapı Yok';
+  const dl = isNoInfraEdit ? (parseInt(document.getElementById('editDL').value) || 0) : parseInt(document.getElementById('editDL').value);
+  const puan = parseInt(document.getElementById('editPuan').value);
+  if (!isNoInfraEdit && !dl) return showToast('DL hızı girin','err');
+  if (puan<1||puan>10||isNaN(puan)) return showToast('Puan 1-10 arasında olmalı','err');
   const isGorunur = document.getElementById('editGorunur').value === 'true';
   // Çift tıklama koruması: bu fonksiyon içinde İSS listesine ekleme gibi INSERT işlemleri de
   // var — buton devre dışı bırakılmazsa hızlı çift tıklamada aynı İSS iki kez eklenebiliyordu.
@@ -13459,7 +13484,7 @@ async function saveEdit() {
     await loadIssListAndRenderChips();
     issNowApproved = isApprovedPublicIss(newIss);
     // Moderatör görünür yaptıysa ama ISS listede yoksa → otomatik ekle
-    if (isGorunur && !issNowApproved) {
+    if (isGorunur && !issNowApproved && !isNoInfraEdit) {
       try {
         await addIssToList({ name: newIss, color: issHashColor(newIss), active: true, sort_order: 99 });
       } catch(issErr) {
