@@ -4624,6 +4624,10 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
       </div>
       <div id="userEditDocsisNote" style="display:none;font-size:9px;color:var(--text3);margin-top:4px;line-height:1.4;">DOCSIS (Kablo İnternet) seçildiğinde İSS ve Altyapı Sahibi otomatik olarak Türksat Kablonet'e ayarlanır.</div>
     </div>
+    <div class="fg" id="userEditIssGroup" style="display:none;margin-bottom:10px;">
+      <div class="fl">İnternet Sağlayıcı (İSS)</div>
+      <select class="fs" id="userEditIssSelect" aria-label="İnternet Sağlayıcı Seçin"></select>
+    </div>
     
     <div class="fg" style="margin-bottom:10px;">
       <div class="fl">Paket Hızı</div>
@@ -4673,7 +4677,7 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
       <button type="button" class="btn-del" style="padding:6px 10px;font-size:10px;white-space:nowrap;font-weight:700;" onclick="deleteAndRecreatePin()">🗑️ Sil &amp; Yeni Konum Seç</button>
     </div>
     <div style="display:flex;gap:8px;">
-      <button class="btn-primary" style="flex:1;padding:11px;" onclick="saveUserEdit()">💾 Güncelle</button>
+      <button class="btn-primary" id="userEditSaveBtn" style="flex:1;padding:11px;" onclick="saveUserEdit()">💾 Güncelle</button>
       <button class="btn-ghost" style="padding:11px 16px;" onclick="closeUserEditModal()">İptal</button>
     </div>
   </div>
@@ -7207,10 +7211,10 @@ let colorMode = 'hiz', hexLayers =[], pinMarkerLayers =[], isModLoggedIn = false
 // Bu yaklaşım mevcut görsel tasarımı korurken Enter ve Boşluk tuşlarını gerçek
 // butonlardaki gibi çalıştırır; dinamik eklenen İSS çipleri de bu fonksiyondan geçer.
 function enhanceInteractiveControls(root = document) {
-  root.querySelectorAll('.chip, .mode-tab, .cbtn, .feedback-tag, .sbtn, .my-pins-toggle, .map-sidebar-toggle, .sidebar-collapse-btn, .info-close, .btn-loc, .popup-btn').forEach(el => {
+  root.querySelectorAll('.chip, .mode-tab, .cbtn, .feedback-tag, .sbtn, .my-pins-toggle, .map-sidebar-toggle, .sidebar-collapse-btn, .info-close, .modal-close, .btn-loc, .popup-btn').forEach(el => {
     if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
     if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
-    if (!el.hasAttribute('aria-label')) el.setAttribute('aria-label', el.classList.contains('info-close') ? 'Kapat' : (el.getAttribute('title') || el.textContent || '').trim());
+    if (!el.hasAttribute('aria-label')) el.setAttribute('aria-label', (el.classList.contains('info-close') || el.classList.contains('modal-close')) ? 'Kapat' : (el.getAttribute('title') || el.textContent || '').trim());
     if (!el.dataset.keyboardReady) {
       el.dataset.keyboardReady = '1';
       el.addEventListener('keydown', event => {
@@ -11408,6 +11412,10 @@ function selConnUserEdit(el, type) {
   selConnValUserEdit = type;
   const note = document.getElementById('userEditDocsisNote');
   if (note) note.style.display = (type === 'docsis') ? 'block' : 'none';
+  const issGrp = document.getElementById('userEditIssGroup');
+  if (issGrp && issGrp.dataset.wasNoInfra === '1') {
+    issGrp.style.display = (type !== 'docsis' && type !== 'yok') ? 'block' : 'none';
+  }
 }
 
 function selScoreUserEdit(el, val) {
@@ -11462,6 +11470,18 @@ function openUserEditModal(pinId) {
   });
   const userEditDocsisNote = document.getElementById('userEditDocsisNote');
   if (userEditDocsisNote) userEditDocsisNote.style.display = (pin.baglanti_turu === 'docsis') ? 'block' : 'none';
+  const userEditIssGroup = document.getElementById('userEditIssGroup');
+  const userEditIssSel = document.getElementById('userEditIssSelect');
+  const wasNoInfra = !!(pin.is_altyapi_yok || (pin.baglanti_turu || '').toLowerCase() === 'yok' || canonicalIssName(pin.iss) === 'Altyapı Yok');
+  if (userEditIssGroup && userEditIssSel) {
+    userEditIssGroup.dataset.wasNoInfra = wasNoInfra ? '1' : '0';
+    userEditIssGroup.style.display = (wasNoInfra && selConnValUserEdit && selConnValUserEdit !== 'yok' && selConnValUserEdit !== 'docsis') ? 'block' : 'none';
+    if (wasNoInfra) {
+      buildIssOptions(userEditIssSel, '');
+      const validOpts = Array.from(userEditIssSel.options).filter(o => o.value && o.value !== 'Altyapı Yok');
+      userEditIssSel.innerHTML = '<option value="">Sağlayıcı seçin...</option>' + validOpts.map(o => `<option value="${escHtml(o.value)}">${escHtml(o.textContent)}</option>`).join('');
+    }
+  }
   
   document.getElementById('userEditPkgDL').value = pin.paket_hizi_dl || pin.paket_hizi || '';
   document.getElementById('userEditPkgUL').value = pin.paket_hizi_ul || '';
@@ -11568,7 +11588,15 @@ async function saveUserEdit() {
   const pin = pinsData.find(p => String(p.id) === String(pinId))
            || (activeHexPins || []).find(p => String(p.id) === String(pinId))
            || getMyLocalPins().find(p => String(p.id) === String(pinId));
-  if (pin && (pin.gercek_dl !== dl || pin.gercek_ul !== ul)) {
+  if (isStillNoInfra) {
+    payload.iss = 'Altyapı Yok';
+  } else if (connType !== 'docsis' && pin && (pin.is_altyapi_yok || canonicalIssName(pin.iss) === 'Altyapı Yok')) {
+    const pickedIss = document.getElementById('userEditIssSelect')?.value;
+    if (!pickedIss) return showToast('Lütfen internet sağlayıcınızı (İSS) seçin', 'err');
+    payload.iss = pickedIss;
+  }
+
+  if (!isStillNoInfra && pin && Number.isFinite(dl) && (pin.gercek_dl !== dl || pin.gercek_ul !== ul)) {
     const outlier = isOutlier(dl, pin.lat, pin.lng);
     const capExceeded = TYPE_DL_CAP[connType] && dl > TYPE_DL_CAP[connType];
     if (outlier || capExceeded) {
@@ -11576,7 +11604,14 @@ async function saveUserEdit() {
       payload.is_quarantine = true;
     }
   }
-  
+
+  const saveBtn = document.getElementById('userEditSaveBtn');
+  if (saveBtn) {
+    if (saveBtn.disabled) return;
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Kaydediliyor...';
+  }
+
   try {
     await patchPinOwn(pinId, payload);
     // Başarılı güncelleme → düzenleme sayacını artır
@@ -11606,6 +11641,11 @@ async function saveUserEdit() {
       } catch(e2) { showToast(friendlyDbError(e2,'pins'), 'err'); }
     } else {
       showToast(friendlyDbError(e,'pins'), 'err');
+    }
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = '💾 Güncelle';
     }
   }
 }
@@ -12616,7 +12656,8 @@ async function renderModYorumTab() {
     // 3. Tabloyu Filtrele ve Listele
     filterModYorumList();
   } catch (err) {
-    if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:25px;color:var(--danger);">Hata: ${escHtml(err?.message || err)}</td></tr>`;
+    console.error('[internetHarita] Moderatör yorum istatistikleri yüklenemedi:', err);
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:25px;color:var(--danger);">Veriler yüklenirken bir sorun oluştu. Lütfen tekrar deneyin.</td></tr>';
   }
 }
 

@@ -440,6 +440,7 @@ tr.tr-highlight td { background: rgba(239,68,68,0.12) !important; font-weight: 7
   .view-tab-btn { font-size: 12px; padding: 7px 12px; }
   .container { padding: 20px 14px 60px; }
 }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -998,7 +999,7 @@ function renderTrTable(data) {
 
   tbody.innerHTML = data.map(item => {
     const barPct = Math.min(100, Math.round((item.dl / maxDl) * 100));
-    const mapUrl = `/?il=${encodeURIComponent(item.name)}`;
+    const mapUrl = `/harita.html?il=${encodeURIComponent(item.name)}`;
     return `
       <tr>
         <td><span class="rank-badge">${item.rank}</span></td>
