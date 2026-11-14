@@ -3154,7 +3154,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
           <div class="search-wrap">
             <input class="search-input" type="search" id="mapSearchInput" name="map_search_query" aria-label="Şehir veya ilçe ara" placeholder="Beykoz, Konya, İzmir..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" oninput="if(!this.value.trim()){document.getElementById('searchResults')?.classList.remove('open');if(typeof clearLocationFocusMarker==='function')clearLocationFocusMarker();}" onsearch="if(!this.value.trim()){document.getElementById('searchResults')?.classList.remove('open');if(typeof clearLocationFocusMarker==='function')clearLocationFocusMarker();}" onkeydown="if(event.key==='Enter')searchLocation()">
             <button type="button" class="search-btn" onclick="searchLocation()" aria-label="Konum Ara" title="Konum Ara">🔍</button>
-            <div class="search-results" id="searchResults"></div>
+            <div class="search-results" id="searchResults" aria-live="polite"></div>
           </div>
         </div>
 
@@ -6157,6 +6157,10 @@ function approvedIssNames() {
 
   return new Set((active.length ? active : BASE_ISS).filter(x => x !== 'Altyapı Yok' && x.toLowerCase() !== 'diğer'));
 }
+function isNoInfraPin(p) {
+  if (!p) return false;
+  return !!(p.is_altyapi_yok || (p.baglanti_turu || '').toLowerCase() === 'yok' || canonicalIssName(p.iss) === 'Altyapı Yok');
+}
 function isApprovedPublicIss(name) {
   const canonical = canonicalIssName(name);
   return approvedIssNames().has(canonical) || canonical === 'Altyapı Yok';
@@ -7881,7 +7885,7 @@ async function _loadPinsCore() {
       openCompareModal(document.getElementById('compareLocation')?.value);
     }
     
-    const speedPins = cleanPinsData.filter(p => !p.is_altyapi_yok);
+    const speedPins = cleanPinsData.filter(p => !isNoInfraPin(p));
     const cnt = cleanPinsData.length;
     const avg = speedPins.length ? Math.round(speedPins.reduce((a,p) => a+p.gercek_dl, 0)/speedPins.length) : 0;
     const ulPins = speedPins.filter(p => p.gercek_ul > 0);
@@ -7903,7 +7907,7 @@ async function _loadPinsCore() {
         if (document.getElementById('page-istatistik')?.classList.contains('active')) renderStats();
         if (document.getElementById('page-bolge')?.classList.contains('active')) renderRegions();
         
-        const speedPins = cleanPinsData.filter(p => !p.is_altyapi_yok);
+        const speedPins = cleanPinsData.filter(p => !isNoInfraPin(p));
         const cnt = cleanPinsData.length;
         const avg = speedPins.length ? Math.round(speedPins.reduce((a,p) => a+p.gercek_dl, 0)/speedPins.length) : 0;
         const ulPins = speedPins.filter(p => p.gercek_ul > 0);
@@ -8158,7 +8162,7 @@ function showHexInfo(pins, hexId, filterTech = 'all', keepScroll = false) {
     : ([pins[0].il, pins[0].ilce, pins[0].mahalle].filter(Boolean).join(' › ') || 'Bilinmeyen Bölge');
   document.getElementById('infoTitle').textContent = locStr;
   document.getElementById('reportHexId').value = hexId||''; document.getElementById('reportBolge').value = locStr;
-  const speedPins = activeHexPins.filter(p => !p.is_altyapi_yok);
+  const speedPins = activeHexPins.filter(p => !isNoInfraPin(p));
   const avgDL = speedPins.length ? Math.round(speedPins.reduce((a,p)=>a+p.gercek_dl,0)/speedPins.length) : 0;
   const avgS = speedPins.length ? (speedPins.reduce((a,p)=>a+p.puan,0)/speedPins.length).toFixed(1) : '—';
   const ulPins = speedPins.filter(p=>p.gercek_ul>0);
@@ -8682,7 +8686,7 @@ async function renderRegions() {
   // 1. Tüm 7 Bölge İstatistiklerini Hesapla
   const regions = Object.entries(BOLGELER).map(([name, info]) => {
     const pins = all.filter(p => info.iller.includes(p.il));
-    const speedPins = pins.filter(p => !p.is_altyapi_yok);
+    const speedPins = pins.filter(p => !isNoInfraPin(p));
     const avgDL = speedPins.length ? Math.round(speedPins.reduce((a,p)=>a+p.gercek_dl,0)/speedPins.length) : 0;
     const avgUL = speedPins.length ? Math.round(speedPins.filter(p=>p.gercek_ul>0).reduce((a,p)=>a+(p.gercek_ul||0),0)/Math.max(1,speedPins.filter(p=>p.gercek_ul>0).length)) : 0;
     const avgS = speedPins.length ? parseFloat((speedPins.reduce((a,p)=>a+p.puan,0)/speedPins.length).toFixed(1)) : null;
@@ -8690,7 +8694,7 @@ async function renderRegions() {
     // Fiber & Altyapısızlık oranları
     const fiberCount = pins.filter(p => p.baglanti_turu && p.baglanti_turu.toLowerCase().includes('fiber')).length;
     const fiberPct = pins.length ? Math.round((fiberCount / pins.length) * 100) : 0;
-    const noInfraCount = pins.filter(p => p.is_altyapi_yok).length;
+    const noInfraCount = pins.filter(p => isNoInfraPin(p)).length;
     const noInfraPct = pins.length ? Math.round((noInfraCount / pins.length) * 100) : 0;
 
     // İl bazında kırılım
@@ -8714,9 +8718,9 @@ async function renderRegions() {
 
     // En yaygın İSS
     const issMap = {};
-    pins.forEach(p => {
+    speedPins.forEach(p => {
       const iss = canonicalIssName(p.iss);
-      if (!iss || iss === 'Bilinmeyen' || !isApprovedPublicIss(iss)) return;
+      if (!iss || iss === 'Bilinmeyen' || iss === 'Altyapı Yok' || !isApprovedPublicIss(iss)) return;
       issMap[iss] = (issMap[iss] || 0) + 1;
     });
     const sortedIss = Object.entries(issMap).sort((a,b) => b[1] - a[1]);
@@ -9522,8 +9526,9 @@ function renderOperatorExperienceReport() {
   const issClusterMap = {};
 
   validPins.forEach(p => {
+    if (isNoInfraPin(p)) return;
     const iss = canonicalIssName(p.iss);
-    if (!iss || iss === 'Bilinmeyen' || !isApprovedPublicIss(iss)) return;
+    if (!iss || iss === 'Bilinmeyen' || iss === 'Altyapı Yok' || !isApprovedPublicIss(iss)) return;
     if (!issClusterMap[iss]) issClusterMap[iss] = [];
 
     const tags = extractValidFeedbackTags(p.yorum);
@@ -14202,15 +14207,16 @@ function openCompareModal(preselectedProvince) {
   const issSet = new Set();
   const ilSet = new Set();
   (cleanPinsData || []).forEach(p => {
+    if (isNoInfraPin(p)) return;
     const iss = canonicalIssName(p.iss);
-    if (iss && iss !== 'Bilinmeyen' && isApprovedPublicIss(iss)) issSet.add(iss);
+    if (iss && iss !== 'Bilinmeyen' && iss !== 'Altyapı Yok' && isApprovedPublicIss(iss)) issSet.add(iss);
     if (p.il && p.il.trim()) ilSet.add(p.il.trim());
   });
 
   // Eğer pin verisi henüz bellekte yoksa approvedIssNames() ve BOLGELER illerini fallback olarak kullan
   if (issSet.size === 0 && typeof approvedIssNames === 'function') {
     approvedIssNames().forEach(iss => {
-      if (iss && iss !== 'Bilinmeyen' && isApprovedPublicIss(iss)) issSet.add(iss);
+      if (iss && iss !== 'Bilinmeyen' && iss !== 'Altyapı Yok' && isApprovedPublicIss(iss)) issSet.add(iss);
     });
   }
   if (ilSet.size === 0 && typeof BOLGELER !== 'undefined') {
@@ -14616,22 +14622,33 @@ function toggleAllISSChips() {
 let _mapSearchController = null;
 async function searchLocation() {
   const q = document.getElementById('mapSearchInput').value.trim();
-  if (!q) return;
   const resultsEl = document.getElementById('searchResults');
+  if (!q) {
+    if (_mapSearchController) { _mapSearchController.abort(); _mapSearchController = null; }
+    if (resultsEl) resultsEl.classList.remove('open');
+    return;
+  }
   resultsEl.innerHTML = '<div class="search-result-item"><div class="search-result-name">🔍 Aranıyor...</div></div>';
   resultsEl.classList.add('open');
 
   if (_mapSearchController) _mapSearchController.abort();
-  _mapSearchController = new AbortController();
-  const timer = setTimeout(() => _mapSearchController && _mapSearchController.abort(), 6000);
+  const controller = new AbortController();
+  _mapSearchController = controller;
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, 6000);
 
   try {
     const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=tr&format=json&limit=5&accept-language=tr`, {
       headers: { 'Accept-Language': 'tr' },
-      signal: _mapSearchController.signal
+      signal: controller.signal
     });
     clearTimeout(timer);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     const results = await r.json();
+    if (!document.getElementById('mapSearchInput').value.trim()) {
+      resultsEl.classList.remove('open');
+      return;
+    }
     if (!results.length) {
       resultsEl.innerHTML = '<div class="search-result-item"><div class="search-result-name" style="color:var(--text3)">Sonuç bulunamadı</div></div>';
       return;
@@ -14648,10 +14665,12 @@ async function searchLocation() {
   } catch(e) {
     clearTimeout(timer);
     if (e.name !== 'AbortError') {
-      resultsEl.innerHTML = '<div class="search-result-item" style="color:var(--danger)">Bağlantı hatası</div>';
+      resultsEl.innerHTML = '<div class="search-result-item" style="color:var(--danger)">Arama servisi şu an yanıt vermiyor</div>';
+    } else if (timedOut) {
+      resultsEl.innerHTML = '<div class="search-result-item" style="color:var(--warn)">Arama zaman aşımına uğradı, tekrar deneyin</div>';
     }
   } finally {
-    _mapSearchController = null;
+    if (_mapSearchController === controller) _mapSearchController = null;
   }
 }
 
