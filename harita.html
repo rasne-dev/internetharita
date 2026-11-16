@@ -2960,7 +2960,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
       <!-- GOOGLE SYNC & HESAP YÖNETİMİ -->
       <div class="user-sync-wrap" id="userSyncWrap">
         <button class="btn-google-sync" id="navGoogleSyncBtn" onclick="signInWithGoogle()" title="Ölçümlerinizi Google hesabınızla senkronize edin">
-          <svg viewBox="0 0 24 24" width="13" height="13">
+          <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
@@ -2969,7 +2969,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
           <span class="sync-text-full">Google ile Eşitle</span>
           <span class="sync-text-short">Eşitle</span>
         </button>
-        <div class="user-sync-pill" id="navUserSyncPill" style="display:none;" onclick="toggleUserSyncDropdown(event)" title="Google Hesabınız">
+        <div class="user-sync-pill" id="navUserSyncPill" style="display:none;" role="button" tabindex="0" aria-haspopup="true" onclick="toggleUserSyncDropdown(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleUserSyncDropdown(event);}" title="Google Hesabınız">
           <img id="navUserAvatar" class="user-sync-avatar" src="" alt="Avatar" />
           <span id="navUserName" class="user-sync-name">Kullanıcı</span>
           <span class="user-sync-badge">✓</span>
@@ -4959,7 +4959,8 @@ function renderMyPins() {
   
   myPins.forEach(p => {
     const isApproved = isPinPublic(p);
-    const color = speedColor(p.gercek_dl);
+    const noInfra = isNoInfraPin(p);
+    const color = noInfra ? '#ef4444' : speedColor(p.gercek_dl);
     
     // DivIcon ile her zoomda görünür puls efektli marker
     const icon = L.divIcon({
@@ -4987,7 +4988,7 @@ function renderMyPins() {
         <div style="font-size:9px;color:var(--text3);margin-bottom:8px;line-height:1.3;">${statusDesc}</div>
         <div class="popup-row"><span class="popup-key">Veri No</span><span class="popup-val" style="font-family:var(--font-mono);font-weight:700;color:var(--accent);">#${escHtml(p.id)}</span></div>
         <div class="popup-row"><span class="popup-key">İSS</span><span class="popup-val">${escHtml(p.iss)}</span></div>
-        <div class="popup-row"><span class="popup-key">Hız</span><span class="popup-val" style="color:${color}">${p.is_altyapi_yok ? 'Altyapı Yok' : `${p.gercek_dl} Mbps ↓`}</span></div>
+        <div class="popup-row"><span class="popup-key">Hız</span><span class="popup-val" style="color:${color}">${noInfra ? 'Altyapı Yok' : `${p.gercek_dl} Mbps ↓`}</span></div>
         <div class="popup-row"><span class="popup-key">Tarih</span><span class="popup-val">${dateStr}</span></div>
         <div class="popup-actions">
           <div class="popup-btn btn-edit" role="button" tabindex="0" onclick="openUserEditModal('${escAttr(p.id)}')">✏️ Düzenle</div>
@@ -5099,8 +5100,9 @@ function renderUserPinsList() {
     const statusColor = p.is_draft ? 'var(--accent)' : (isApproved ? 'var(--success)' : 'var(--warn)');
     const statusText = p.is_draft ? 'TASLAK' : (isApproved ? 'YAYINDA' : 'İNCELEMEDE');
     const brandColor = ic(p.iss);
-    const spColor = speedColor(p.gercek_dl);
-    const speedText = p.is_altyapi_yok ? 'Altyapı Yok' : (p.gercek_dl ? `${p.gercek_dl} Mbps ↓` : '—');
+    const noInfra = isNoInfraPin(p);
+    const spColor = noInfra ? '#ef4444' : speedColor(p.gercek_dl);
+    const speedText = noInfra ? 'Altyapı Yok' : (p.gercek_dl ? `${p.gercek_dl} Mbps ↓` : '—');
 
     return `
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 9px;display:flex;flex-direction:column;gap:4px;">
@@ -6885,7 +6887,7 @@ function shouldQuarantine() {
 function isOutlier(dl, lat, lng) {
   if (!lat || !lng || !cleanPinsData.length) return false;    
   // Yakın pin: ~50km içindeki pinleri al (0.45 derece ≈ 50km)
-  const nearby = cleanPinsData.filter(p => p.lat && !p.is_altyapi_yok && Math.abs(p.lat - lat) < 0.45 && Math.abs(p.lng - lng) < 0.45);
+  const nearby = cleanPinsData.filter(p => p.lat && !isNoInfraPin(p) && Math.abs(p.lat - lat) < 0.45 && Math.abs(p.lng - lng) < 0.45);
 
   // En az 5 veri yoksa sapma hesabı yapma (Az veri riskini engeller)
   if (nearby.length < 5) return false; 
@@ -8446,7 +8448,7 @@ function showHexInfo(pins, hexId, filterTech = 'all', keepScroll = false) {
     // Bölgenin En Çok Tercih Edilen / Lider Sağlayıcısı
     let leaderBadgeHtml = '';
     const issStats = {};
-    activeHexPins.filter(p => !p.is_altyapi_yok && p.iss && p.iss !== 'Altyapı Yok').forEach(p => {
+    activeHexPins.filter(p => !isNoInfraPin(p) && p.iss).forEach(p => {
       const name = canonicalIssName(p.iss);
       if (!name || name === 'Bilinmeyen' || !isApprovedPublicIss(name)) return;
       if (!issStats[name]) issStats[name] = { count: 0, totalDl: 0, dlCount: 0, totalScore: 0, scoreCount: 0 };
@@ -8839,7 +8841,7 @@ async function renderRegions() {
       const isSelected = r.name === selectedRegionName;
 
       return `
-        <div class="region-card ${isSelected ? 'active-region' : ''}" onclick="selectRegion('${escAttr(r.name)}')">
+        <div class="region-card ${isSelected ? 'active-region' : ''}" role="button" tabindex="0" onclick="selectRegion('${escAttr(r.name)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectRegion('${escAttr(r.name)}');}">
           <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${r.color};"></div>
           
           <div style="display:flex;justify-content:space-between;align-items:flex-start;">
@@ -8923,7 +8925,7 @@ async function renderRegions() {
       citiesHtml = `
         <div style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;padding-right:4px;">
           ${citiesWithData.map((c, idx) => `
-            <div class="clickable" onclick="focusProvinceOnMap('${escAttr(c.il)}')" title="${escHtml(c.il)} ilini haritada görmek için tıklayın" style="display:grid;grid-template-columns:110px 1fr 65px 55px;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:11px;cursor:pointer;transition:background .2s;">
+            <div class="clickable" role="button" tabindex="0" onclick="focusProvinceOnMap('${escAttr(c.il)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();focusProvinceOnMap('${escAttr(c.il)}');}" title="${escAttr(c.il)} ilini haritada görmek için tıklayın" style="display:grid;grid-template-columns:110px 1fr 65px 55px;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:11px;cursor:pointer;transition:background .2s;">
               <div style="font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                 <span style="color:var(--text3);font-family:var(--font-mono);font-size:10px;margin-right:4px;">#${idx+1}</span>${escHtml(c.il)}
               </div>
@@ -9019,7 +9021,7 @@ async function renderRegions() {
       const pct = Math.round((r.avgDL / maxDL) * 100);
 
       return `
-        <div onclick="selectRegion('${escAttr(r.name)}')" style="display:grid;grid-template-columns:120px 1fr 65px 65px 50px;align-items:center;gap:8px;padding:8px;border-radius:6px;margin-bottom:4px;cursor:pointer;background:${isSel ? 'var(--surface2)' : 'transparent'};border:1px solid ${isSel ? r.color : 'transparent'};transition:all .15s;">
+        <div role="button" tabindex="0" onclick="selectRegion('${escAttr(r.name)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectRegion('${escAttr(r.name)}');}" style="display:grid;grid-template-columns:120px 1fr 65px 65px 50px;align-items:center;gap:8px;padding:8px;border-radius:6px;margin-bottom:4px;cursor:pointer;background:${isSel ? 'var(--surface2)' : 'transparent'};border:1px solid ${isSel ? r.color : 'transparent'};transition:all .15s;">
           <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:var(--text);font-size:11px;">
             <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${r.color};"></span>
             <span>${r.name}</span>
@@ -9347,7 +9349,7 @@ async function _renderStatsCore() {
       };
     })
     .sort((a,b) => b.bayes - a.bayes)
-    .map((x,i) => `<div class="rank-item clickable" onclick="filterMapByISS('${escAttr(x.iss)}')" title="${escHtml(displayIssName(x.iss))}: ${x.score} / 10 (${x.c} ölçüm) — Haritada görmek için tıklayın"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${escHtml(displayIssName(x.iss))}</div><div class="rank-sub">${x.c} ölçüm · <span style="color:var(--accent);font-size:9px;">📍 Haritada Gör</span></div></div><div class="rank-val" style="color:${memColor(x.score)}">${memShapeHtml(parseFloat(x.score))}${x.score}</div></div>`)
+    .map((x,i) => `<div class="rank-item clickable" role="button" tabindex="0" onclick="filterMapByISS('${escAttr(x.iss)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();filterMapByISS('${escAttr(x.iss)}');}" title="${escAttr(displayIssName(x.iss))}: ${x.score} / 10 (${x.c} ölçüm) — Haritada görmek için tıklayın"><div class="rank-num">${i+1}</div><div class="rank-dot" style="background:${ic(x.iss)}"></div><div style="flex:1"><div class="rank-name">${escHtml(displayIssName(x.iss))}</div><div class="rank-sub">${x.c} ölçüm · <span style="color:var(--accent);font-size:9px;">📍 Haritada Gör</span></div></div><div class="rank-val" style="color:${memColor(x.score)}">${memShapeHtml(parseFloat(x.score))}${x.score}</div></div>`)
     .join('') || '<div style="color:var(--text3);font-size:11px;padding:8px 0;">Henüz yeterli veri yok</div>';
   
   // EN HIZLI LOKASYONLAR (artık ISS filtresiyle de çağrılabilen bağımsız fonksiyon)
@@ -9377,7 +9379,7 @@ async function _renderStatsCore() {
   const issSpeedMap = {};
   speedPins.forEach(p => {
     const iss = canonicalIssName(p.iss);
-    if (!iss) return;
+    if (!iss || iss === 'Altyapı Yok') return;
     if (!issSpeedMap[iss]) issSpeedMap[iss] = { total:0, ulTotal:0, ulCount:0, count:0, locList:[] };
     issSpeedMap[iss].total += p.gercek_dl;
     if (p.gercek_ul > 0) {
@@ -9433,7 +9435,7 @@ async function _renderStatsCore() {
         .replace(' (Turkcell)','').replace(' (Türksat)',''));
       const speedLabel = x.avg >= 1000 ? (x.avg/1000).toFixed(1)+'G' : x.avg + ' Mbps';
       const ulText = x.avgUl > 0 ? ` · ↑${x.avgUl}` : '';
-      return `<div class="trend-row clickable" onclick="filterMapByISS('${escAttr(x.iss)}')" title="${escHtml(displayIssName(x.iss))}: ↓${speedLabel}${ulText} (${x.count} ölçüm) — Haritada filtrelemek için tıklayın" style="padding:4px 6px;border-radius:6px;">
+      return `<div class="trend-row clickable" role="button" tabindex="0" onclick="filterMapByISS('${escAttr(x.iss)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();filterMapByISS('${escAttr(x.iss)}');}" title="${escAttr(displayIssName(x.iss))}: ↓${speedLabel}${ulText} (${x.count} ölçüm) — Haritada filtrelemek için tıklayın" style="padding:4px 6px;border-radius:6px;">
         <div class="trend-label" title="${escHtml(displayIssName(x.iss))}">
           <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${col};margin-right:5px;vertical-align:middle;flex-shrink:0;"></span>${label}
         </div>
@@ -11620,7 +11622,7 @@ async function saveUserEdit() {
            || getMyLocalPins().find(p => String(p.id) === String(pinId));
   if (isStillNoInfra) {
     payload.iss = 'Altyapı Yok';
-  } else if (connType !== 'docsis' && pin && (pin.is_altyapi_yok || canonicalIssName(pin.iss) === 'Altyapı Yok')) {
+  } else if (connType !== 'docsis' && pin && isNoInfraPin(pin)) {
     const pickedIss = document.getElementById('userEditIssSelect')?.value;
     if (!pickedIss) return showToast('Lütfen internet sağlayıcınızı (İSS) seçin', 'err');
     payload.iss = pickedIss;
