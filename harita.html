@@ -3236,8 +3236,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
         </button>
       </div>
       <button class="popup-btn popup-report" id="infoBildirBtn" onclick="openHexReport()" style="width:100%;margin-top:10px;padding:7px;">🚩 Bu Bölgeyi Bildir</button>
-      <button class="btn-ghost" onclick="shareCurrentRegion()" style="width:100%;margin-top:6px;padding:7px;font-size:11px;display:flex;align-items:center;justify-content:center;gap:6px;border-color:rgba(0,212,255,0.3);color:var(--accent);background:rgba(0,212,255,0.04);">🔗 Bu Bölgenin Bağlantısını Paylaş</button>
-      <button class="btn-ghost" onclick="openScoreCardModal('region')" style="width:100%;margin-top:6px;padding:7px;font-size:11px;display:flex;align-items:center;justify-content:center;gap:6px;border-color:rgba(0,212,255,0.4);color:var(--accent);background:rgba(0,212,255,0.06);">📸 Bu Bölgenin İnternet Karnesini Paylaş</button>
+      <button class="btn-ghost" id="infoShareRegionBtn" onclick="shareCurrentRegion()" style="width:100%;margin-top:6px;padding:7px;font-size:11px;display:flex;align-items:center;justify-content:center;gap:6px;border-color:rgba(0,212,255,0.3);color:var(--accent);background:rgba(0,212,255,0.04);">🔗 Bu Bölgenin Bağlantısını Paylaş</button>
+      <button class="btn-ghost" id="infoScoreCardBtn" onclick="openScoreCardModal('region')" style="width:100%;margin-top:6px;padding:7px;font-size:11px;display:flex;align-items:center;justify-content:center;gap:6px;border-color:rgba(0,212,255,0.4);color:var(--accent);background:rgba(0,212,255,0.06);">📸 Bu Bölgenin İnternet Karnesini Paylaş</button>
     </div>
   </div>
   <div class="map-legend-box" id="mapLegendBox">
@@ -4672,8 +4672,8 @@ CREATE POLICY "Moderatörler ISS yönetir" ON public.iss_list FOR ALL TO authent
       <input type="hidden" id="userEditComment" value="">
     </div>
     
-    <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:9px 12px;margin-bottom:14px;font-size:11px;line-height:1.4;color:var(--text2);display:flex;align-items:center;justify-content:space-between;gap:8px;">
-      <div>📍 <b>Konumu yanlış mı seçtiniz?</b> Bu ölçümü silip mevcut hız sonuçlarınızla haritadan doğru konumu seçebilirsiniz.</div>
+    <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:9px 12px;margin-bottom:14px;font-size:11px;line-height:1.4;color:var(--text2);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;">
+      <div style="flex:1 1 200px;min-width:0;">📍 <b>Konumu yanlış mı seçtiniz?</b> Bu ölçümü silip mevcut hız sonuçlarınızla haritadan doğru konumu seçebilirsiniz.</div>
       <button type="button" class="btn-del" style="padding:6px 10px;font-size:10px;white-space:nowrap;font-weight:700;" onclick="deleteAndRecreatePin()">🗑️ Sil &amp; Yeni Konum Seç</button>
     </div>
     <div style="display:flex;gap:8px;">
@@ -6530,6 +6530,8 @@ function resetISSFiltersToAll() {
     chip.classList.add('on');
   });
   activeISSFilters = new Set([...POPULAR_ISS_NAMES, 'Diğer']);
+  if (typeof syncInteractiveControlState === 'function') syncInteractiveControlState();
+  if (typeof updateFilterIndicator === 'function') updateFilterIndicator();
   return hadFiltered;
 }
 
@@ -6738,6 +6740,7 @@ function filterMapByISS(rawIssName) {
       chip.classList.remove('on');
     }
   });
+  if (typeof syncInteractiveControlState === 'function') syncInteractiveControlState();
   if (typeof updateFilterIndicator === 'function') updateFilterIndicator();
   showPage('harita');
   let attempts = 0;
@@ -8540,6 +8543,11 @@ function showHexInfo(pins, hexId, filterTech = 'all', keepScroll = false) {
   const sampleCount = document.getElementById('infoLowSampleCount');
   if (hexList) { hexList.style.display = 'none'; hexList.innerHTML = ''; }
   if (hexBtn) { hexBtn.style.display = 'block'; hexBtn.textContent = `▼ Tüm ölçümleri gör (${activeHexPins.length})`; }
+
+  const shareRegionBtn = document.getElementById('infoShareRegionBtn');
+  const scoreCardBtn = document.getElementById('infoScoreCardBtn');
+  if (shareRegionBtn) shareRegionBtn.style.display = 'flex';
+  if (scoreCardBtn) scoreCardBtn.style.display = 'flex';
 
   // 3'ten az ölçüm olan bölgelerde genel şikayet butonunu kapatıp hız ekleme uyarısı göster
   if (pins.length < 3) {
@@ -14783,11 +14791,15 @@ function showSearchResultCard(targetLat, targetLng, title, sub) {
         <button class="btn-primary" style="font-size:11px;padding:6px 14px;" onclick="showPage('pin')">+ Bu Konum İçin Ölçüm Ekle</button>
       </div>
     `;
+    const techFilterEl = document.getElementById('infoHexTechFilter'); if (techFilterEl) { techFilterEl.style.display = 'none'; techFilterEl.innerHTML = ''; }
+    const techDistEl = document.getElementById('infoTechDistribution'); if (techDistEl) { techDistEl.style.display = 'none'; techDistEl.innerHTML = ''; }
     const hexBtn = document.getElementById('hexPinsToggleBtn'); if (hexBtn) hexBtn.style.display = 'none';
     const hexList = document.getElementById('hexPinsList'); if (hexList) hexList.style.display = 'none';
     const haEl = document.getElementById('infoHexAnalysis'); if (haEl) haEl.style.display = 'none';
     const fbSec = document.getElementById('infoFeedbackSection'); if (fbSec) fbSec.style.display = 'none';
     const bildirBtn = document.getElementById('infoBildirBtn'); if (bildirBtn) bildirBtn.style.display = 'none';
+    const shareRegionBtn = document.getElementById('infoShareRegionBtn'); if (shareRegionBtn) shareRegionBtn.style.display = 'none';
+    const scoreCardBtn = document.getElementById('infoScoreCardBtn'); if (scoreCardBtn) scoreCardBtn.style.display = 'none';
     const sampleNotice = document.getElementById('infoLowSampleNotice'); if (sampleNotice) sampleNotice.style.display = 'none';
     const infoEl = document.getElementById('mapInfo');
     if (infoEl) infoEl.classList.add('visible');
