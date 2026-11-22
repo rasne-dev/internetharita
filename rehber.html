@@ -1768,14 +1768,17 @@ var _calcHousehold = 2;
 function setCalcHousehold(num) {
   _calcHousehold = num;
   document.querySelectorAll('.calc-hh-btn').forEach(function (btn) {
-    btn.classList.toggle('active', parseInt(btn.getAttribute('data-hh'), 10) === num);
+    var isAct = parseInt(btn.getAttribute('data-hh'), 10) === num;
+    btn.classList.toggle('active', isAct);
+    btn.setAttribute('aria-pressed', String(isAct));
   });
   updateSpeedCalculator();
 }
 
 function toggleCalcActivity(btn) {
   if (!btn) return;
-  btn.classList.toggle('active');
+  var isAct = btn.classList.toggle('active');
+  btn.setAttribute('aria-pressed', String(isAct));
   updateSpeedCalculator();
 }
 
@@ -1876,12 +1879,32 @@ function updateFiberPetition() {
   preview.textContent = text;
 }
 
+function fallbackCopyText(val, onCopied) {
+  var ta = document.createElement('textarea');
+  ta.value = val;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    if (typeof onCopied === 'function') onCopied();
+  } catch(e) {}
+  document.body.removeChild(ta);
+}
+
+function resolveCopyBtn() {
+  if (!window.event) return null;
+  var t = window.event.currentTarget || window.event.target;
+  return (t && t.closest) ? (t.closest('button') || t) : t;
+}
+
 function copyFiberPetition() {
   var preview = document.getElementById('petitionPreviewText');
   if (!preview) return;
   if (!preview.textContent) updateFiberPetition();
   var text = preview.textContent;
-  var btn = window.event ? (window.event.currentTarget || window.event.target) : null;
+  var btn = resolveCopyBtn();
   function markCopied() {
     if (!btn) return;
     var old = btn.textContent;
@@ -1894,25 +1917,12 @@ function copyFiberPetition() {
       btn.style.color = '';
     }, 2000);
   }
-  function fallbackCopyText(val) {
-    var ta = document.createElement('textarea');
-    ta.value = val;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    try {
-      document.execCommand('copy');
-      markCopied();
-    } catch(e) {}
-    document.body.removeChild(ta);
-  }
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(markCopied).catch(function () {
-      fallbackCopyText(text);
+      fallbackCopyText(text, markCopied);
     });
   } else {
-    fallbackCopyText(text);
+    fallbackCopyText(text, markCopied);
   }
 }
 
@@ -2005,7 +2015,7 @@ function copyThhDilekce() {
   if (!preview) return;
   if (!preview.textContent) updateThhPetition();
   var text = preview.textContent;
-  var btn = window.event ? (window.event.currentTarget || window.event.target) : null;
+  var btn = resolveCopyBtn();
   function markCopied() {
     if (!btn) return;
     var old = btn.textContent;
@@ -2020,10 +2030,10 @@ function copyThhDilekce() {
   }
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(markCopied).catch(function () {
-      fallbackCopyText(text);
+      fallbackCopyText(text, markCopied);
     });
   } else {
-    fallbackCopyText(text);
+    fallbackCopyText(text, markCopied);
   }
 }
 
@@ -2143,6 +2153,12 @@ function calculateCaymaBedeli() {
   if (paidPrice <= 0 || normalPrice <= 0) {
     resBox.style.display = 'block';
     resBox.innerHTML = '<span style="color:var(--danger); font-weight:600;">⚠️ Lütfen ödediğiniz fatura tutarını ve paketinizin indirimsiz (liste) fiyatını girin.</span>';
+    return;
+  }
+
+  if (paidPrice > normalPrice) {
+    resBox.style.display = 'block';
+    resBox.innerHTML = '<span style="color:var(--warn); font-weight:600;">⚠️ İndirimli ödediğiniz fatura tutarı (' + paidPrice.toLocaleString('tr-TR') + ' TL), indirimsiz liste fiyatından (' + normalPrice.toLocaleString('tr-TR') + ' TL) yüksek olamaz. Lütfen iki tutarı kontrol edin.</span>';
     return;
   }
 

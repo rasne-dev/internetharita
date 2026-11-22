@@ -11744,6 +11744,8 @@ async function deleteAndRecreatePin() {
   const score = selScoreValUserEdit;
   const comment = document.getElementById('userEditComment')?.value;
   const iss = pin?.iss;
+  const wasVerified = !!document.getElementById('userEditSpeedVerifiedBadge')?.classList.contains('show');
+  const wasNoInfra = !!(conn === 'yok' || (pin && isNoInfraPin(pin)));
 
   try {
     await delPinOwn(sId);
@@ -11761,20 +11763,40 @@ async function deleteAndRecreatePin() {
 
     // Forma aktar
     showPage('pin');
-    if (dl) {
-      document.getElementById('dlSpeed').value = dl;
-      document.getElementById('ulSpeed').value = ul || 0;
-      document.getElementById('speedVerifiedBadge')?.classList.add('show');
-      speedVerifiedByTest = true;
-    }
-    if (pkgDL) document.getElementById('packageSpeedDL').value = pkgDL;
-    if (pkgUL) document.getElementById('packageSpeedUL').value = pkgUL;
-    if (conn) {
-      const btn = document.querySelector(`#page-pin .cbtn.${conn}`);
-      if (btn) selConn(btn, conn, true);
-    }
-    if (iss && document.getElementById('issSelect')) {
-      document.getElementById('issSelect').value = iss;
+    resetPinForm();
+    if (wasNoInfra) {
+      const noInfraCheck = document.getElementById('noInfraCheck');
+      if (noInfraCheck) {
+        noInfraCheck.checked = true;
+        onNoInfraChange(true);
+      }
+    } else {
+      if (dl) {
+        document.getElementById('dlSpeed').value = dl;
+        document.getElementById('ulSpeed').value = ul || 0;
+        if (wasVerified) {
+          document.getElementById('speedVerifiedBadge')?.classList.add('show');
+          speedVerifiedByTest = true;
+        }
+      }
+      if (pkgDL) document.getElementById('packageSpeedDL').value = pkgDL;
+      if (pkgUL) document.getElementById('packageSpeedUL').value = pkgUL;
+      if (conn) {
+        const btn = document.querySelector(`#page-pin .cbtn.${conn}`);
+        if (btn) selConn(btn, conn, true);
+      }
+      const issSel = document.getElementById('issSelect');
+      if (iss && issSel && conn !== 'docsis') {
+        const hasOpt = Array.from(issSel.options).some(o => o.value === iss);
+        if (hasOpt) {
+          issSel.value = iss;
+        } else {
+          issSel.value = 'Diğer';
+          toggleCustomIss('Diğer');
+          const customIn = document.getElementById('customIssInput');
+          if (customIn) customIn.value = iss;
+        }
+      }
     }
     if (score) {
       const sbtns = document.querySelectorAll('#scoreRow .sbtn');
@@ -16971,14 +16993,17 @@ var _calcHousehold = 2;
 function setCalcHousehold(num) {
   _calcHousehold = num;
   document.querySelectorAll('.calc-hh-btn').forEach(function (btn) {
-    btn.classList.toggle('active', parseInt(btn.getAttribute('data-hh'), 10) === num);
+    var isAct = parseInt(btn.getAttribute('data-hh'), 10) === num;
+    btn.classList.toggle('active', isAct);
+    btn.setAttribute('aria-pressed', String(isAct));
   });
   updateSpeedCalculator();
 }
 
 function toggleCalcActivity(btn) {
   if (!btn) return;
-  btn.classList.toggle('active');
+  var isAct = btn.classList.toggle('active');
+  btn.setAttribute('aria-pressed', String(isAct));
   updateSpeedCalculator();
 }
 
